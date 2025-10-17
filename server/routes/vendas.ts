@@ -5,8 +5,16 @@ import Estoque from '../models/Estoque';
 const router = express.Router();
 
 /**
- * GET /api/vendas
- * Lista todas as vendas
+ * @swagger
+ * /api/vendas:
+ *   get:
+ *     summary: Lista todas as vendas
+ *     tags: [Vendas]
+ *     responses:
+ *       200:
+ *         description: Lista de vendas retornada com sucesso
+ *       500:
+ *         description: Erro ao buscar vendas
  */
 router.get('/', async (req, res) => {
   try {
@@ -36,8 +44,22 @@ router.get('/:id', async (req, res) => {
 });
 
 /**
- * POST /api/vendas
- * Cria uma nova venda e atualiza o estoque
+ * @swagger
+ * /api/vendas:
+ *   post:
+ *     summary: Cria uma nova venda e atualiza o estoque automaticamente
+ *     tags: [Vendas]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Venda'
+ *     responses:
+ *       201:
+ *         description: Venda criada e estoque atualizado com sucesso
+ *       400:
+ *         description: Erro ao criar venda ou estoque insuficiente
  */
 router.post('/', async (req, res) => {
   try {

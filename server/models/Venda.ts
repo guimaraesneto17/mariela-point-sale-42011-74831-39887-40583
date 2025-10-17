@@ -12,9 +12,16 @@ const VendaSchema = new mongoose.Schema({
     default: Date.now
   },
   vendedor: {
-    type: String,
-    required: true,
-    trim: true
+    id: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    nome: {
+      type: String,
+      required: true,
+      trim: true
+    }
   },
   cliente: {
     codigoCliente: {
@@ -39,6 +46,11 @@ const VendaSchema = new mongoose.Schema({
       required: true,
       trim: true
     },
+    tamanho: {
+      type: String,
+      required: true,
+      trim: true
+    },
     quantidade: {
       type: Number,
       required: true,
@@ -49,13 +61,23 @@ const VendaSchema = new mongoose.Schema({
       required: true,
       min: 0
     },
+    precoFinalUnitario: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+    descontoAplicado: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
     subtotal: {
       type: Number,
       required: true,
       min: 0
     }
   }],
-  valorTotal: {
+  total: {
     type: Number,
     required: true,
     min: 0
@@ -68,7 +90,11 @@ const VendaSchema = new mongoose.Schema({
   formaPagamento: {
     type: String,
     required: true,
-    enum: ['Dinheiro', 'Cartão de Crédito', 'Cartão de Débito', 'Pix', 'Boleto'],
+    enum: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro'],
+    trim: true
+  },
+  observacoes: {
+    type: String,
     trim: true
   }
 }, {

@@ -14,16 +14,12 @@ const FornecedorSchema = new mongoose.Schema({
   },
   cnpj: {
     type: String,
-    required: true,
+    required: false,
     trim: true
   },
   telefone: {
     type: String,
     required: true,
-    trim: true
-  },
-  email: {
-    type: String,
     trim: true
   },
   instagram: {
@@ -62,11 +58,7 @@ const FornecedorSchema = new mongoose.Schema({
       trim: true
     }
   },
-  produtos: [{
-    type: String,
-    trim: true
-  }],
-  observacoes: {
+  observacao: {
     type: String,
     trim: true
   },

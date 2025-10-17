@@ -19,6 +19,14 @@ const VendedorSchema = new mongoose.Schema({
   dataNascimento: {
     type: Date
   },
+  ativo: {
+    type: Boolean,
+    default: true
+  },
+  metaMensal: {
+    type: Number,
+    min: 0
+  },
   observacao: {
     type: String,
     trim: true

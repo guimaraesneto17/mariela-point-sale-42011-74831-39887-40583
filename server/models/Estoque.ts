@@ -7,7 +7,7 @@ const EstoqueSchema = new mongoose.Schema({
     unique: true,
     trim: true
   },
-  quantidadeDisponivel: {
+  quantidade: {
     type: Number,
     required: true,
     min: 0,
@@ -16,7 +16,14 @@ const EstoqueSchema = new mongoose.Schema({
   tamanho: {
     type: String,
     required: true,
+    enum: ['PP', 'P', 'M', 'G', 'GG', 'U'],
     trim: true
+  },
+  quantidadeDisponivel: {
+    type: Number,
+    required: false,
+    min: 0,
+    default: 0
   },
   emPromocao: {
     type: Boolean,
@@ -26,7 +33,7 @@ const EstoqueSchema = new mongoose.Schema({
     type: Number,
     min: 0
   },
-  novidade: {
+  isNovidade: {
     type: Boolean,
     default: false
   },
@@ -46,7 +53,16 @@ const EstoqueSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     },
+    origem: {
+      type: String,
+      enum: ['venda', 'compra', 'baixa no estoque'],
+      trim: true
+    },
     fornecedor: {
+      type: String,
+      trim: true
+    },
+    motivo: {
       type: String,
       trim: true
     },

@@ -4,8 +4,16 @@ import Estoque from '../models/Estoque';
 const router = express.Router();
 
 /**
- * GET /api/estoque
- * Lista todo o estoque
+ * @swagger
+ * /api/estoque:
+ *   get:
+ *     summary: Lista todo o estoque
+ *     tags: [Estoque]
+ *     responses:
+ *       200:
+ *         description: Lista de estoque retornada com sucesso
+ *       500:
+ *         description: Erro ao buscar estoque
  */
 router.get('/', async (req, res) => {
   try {
@@ -52,8 +60,36 @@ router.get('/:codigoProduto', async (req, res) => {
 });
 
 /**
- * POST /api/estoque/entrada
- * Registra entrada de produtos no estoque
+ * @swagger
+ * /api/estoque/entrada:
+ *   post:
+ *     summary: Registra entrada de produtos no estoque
+ *     tags: [Estoque]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - codigoProduto
+ *               - quantidade
+ *             properties:
+ *               codigoProduto:
+ *                 type: string
+ *               quantidade:
+ *                 type: number
+ *               fornecedor:
+ *                 type: string
+ *               observacao:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Entrada registrada com sucesso
+ *       404:
+ *         description: Produto não encontrado no estoque
+ *       400:
+ *         description: Erro ao registrar entrada
  */
 router.post('/entrada', async (req, res) => {
   try {

@@ -1,7 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
 import connectDatabase from './config/database';
+import swaggerSpec from './config/swagger';
 
 // Importar rotas
 import produtosRouter from './routes/produtos';
@@ -10,6 +12,7 @@ import vendasRouter from './routes/vendas';
 import estoqueRouter from './routes/estoque';
 import fornecedoresRouter from './routes/fornecedores';
 import vendedoresRouter from './routes/vendedores';
+import vitrineVirtualRouter from './routes/vitrineVirtual';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -28,6 +31,19 @@ app.use((req, res, next) => {
   next();
 });
 
+// Swagger Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Mariela Moda API',
+  customfavIcon: '/favicon.ico'
+}));
+
+// Rota para obter o JSON do Swagger
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
+
 // Rota de health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -40,6 +56,7 @@ app.use('/api/vendas', vendasRouter);
 app.use('/api/estoque', estoqueRouter);
 app.use('/api/fornecedores', fornecedoresRouter);
 app.use('/api/vendedores', vendedoresRouter);
+app.use('/api/vitrine', vitrineVirtualRouter);
 
 // Rota 404
 app.use('*', (req, res) => {
@@ -67,13 +84,17 @@ async function startServer() {
 ║                                                   ║
 ║  Servidor rodando em: http://localhost:${PORT}     ║
 ║                                                   ║
+║  📚 Documentação Swagger:                         ║
+║  http://localhost:${PORT}/api-docs                 ║
+║                                                   ║
 ║  API Endpoints:                                   ║
-║  • GET    /api/produtos                           ║
-║  • GET    /api/clientes                           ║
-║  • GET    /api/vendas                             ║
-║  • GET    /api/estoque                            ║
-║  • GET    /api/fornecedores                       ║
-║  • GET    /api/vendedores                         ║
+║  • /api/produtos                                  ║
+║  • /api/clientes                                  ║
+║  • /api/vendas                                    ║
+║  • /api/estoque                                   ║
+║  • /api/fornecedores                              ║
+║  • /api/vendedores                                ║
+║  • /api/vitrine                                   ║
 ║                                                   ║
 ║  Health Check: http://localhost:${PORT}/health     ║
 ║                                                   ║
