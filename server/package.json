@@ -1,0 +1,21 @@
+{
+  "name": "mariela-pdv-backend",
+  "version": "1.0.0",
+  "description": "Backend do Sistema PDV Mariela Moda Feminina",
+  "main": "index.ts",
+  "scripts": {
+    "dev": "tsx watch index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "pdv",
+    "pos",
+    "mariela",
+    "moda",
+    "backend"
+  ],
+  "author": "Mariela Moda",
+  "license": "ISC"
+}
