@@ -59,7 +59,7 @@ app.use('/api/vendedores', vendedoresRouter);
 app.use('/api/vitrine', vitrineVirtualRouter);
 
 // Rota 404
-app.use('*', (req, res) => {
+app.use(/.*/, (req, res) => {
   res.status(404).json({ error: 'Rota não encontrada' });
 });
 
