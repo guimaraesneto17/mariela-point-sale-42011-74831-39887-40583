@@ -45,7 +45,7 @@ cp .env.example .env
 Edite o arquivo `.env` e adicione sua string de conexão do MongoDB:
 
 ```env
-MONGODB_URI=mongodb+srv://usuario:senha@cluster.mongodb.net/mariela-pdv?retryWrites=true&w=majority
+MONGODB_URI=mongodb+srv://usuario:senha@marieladb.lcikjrk.mongodb.net/marielaDB?retryWrites=true&w=majority
 PORT=3001
 NODE_ENV=development
 ```

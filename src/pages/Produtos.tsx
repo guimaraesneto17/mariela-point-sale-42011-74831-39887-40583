@@ -41,7 +41,7 @@ const Produtos = () => {
   const [produtos] = useState([
     {
       _id: "1",
-      codigo: "P101",
+      codigoProduto: "P101",
       nome: "Vestido Floral Curto",
       categoria: "Vestido",
       cor: "Azul Claro",
@@ -54,7 +54,7 @@ const Produtos = () => {
     },
     {
       _id: "2",
-      codigo: "P102",
+      codigoProduto: "P102",
       nome: "Blusa Manga Longa",
       categoria: "Blusa",
       cor: "Preto",
@@ -68,12 +68,12 @@ const Produtos = () => {
 
   const filteredProdutos = produtos.filter(produto =>
     produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    produto.codigo.toLowerCase().includes(searchTerm.toLowerCase())
+    produto.codigoProduto.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const generateNextCode = () => {
     if (produtos.length === 0) return "P001";
-    const codes = produtos.map(p => parseInt(p.codigo.replace("P", "")));
+    const codes = produtos.map(p => parseInt(p.codigoProduto.replace("P", "")));
     const maxCode = Math.max(...codes);
     return `P${String(maxCode + 1).padStart(3, "0")}`;
   };
@@ -138,7 +138,7 @@ const Produtos = () => {
       : 0;
     
     form.reset({
-      codigoProduto: product.codigo,
+      codigoProduto: product.codigoProduto,
       nome: product.nome,
       descricao: product.descricao,
       categoria: product.categoria,
@@ -556,7 +556,7 @@ const Produtos = () => {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Código:</span>
-                  <span className="font-medium">{produto.codigo}</span>
+                  <span className="font-medium">{produto.codigoProduto}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Cor:</span>

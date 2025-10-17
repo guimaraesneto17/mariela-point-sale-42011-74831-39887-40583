@@ -81,7 +81,6 @@ const EstoqueSchema = new mongoose.Schema({
 });
 
 // Índices para melhor performance
-EstoqueSchema.index({ codigoProduto: 1 });
 EstoqueSchema.index({ quantidadeDisponivel: 1 });
 EstoqueSchema.index({ emPromocao: 1 });
 

@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const ProdutoSchema = new mongoose.Schema({
-  codigo: {
+  codigoProduto: {
     type: String,
     required: true,
     unique: true,
@@ -54,7 +54,6 @@ const ProdutoSchema = new mongoose.Schema({
 });
 
 // Índices para melhor performance
-ProdutoSchema.index({ codigo: 1 });
 ProdutoSchema.index({ nome: 'text', descricao: 'text' });
 ProdutoSchema.index({ categoria: 1 });
 

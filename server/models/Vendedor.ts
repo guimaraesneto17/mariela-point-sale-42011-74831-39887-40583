@@ -40,7 +40,6 @@ const VendedorSchema = new mongoose.Schema({
   collection: 'vendedores'
 });
 
-VendedorSchema.index({ codigoVendedor: 1 });
 VendedorSchema.index({ nome: 1 });
 
 export default mongoose.models.Vendedor || mongoose.model('Vendedor', VendedorSchema);

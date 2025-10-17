@@ -19,7 +19,7 @@ if (!MONGODB_URI) {
   console.warn(
     '⚠️  ATENÇÃO: Variável de ambiente MONGODB_URI não configurada!\n' +
     'Por favor, adicione sua string de conexão do MongoDB Atlas.\n' +
-    'Exemplo: MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/mariela-pdv'
+    'Exemplo: MONGODB_URI=mongodb+srv://username:password@marieladb.lcikjrk.mongodb.net/marielaDB?retryWrites=true&w=majority'
   );
 }
 

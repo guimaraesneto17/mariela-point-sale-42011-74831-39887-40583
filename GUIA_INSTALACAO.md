@@ -51,7 +51,7 @@ cd Mariela-PDV
 
 **Exemplo:**
 ```
-mongodb+srv://usuario:senhaSegura123@cluster0.abc123.mongodb.net/mariela-pdv?retryWrites=true&w=majority
+mongodb+srv://usuario:senhaSegura123@marieladb.lcikjrk.mongodb.net/marielaDB?retryWrites=true&w=majority
 ```
 
 ## Passo 3: Configurar Variáveis de Ambiente
@@ -68,7 +68,7 @@ cp .env.example .env
 Abra o arquivo `.env` e adicione sua string de conexão:
 
 ```env
-MONGODB_URI=mongodb+srv://seu-usuario:sua-senha@cluster.mongodb.net/mariela-pdv?retryWrites=true&w=majority
+MONGODB_URI=mongodb+srv://seu-usuario:sua-senha@marieladb.lcikjrk.mongodb.net/marielaDB?retryWrites=true&w=majority
 PORT=3001
 NODE_ENV=development
 ```

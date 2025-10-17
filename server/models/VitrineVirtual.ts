@@ -80,7 +80,6 @@ const VitrineVirtualSchema = new mongoose.Schema({
 });
 
 // Índices para melhor performance
-VitrineVirtualSchema.index({ code: 1 });
 VitrineVirtualSchema.index({ category: 1 });
 VitrineVirtualSchema.index({ 'tags.isNew': 1 });
 VitrineVirtualSchema.index({ 'tags.isOnSale': 1 });

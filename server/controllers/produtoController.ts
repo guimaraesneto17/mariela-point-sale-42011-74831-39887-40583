@@ -32,7 +32,7 @@ export const createProduto = async (req: Request, res: Response) => {
 
     // Criar registro de estoque para o produto
     const estoque = new Estoque({
-      codigoProduto: produto.codigo,
+      codigoProduto: produto.codigoProduto,
       quantidadeDisponivel: 0,
       quantidadeMinima: 5,
       emPromocao: false
@@ -71,7 +71,7 @@ export const deleteProduto = async (req: Request, res: Response) => {
     }
 
     // Remover também o registro de estoque
-    await Estoque.findOneAndDelete({ codigoProduto: produto.codigo });
+    await Estoque.findOneAndDelete({ codigoProduto: produto.codigoProduto });
     await Produto.findByIdAndDelete(req.params.id);
     
     res.json({ message: 'Produto removido com sucesso' });

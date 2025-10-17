@@ -35,7 +35,6 @@ const ClienteSchema = new mongoose.Schema({
 });
 
 // Índices para melhor performance
-ClienteSchema.index({ codigoCliente: 1 });
 ClienteSchema.index({ nome: 'text' });
 ClienteSchema.index({ telefone: 1 });
 

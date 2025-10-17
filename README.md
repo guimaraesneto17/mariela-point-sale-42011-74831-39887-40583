@@ -87,7 +87,7 @@ Consulte o arquivo [README_BACKEND.md](./README_BACKEND.md) para instruções de
 cp .env.example .env
 
 # 3. Adicione sua string de conexão no .env
-# MONGODB_URI=mongodb+srv://usuario:senha@cluster.mongodb.net/mariela-pdv
+# MONGODB_URI=mongodb+srv://usuario:senha@marieladb.lcikjrk.mongodb.net/marielaDB
 
 # 4. Instale as dependências do backend
 cd server
@@ -192,7 +192,7 @@ mariela-pdv/
 
 **Formato da string de conexão:**
 ```
-MONGODB_URI=mongodb+srv://usuario:senha@cluster.mongodb.net/mariela-pdv?retryWrites=true&w=majority
+MONGODB_URI=mongodb+srv://usuario:senha@marieladb.lcikjrk.mongodb.net/marielaDB?retryWrites=true&w=majority
 ```
 
 ## 📡 API Endpoints

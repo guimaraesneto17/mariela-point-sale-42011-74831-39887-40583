@@ -72,7 +72,6 @@ const FornecedorSchema = new mongoose.Schema({
 });
 
 // Índices para melhor performance
-FornecedorSchema.index({ codigoFornecedor: 1 });
 FornecedorSchema.index({ nome: 'text' });
 
 export default mongoose.models.Fornecedor || mongoose.model('Fornecedor', FornecedorSchema);

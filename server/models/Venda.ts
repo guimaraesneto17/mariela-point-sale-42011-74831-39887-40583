@@ -103,7 +103,6 @@ const VendaSchema = new mongoose.Schema({
 });
 
 // Índices para melhor performance
-VendaSchema.index({ codigoVenda: 1 });
 VendaSchema.index({ data: -1 });
 VendaSchema.index({ 'cliente.codigoCliente': 1 });
 
