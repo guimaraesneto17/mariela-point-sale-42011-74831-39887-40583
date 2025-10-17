@@ -1,5 +1,5 @@
 import express from 'express';
-import VitrineVirtual from '../models/VitrineVirtual';
+import * as vitrineVirtualController from '../controllers/vitrineVirtualController';
 
 const router = express.Router();
 
@@ -11,69 +11,49 @@ const router = express.Router();
  *     tags: [Vitrine Virtual]
  *     responses:
  *       200:
- *         description: Lista de produtos
+ *         description: Lista de produtos retornada com sucesso
  *       500:
  *         description: Erro ao buscar produtos
  */
-router.get('/', async (req, res) => {
-  try {
-    const produtos = await VitrineVirtual.find().sort({ registrationDate: -1 });
-    res.json(produtos);
-  } catch (error) {
-    console.error('Erro ao buscar produtos da vitrine:', error);
-    res.status(500).json({ error: 'Erro ao buscar produtos da vitrine' });
-  }
-});
+router.get('/', vitrineVirtualController.getAllVitrineVirtual);
 
 /**
  * @swagger
  * /api/vitrine/novidades:
  *   get:
- *     summary: Lista produtos novos da vitrine
+ *     summary: Lista as novidades da vitrine virtual
  *     tags: [Vitrine Virtual]
  *     responses:
  *       200:
- *         description: Lista de novidades
+ *         description: Lista de novidades retornada com sucesso
+ *       500:
+ *         description: Erro ao buscar novidades
  */
-router.get('/novidades', async (req, res) => {
-  try {
-    const novidades = await VitrineVirtual.find({ 'tags.isNew': true }).sort({ registrationDate: -1 });
-    res.json(novidades);
-  } catch (error) {
-    console.error('Erro ao buscar novidades:', error);
-    res.status(500).json({ error: 'Erro ao buscar novidades' });
-  }
-});
+router.get('/novidades', vitrineVirtualController.getNovidades);
 
 /**
  * @swagger
  * /api/vitrine/promocoes:
  *   get:
- *     summary: Lista produtos em promoção
+ *     summary: Lista as promoções da vitrine virtual
  *     tags: [Vitrine Virtual]
  *     responses:
  *       200:
- *         description: Lista de promoções
+ *         description: Lista de promoções retornada com sucesso
+ *       500:
+ *         description: Erro ao buscar promoções
  */
-router.get('/promocoes', async (req, res) => {
-  try {
-    const promocoes = await VitrineVirtual.find({ 'tags.isOnSale': true }).sort({ registrationDate: -1 });
-    res.json(promocoes);
-  } catch (error) {
-    console.error('Erro ao buscar promoções:', error);
-    res.status(500).json({ error: 'Erro ao buscar promoções' });
-  }
-});
+router.get('/promocoes', vitrineVirtualController.getPromocoes);
 
 /**
  * @swagger
- * /api/vitrine/{code}:
+ * /api/vitrine/codigo/{codigo}:
  *   get:
- *     summary: Busca um produto por código
+ *     summary: Busca um produto da vitrine por código
  *     tags: [Vitrine Virtual]
  *     parameters:
  *       - in: path
- *         name: code
+ *         name: codigo
  *         required: true
  *         schema:
  *           type: string
@@ -83,106 +63,58 @@ router.get('/promocoes', async (req, res) => {
  *       404:
  *         description: Produto não encontrado
  */
-router.get('/:code', async (req, res) => {
-  try {
-    const produto = await VitrineVirtual.findOne({ code: req.params.code });
-    if (!produto) {
-      return res.status(404).json({ error: 'Produto não encontrado' });
-    }
-    res.json(produto);
-  } catch (error) {
-    console.error('Erro ao buscar produto:', error);
-    res.status(500).json({ error: 'Erro ao buscar produto' });
-  }
-});
+router.get('/codigo/:codigo', vitrineVirtualController.getVitrineVirtualByCodigo);
+
+/**
+ * @swagger
+ * /api/vitrine/{id}:
+ *   get:
+ *     summary: Busca um produto da vitrine por ID
+ *     tags: [Vitrine Virtual]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Produto encontrado
+ *       404:
+ *         description: Produto não encontrado
+ */
+router.get('/:id', vitrineVirtualController.getVitrineVirtualById);
 
 /**
  * @swagger
  * /api/vitrine:
  *   post:
- *     summary: Cria um novo produto na vitrine
+ *     summary: Adiciona um produto à vitrine virtual
  *     tags: [Vitrine Virtual]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
  *     responses:
  *       201:
- *         description: Produto criado
+ *         description: Produto adicionado com sucesso
  *       400:
- *         description: Erro ao criar produto
+ *         description: Erro ao adicionar produto
  */
-router.post('/', async (req, res) => {
-  try {
-    const produto = new VitrineVirtual(req.body);
-    await produto.save();
-    res.status(201).json(produto);
-  } catch (error) {
-    console.error('Erro ao criar produto na vitrine:', error);
-    res.status(400).json({ error: 'Erro ao criar produto na vitrine' });
-  }
-});
+router.post('/', vitrineVirtualController.createVitrineVirtual);
 
 /**
- * @swagger
- * /api/vitrine/{code}:
- *   put:
- *     summary: Atualiza um produto da vitrine
- *     tags: [Vitrine Virtual]
- *     parameters:
- *       - in: path
- *         name: code
- *         required: true
- *     responses:
- *       200:
- *         description: Produto atualizado
- *       404:
- *         description: Produto não encontrado
+ * PUT /api/vitrine/:id
+ * Atualiza um produto da vitrine
  */
-router.put('/:code', async (req, res) => {
-  try {
-    const produto = await VitrineVirtual.findOneAndUpdate(
-      { code: req.params.code },
-      req.body,
-      { new: true, runValidators: true }
-    );
-    
-    if (!produto) {
-      return res.status(404).json({ error: 'Produto não encontrado' });
-    }
-    
-    res.json(produto);
-  } catch (error) {
-    console.error('Erro ao atualizar produto:', error);
-    res.status(400).json({ error: 'Erro ao atualizar produto' });
-  }
-});
+router.put('/:id', vitrineVirtualController.updateVitrineVirtual);
 
 /**
- * @swagger
- * /api/vitrine/{code}:
- *   delete:
- *     summary: Remove um produto da vitrine
- *     tags: [Vitrine Virtual]
- *     parameters:
- *       - in: path
- *         name: code
- *         required: true
- *     responses:
- *       200:
- *         description: Produto removido
- *       404:
- *         description: Produto não encontrado
+ * DELETE /api/vitrine/:id
+ * Remove um produto da vitrine
  */
-router.delete('/:code', async (req, res) => {
-  try {
-    const produto = await VitrineVirtual.findOneAndDelete({ code: req.params.code });
-    
-    if (!produto) {
-      return res.status(404).json({ error: 'Produto não encontrado' });
-    }
-    
-    res.json({ message: 'Produto removido com sucesso' });
-  } catch (error) {
-    console.error('Erro ao remover produto:', error);
-    res.status(500).json({ error: 'Erro ao remover produto' });
-  }
-});
+router.delete('/:id', vitrineVirtualController.deleteVitrineVirtual);
 
 export default router;

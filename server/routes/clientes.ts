@@ -1,5 +1,5 @@
 import express from 'express';
-import Cliente from '../models/Cliente';
+import * as clienteController from '../controllers/clienteController';
 
 const router = express.Router();
 
@@ -15,15 +15,7 @@ const router = express.Router();
  *       500:
  *         description: Erro ao buscar clientes
  */
-router.get('/', async (req, res) => {
-  try {
-    const clientes = await Cliente.find().sort({ dataCadastro: -1 });
-    res.json(clientes);
-  } catch (error) {
-    console.error('Erro ao buscar clientes:', error);
-    res.status(500).json({ error: 'Erro ao buscar clientes' });
-  }
-});
+router.get('/', clienteController.getAllClientes);
 
 /**
  * @swagger
@@ -46,18 +38,7 @@ router.get('/', async (req, res) => {
  *       500:
  *         description: Erro ao buscar cliente
  */
-router.get('/:id', async (req, res) => {
-  try {
-    const cliente = await Cliente.findById(req.params.id);
-    if (!cliente) {
-      return res.status(404).json({ error: 'Cliente não encontrado' });
-    }
-    res.json(cliente);
-  } catch (error) {
-    console.error('Erro ao buscar cliente:', error);
-    res.status(500).json({ error: 'Erro ao buscar cliente' });
-  }
-});
+router.get('/:id', clienteController.getClienteById);
 
 /**
  * @swagger
@@ -77,16 +58,7 @@ router.get('/:id', async (req, res) => {
  *       400:
  *         description: Erro ao criar cliente
  */
-router.post('/', async (req, res) => {
-  try {
-    const cliente = new Cliente(req.body);
-    await cliente.save();
-    res.status(201).json(cliente);
-  } catch (error) {
-    console.error('Erro ao criar cliente:', error);
-    res.status(400).json({ error: 'Erro ao criar cliente' });
-  }
-});
+router.post('/', clienteController.createCliente);
 
 /**
  * @swagger
@@ -114,24 +86,7 @@ router.post('/', async (req, res) => {
  *       400:
  *         description: Erro ao atualizar cliente
  */
-router.put('/:id', async (req, res) => {
-  try {
-    const cliente = await Cliente.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
-    
-    if (!cliente) {
-      return res.status(404).json({ error: 'Cliente não encontrado' });
-    }
-    
-    res.json(cliente);
-  } catch (error) {
-    console.error('Erro ao atualizar cliente:', error);
-    res.status(400).json({ error: 'Erro ao atualizar cliente' });
-  }
-});
+router.put('/:id', clienteController.updateCliente);
 
 /**
  * @swagger
@@ -153,19 +108,6 @@ router.put('/:id', async (req, res) => {
  *       500:
  *         description: Erro ao remover cliente
  */
-router.delete('/:id', async (req, res) => {
-  try {
-    const cliente = await Cliente.findByIdAndDelete(req.params.id);
-    
-    if (!cliente) {
-      return res.status(404).json({ error: 'Cliente não encontrado' });
-    }
-    
-    res.json({ message: 'Cliente removido com sucesso' });
-  } catch (error) {
-    console.error('Erro ao remover cliente:', error);
-    res.status(500).json({ error: 'Erro ao remover cliente' });
-  }
-});
+router.delete('/:id', clienteController.deleteCliente);
 
 export default router;

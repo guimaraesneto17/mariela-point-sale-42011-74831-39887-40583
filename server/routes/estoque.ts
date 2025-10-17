@@ -1,5 +1,5 @@
 import express from 'express';
-import Estoque from '../models/Estoque';
+import * as estoqueController from '../controllers/estoqueController';
 
 const router = express.Router();
 
@@ -15,49 +15,67 @@ const router = express.Router();
  *       500:
  *         description: Erro ao buscar estoque
  */
-router.get('/', async (req, res) => {
-  try {
-    const estoque = await Estoque.find().sort({ codigoProduto: 1 });
-    res.json(estoque);
-  } catch (error) {
-    console.error('Erro ao buscar estoque:', error);
-    res.status(500).json({ error: 'Erro ao buscar estoque' });
-  }
-});
+router.get('/', estoqueController.getAllEstoque);
 
 /**
- * GET /api/estoque/baixo
- * Lista produtos com estoque abaixo do mínimo
+ * @swagger
+ * /api/estoque/codigo/{codigo}:
+ *   get:
+ *     summary: Busca um item de estoque por código de produto
+ *     tags: [Estoque]
+ *     parameters:
+ *       - in: path
+ *         name: codigo
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Item de estoque encontrado
+ *       404:
+ *         description: Item de estoque não encontrado
  */
-router.get('/baixo', async (req, res) => {
-  try {
-    const estoque = await Estoque.find({
-      $expr: { $lt: ['$quantidadeDisponivel', '$quantidadeMinima'] }
-    }).sort({ quantidadeDisponivel: 1 });
-    
-    res.json(estoque);
-  } catch (error) {
-    console.error('Erro ao buscar estoque baixo:', error);
-    res.status(500).json({ error: 'Erro ao buscar estoque baixo' });
-  }
-});
+router.get('/codigo/:codigo', estoqueController.getEstoqueByCodigo);
 
 /**
- * GET /api/estoque/:codigoProduto
- * Busca estoque de um produto específico
+ * @swagger
+ * /api/estoque/{id}:
+ *   get:
+ *     summary: Busca um item de estoque por ID
+ *     tags: [Estoque]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Item de estoque encontrado
+ *       404:
+ *         description: Item de estoque não encontrado
  */
-router.get('/:codigoProduto', async (req, res) => {
-  try {
-    const estoque = await Estoque.findOne({ codigoProduto: req.params.codigoProduto });
-    if (!estoque) {
-      return res.status(404).json({ error: 'Estoque não encontrado para este produto' });
-    }
-    res.json(estoque);
-  } catch (error) {
-    console.error('Erro ao buscar estoque:', error);
-    res.status(500).json({ error: 'Erro ao buscar estoque' });
-  }
-});
+router.get('/:id', estoqueController.getEstoqueById);
+
+/**
+ * @swagger
+ * /api/estoque:
+ *   post:
+ *     summary: Cria um novo item de estoque
+ *     tags: [Estoque]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Estoque'
+ *     responses:
+ *       201:
+ *         description: Item de estoque criado com sucesso
+ *       400:
+ *         description: Erro ao criar item de estoque
+ */
+router.post('/', estoqueController.createEstoque);
 
 /**
  * @swagger
@@ -77,10 +95,14 @@ router.get('/:codigoProduto', async (req, res) => {
  *             properties:
  *               codigoProduto:
  *                 type: string
+ *               tamanho:
+ *                 type: string
  *               quantidade:
  *                 type: number
  *               fornecedor:
  *                 type: string
+ *               valorUnitario:
+ *                 type: number
  *               observacao:
  *                 type: string
  *     responses:
@@ -91,54 +113,24 @@ router.get('/:codigoProduto', async (req, res) => {
  *       400:
  *         description: Erro ao registrar entrada
  */
-router.post('/entrada', async (req, res) => {
-  try {
-    const { codigoProduto, quantidade, fornecedor, observacao } = req.body;
-
-    const estoque = await Estoque.findOne({ codigoProduto });
-    
-    if (!estoque) {
-      return res.status(404).json({ error: 'Produto não encontrado no estoque' });
-    }
-
-    estoque.quantidadeDisponivel += quantidade;
-    estoque.logMovimentacao.push({
-      tipo: 'entrada',
-      quantidade,
-      data: new Date(),
-      fornecedor,
-      observacao
-    });
-
-    await estoque.save();
-    res.json(estoque);
-  } catch (error) {
-    console.error('Erro ao registrar entrada:', error);
-    res.status(400).json({ error: 'Erro ao registrar entrada' });
-  }
-});
+router.post('/entrada', estoqueController.registrarEntrada);
 
 /**
- * PUT /api/estoque/:codigoProduto
- * Atualiza configurações do estoque (mínimo, promoção, etc)
+ * POST /api/estoque/saida
+ * Registra uma saída de estoque
  */
-router.put('/:codigoProduto', async (req, res) => {
-  try {
-    const estoque = await Estoque.findOneAndUpdate(
-      { codigoProduto: req.params.codigoProduto },
-      req.body,
-      { new: true, runValidators: true }
-    );
-    
-    if (!estoque) {
-      return res.status(404).json({ error: 'Estoque não encontrado' });
-    }
-    
-    res.json(estoque);
-  } catch (error) {
-    console.error('Erro ao atualizar estoque:', error);
-    res.status(400).json({ error: 'Erro ao atualizar estoque' });
-  }
-});
+router.post('/saida', estoqueController.registrarSaida);
+
+/**
+ * PUT /api/estoque/:id
+ * Atualiza um item de estoque
+ */
+router.put('/:id', estoqueController.updateEstoque);
+
+/**
+ * DELETE /api/estoque/:id
+ * Remove um item de estoque
+ */
+router.delete('/:id', estoqueController.deleteEstoque);
 
 export default router;

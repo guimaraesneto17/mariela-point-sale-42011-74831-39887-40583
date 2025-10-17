@@ -1,94 +1,72 @@
 import express from 'express';
-import Fornecedor from '../models/Fornecedor';
+import * as fornecedorController from '../controllers/fornecedorController';
 
 const router = express.Router();
 
 /**
- * GET /api/fornecedores
- * Lista todos os fornecedores
+ * @swagger
+ * /api/fornecedores:
+ *   get:
+ *     summary: Lista todos os fornecedores
+ *     tags: [Fornecedores]
+ *     responses:
+ *       200:
+ *         description: Lista de fornecedores retornada com sucesso
+ *       500:
+ *         description: Erro ao buscar fornecedores
  */
-router.get('/', async (req, res) => {
-  try {
-    const fornecedores = await Fornecedor.find().sort({ dataCadastro: -1 });
-    res.json(fornecedores);
-  } catch (error) {
-    console.error('Erro ao buscar fornecedores:', error);
-    res.status(500).json({ error: 'Erro ao buscar fornecedores' });
-  }
-});
+router.get('/', fornecedorController.getAllFornecedores);
 
 /**
- * GET /api/fornecedores/:id
- * Busca um fornecedor por ID
+ * @swagger
+ * /api/fornecedores/{id}:
+ *   get:
+ *     summary: Busca um fornecedor por ID
+ *     tags: [Fornecedores]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Fornecedor encontrado
+ *       404:
+ *         description: Fornecedor não encontrado
  */
-router.get('/:id', async (req, res) => {
-  try {
-    const fornecedor = await Fornecedor.findById(req.params.id);
-    if (!fornecedor) {
-      return res.status(404).json({ error: 'Fornecedor não encontrado' });
-    }
-    res.json(fornecedor);
-  } catch (error) {
-    console.error('Erro ao buscar fornecedor:', error);
-    res.status(500).json({ error: 'Erro ao buscar fornecedor' });
-  }
-});
+router.get('/:id', fornecedorController.getFornecedorById);
 
 /**
- * POST /api/fornecedores
- * Cria um novo fornecedor
+ * @swagger
+ * /api/fornecedores:
+ *   post:
+ *     summary: Cria um novo fornecedor
+ *     tags: [Fornecedores]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Fornecedor'
+ *     responses:
+ *       201:
+ *         description: Fornecedor criado com sucesso
+ *       400:
+ *         description: Erro ao criar fornecedor
  */
-router.post('/', async (req, res) => {
-  try {
-    const fornecedor = new Fornecedor(req.body);
-    await fornecedor.save();
-    res.status(201).json(fornecedor);
-  } catch (error) {
-    console.error('Erro ao criar fornecedor:', error);
-    res.status(400).json({ error: 'Erro ao criar fornecedor' });
-  }
-});
+router.post('/', fornecedorController.createFornecedor);
 
 /**
  * PUT /api/fornecedores/:id
  * Atualiza um fornecedor
  */
-router.put('/:id', async (req, res) => {
-  try {
-    const fornecedor = await Fornecedor.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
-    
-    if (!fornecedor) {
-      return res.status(404).json({ error: 'Fornecedor não encontrado' });
-    }
-    
-    res.json(fornecedor);
-  } catch (error) {
-    console.error('Erro ao atualizar fornecedor:', error);
-    res.status(400).json({ error: 'Erro ao atualizar fornecedor' });
-  }
-});
+router.put('/:id', fornecedorController.updateFornecedor);
 
 /**
  * DELETE /api/fornecedores/:id
  * Remove um fornecedor
  */
-router.delete('/:id', async (req, res) => {
-  try {
-    const fornecedor = await Fornecedor.findByIdAndDelete(req.params.id);
-    
-    if (!fornecedor) {
-      return res.status(404).json({ error: 'Fornecedor não encontrado' });
-    }
-    
-    res.json({ message: 'Fornecedor removido com sucesso' });
-  } catch (error) {
-    console.error('Erro ao remover fornecedor:', error);
-    res.status(500).json({ error: 'Erro ao remover fornecedor' });
-  }
-});
+router.delete('/:id', fornecedorController.deleteFornecedor);
 
 export default router;
