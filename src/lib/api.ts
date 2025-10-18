@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 // Helper para fazer requisições HTTP
 async function fetchAPI(endpoint: string, options?: RequestInit) {
@@ -83,6 +83,10 @@ export const estoqueAPI = {
   registrarSaida: (data: any) => fetchAPI('/estoque/saida', {
     method: 'POST',
     body: JSON.stringify(data),
+  }),
+  toggleNovidade: (codigo: string, isNovidade: boolean) => fetchAPI(`/estoque/novidade/${codigo}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ isNovidade }),
   }),
   delete: (id: string) => fetchAPI(`/estoque/${id}`, { method: 'DELETE' }),
 };

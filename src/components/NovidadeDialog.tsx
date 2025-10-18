@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { estoqueAPI } from "@/lib/api";
 
 interface NovidadeDialogProps {
   open: boolean;
@@ -26,15 +27,7 @@ export function NovidadeDialog({
   const handleConfirm = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:3001/api/estoque/novidade/${codigoProduto}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isNovidade: !isNovidade })
-      });
-
-      if (!response.ok) {
-        throw new Error('Erro ao atualizar novidade');
-      }
+      await estoqueAPI.toggleNovidade(codigoProduto, !isNovidade);
 
       if (isNovidade) {
         toast.success(`"${nomeProduto}" removido das novidades!`);
@@ -46,7 +39,7 @@ export function NovidadeDialog({
       onSuccess?.();
     } catch (error) {
       toast.error('Erro ao atualizar novidade', {
-        description: 'Tente novamente mais tarde'
+        description: 'Verifique se o servidor está rodando'
       });
     } finally {
       setIsLoading(false);
@@ -57,14 +50,17 @@ export function NovidadeDialog({
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center">
-                <AlertTriangle className="h-6 w-6 text-yellow-600" />
-              </div>
-              <DialogTitle className="text-xl">Remover Novidade?</DialogTitle>
+        <DialogHeader>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center">
+              <AlertTriangle className="h-6 w-6 text-yellow-600" />
             </div>
-          </DialogHeader>
+            <DialogTitle className="text-xl">Remover Novidade?</DialogTitle>
+          </div>
+          <DialogDescription className="sr-only">
+            Confirme a remoção do produto das novidades
+          </DialogDescription>
+        </DialogHeader>
           
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
@@ -107,6 +103,9 @@ export function NovidadeDialog({
             </div>
             <DialogTitle className="text-xl">Marcar como Novidade?</DialogTitle>
           </div>
+          <DialogDescription className="sr-only">
+            Confirme para marcar o produto como novidade
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4">
