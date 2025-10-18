@@ -121,6 +121,26 @@ export const registrarSaida = async (req: Request, res: Response) => {
   }
 };
 
+export const toggleNovidade = async (req: Request, res: Response) => {
+  try {
+    const { codigo } = req.params;
+    const { isNovidade } = req.body;
+    
+    const estoque = await Estoque.findOne({ codigoProduto: codigo });
+    if (!estoque) {
+      return res.status(404).json({ error: 'Item de estoque não encontrado' });
+    }
+
+    estoque.isNovidade = isNovidade;
+    await estoque.save();
+    
+    res.json(estoque);
+  } catch (error) {
+    console.error('Erro ao atualizar novidade:', error);
+    res.status(400).json({ error: 'Erro ao atualizar novidade' });
+  }
+};
+
 export const deleteEstoque = async (req: Request, res: Response) => {
   try {
     const estoque = await Estoque.findByIdAndDelete(req.params.id);

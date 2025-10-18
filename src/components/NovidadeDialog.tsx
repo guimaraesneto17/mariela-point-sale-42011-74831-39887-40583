@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 interface NovidadeDialogProps {
@@ -10,6 +10,7 @@ interface NovidadeDialogProps {
   codigoProduto: string;
   nomeProduto: string;
   isNovidade: boolean;
+  onSuccess?: () => void;
 }
 
 export function NovidadeDialog({ 
@@ -17,17 +18,39 @@ export function NovidadeDialog({
   onOpenChange, 
   codigoProduto, 
   nomeProduto,
-  isNovidade 
+  isNovidade,
+  onSuccess 
 }: NovidadeDialogProps) {
+  const [isLoading, setIsLoading] = useState(false);
   
-  const handleConfirm = () => {
-    if (isNovidade) {
-      toast.success(`"${nomeProduto}" removido das novidades!`);
-    } else {
-      toast.success(`"${nomeProduto}" marcado como novidade!`);
+  const handleConfirm = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`http://localhost:3001/api/estoque/novidade/${codigoProduto}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isNovidade: !isNovidade })
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao atualizar novidade');
+      }
+
+      if (isNovidade) {
+        toast.success(`"${nomeProduto}" removido das novidades!`);
+      } else {
+        toast.success(`"${nomeProduto}" marcado como novidade!`);
+      }
+      
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (error) {
+      toast.error('Erro ao atualizar novidade', {
+        description: 'Tente novamente mais tarde'
+      });
+    } finally {
+      setIsLoading(false);
     }
-    onOpenChange(false);
-    // Aqui você implementaria a lógica com a API
   };
 
   if (isNovidade) {
@@ -57,14 +80,16 @@ export function NovidadeDialog({
               variant="outline" 
               className="flex-1"
               onClick={() => onOpenChange(false)}
+              disabled={isLoading}
             >
               Cancelar
             </Button>
             <Button 
               className="flex-1"
               onClick={handleConfirm}
+              disabled={isLoading}
             >
-              Confirmar Remoção
+              {isLoading ? "Removendo..." : "Confirmar Remoção"}
             </Button>
           </div>
         </DialogContent>
@@ -72,5 +97,45 @@ export function NovidadeDialog({
     );
   }
 
-  return null;
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
+              <Sparkles className="h-6 w-6 text-green-600" />
+            </div>
+            <DialogTitle className="text-xl">Marcar como Novidade?</DialogTitle>
+          </div>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Deseja marcar <span className="font-semibold text-foreground">"{nomeProduto}"</span> como novidade?
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Código: <span className="font-medium">{codigoProduto}</span>
+          </p>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <Button 
+            variant="outline" 
+            className="flex-1"
+            onClick={() => onOpenChange(false)}
+            disabled={isLoading}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+            onClick={handleConfirm}
+            disabled={isLoading}
+          >
+            {isLoading ? "Salvando..." : "Confirmar"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }

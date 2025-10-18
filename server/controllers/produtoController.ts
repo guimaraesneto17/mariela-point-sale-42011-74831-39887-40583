@@ -30,12 +30,14 @@ export const createProduto = async (req: Request, res: Response) => {
     const produto = new Produto(req.body);
     await produto.save();
 
-    // Criar registro de estoque para o produto
+    // Criar registro de estoque para o produto com quantidade inicial de 1
     const estoque = new Estoque({
       codigoProduto: produto.codigoProduto,
-      quantidadeDisponivel: 0,
-      quantidadeMinima: 5,
-      emPromocao: false
+      quantidade: 1,
+      quantidadeDisponivel: 1,
+      tamanho: 'U',
+      emPromocao: false,
+      isNovidade: false
     });
     await estoque.save();
 

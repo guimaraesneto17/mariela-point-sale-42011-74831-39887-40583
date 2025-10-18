@@ -122,6 +122,39 @@ router.post('/entrada', estoqueController.registrarEntrada);
 router.post('/saida', estoqueController.registrarSaida);
 
 /**
+ * @swagger
+ * /api/estoque/novidade/{codigo}:
+ *   patch:
+ *     summary: Atualiza o status de novidade de um produto
+ *     tags: [Estoque]
+ *     parameters:
+ *       - in: path
+ *         name: codigo
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - isNovidade
+ *             properties:
+ *               isNovidade:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Status de novidade atualizado com sucesso
+ *       404:
+ *         description: Produto não encontrado no estoque
+ *       400:
+ *         description: Erro ao atualizar novidade
+ */
+router.patch('/novidade/:codigo', estoqueController.toggleNovidade);
+
+/**
  * PUT /api/estoque/:id
  * Atualiza um item de estoque
  */
