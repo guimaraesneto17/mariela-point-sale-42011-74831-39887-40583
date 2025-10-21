@@ -19,6 +19,9 @@ const Vendas = () => {
       total: 149.90,
       formaPagamento: "Cartão de Crédito",
       status: "concluida",
+      taxaMaquininha: 2.5,
+      valorTaxa: 3.75,
+      valorRecebido: 146.15,
       itens: [
         { nome: "Vestido Floral Curto", quantidade: 1, preco: 134.91 },
       ]
@@ -31,6 +34,9 @@ const Vendas = () => {
       total: 289.80,
       formaPagamento: "Pix",
       status: "concluida",
+      taxaMaquininha: 0,
+      valorTaxa: 0,
+      valorRecebido: 289.80,
       itens: [
         { nome: "Calça Jeans Skinny", quantidade: 1, preco: 169.90 },
         { nome: "Saia Plissada Midi", quantidade: 1, preco: 109.90 },
@@ -114,9 +120,24 @@ const Vendas = () => {
               ))}
             </div>
 
-            <div className="flex justify-between items-center mt-4 pt-4 border-t">
-              <span className="text-lg font-medium">Total:</span>
-              <span className="text-2xl font-bold text-primary">R$ {venda.total.toFixed(2)}</span>
+            <div className="mt-4 pt-4 border-t space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-lg font-medium">Total:</span>
+                <span className="text-2xl font-bold text-primary">R$ {venda.total.toFixed(2)}</span>
+              </div>
+              
+              {venda.taxaMaquininha > 0 && (
+                <>
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Taxa maquininha ({venda.taxaMaquininha}%):</span>
+                    <span>- R$ {venda.valorTaxa.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-base font-bold text-accent pt-2 border-t">
+                    <span>Recebido pelo Lojista:</span>
+                    <span>R$ {venda.valorRecebido.toFixed(2)}</span>
+                  </div>
+                </>
+              )}
             </div>
           </Card>
         ))}

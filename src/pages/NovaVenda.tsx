@@ -37,6 +37,7 @@ const NovaVenda = () => {
   const [tipoDesconto, setTipoDesconto] = useState<"porcentagem" | "valor">("porcentagem");
   const [descontoTotal, setDescontoTotal] = useState(0);
   const [itensVenda, setItensVenda] = useState<ItemVenda[]>([]);
+  const [taxaMaquininha, setTaxaMaquininha] = useState(0);
   
   // Estados para adicionar/editar produto
   const [produtoSelecionado, setProdutoSelecionado] = useState<any>(null);
@@ -72,6 +73,10 @@ const NovaVenda = () => {
   
   // Total final
   const totalFinal = Math.max(0, subtotalItens - valorDescontoTotal);
+  
+  // Calcular taxa da maquininha e valor recebido
+  const valorTaxaMaquininha = (totalFinal * taxaMaquininha) / 100;
+  const valorRecebidoLojista = totalFinal - valorTaxaMaquininha;
 
   const adicionarOuEditarProduto = () => {
     if (!produtoSelecionado || quantidadeProduto <= 0) {
@@ -242,7 +247,16 @@ const NovaVenda = () => {
               <CardTitle className="text-lg">Forma de Pagamento *</CardTitle>
             </CardHeader>
             <CardContent>
-              <Select value={formaPagamento} onValueChange={setFormaPagamento}>
+              <Select 
+                value={formaPagamento} 
+                onValueChange={(value) => {
+                  setFormaPagamento(value);
+                  // Zerar taxa se não for cartão
+                  if (value !== "Cartão de Crédito" && value !== "Cartão de Débito") {
+                    setTaxaMaquininha(0);
+                  }
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
@@ -459,6 +473,38 @@ const NovaVenda = () => {
                 <span>Total:</span>
                 <span className="text-primary">R$ {totalFinal.toFixed(2)}</span>
               </div>
+
+              {(formaPagamento === "Cartão de Crédito" || formaPagamento === "Cartão de Débito") && (
+                <div className="space-y-3 pt-4 border-t">
+                  <div className="flex items-center justify-between">
+                    <Label>Taxa da Maquininha (%)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={taxaMaquininha}
+                      onChange={(e) => setTaxaMaquininha(parseFloat(e.target.value) || 0)}
+                      className="w-24"
+                      placeholder="0%"
+                    />
+                  </div>
+                  
+                  {taxaMaquininha > 0 && (
+                    <>
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>Valor da taxa ({taxaMaquininha}%):</span>
+                        <span>- R$ {valorTaxaMaquininha.toFixed(2)}</span>
+                      </div>
+                      
+                      <div className="flex justify-between text-lg font-bold text-accent pt-2 border-t">
+                        <span>Recebido pelo Lojista:</span>
+                        <span>R$ {valorRecebidoLojista.toFixed(2)}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
 
               <Button 
                 onClick={handleFinalizarVenda} 

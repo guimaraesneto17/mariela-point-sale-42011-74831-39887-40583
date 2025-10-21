@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { produtoSchema } from "@/lib/validationSchemas";
 import { z } from "zod";
@@ -292,6 +293,17 @@ const Produtos = () => {
                         </FormItem>
                       )}
                     />
+
+                    <div>
+                      <Label className="text-sm font-semibold text-foreground">Imagem do Produto (URL)</Label>
+                      <Input 
+                        placeholder="Cole a URL da imagem do produto (ex: https://exemplo.com/imagem.jpg)"
+                        className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary mt-2"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Cole o link direto da imagem. Você pode usar serviços como Imgur ou Google Drive.
+                      </p>
+                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <FormField

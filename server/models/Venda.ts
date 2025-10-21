@@ -96,6 +96,21 @@ const VendaSchema = new mongoose.Schema({
   observacoes: {
     type: String,
     trim: true
+  },
+  taxaMaquininha: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100
+  },
+  valorTaxa: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  valorRecebido: {
+    type: Number,
+    min: 0
   }
 }, {
   timestamps: true,
