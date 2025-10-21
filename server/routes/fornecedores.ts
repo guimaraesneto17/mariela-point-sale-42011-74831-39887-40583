@@ -58,14 +58,52 @@ router.get('/:id', fornecedorController.getFornecedorById);
 router.post('/', fornecedorController.createFornecedor);
 
 /**
- * PUT /api/fornecedores/:id
- * Atualiza um fornecedor
+ * @swagger
+ * /api/fornecedores/{id}:
+ *   put:
+ *     summary: Atualiza um fornecedor
+ *     tags: [Fornecedores]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Fornecedor'
+ *     responses:
+ *       200:
+ *         description: Fornecedor atualizado com sucesso
+ *       404:
+ *         description: Fornecedor não encontrado
+ *       400:
+ *         description: Erro ao atualizar fornecedor
  */
 router.put('/:id', fornecedorController.updateFornecedor);
 
 /**
- * DELETE /api/fornecedores/:id
- * Remove um fornecedor
+ * @swagger
+ * /api/fornecedores/{id}:
+ *   delete:
+ *     summary: Remove um fornecedor
+ *     tags: [Fornecedores]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Fornecedor removido com sucesso
+ *       404:
+ *         description: Fornecedor não encontrado
+ *       500:
+ *         description: Erro ao remover fornecedor
  */
 router.delete('/:id', fornecedorController.deleteFornecedor);
 

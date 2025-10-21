@@ -63,14 +63,52 @@ router.get('/:id', vendedorController.getVendedorById);
 router.post('/', vendedorController.createVendedor);
 
 /**
- * PUT /api/vendedores/:id
- * Atualiza um vendedor
+ * @swagger
+ * /api/vendedores/{id}:
+ *   put:
+ *     summary: Atualiza um vendedor
+ *     tags: [Vendedores]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Vendedor'
+ *     responses:
+ *       200:
+ *         description: Vendedor atualizado com sucesso
+ *       404:
+ *         description: Vendedor não encontrado
+ *       400:
+ *         description: Erro ao atualizar vendedor
  */
 router.put('/:id', vendedorController.updateVendedor);
 
 /**
- * DELETE /api/vendedores/:id
- * Remove um vendedor
+ * @swagger
+ * /api/vendedores/{id}:
+ *   delete:
+ *     summary: Remove um vendedor
+ *     tags: [Vendedores]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Vendedor removido com sucesso
+ *       404:
+ *         description: Vendedor não encontrado
+ *       500:
+ *         description: Erro ao remover vendedor
  */
 router.delete('/:id', vendedorController.deleteVendedor);
 

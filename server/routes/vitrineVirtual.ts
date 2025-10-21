@@ -106,14 +106,52 @@ router.get('/:id', vitrineVirtualController.getVitrineVirtualById);
 router.post('/', vitrineVirtualController.createVitrineVirtual);
 
 /**
- * PUT /api/vitrine/:id
- * Atualiza um produto da vitrine
+ * @swagger
+ * /api/vitrine/{id}:
+ *   put:
+ *     summary: Atualiza um produto da vitrine virtual
+ *     tags: [Vitrine Virtual]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Produto atualizado com sucesso
+ *       404:
+ *         description: Produto não encontrado
+ *       400:
+ *         description: Erro ao atualizar produto
  */
 router.put('/:id', vitrineVirtualController.updateVitrineVirtual);
 
 /**
- * DELETE /api/vitrine/:id
- * Remove um produto da vitrine
+ * @swagger
+ * /api/vitrine/{id}:
+ *   delete:
+ *     summary: Remove um produto da vitrine virtual
+ *     tags: [Vitrine Virtual]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Produto removido com sucesso
+ *       404:
+ *         description: Produto não encontrado
+ *       500:
+ *         description: Erro ao remover produto
  */
 router.delete('/:id', vitrineVirtualController.deleteVitrineVirtual);
 

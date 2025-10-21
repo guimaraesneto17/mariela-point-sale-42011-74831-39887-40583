@@ -58,14 +58,52 @@ router.get('/:id', vendaController.getVendaById);
 router.post('/', vendaController.createVenda);
 
 /**
- * PUT /api/vendas/:id
- * Atualiza uma venda
+ * @swagger
+ * /api/vendas/{id}:
+ *   put:
+ *     summary: Atualiza uma venda
+ *     tags: [Vendas]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Venda'
+ *     responses:
+ *       200:
+ *         description: Venda atualizada com sucesso
+ *       404:
+ *         description: Venda não encontrada
+ *       400:
+ *         description: Erro ao atualizar venda
  */
 router.put('/:id', vendaController.updateVenda);
 
 /**
- * DELETE /api/vendas/:id
- * Remove uma venda
+ * @swagger
+ * /api/vendas/{id}:
+ *   delete:
+ *     summary: Remove uma venda
+ *     tags: [Vendas]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Venda removida com sucesso
+ *       404:
+ *         description: Venda não encontrada
+ *       500:
+ *         description: Erro ao remover venda
  */
 router.delete('/:id', vendaController.deleteVenda);
 

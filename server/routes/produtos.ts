@@ -58,14 +58,52 @@ router.get('/:id', produtoController.getProdutoById);
 router.post('/', produtoController.createProduto);
 
 /**
- * PUT /api/produtos/:id
- * Atualiza um produto
+ * @swagger
+ * /api/produtos/{id}:
+ *   put:
+ *     summary: Atualiza um produto
+ *     tags: [Produtos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Produto'
+ *     responses:
+ *       200:
+ *         description: Produto atualizado com sucesso
+ *       404:
+ *         description: Produto não encontrado
+ *       400:
+ *         description: Erro ao atualizar produto
  */
 router.put('/:id', produtoController.updateProduto);
 
 /**
- * DELETE /api/produtos/:id
- * Remove um produto
+ * @swagger
+ * /api/produtos/{id}:
+ *   delete:
+ *     summary: Remove um produto
+ *     tags: [Produtos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Produto removido com sucesso
+ *       404:
+ *         description: Produto não encontrado
+ *       500:
+ *         description: Erro ao remover produto
  */
 router.delete('/:id', produtoController.deleteProduto);
 

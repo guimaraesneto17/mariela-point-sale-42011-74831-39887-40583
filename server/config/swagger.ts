@@ -330,7 +330,11 @@ const options: swaggerJsdoc.Options = {
       }
     }
   },
-  apis: ['./server/routes/*.ts']
+  apis: [
+    './server/routes/*.ts',
+    './server/routes/*.js',
+    './dist/routes/*.js'
+  ]
 };
 
 const swaggerSpec = swaggerJsdoc(options);

@@ -116,8 +116,38 @@ router.post('/', estoqueController.createEstoque);
 router.post('/entrada', estoqueController.registrarEntrada);
 
 /**
- * POST /api/estoque/saida
- * Registra uma saída de estoque
+ * @swagger
+ * /api/estoque/saida:
+ *   post:
+ *     summary: Registra saída de produtos do estoque
+ *     tags: [Estoque]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - codigoProduto
+ *               - quantidade
+ *             properties:
+ *               codigoProduto:
+ *                 type: string
+ *               tamanho:
+ *                 type: string
+ *               quantidade:
+ *                 type: number
+ *               motivo:
+ *                 type: string
+ *               observacao:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Saída registrada com sucesso
+ *       404:
+ *         description: Produto não encontrado no estoque
+ *       400:
+ *         description: Erro ao registrar saída
  */
 router.post('/saida', estoqueController.registrarSaida);
 
@@ -155,14 +185,52 @@ router.post('/saida', estoqueController.registrarSaida);
 router.patch('/novidade/:codigo', estoqueController.toggleNovidade);
 
 /**
- * PUT /api/estoque/:id
- * Atualiza um item de estoque
+ * @swagger
+ * /api/estoque/{id}:
+ *   put:
+ *     summary: Atualiza um item de estoque
+ *     tags: [Estoque]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Estoque'
+ *     responses:
+ *       200:
+ *         description: Item de estoque atualizado com sucesso
+ *       404:
+ *         description: Item de estoque não encontrado
+ *       400:
+ *         description: Erro ao atualizar item de estoque
  */
 router.put('/:id', estoqueController.updateEstoque);
 
 /**
- * DELETE /api/estoque/:id
- * Remove um item de estoque
+ * @swagger
+ * /api/estoque/{id}:
+ *   delete:
+ *     summary: Remove um item de estoque
+ *     tags: [Estoque]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Item de estoque removido com sucesso
+ *       404:
+ *         description: Item de estoque não encontrado
+ *       500:
+ *         description: Erro ao remover item de estoque
  */
 router.delete('/:id', estoqueController.deleteEstoque);
 
