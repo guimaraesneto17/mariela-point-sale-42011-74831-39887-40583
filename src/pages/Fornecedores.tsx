@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Plus, Building, CheckCircle2, AlertCircle, Edit, Trash2, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { fornecedorSchema } from "@/lib/validationSchemas";
 import { maskPhone, maskCNPJ, maskCEP, maskInstagram } from "@/lib/masks";
 import { z } from "zod";
+import { fornecedoresAPI } from "@/lib/api";
 
 type FornecedorFormData = z.infer<typeof fornecedorSchema>;
 
@@ -42,28 +43,26 @@ const Fornecedores = () => {
     },
   });
 
-  const [fornecedores] = useState([
-    {
-      _id: "1",
-      codigoFornecedor: "F001",
-      nome: "Confecções Silva Ltda",
-      cnpj: "12.345.678/0001-90",
-      telefone: "(11) 3456-7890",
-      email: "contato@confeccoessilva.com.br",
-      endereco: "Rua das Confecções, 100 - Brás, São Paulo/SP",
-      instagram: "@confeccoessilva"
-    },
-    {
-      _id: "2",
-      codigoFornecedor: "F002",
-      nome: "Moda Prime Atacado",
-      cnpj: "23.456.789/0001-81",
-      telefone: "(21) 2345-6789",
-      email: "vendas@modaprime.com.br",
-      endereco: "Av. Brasil, 500 - Centro, Rio de Janeiro/RJ",
-      instagram: "@modaprimerio"
-    },
-  ]);
+  const [fornecedores, setFornecedores] = useState<any[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+
+  useEffect(() => {
+    loadFornecedores();
+  }, []);
+
+  const loadFornecedores = async () => {
+    try {
+      setIsLoadingData(true);
+      const data = await fornecedoresAPI.getAll();
+      setFornecedores(data);
+    } catch (error) {
+      toast.error("Erro ao carregar fornecedores", {
+        description: "Verifique se o servidor está rodando",
+      });
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
 
   const filteredFornecedores = fornecedores.filter(fornecedor =>
     fornecedor.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -81,33 +80,26 @@ const Fornecedores = () => {
   const onSubmit = async (data: FornecedorFormData) => {
     setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:3000/api/fornecedores", {
-        method: editingFornecedor ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...data,
-          _id: editingFornecedor?._id,
-          dataCadastro: editingFornecedor?.dataCadastro || new Date().toISOString(),
-        }),
-      });
-
-      if (response.ok) {
-        toast.success(editingFornecedor ? "✅ Fornecedor atualizado com sucesso!" : "✅ Fornecedor cadastrado com sucesso!", {
-          description: `${data.nome} foi ${editingFornecedor ? "atualizado" : "adicionado"} ao sistema`,
+      if (editingFornecedor) {
+        await fornecedoresAPI.update(editingFornecedor._id, data);
+        toast.success("✅ Fornecedor atualizado com sucesso!", {
+          description: `${data.nome} foi atualizado no sistema`,
         });
-        setIsDialogOpen(false);
-        setEditingFornecedor(null);
-        form.reset();
-        setManualCode(false);
       } else {
-        const error = await response.json();
-        toast.error("❌ Erro ao salvar fornecedor", {
-          description: error.error || "Verifique os dados e tente novamente",
+        await fornecedoresAPI.create(data);
+        toast.success("✅ Fornecedor cadastrado com sucesso!", {
+          description: `${data.nome} foi adicionado ao sistema`,
         });
       }
-    } catch (error) {
-      toast.error("❌ Erro ao conectar com o servidor", {
-        description: "Verifique sua conexão e tente novamente",
+      
+      setIsDialogOpen(false);
+      setEditingFornecedor(null);
+      form.reset();
+      setManualCode(false);
+      loadFornecedores();
+    } catch (error: any) {
+      toast.error("❌ Erro ao salvar fornecedor", {
+        description: error.message || "Verifique sua conexão e tente novamente",
       });
     } finally {
       setIsLoading(false);
@@ -136,9 +128,17 @@ const Fornecedores = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm("Tem certeza que deseja excluir este fornecedor?")) {
-      toast.success("Fornecedor excluído com sucesso!");
+      try {
+        await fornecedoresAPI.delete(id);
+        toast.success("Fornecedor excluído com sucesso!");
+        loadFornecedores();
+      } catch (error: any) {
+        toast.error("Erro ao excluir fornecedor", {
+          description: error.message || "Tente novamente",
+        });
+      }
     }
   };
 

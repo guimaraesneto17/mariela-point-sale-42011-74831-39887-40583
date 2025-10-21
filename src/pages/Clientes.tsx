@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Plus, User, CheckCircle2, AlertCircle, Edit, Trash2, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { clienteSchema } from "@/lib/validationSchemas";
 import { maskPhone } from "@/lib/masks";
 import { z } from "zod";
+import { clientesAPI } from "@/lib/api";
 
 type ClienteFormData = z.infer<typeof clienteSchema>;
 
@@ -33,24 +34,26 @@ const Clientes = () => {
     },
   });
 
-  const [clientes] = useState([
-    {
-      _id: "1",
-      codigoCliente: "C001",
-      nome: "Ana Souza",
-      telefone: "(11) 98765-4321",
-      dataNascimento: "1990-05-12",
-      observacao: "Endereço: Rua das Flores, 123"
-    },
-    {
-      _id: "2",
-      codigoCliente: "C002",
-      nome: "Fernanda Ribeiro",
-      telefone: "(21) 99876-1122",
-      dataNascimento: "1985-11-22",
-      observacao: "Cliente VIP"
-    },
-  ]);
+  const [clientes, setClientes] = useState<any[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+
+  useEffect(() => {
+    loadClientes();
+  }, []);
+
+  const loadClientes = async () => {
+    try {
+      setIsLoadingData(true);
+      const data = await clientesAPI.getAll();
+      setClientes(data);
+    } catch (error) {
+      toast.error("Erro ao carregar clientes", {
+        description: "Verifique se o servidor está rodando",
+      });
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
 
   const filteredClientes = clientes.filter(cliente =>
     cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -68,33 +71,26 @@ const Clientes = () => {
   const onSubmit = async (data: ClienteFormData) => {
     setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:3000/api/clientes", {
-        method: editingCliente ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...data,
-          _id: editingCliente?._id,
-          dataCadastro: editingCliente?.dataCadastro || new Date().toISOString(),
-        }),
-      });
-
-      if (response.ok) {
-        toast.success(editingCliente ? "✅ Cliente atualizado com sucesso!" : "✅ Cliente cadastrado com sucesso!", {
-          description: `${data.nome} foi ${editingCliente ? "atualizado" : "adicionado"} ao sistema`,
+      if (editingCliente) {
+        await clientesAPI.update(editingCliente._id, data);
+        toast.success("✅ Cliente atualizado com sucesso!", {
+          description: `${data.nome} foi atualizado no sistema`,
         });
-        setIsDialogOpen(false);
-        setEditingCliente(null);
-        form.reset();
-        setManualCode(false);
       } else {
-        const error = await response.json();
-        toast.error("❌ Erro ao salvar cliente", {
-          description: error.error || "Verifique os dados e tente novamente",
+        await clientesAPI.create(data);
+        toast.success("✅ Cliente cadastrado com sucesso!", {
+          description: `${data.nome} foi adicionado ao sistema`,
         });
       }
-    } catch (error) {
-      toast.error("❌ Erro ao conectar com o servidor", {
-        description: "Verifique sua conexão e tente novamente",
+      
+      setIsDialogOpen(false);
+      setEditingCliente(null);
+      form.reset();
+      setManualCode(false);
+      loadClientes();
+    } catch (error: any) {
+      toast.error("❌ Erro ao salvar cliente", {
+        description: error.message || "Verifique sua conexão e tente novamente",
       });
     } finally {
       setIsLoading(false);
@@ -114,10 +110,17 @@ const Clientes = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm("Tem certeza que deseja excluir este cliente?")) {
-      toast.success("Cliente excluído com sucesso!");
-      // Aqui você implementaria a lógica de exclusão com a API
+      try {
+        await clientesAPI.delete(id);
+        toast.success("Cliente excluído com sucesso!");
+        loadClientes();
+      } catch (error: any) {
+        toast.error("Erro ao excluir cliente", {
+          description: error.message || "Tente novamente",
+        });
+      }
     }
   };
 

@@ -23,7 +23,7 @@ const PORT = process.env.PORT || 3001;
 // Middlewares
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://mariela-pdv.vercel.app', 'https://mariela-pdv.lovable.app'] // Adicione seus domínios de produção aqui
+    ? ['https://mariela-pdv.vercel.app', 'https://mariela-pdv.lovable.app', 'http://localhost:8080', 'http://localhost:5173']
     : '*',
   credentials: true
 }));

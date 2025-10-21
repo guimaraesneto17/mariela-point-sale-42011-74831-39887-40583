@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Plus, UserCheck, CheckCircle2, AlertCircle, Edit, Trash2, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { vendedorSchema } from "@/lib/validationSchemas";
 import { maskPhone } from "@/lib/masks";
 import { z } from "zod";
+import { vendedoresAPI } from "@/lib/api";
 
 type VendedorFormData = z.infer<typeof vendedorSchema>;
 
@@ -33,24 +34,26 @@ const Vendedores = () => {
     },
   });
 
-  const [vendedores] = useState([
-    {
-      _id: "1",
-      codigoVendedor: "V001",
-      nome: "Carla Santos",
-      telefone: "(11) 99999-1111",
-      dataNascimento: "1995-03-15",
-      observacao: "Vendedora experiente"
-    },
-    {
-      _id: "2",
-      codigoVendedor: "V002",
-      nome: "Juliana Lima",
-      telefone: "(11) 98888-2222",
-      dataNascimento: "1992-07-20",
-      observacao: ""
-    },
-  ]);
+  const [vendedores, setVendedores] = useState<any[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+
+  useEffect(() => {
+    loadVendedores();
+  }, []);
+
+  const loadVendedores = async () => {
+    try {
+      setIsLoadingData(true);
+      const data = await vendedoresAPI.getAll();
+      setVendedores(data);
+    } catch (error) {
+      toast.error("Erro ao carregar vendedores", {
+        description: "Verifique se o servidor está rodando",
+      });
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
 
   const filteredVendedores = vendedores.filter(vendedor =>
     vendedor.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -68,33 +71,26 @@ const Vendedores = () => {
   const onSubmit = async (data: VendedorFormData) => {
     setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:3000/api/vendedores", {
-        method: editingVendedor ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...data,
-          _id: editingVendedor?._id,
-          dataCadastro: editingVendedor?.dataCadastro || new Date().toISOString(),
-        }),
-      });
-
-      if (response.ok) {
-        toast.success(editingVendedor ? "✅ Vendedor atualizado com sucesso!" : "✅ Vendedor cadastrado com sucesso!", {
-          description: `${data.nome} foi ${editingVendedor ? "atualizado" : "adicionado"} ao sistema`,
+      if (editingVendedor) {
+        await vendedoresAPI.update(editingVendedor._id, data);
+        toast.success("✅ Vendedor atualizado com sucesso!", {
+          description: `${data.nome} foi atualizado no sistema`,
         });
-        setIsDialogOpen(false);
-        setEditingVendedor(null);
-        form.reset();
-        setManualCode(false);
       } else {
-        const error = await response.json();
-        toast.error("❌ Erro ao salvar vendedor", {
-          description: error.error || "Verifique os dados e tente novamente",
+        await vendedoresAPI.create(data);
+        toast.success("✅ Vendedor cadastrado com sucesso!", {
+          description: `${data.nome} foi adicionado ao sistema`,
         });
       }
-    } catch (error) {
-      toast.error("❌ Erro ao conectar com o servidor", {
-        description: "Verifique sua conexão e tente novamente",
+      
+      setIsDialogOpen(false);
+      setEditingVendedor(null);
+      form.reset();
+      setManualCode(false);
+      loadVendedores();
+    } catch (error: any) {
+      toast.error("❌ Erro ao salvar vendedor", {
+        description: error.message || "Verifique sua conexão e tente novamente",
       });
     } finally {
       setIsLoading(false);
@@ -114,9 +110,17 @@ const Vendedores = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm("Tem certeza que deseja excluir este vendedor?")) {
-      toast.success("Vendedor excluído com sucesso!");
+      try {
+        await vendedoresAPI.delete(id);
+        toast.success("Vendedor excluído com sucesso!");
+        loadVendedores();
+      } catch (error: any) {
+        toast.error("Erro ao excluir vendedor", {
+          description: error.message || "Tente novamente",
+        });
+      }
     }
   };
 

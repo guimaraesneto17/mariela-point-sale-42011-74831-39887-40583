@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Plus, CheckCircle2, AlertCircle, Package, Edit, Trash2, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { produtoSchema } from "@/lib/validationSchemas";
 import { z } from "zod";
+import { produtosAPI } from "@/lib/api";
 
 type ProdutoFormData = z.infer<typeof produtoSchema>;
 
@@ -39,33 +40,26 @@ const Produtos = () => {
     },
   });
 
-  const [produtos] = useState([
-    {
-      _id: "1",
-      codigoProduto: "P101",
-      nome: "Vestido Floral Curto",
-      categoria: "Vestido",
-      cor: "Azul Claro",
-      descricao: "Vestido curto com estampa floral",
-      precoCusto: 85,
-      preco: 149.90,
-      precoPromocional: 119.90,
-      emPromocao: true,
-      isNovidade: false,
-    },
-    {
-      _id: "2",
-      codigoProduto: "P102",
-      nome: "Blusa Manga Longa",
-      categoria: "Blusa",
-      cor: "Preto",
-      descricao: "Blusa feminina manga longa",
-      precoCusto: 50,
-      preco: 89.90,
-      emPromocao: false,
-      isNovidade: true,
-    },
-  ]);
+  const [produtos, setProdutos] = useState<any[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+
+  useEffect(() => {
+    loadProdutos();
+  }, []);
+
+  const loadProdutos = async () => {
+    try {
+      setIsLoadingData(true);
+      const data = await produtosAPI.getAll();
+      setProdutos(data);
+    } catch (error) {
+      toast.error("Erro ao carregar produtos", {
+        description: "Verifique se o servidor está rodando",
+      });
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
 
   const filteredProdutos = produtos.filter(produto =>
     produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -98,34 +92,38 @@ const Produtos = () => {
   const onSubmit = async (data: ProdutoFormData) => {
     setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:3000/api/produtos", {
-        method: editingProduct ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...data,
-          _id: editingProduct?._id,
-          dataCadastro: editingProduct?.dataCadastro || new Date().toISOString(),
-          imagens: [],
-        }),
-      });
+      const produtoData = {
+        codigoProduto: data.codigoProduto,
+        nome: data.nome,
+        descricao: data.descricao,
+        categoria: data.categoria,
+        cor: data.cor,
+        precoCusto: data.precoCusto,
+        precoVenda: data.precoVenda,
+        precoPromocional: data.precoPromocional,
+        imagens: [],
+      };
 
-      if (response.ok) {
-        toast.success(editingProduct ? "✅ Produto atualizado com sucesso!" : "✅ Produto cadastrado com sucesso!", {
-          description: `${data.nome} foi ${editingProduct ? "atualizado" : "adicionado"} ao sistema`,
+      if (editingProduct) {
+        await produtosAPI.update(editingProduct._id, produtoData);
+        toast.success("✅ Produto atualizado com sucesso!", {
+          description: `${data.nome} foi atualizado no sistema`,
         });
-        setIsDialogOpen(false);
-        setEditingProduct(null);
-        form.reset();
-        setManualCode(false);
       } else {
-        const error = await response.json();
-        toast.error("❌ Erro ao salvar produto", {
-          description: error.error || "Verifique os dados e tente novamente",
+        await produtosAPI.create(produtoData);
+        toast.success("✅ Produto cadastrado com sucesso!", {
+          description: `${data.nome} foi adicionado ao sistema`,
         });
       }
-    } catch (error) {
-      toast.error("❌ Erro ao conectar com o servidor", {
-        description: "Verifique sua conexão e tente novamente",
+      
+      setIsDialogOpen(false);
+      setEditingProduct(null);
+      form.reset();
+      setManualCode(false);
+      loadProdutos();
+    } catch (error: any) {
+      toast.error("❌ Erro ao salvar produto", {
+        description: error.message || "Verifique sua conexão e tente novamente",
       });
     } finally {
       setIsLoading(false);
@@ -153,9 +151,17 @@ const Produtos = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm("Tem certeza que deseja excluir este produto?")) {
-      toast.success("Produto excluído com sucesso!");
+      try {
+        await produtosAPI.delete(id);
+        toast.success("Produto excluído com sucesso!");
+        loadProdutos();
+      } catch (error: any) {
+        toast.error("Erro ao excluir produto", {
+          description: error.message || "Tente novamente",
+        });
+      }
     }
   };
 
