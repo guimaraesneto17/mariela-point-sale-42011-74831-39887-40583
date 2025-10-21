@@ -1,7 +1,7 @@
 services:
   - type: web
     name: mariela-pdv-backend
-    env: node
+    runtime: node
     region: oregon
     plan: free
     buildCommand: cd server && npm install --include=dev && npm run build
@@ -11,7 +11,5 @@ services:
         value: production
       - key: NPM_CONFIG_PRODUCTION
         value: "false"
-      - key: PORT
-        value: 10000
       - key: MONGODB_URI
         sync: false
