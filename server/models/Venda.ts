@@ -111,6 +111,11 @@ const VendaSchema = new mongoose.Schema({
   valorRecebido: {
     type: Number,
     min: 0
+  },
+  parcelas: {
+    type: Number,
+    min: 1,
+    default: 1
   }
 }, {
   timestamps: true,

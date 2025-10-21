@@ -22,6 +22,7 @@ const Vendas = () => {
       taxaMaquininha: 2.5,
       valorTaxa: 3.75,
       valorRecebido: 146.15,
+      parcelas: 3,
       itens: [
         { nome: "Vestido Floral Curto", quantidade: 1, preco: 134.91 },
       ]
@@ -37,6 +38,7 @@ const Vendas = () => {
       taxaMaquininha: 0,
       valorTaxa: 0,
       valorRecebido: 289.80,
+      parcelas: 1,
       itens: [
         { nome: "Calça Jeans Skinny", quantidade: 1, preco: 169.90 },
         { nome: "Saia Plissada Midi", quantidade: 1, preco: 109.90 },
@@ -96,7 +98,12 @@ const Vendas = () => {
                 <h3 className="text-xl font-bold">{venda.codigo}</h3>
                 <p className="text-muted-foreground text-sm">{venda.data}</p>
               </div>
-              <Badge className="bg-primary">{venda.formaPagamento}</Badge>
+              <div className="flex gap-2">
+                <Badge className="bg-primary">{venda.formaPagamento}</Badge>
+                {venda.formaPagamento === "Cartão de Crédito" && venda.parcelas > 1 && (
+                  <Badge variant="outline">{venda.parcelas}x de R$ {(venda.total / venda.parcelas).toFixed(2)}</Badge>
+                )}
+              </div>
             </div>
             
             <div className="space-y-2 mb-4">

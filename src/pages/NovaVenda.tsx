@@ -38,6 +38,7 @@ const NovaVenda = () => {
   const [descontoTotal, setDescontoTotal] = useState(0);
   const [itensVenda, setItensVenda] = useState<ItemVenda[]>([]);
   const [taxaMaquininha, setTaxaMaquininha] = useState(0);
+  const [parcelas, setParcelas] = useState(1);
   
   // Estados para adicionar/editar produto
   const [produtoSelecionado, setProdutoSelecionado] = useState<any>(null);
@@ -251,9 +252,13 @@ const NovaVenda = () => {
                 value={formaPagamento} 
                 onValueChange={(value) => {
                   setFormaPagamento(value);
-                  // Zerar taxa se não for cartão
+                  // Zerar taxa e parcelas se não for cartão
                   if (value !== "Cartão de Crédito" && value !== "Cartão de Débito") {
                     setTaxaMaquininha(0);
+                  }
+                  // Zerar parcelas se não for cartão de crédito
+                  if (value !== "Cartão de Crédito") {
+                    setParcelas(1);
                   }
                 }}
               >
@@ -476,6 +481,21 @@ const NovaVenda = () => {
 
               {(formaPagamento === "Cartão de Crédito" || formaPagamento === "Cartão de Débito") && (
                 <div className="space-y-3 pt-4 border-t">
+                  {formaPagamento === "Cartão de Crédito" && (
+                    <div className="flex items-center justify-between">
+                      <Label>Parcelas</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="12"
+                        value={parcelas}
+                        onChange={(e) => setParcelas(parseInt(e.target.value) || 1)}
+                        className="w-24"
+                        placeholder="1x"
+                      />
+                    </div>
+                  )}
+                  
                   <div className="flex items-center justify-between">
                     <Label>Taxa da Maquininha (%)</Label>
                     <Input
