@@ -7,10 +7,6 @@ const options: swaggerJsdoc.Options = {
       title: 'Mariela Moda - API Documentation',
       version: '1.0.0',
       description: 'API para o sistema de PDV da Mariela Moda Feminina',
-      contact: {
-        name: 'Mariela Moda',
-        email: 'contato@marielamoda.com.br'
-      }
     },
     servers: [
       {
