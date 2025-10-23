@@ -14,8 +14,8 @@ const options: swaggerJsdoc.Options = {
     },
     servers: [
       {
-        url: 'http://localhost:3001',
-        description: 'Servidor de Desenvolvimento'
+        url: 'https://mariela-pdv-backend.onrender.com',
+        description: 'Servidor de Producao'
       }
     ],
     tags: [
