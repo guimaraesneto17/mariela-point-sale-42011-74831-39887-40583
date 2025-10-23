@@ -25,6 +25,7 @@ const PORT = process.env.PORT || 3001;
 const allowedOrigins = [
   'https://mariela-pdv.vercel.app',
   'https://mariela-pdv.lovable.app',
+  'https://a9daa95e-02e8-4bad-a82b-327ad991a1b4.lovableproject.com',
   'http://localhost:8080',
   'http://localhost:5173',
   'http://192.168.0.10:8080' // 👈 Adicionado para testes em rede local
@@ -33,8 +34,11 @@ const allowedOrigins = [
 // Configuração do CORS
 app.use(cors({
   origin: (origin, callback) => {
-    // Permite requisições sem "Origin" (ex: Swagger, Postman)
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (
+      !origin ||
+      allowedOrigins.includes(origin) ||
+      origin.endsWith('.lovableproject.com')
+    ) {
       callback(null, true);
     } else {
       console.warn(`🚫 Bloqueado por CORS: ${origin}`);
