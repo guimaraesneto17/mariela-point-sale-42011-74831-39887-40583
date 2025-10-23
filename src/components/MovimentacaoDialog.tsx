@@ -1,6 +1,7 @@
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { formatDateTime } from "@/lib/utils";
 
 interface MovimentacaoLog {
   data: string;
@@ -26,17 +27,6 @@ export const MovimentacaoDialog = ({
   nomeProduto,
   logMovimentacao = [],
 }: MovimentacaoDialogProps) => {
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] bg-gradient-to-br from-background via-background to-primary/5">
@@ -82,7 +72,7 @@ export const MovimentacaoDialog = ({
                           {log.tipo === "entrada" ? "Entrada" : "Saída"}
                         </h4>
                         <span className="text-sm text-muted-foreground">
-                          {formatDate(log.data)}
+                          {formatDateTime(log.data)}
                         </span>
                       </div>
                       

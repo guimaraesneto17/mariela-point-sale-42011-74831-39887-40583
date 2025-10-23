@@ -13,6 +13,7 @@ import { vendedorSchema } from "@/lib/validationSchemas";
 import { maskPhone } from "@/lib/masks";
 import { z } from "zod";
 import { vendedoresAPI } from "@/lib/api";
+import { formatDate } from "@/lib/utils";
 
 type VendedorFormData = z.infer<typeof vendedorSchema>;
 
@@ -388,7 +389,7 @@ const Vendedores = () => {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Nascimento:</span>
-                <span className="font-medium">{new Date(vendedor.dataNascimento).toLocaleDateString('pt-BR')}</span>
+                <span className="font-medium">{formatDate(vendedor.dataNascimento)}</span>
               </div>
               {vendedor.observacao && (
                 <div className="pt-2 border-t">

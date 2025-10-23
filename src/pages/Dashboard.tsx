@@ -37,6 +37,9 @@ import {
   sortableKeyboardCoordinates,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
+import { clientesAPI, vendasAPI, produtosAPI, estoqueAPI, vendedoresAPI } from "@/lib/api";
+import { toast } from "sonner";
+import { formatDateTime, safeDate } from "@/lib/utils";
 
 const STORAGE_KEY = "mariela-dashboard-config";
 
@@ -145,6 +148,26 @@ const Dashboard = () => {
   const [configOpen, setConfigOpen] = useState(false);
   const [cards, setCards] = useState<DashboardCardConfig[]>([]);
   const [cardOrder, setCardOrder] = useState<string[]>([]);
+  const [stats, setStats] = useState<any>({
+    vendasHoje: 0,
+    faturamentoDiario: 0,
+    entradaDiaria: 0,
+    saidaDiaria: 0,
+    faturamentoMensal: 0,
+    entradaMensal: 0,
+    saidaMensal: 0,
+    totalClientes: 0,
+    produtosEstoque: 0,
+    ticketMedio: 0,
+    margemLucro: 0,
+    crescimentoMensal: 0,
+  });
+  const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [topClientes, setTopClientes] = useState<any[]>([]);
+  const [topVendedores, setTopVendedores] = useState<any[]>([]);
+  const [recentSales, setRecentSales] = useState<any[]>([]);
+  const [produtosBaixoEstoque, setProdutosBaixoEstoque] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -152,6 +175,84 @@ const Dashboard = () => {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const { cards: storedCards, order } = JSON.parse(stored);
+      setCards(storedCards);
+      setCardOrder(order);
+    } else {
+      setCards(defaultCards);
+      setCardOrder(defaultCards.map((c) => c.id));
+    }
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      const [vendas, clientes, produtos, estoque, vendedores] = await Promise.all([
+        vendasAPI.getAll(),
+        clientesAPI.getAll(),
+        produtosAPI.getAll(),
+        estoqueAPI.getAll(),
+        vendedoresAPI.getAll(),
+      ]);
+
+      // Calcular estatísticas
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      
+      const vendasHoje = vendas.filter((v: any) => {
+        const vendaData = safeDate(v.data || v.dataVenda);
+        if (!vendaData) return false;
+        vendaData.setHours(0, 0, 0, 0);
+        return vendaData.getTime() === hoje.getTime();
+      });
+
+      const faturamentoDiario = vendasHoje.reduce((acc: number, v: any) => acc + (v.total || 0), 0);
+      const totalClientes = clientes.length;
+      const produtosEstoque = estoque.reduce((acc: number, item: any) => acc + (item.quantidadeDisponivel || 0), 0);
+      
+      setStats({
+        vendasHoje: vendasHoje.length,
+        faturamentoDiario,
+        entradaDiaria: faturamentoDiario * 0.7,
+        saidaDiaria: faturamentoDiario * 0.3,
+        faturamentoMensal: vendas.reduce((acc: number, v: any) => acc + (v.total || 0), 0),
+        entradaMensal: vendas.reduce((acc: number, v: any) => acc + (v.total || 0), 0) * 0.7,
+        saidaMensal: vendas.reduce((acc: number, v: any) => acc + (v.total || 0), 0) * 0.3,
+        totalClientes,
+        produtosEstoque,
+        ticketMedio: vendas.length > 0 ? vendas.reduce((acc: number, v: any) => acc + (v.total || 0), 0) / vendas.length : 0,
+        margemLucro: 38.5,
+        crescimentoMensal: 15.3,
+      });
+
+      // Top produtos (simplificado - usar dados mock)
+      setTopProducts([
+        { nome: "Vestido Floral Curto", vendas: 45, valor: 6745.5 },
+        { nome: "Blusa Manga Longa", vendas: 38, valor: 3416.2 },
+        { nome: "Calça Jeans Skinny", vendas: 32, valor: 6396.8 },
+        { nome: "Saia Plissada Midi", vendas: 28, valor: 3637.2 },
+      ]);
+
+      setRecentSales(vendas.slice(0, 3).map((v: any) => ({
+        codigo: v.codigoVenda || v.codigo,
+        cliente: v.cliente?.nome || 'Cliente',
+        vendedor: v.vendedor?.nome || 'Vendedor',
+        valor: v.total || 0,
+        data: formatDateTime(v.data || v.dataVenda),
+      })));
+
+    } catch (error) {
+      console.error('Erro ao carregar dados do dashboard:', error);
+      toast.error('Erro ao carregar dados do dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -193,73 +294,6 @@ const Dashboard = () => {
   const sortedCards = cardOrder
     .map((id) => visibleCards.find((c) => c.id === id))
     .filter(Boolean) as DashboardCardConfig[];
-
-  // Mock data
-  const stats = {
-    vendasHoje: 12,
-    faturamentoDiario: 1250.8,
-    entradaDiaria: 450.0,
-    saidaDiaria: 800.8,
-    faturamentoMensal: 32450.0,
-    entradaMensal: 12500.0,
-    saidaMensal: 19950.0,
-    totalClientes: 89,
-    produtosEstoque: 156,
-    ticketMedio: 104.23,
-    margemLucro: 38.5,
-    crescimentoMensal: 15.3,
-  };
-
-  const topProducts = [
-    { nome: "Vestido Floral Curto", vendas: 45, valor: 6745.5 },
-    { nome: "Blusa Manga Longa", vendas: 38, valor: 3416.2 },
-    { nome: "Calça Jeans Skinny", vendas: 32, valor: 6396.8 },
-    { nome: "Saia Plissada Midi", vendas: 28, valor: 3637.2 },
-  ];
-
-  const topClientes = [
-    { nome: "Maria Silva", compras: 28, valorTotal: 4580.5 },
-    { nome: "Ana Paula Costa", compras: 22, valorTotal: 3890.0 },
-    { nome: "Juliana Santos", compras: 19, valorTotal: 3245.9 },
-    { nome: "Fernanda Lima", compras: 15, valorTotal: 2678.3 },
-  ];
-
-  const topVendedores = [
-    { nome: "Ana Carolina", vendas: 87, valorTotal: 15680.5 },
-    { nome: "João Pedro", vendas: 76, valorTotal: 13245.8 },
-    { nome: "Carla Santos", vendas: 65, valorTotal: 11890.3 },
-    { nome: "Juliana Lima", vendas: 54, valorTotal: 9456.9 },
-  ];
-
-  const recentSales = [
-    {
-      codigo: "VENDA20251013-001",
-      cliente: "Maria Silva",
-      vendedor: "Ana Carolina",
-      valor: 259.8,
-      data: "13/10/2025 14:30",
-    },
-    {
-      codigo: "VENDA20251013-002",
-      cliente: "Ana Paula Costa",
-      vendedor: "João Pedro",
-      valor: 89.9,
-      data: "13/10/2025 10:15",
-    },
-    {
-      codigo: "VENDA20251013-003",
-      cliente: "Juliana Santos",
-      vendedor: "Ana Carolina",
-      valor: 259.8,
-      data: "13/10/2025 16:45",
-    },
-  ];
-
-  const produtosBaixoEstoque = [
-    { nome: "Vestido Longo Estampado", quantidade: 2, minimo: 10 },
-    { nome: "Jaqueta Jeans", quantidade: 3, minimo: 8 },
-    { nome: "Saia Midi Plissada", quantidade: 1, minimo: 5 },
-  ];
 
   const renderCard = (cardConfig: DashboardCardConfig) => {
     switch (cardConfig.id) {

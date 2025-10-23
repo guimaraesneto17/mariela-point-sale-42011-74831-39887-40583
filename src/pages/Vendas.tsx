@@ -1,16 +1,37 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { vendasAPI } from "@/lib/api";
+import { toast } from "sonner";
 
 const Vendas = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filtroData, setFiltroData] = useState("");
+  const [vendas, setVendas] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [vendas] = useState([
+  useEffect(() => {
+    loadVendas();
+  }, []);
+
+  const loadVendas = async () => {
+    try {
+      setLoading(true);
+      const data = await vendasAPI.getAll();
+      setVendas(data);
+    } catch (error) {
+      console.error('Erro ao carregar vendas:', error);
+      toast.error('Erro ao carregar vendas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const mockVendas = [
     {
       codigo: "VENDA001",
       data: "12/10/2025",
@@ -44,18 +65,41 @@ const Vendas = () => {
         { nome: "Saia Plissada Midi", quantidade: 1, preco: 109.90 },
       ]
     },
-  ]);
+  ];
 
-  const filteredVendas = vendas.filter(venda => {
-    // Busca inteligente: procura em vendedor, código vendedor, cliente, código cliente, código venda
-    const matchSearch = !searchTerm || 
-      venda.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      venda.cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      venda.cliente.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      venda.vendedor.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      venda.vendedor.codigo.toLowerCase().includes(searchTerm.toLowerCase());
+  // Helper function para converter data de forma segura
+  const getValidDateString = (dateValue: any): string => {
+    if (!dateValue) return '';
     
-    const matchData = !filtroData || venda.data === filtroData;
+    try {
+      const date = new Date(dateValue);
+      // Verifica se a data é válida
+      if (isNaN(date.getTime())) return '';
+      return date.toISOString().split('T')[0];
+    } catch (error) {
+      console.error('Erro ao converter data:', dateValue, error);
+      return '';
+    }
+  };
+
+  const displayVendas = vendas.length > 0 ? vendas : mockVendas;
+  const filteredVendas = displayVendas.filter((venda: any) => {
+    // Busca inteligente: procura em vendedor, código vendedor, cliente, código cliente, código venda
+    const codigoVenda = venda.codigoVenda || venda.codigo || '';
+    const clienteNome = venda.cliente?.nome || '';
+    const clienteCodigo = venda.cliente?.codigoCliente || venda.cliente?.codigo || '';
+    const vendedorNome = venda.vendedor?.nome || '';
+    const vendedorCodigo = venda.vendedor?.id || venda.vendedor?.codigo || '';
+    
+    const matchSearch = !searchTerm || 
+      codigoVenda.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      clienteNome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      clienteCodigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vendedorNome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vendedorCodigo.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const vendaData = getValidDateString(venda.data);
+    const matchData = !filtroData || vendaData === filtroData;
     return matchSearch && matchData;
   });
 

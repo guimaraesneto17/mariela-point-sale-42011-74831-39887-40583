@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { X, Plus, Trash2, ShoppingCart, Edit2, User, UserCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { SelectProductDialog } from "@/components/SelectProductDialog";
 import { SelectClientDialog } from "@/components/SelectClientDialog";
 import { SelectVendedorDialog } from "@/components/SelectVendedorDialog";
+import { clientesAPI, vendedoresAPI, produtosAPI, vendasAPI } from "@/lib/api";
 
 interface ItemVenda {
   codigoProduto: string;
@@ -45,20 +46,43 @@ const NovaVenda = () => {
   const [quantidadeProduto, setQuantidadeProduto] = useState(1);
   const [descontoProduto, setDescontoProduto] = useState(0);
   const [itemEmEdicao, setItemEmEdicao] = useState<number | null>(null);
+  const [clientes, setClientes] = useState<any[]>([]);
+  const [vendedores, setVendedores] = useState<any[]>([]);
+  const [produtos, setProdutos] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const [clientesData, vendedoresData, produtosData] = await Promise.all([
+        clientesAPI.getAll(),
+        vendedoresAPI.getAll(),
+        produtosAPI.getAll(),
+      ]);
+      setClientes(clientesData);
+      setVendedores(vendedoresData);
+      setProdutos(produtosData);
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      toast.error('Erro ao carregar dados');
+    }
+  };
 
   // Mock data - substituir por dados da API
-  const clientes = [
+  const mockClientes = [
     { codigo: "C001", nome: "Ana Souza" },
     { codigo: "C002", nome: "Fernanda Ribeiro" },
     { codigo: "C003", nome: "Maria Silva" },
   ];
 
-  const vendedores = [
+  const mockVendedores = [
     { codigo: "V001", nome: "Carla Santos" },
     { codigo: "V002", nome: "Juliana Lima" },
   ];
 
-  const produtos = [
+  const mockProdutos = [
     { codigo: "P101", nome: "Vestido Floral Curto", preco: 149.90, categoria: "Vestido" },
     { codigo: "P102", nome: "Blusa Manga Longa", preco: 89.90, categoria: "Blusa" },
     { codigo: "P103", nome: "Calça Jeans Skinny", preco: 199.90, categoria: "Calça" },
@@ -116,7 +140,8 @@ const NovaVenda = () => {
 
   const editarProduto = (index: number) => {
     const item = itensVenda[index];
-    const produto = produtos.find(p => p.codigo === item.codigoProduto);
+    const allProdutos = produtos.length > 0 ? produtos : mockProdutos;
+    const produto = allProdutos.find(p => (p.codigo || p.codigoProduto) === item.codigoProduto);
     setProdutoSelecionado(produto);
     setQuantidadeProduto(item.quantidade);
     setDescontoProduto(item.descontoAplicado);
@@ -156,8 +181,44 @@ const NovaVenda = () => {
       return;
     }
 
-    toast.success("Venda registrada com sucesso!");
-    navigate("/vendas");
+    try {
+      const vendaData = {
+        codigoVenda: `VENDA${Date.now()}`,
+        data: new Date(),
+        vendedor: {
+          id: vendedorSelecionado.codigo,
+          nome: vendedorSelecionado.nome
+        },
+        cliente: {
+          codigoCliente: clienteSelecionado.codigo,
+          nome: clienteSelecionado.nome
+        },
+        itens: itensVenda.map(item => ({
+          codigoProduto: item.codigoProduto,
+          nomeProduto: item.nomeProduto,
+          tamanho: "U",
+          quantidade: item.quantidade,
+          precoUnitario: item.precoUnitario,
+          precoFinalUnitario: item.precoUnitario * (1 - item.descontoAplicado / 100),
+          descontoAplicado: item.descontoAplicado,
+          subtotal: item.subtotal
+        })),
+        total: totalFinal,
+        totalDesconto: valorDescontoTotal,
+        formaPagamento,
+        taxaMaquininha,
+        valorTaxa: valorTaxaMaquininha,
+        valorRecebido: valorRecebidoLojista,
+        parcelas
+      };
+
+      await vendasAPI.create(vendaData);
+      toast.success("Venda registrada com sucesso!");
+      navigate("/vendas");
+    } catch (error) {
+      console.error('Erro ao registrar venda:', error);
+      toast.error('Erro ao registrar venda');
+    }
   };
 
   return (
@@ -247,31 +308,84 @@ const NovaVenda = () => {
             <CardHeader>
               <CardTitle className="text-lg">Forma de Pagamento *</CardTitle>
             </CardHeader>
-            <CardContent>
-              <Select 
-                value={formaPagamento} 
-                onValueChange={(value) => {
-                  setFormaPagamento(value);
-                  // Zerar taxa e parcelas se não for cartão
-                  if (value !== "Cartão de Crédito" && value !== "Cartão de Débito") {
-                    setTaxaMaquininha(0);
-                  }
-                  // Zerar parcelas se não for cartão de crédito
-                  if (value !== "Cartão de Crédito") {
-                    setParcelas(1);
-                  }
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Dinheiro">Dinheiro</SelectItem>
-                  <SelectItem value="Cartão de Crédito">Cartão de Crédito</SelectItem>
-                  <SelectItem value="Cartão de Débito">Cartão de Débito</SelectItem>
-                  <SelectItem value="Pix">Pix</SelectItem>
-                </SelectContent>
-              </Select>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Método</Label>
+                <Select 
+                  value={formaPagamento} 
+                  onValueChange={(value) => {
+                    setFormaPagamento(value);
+                    // Zerar taxa e parcelas se não for cartão
+                    if (value !== "Cartão de Crédito" && value !== "Cartão de Débito") {
+                      setTaxaMaquininha(0);
+                    }
+                    // Zerar parcelas se não for cartão de crédito
+                    if (value !== "Cartão de Crédito") {
+                      setParcelas(1);
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                    <SelectItem value="Cartão de Crédito">Cartão de Crédito</SelectItem>
+                    <SelectItem value="Cartão de Débito">Cartão de Débito</SelectItem>
+                    <SelectItem value="Pix">Pix</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Parcelas - só para Cartão de Crédito */}
+              {formaPagamento === "Cartão de Crédito" && (
+                <div>
+                  <Label>Parcelas</Label>
+                  <Select 
+                    value={parcelas.toString()} 
+                    onValueChange={(value) => setParcelas(parseInt(value))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(num => (
+                        <SelectItem key={num} value={num.toString()}>
+                          {num}x de R$ {(totalFinal / num).toFixed(2)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Taxa da Maquininha - para Cartão de Crédito e Débito */}
+              {(formaPagamento === "Cartão de Crédito" || formaPagamento === "Cartão de Débito") && (
+                <div>
+                  <Label>Taxa da Maquininha (%)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={taxaMaquininha}
+                    onChange={(e) => setTaxaMaquininha(parseFloat(e.target.value) || 0)}
+                    placeholder="0.00"
+                  />
+                  {taxaMaquininha > 0 && (
+                    <div className="mt-2 space-y-1">
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>Valor da taxa:</span>
+                        <span>- R$ {valorTaxaMaquininha.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-medium text-accent">
+                        <span>Recebido pelo Lojista:</span>
+                        <span>R$ {valorRecebidoLojista.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -479,54 +593,7 @@ const NovaVenda = () => {
                 <span className="text-primary">R$ {totalFinal.toFixed(2)}</span>
               </div>
 
-              {(formaPagamento === "Cartão de Crédito" || formaPagamento === "Cartão de Débito") && (
-                <div className="space-y-3 pt-4 border-t">
-                  {formaPagamento === "Cartão de Crédito" && (
-                    <div className="flex items-center justify-between">
-                      <Label>Parcelas</Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        max="12"
-                        value={parcelas}
-                        onChange={(e) => setParcelas(parseInt(e.target.value) || 1)}
-                        className="w-24"
-                        placeholder="1x"
-                      />
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center justify-between">
-                    <Label>Taxa da Maquininha (%)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      value={taxaMaquininha}
-                      onChange={(e) => setTaxaMaquininha(parseFloat(e.target.value) || 0)}
-                      className="w-24"
-                      placeholder="0%"
-                    />
-                  </div>
-                  
-                  {taxaMaquininha > 0 && (
-                    <>
-                      <div className="flex justify-between text-sm text-muted-foreground">
-                        <span>Valor da taxa ({taxaMaquininha}%):</span>
-                        <span>- R$ {valorTaxaMaquininha.toFixed(2)}</span>
-                      </div>
-                      
-                      <div className="flex justify-between text-lg font-bold text-accent pt-2 border-t">
-                        <span>Recebido pelo Lojista:</span>
-                        <span>R$ {valorRecebidoLojista.toFixed(2)}</span>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-
-              <Button 
+              <Button
                 onClick={handleFinalizarVenda} 
                 className="w-full h-12 text-lg gap-2"
                 disabled={itensVenda.length === 0 || !clienteSelecionado || !vendedorSelecionado}

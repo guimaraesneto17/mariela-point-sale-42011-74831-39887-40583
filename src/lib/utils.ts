@@ -4,3 +4,54 @@ import { twMerge } from "tailwind-merge";
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+/**
+ * Safely format a date value to locale string
+ * Returns a default message if the date is invalid
+ */
+export function formatDate(dateValue: any, options?: Intl.DateTimeFormatOptions): string {
+  if (!dateValue) return 'Data não informada';
+  
+  try {
+    const date = new Date(dateValue);
+    if (isNaN(date.getTime())) return 'Data inválida';
+    return date.toLocaleDateString('pt-BR', options || {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  } catch (error) {
+    console.error('Erro ao formatar data:', dateValue, error);
+    return 'Data inválida';
+  }
+}
+
+/**
+ * Safely format a date value to locale date and time string
+ */
+export function formatDateTime(dateValue: any): string {
+  return formatDate(dateValue, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+/**
+ * Safely create a Date object and validate it
+ * Returns null if the date is invalid
+ */
+export function safeDate(dateValue: any): Date | null {
+  if (!dateValue) return null;
+  
+  try {
+    const date = new Date(dateValue);
+    if (isNaN(date.getTime())) return null;
+    return date;
+  } catch (error) {
+    console.error('Erro ao criar data:', dateValue, error);
+    return null;
+  }
+}

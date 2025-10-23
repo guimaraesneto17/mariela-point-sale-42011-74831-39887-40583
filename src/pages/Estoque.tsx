@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Package, TrendingUp, TrendingDown, Search, Plus, Minus, Tag, List, Sparkles } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,8 @@ import { StockExitDialog } from "@/components/StockExitDialog";
 import { PromotionDialog } from "@/components/PromotionDialog";
 import { NovidadeDialog } from "@/components/NovidadeDialog";
 import { MovimentacaoDialog } from "@/components/MovimentacaoDialog";
+import { estoqueAPI } from "@/lib/api";
+import { formatDateTime } from "@/lib/utils";
 
 const Estoque = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -19,9 +21,28 @@ const Estoque = () => {
   const [showNovidadeDialog, setShowNovidadeDialog] = useState(false);
   const [showMovimentacaoDialog, setShowMovimentacaoDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [inventory, setInventory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadEstoque();
+  }, []);
+
+  const loadEstoque = async () => {
+    try {
+      setLoading(true);
+      const data = await estoqueAPI.getAll();
+      setInventory(data);
+    } catch (error) {
+      console.error('Erro ao carregar estoque:', error);
+      toast.error('Erro ao carregar estoque');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Mock data - será substituído por dados reais da API
-  const inventory = [
+  const mockInventory = [
     {
       _id: "1",
       codigoProduto: "P101",
@@ -94,21 +115,11 @@ const Estoque = () => {
     },
   ];
 
-  const filteredInventory = inventory.filter(item =>
+  const displayInventory = inventory.length > 0 ? inventory : mockInventory;
+  const filteredInventory = displayInventory.filter(item =>
     item.nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.codigoProduto.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   const openEntryDialog = (item: any) => {
     setSelectedItem(item);
@@ -270,7 +281,7 @@ const Estoque = () => {
                           {log.tipo === "entrada" ? "Entrada" : "Saída"}: {log.quantidade} un.
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {formatDate(log.data)}
+                          {formatDateTime(log.data)}
                           {log.fornecedor && ` • ${log.fornecedor}`}
                           {log.codigoVenda && ` • ${log.codigoVenda}`}
                         </p>

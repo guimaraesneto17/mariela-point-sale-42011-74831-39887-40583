@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Plus, CheckCircle2, AlertCircle, Package, Edit, Trash2, X } from "lucide-react";
+import { Search, Plus, CheckCircle2, AlertCircle, Package, Edit, Trash2, X, Upload } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,8 @@ const Produtos = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [manualCode, setManualCode] = useState(false);
+  const [imagemURL, setImagemURL] = useState("");
+  const [imagemBase64, setImagemBase64] = useState<string[]>([]);
 
   const form = useForm<ProdutoFormData>({
     resolver: zodResolver(produtoSchema),
@@ -89,9 +91,32 @@ const Produtos = () => {
     }
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setImagemBase64(prev => [...prev, base64String]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (index: number) => {
+    setImagemBase64(prev => prev.filter((_, i) => i !== index));
+  };
+
   const onSubmit = async (data: ProdutoFormData) => {
     setIsLoading(true);
     try {
+      const imagens = [...imagemBase64];
+      if (imagemURL.trim()) {
+        imagens.push(imagemURL);
+      }
+
       const produtoData = {
         codigoProduto: data.codigoProduto,
         nome: data.nome,
@@ -101,7 +126,7 @@ const Produtos = () => {
         precoCusto: data.precoCusto,
         precoVenda: data.precoVenda,
         precoPromocional: data.precoPromocional,
-        imagens: [],
+        imagens: imagens,
       };
 
       if (editingProduct) {
@@ -120,6 +145,8 @@ const Produtos = () => {
       setEditingProduct(null);
       form.reset();
       setManualCode(false);
+      setImagemURL("");
+      setImagemBase64([]);
       loadProdutos();
     } catch (error: any) {
       toast.error("❌ Erro ao salvar produto", {
@@ -179,6 +206,8 @@ const Produtos = () => {
       precoPromocional: undefined,
     });
     setManualCode(false);
+    setImagemURL("");
+    setImagemBase64([]);
     setIsDialogOpen(true);
   };
 
@@ -300,15 +329,74 @@ const Produtos = () => {
                       )}
                     />
 
-                    <div>
-                      <Label className="text-sm font-semibold text-foreground">Imagem do Produto (URL)</Label>
-                      <Input 
-                        placeholder="Cole a URL da imagem do produto (ex: https://exemplo.com/imagem.jpg)"
-                        className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary mt-2"
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Cole o link direto da imagem. Você pode usar serviços como Imgur ou Google Drive.
-                      </p>
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-semibold text-foreground">Imagens do Produto</Label>
+                        
+                        {/* Upload de Arquivo */}
+                        <div className="mt-2">
+                          <Label 
+                            htmlFor="file-upload"
+                            className="flex items-center justify-center gap-2 w-full h-32 border-2 border-dashed border-border rounded-lg hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-all"
+                          >
+                            <Upload className="h-6 w-6 text-muted-foreground" />
+                            <div className="text-center">
+                              <p className="text-sm font-medium text-foreground">
+                                Clique para fazer upload
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                ou arraste e solte a imagem aqui
+                              </p>
+                            </div>
+                          </Label>
+                          <Input 
+                            id="file-upload"
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleImageUpload}
+                            className="hidden"
+                          />
+                        </div>
+
+                        {/* URL da Imagem */}
+                        <div className="mt-3">
+                          <Input 
+                            value={imagemURL}
+                            onChange={(e) => setImagemURL(e.target.value)}
+                            placeholder="Ou cole a URL da imagem (ex: https://exemplo.com/imagem.jpg)"
+                            className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                          />
+                        </div>
+
+                        {/* Preview das Imagens */}
+                        {imagemBase64.length > 0 && (
+                          <div className="mt-3 grid grid-cols-3 gap-2">
+                            {imagemBase64.map((img, index) => (
+                              <div key={index} className="relative group">
+                                <img 
+                                  src={img} 
+                                  alt={`Preview ${index + 1}`}
+                                  className="w-full h-24 object-cover rounded-lg border-2 border-border"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="icon"
+                                  className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => removeImage(index)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Você pode fazer upload de várias imagens ou usar URLs diretas
+                        </p>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
