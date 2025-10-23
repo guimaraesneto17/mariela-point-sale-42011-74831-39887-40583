@@ -31,7 +31,7 @@ const ClienteSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true,
-  collection: 'clientes'
+  collection: 'cliente'
 });
 
 // Índices para melhor performance

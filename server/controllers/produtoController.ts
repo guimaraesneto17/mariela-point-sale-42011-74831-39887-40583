@@ -27,17 +27,32 @@ export const getProdutoById = async (req: Request, res: Response) => {
 
 export const createProduto = async (req: Request, res: Response) => {
   try {
-    const produto = new Produto(req.body);
+    const { precoCusto, precoVenda, margemDeLucro, tamanho = 'U', ...produtoData } = req.body;
+    
+    // Criar produto sem campos de preço
+    const produto = new Produto({
+      ...produtoData,
+      ativo: true
+    });
     await produto.save();
 
-    // Criar registro de estoque para o produto com quantidade inicial de 1
+    // Criar registro de estoque com os dados de preço
     const estoque = new Estoque({
       codigoProduto: produto.codigoProduto,
       quantidade: 1,
-      quantidadeDisponivel: 1,
-      tamanho: 'U',
+      tamanho: tamanho,
+      precoCusto: precoCusto,
+      precoVenda: precoVenda,
+      margemDeLucro: margemDeLucro,
       emPromocao: false,
-      isNovidade: false
+      isNovidade: false,
+      logMovimentacao: [{
+        tipo: 'entrada',
+        quantidade: 1,
+        data: new Date(),
+        origem: 'entrada',
+        observacao: 'Cadastro inicial do produto'
+      }]
     });
     await estoque.save();
 
@@ -50,14 +65,32 @@ export const createProduto = async (req: Request, res: Response) => {
 
 export const updateProduto = async (req: Request, res: Response) => {
   try {
+    const { precoCusto, precoVenda, margemDeLucro, ...produtoData } = req.body;
+    
     const produto = await Produto.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      produtoData,
       { new: true, runValidators: true }
     );
+    
     if (!produto) {
       return res.status(404).json({ error: 'Produto não encontrado' });
     }
+
+    // Atualizar também os preços no estoque
+    if (precoCusto !== undefined || precoVenda !== undefined || margemDeLucro !== undefined) {
+      await Estoque.updateMany(
+        { codigoProduto: produto.codigoProduto },
+        { 
+          $set: {
+            ...(precoCusto !== undefined && { precoCusto }),
+            ...(precoVenda !== undefined && { precoVenda }),
+            ...(margemDeLucro !== undefined && { margemDeLucro })
+          }
+        }
+      );
+    }
+    
     res.json(produto);
   } catch (error) {
     console.error('Erro ao atualizar produto:', error);

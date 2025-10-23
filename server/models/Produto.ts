@@ -26,31 +26,21 @@ const ProdutoSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  precoCusto: {
-    type: Number,
-    required: true,
-    min: 0
-  },
-  precoVenda: {
-    type: Number,
-    required: true,
-    min: 0
-  },
-  precoPromocional: {
-    type: Number,
-    min: 0
-  },
   imagens: [{
     type: String,
     trim: true
   }],
+  ativo: {
+    type: Boolean,
+    default: true
+  },
   dataCadastro: {
     type: Date,
     default: Date.now
   }
 }, {
   timestamps: true,
-  collection: 'produtos'
+  collection: 'produto'
 });
 
 // Índices para melhor performance

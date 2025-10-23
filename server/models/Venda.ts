@@ -119,7 +119,7 @@ const VendaSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true,
-  collection: 'vendas'
+  collection: 'venda'
 });
 
 // Índices para melhor performance

@@ -3,7 +3,7 @@ import VitrineVirtual from '../models/VitrineVirtual';
 
 export const getAllVitrineVirtual = async (req: Request, res: Response) => {
   try {
-    const produtos = await VitrineVirtual.find().sort({ dataAdicao: -1 });
+    const produtos = await VitrineVirtual.find().sort({ dataCadastro: -1 });
     res.json(produtos);
   } catch (error) {
     console.error('Erro ao buscar vitrine virtual:', error);
@@ -26,7 +26,7 @@ export const getVitrineVirtualById = async (req: Request, res: Response) => {
 
 export const getNovidades = async (req: Request, res: Response) => {
   try {
-    const novidades = await VitrineVirtual.find({ isNovidade: true }).sort({ dataAdicao: -1 });
+    const novidades = await VitrineVirtual.find({ isNovidade: true }).sort({ dataCadastro: -1 });
     res.json(novidades);
   } catch (error) {
     console.error('Erro ao buscar novidades:', error);
@@ -36,7 +36,7 @@ export const getNovidades = async (req: Request, res: Response) => {
 
 export const getPromocoes = async (req: Request, res: Response) => {
   try {
-    const promocoes = await VitrineVirtual.find({ emPromocao: true }).sort({ dataAdicao: -1 });
+    const promocoes = await VitrineVirtual.find({ emPromocao: true }).sort({ dataCadastro: -1 });
     res.json(promocoes);
   } catch (error) {
     console.error('Erro ao buscar promoções:', error);
