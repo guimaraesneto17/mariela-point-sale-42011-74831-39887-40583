@@ -21,11 +21,27 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middlewares
+// Lista de origens permitidas
+const allowedOrigins = [
+  'https://mariela-pdv.vercel.app',
+  'https://mariela-pdv.lovable.app',
+  'http://localhost:8080',
+  'http://localhost:5173',
+  'http://192.168.0.10:8080' // 👈 Adicionado para testes em rede local
+];
+
+// Configuração do CORS
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://mariela-pdv.vercel.app', 'https://mariela-pdv.lovable.app', 'http://localhost:8080', 'http://localhost:5173']
-    : '*',
-  credentials: true
+  origin: (origin, callback) => {
+    // Permite requisições sem "Origin" (ex: Swagger, Postman)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`🚫 Bloqueado por CORS: ${origin}`);
+      callback(new Error('Não permitido pelo CORS'));
+    }
+  },
+  credentials: true,
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
