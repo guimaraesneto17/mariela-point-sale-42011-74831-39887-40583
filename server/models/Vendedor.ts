@@ -37,7 +37,7 @@ const VendedorSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true,
-  collection: 'vendedores'
+  collection: 'vendedor'
 });
 
 VendedorSchema.index({ nome: 1 });

@@ -11,7 +11,7 @@ const EstoqueSchema = new mongoose.Schema({
     type: Number,
     required: true,
     min: 0,
-    default: 0
+    default: 1
   },
   tamanho: {
     type: String,
@@ -19,19 +19,32 @@ const EstoqueSchema = new mongoose.Schema({
     enum: ['PP', 'P', 'M', 'G', 'GG', 'U'],
     trim: true
   },
-  quantidadeDisponivel: {
+  precoCusto: {
     type: Number,
-    required: false,
-    min: 0,
-    default: 0
+    required: true,
+    min: 0
+  },
+  precoVenda: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  margemDeLucro: {
+    type: Number,
+    min: 0
   },
   emPromocao: {
     type: Boolean,
     default: false
   },
-  valorPromocional: {
+  precoPromocional: {
     type: Number,
     min: 0
+  },
+  tipoPrecoPromocional: {
+    type: String,
+    enum: ['valor direto', 'porcentagem'],
+    trim: true
   },
   isNovidade: {
     type: Boolean,
@@ -55,7 +68,7 @@ const EstoqueSchema = new mongoose.Schema({
     },
     origem: {
       type: String,
-      enum: ['venda', 'compra', 'baixa no estoque'],
+      enum: ['venda', 'compra', 'entrada', 'baixa no estoque'],
       trim: true
     },
     fornecedor: {
@@ -81,7 +94,8 @@ const EstoqueSchema = new mongoose.Schema({
 });
 
 // Índices para melhor performance
-EstoqueSchema.index({ quantidadeDisponivel: 1 });
+EstoqueSchema.index({ quantidade: 1 });
 EstoqueSchema.index({ emPromocao: 1 });
+EstoqueSchema.index({ isNovidade: 1 });
 
 export default mongoose.models.Estoque || mongoose.model('Estoque', EstoqueSchema);

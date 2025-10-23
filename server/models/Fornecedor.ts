@@ -68,7 +68,7 @@ const FornecedorSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true,
-  collection: 'fornecedores'
+  collection: 'fornecedor'
 });
 
 // Índices para melhor performance

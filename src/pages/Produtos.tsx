@@ -38,7 +38,7 @@ const Produtos = () => {
       precoCusto: 0,
       precoVenda: 0,
       margemLucro: undefined,
-      precoPromocional: undefined,
+      tamanho: "U",
     },
   });
 
@@ -125,7 +125,8 @@ const Produtos = () => {
         cor: data.cor,
         precoCusto: data.precoCusto,
         precoVenda: data.precoVenda,
-        precoPromocional: data.precoPromocional,
+        margemLucro: data.margemLucro,
+        tamanho: data.tamanho,
         imagens: imagens,
       };
 
@@ -172,7 +173,7 @@ const Produtos = () => {
       precoCusto: product.precoCusto,
       precoVenda: product.preco,
       margemLucro: margem,
-      precoPromocional: product.precoPromocional || undefined,
+      tamanho: product.tamanho || "U",
     });
     setManualCode(true);
     setIsDialogOpen(true);
@@ -203,7 +204,7 @@ const Produtos = () => {
       precoCusto: 0,
       precoVenda: 0,
       margemLucro: undefined,
-      precoPromocional: undefined,
+      tamanho: "U",
     });
     setManualCode(false);
     setImagemURL("");
@@ -328,76 +329,6 @@ const Produtos = () => {
                         </FormItem>
                       )}
                     />
-
-                    <div className="space-y-4">
-                      <div>
-                        <Label className="text-sm font-semibold text-foreground">Imagens do Produto</Label>
-                        
-                        {/* Upload de Arquivo */}
-                        <div className="mt-2">
-                          <Label 
-                            htmlFor="file-upload"
-                            className="flex items-center justify-center gap-2 w-full h-32 border-2 border-dashed border-border rounded-lg hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-all"
-                          >
-                            <Upload className="h-6 w-6 text-muted-foreground" />
-                            <div className="text-center">
-                              <p className="text-sm font-medium text-foreground">
-                                Clique para fazer upload
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                ou arraste e solte a imagem aqui
-                              </p>
-                            </div>
-                          </Label>
-                          <Input 
-                            id="file-upload"
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleImageUpload}
-                            className="hidden"
-                          />
-                        </div>
-
-                        {/* URL da Imagem */}
-                        <div className="mt-3">
-                          <Input 
-                            value={imagemURL}
-                            onChange={(e) => setImagemURL(e.target.value)}
-                            placeholder="Ou cole a URL da imagem (ex: https://exemplo.com/imagem.jpg)"
-                            className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                          />
-                        </div>
-
-                        {/* Preview das Imagens */}
-                        {imagemBase64.length > 0 && (
-                          <div className="mt-3 grid grid-cols-3 gap-2">
-                            {imagemBase64.map((img, index) => (
-                              <div key={index} className="relative group">
-                                <img 
-                                  src={img} 
-                                  alt={`Preview ${index + 1}`}
-                                  className="w-full h-24 object-cover rounded-lg border-2 border-border"
-                                />
-                                <Button
-                                  type="button"
-                                  variant="destructive"
-                                  size="icon"
-                                  className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={() => removeImage(index)}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Você pode fazer upload de várias imagens ou usar URLs diretas
-                        </p>
-                      </div>
-                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <FormField
@@ -536,31 +467,75 @@ const Produtos = () => {
                       />
                     </div>
 
-                    <FormField
-                      control={form.control}
-                      name="precoPromocional"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-semibold text-foreground">Preço Promocional (Opcional)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              {...field}
-                              type="number"
-                              step="0.01"
-                              placeholder="0.00"
-                              onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                              value={field.value || ""}
-                              className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                            />
-                          </FormControl>
-                          <FormMessage className="text-xs flex items-center gap-1">
-                            {form.formState.errors.precoPromocional && (
-                              <AlertCircle className="h-3 w-3" />
-                            )}
-                          </FormMessage>
-                        </FormItem>
-                      )}
-                    />
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-semibold text-foreground">Imagens do Produto</Label>
+                        
+                        {/* Upload de Arquivo */}
+                        <div className="mt-2">
+                          <Label 
+                            htmlFor="file-upload"
+                            className="flex items-center justify-center gap-2 w-full h-32 border-2 border-dashed border-border rounded-lg hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-all"
+                          >
+                            <Upload className="h-6 w-6 text-muted-foreground" />
+                            <div className="text-center">
+                              <p className="text-sm font-medium text-foreground">
+                                Clique para fazer upload
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                ou arraste e solte a imagem aqui
+                              </p>
+                            </div>
+                          </Label>
+                          <Input 
+                            id="file-upload"
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleImageUpload}
+                            className="hidden"
+                          />
+                        </div>
+
+                        {/* URL da Imagem */}
+                        <div className="mt-3">
+                          <Input 
+                            value={imagemURL}
+                            onChange={(e) => setImagemURL(e.target.value)}
+                            placeholder="Ou cole a URL da imagem (ex: https://exemplo.com/imagem.jpg)"
+                            className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                          />
+                        </div>
+
+                        {/* Preview das Imagens */}
+                        {imagemBase64.length > 0 && (
+                          <div className="mt-3 grid grid-cols-3 gap-2">
+                            {imagemBase64.map((img, index) => (
+                              <div key={index} className="relative group">
+                                <img 
+                                  src={img} 
+                                  alt={`Preview ${index + 1}`}
+                                  className="w-full h-24 object-cover rounded-lg border-2 border-border"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="icon"
+                                  className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => removeImage(index)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Você pode fazer upload de várias imagens ou usar URLs diretas
+                        </p>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
 

@@ -1,76 +1,70 @@
 import mongoose from 'mongoose';
 
 const VitrineVirtualSchema = new mongoose.Schema({
-  code: {
+  codigoProduto: {
     type: String,
     required: true,
     unique: true,
     trim: true
   },
-  name: {
+  nome: {
     type: String,
     required: true,
     trim: true
   },
-  description: {
+  descricao: {
     type: String,
     trim: true
   },
-  category: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  color: {
+  categoria: {
     type: String,
     required: true,
     trim: true
   },
-  images: [{
+  cor: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  imagens: [{
     type: String,
     trim: true
   }],
-  pricing: {
-    cost: {
+  tamanhos: [{
+    tamanho: {
+      type: String,
+      required: true,
+      enum: ['PP', 'P', 'M', 'G', 'GG', 'U']
+    },
+    quantidadeDisponivel: {
       type: Number,
       required: true,
       min: 0
-    },
-    sale: {
-      type: Number,
-      required: true,
-      min: 0
-    },
-    promotional: {
-      type: Number,
-      min: 0
     }
+  }],
+  precoCusto: {
+    type: Number,
+    required: true,
+    min: 0
   },
-  availability: {
-    sizes: [{
-      size: {
-        type: String,
-        required: true,
-        enum: ['PP', 'P', 'M', 'G', 'GG', 'U']
-      },
-      totalAvailable: {
-        type: Number,
-        required: true,
-        min: 0
-      }
-    }]
+  precoVenda: {
+    type: Number,
+    required: true,
+    min: 0
   },
-  tags: {
-    isNew: {
-      type: Boolean,
-      default: false
-    },
-    isOnSale: {
-      type: Boolean,
-      default: false
-    }
+  precoPromocional: {
+    type: Number,
+    min: 0
   },
-  registrationDate: {
+  emPromocao: {
+    type: Boolean,
+    default: false
+  },
+  isNovidade: {
+    type: Boolean,
+    default: false
+  },
+  dataCadastro: {
     type: Date,
     default: Date.now
   }
