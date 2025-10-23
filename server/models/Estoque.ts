@@ -31,6 +31,7 @@ const EstoqueSchema = new mongoose.Schema({
   },
   margemDeLucro: {
     type: Number,
+    required: true,
     min: 0
   },
   emPromocao: {

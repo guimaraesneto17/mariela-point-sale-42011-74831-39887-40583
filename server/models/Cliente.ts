@@ -14,7 +14,6 @@ const ClienteSchema = new mongoose.Schema({
   },
   telefone: {
     type: String,
-    required: true,
     trim: true
   },
   dataNascimento: {

@@ -14,12 +14,10 @@ const FornecedorSchema = new mongoose.Schema({
   },
   cnpj: {
     type: String,
-    required: false,
     trim: true
   },
   telefone: {
     type: String,
-    required: true,
     trim: true
   },
   instagram: {
@@ -29,17 +27,14 @@ const FornecedorSchema = new mongoose.Schema({
   endereco: {
     rua: {
       type: String,
-      required: true,
       trim: true
     },
     numero: {
       type: String,
-      required: true,
       trim: true
     },
     bairro: {
       type: String,
-      required: true,
       trim: true
     },
     cidade: {
@@ -54,7 +49,6 @@ const FornecedorSchema = new mongoose.Schema({
     },
     cep: {
       type: String,
-      required: true,
       trim: true
     }
   },
