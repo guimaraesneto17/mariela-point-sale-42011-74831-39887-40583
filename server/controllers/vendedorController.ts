@@ -11,9 +11,9 @@ export const getAllVendedores = async (req: Request, res: Response) => {
   }
 };
 
-export const getVendedorById = async (req: Request, res: Response) => {
+export const getVendedorByCodigo = async (req: Request, res: Response) => {
   try {
-    const vendedor = await Vendedor.findById(req.params.id);
+    const vendedor = await Vendedor.findOne({ codigoVendedor: req.params.codigo });
     if (!vendedor) {
       return res.status(404).json({ error: 'Vendedor não encontrado' });
     }
@@ -37,8 +37,8 @@ export const createVendedor = async (req: Request, res: Response) => {
 
 export const updateVendedor = async (req: Request, res: Response) => {
   try {
-    const vendedor = await Vendedor.findByIdAndUpdate(
-      req.params.id,
+    const vendedor = await Vendedor.findOneAndUpdate(
+      { codigoVendedor: req.params.codigo },
       req.body,
       { new: true, runValidators: true }
     );
@@ -54,7 +54,7 @@ export const updateVendedor = async (req: Request, res: Response) => {
 
 export const deleteVendedor = async (req: Request, res: Response) => {
   try {
-    const vendedor = await Vendedor.findByIdAndDelete(req.params.id);
+    const vendedor = await Vendedor.findOneAndDelete({ codigoVendedor: req.params.codigo });
     if (!vendedor) {
       return res.status(404).json({ error: 'Vendedor não encontrado' });
     }

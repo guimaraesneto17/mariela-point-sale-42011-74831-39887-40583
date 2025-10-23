@@ -19,17 +19,18 @@ router.get('/', clienteController.getAllClientes);
 
 /**
  * @swagger
- * /api/clientes/{id}:
+ * /api/clientes/{codigo}:
  *   get:
- *     summary: Busca um cliente por ID
+ *     summary: Busca um cliente por código
  *     tags: [Clientes]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: codigo
  *         required: true
  *         schema:
  *           type: string
- *         description: ID do cliente
+ *         example: C001
+ *         description: Código do cliente (formato C + 3 dígitos)
  *     responses:
  *       200:
  *         description: Cliente encontrado
@@ -38,7 +39,7 @@ router.get('/', clienteController.getAllClientes);
  *       500:
  *         description: Erro ao buscar cliente
  */
-router.get('/:id', clienteController.getClienteById);
+router.get('/:codigo', clienteController.getClienteByCodigo);
 
 /**
  * @swagger
@@ -62,16 +63,17 @@ router.post('/', clienteController.createCliente);
 
 /**
  * @swagger
- * /api/clientes/{id}:
+ * /api/clientes/{codigo}:
  *   put:
  *     summary: Atualiza um cliente
  *     tags: [Clientes]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: codigo
  *         required: true
  *         schema:
  *           type: string
+ *         example: C001
  *     requestBody:
  *       required: true
  *       content:
@@ -86,20 +88,21 @@ router.post('/', clienteController.createCliente);
  *       400:
  *         description: Erro ao atualizar cliente
  */
-router.put('/:id', clienteController.updateCliente);
+router.put('/:codigo', clienteController.updateCliente);
 
 /**
  * @swagger
- * /api/clientes/{id}:
+ * /api/clientes/{codigo}:
  *   delete:
  *     summary: Remove um cliente
  *     tags: [Clientes]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: codigo
  *         required: true
  *         schema:
  *           type: string
+ *         example: C001
  *     responses:
  *       200:
  *         description: Cliente removido com sucesso
@@ -108,6 +111,6 @@ router.put('/:id', clienteController.updateCliente);
  *       500:
  *         description: Erro ao remover cliente
  */
-router.delete('/:id', clienteController.deleteCliente);
+router.delete('/:codigo', clienteController.deleteCliente);
 
 export default router;

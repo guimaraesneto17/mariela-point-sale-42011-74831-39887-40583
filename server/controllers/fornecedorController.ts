@@ -11,9 +11,9 @@ export const getAllFornecedores = async (req: Request, res: Response) => {
   }
 };
 
-export const getFornecedorById = async (req: Request, res: Response) => {
+export const getFornecedorByCodigo = async (req: Request, res: Response) => {
   try {
-    const fornecedor = await Fornecedor.findById(req.params.id);
+    const fornecedor = await Fornecedor.findOne({ codigoFornecedor: req.params.codigo });
     if (!fornecedor) {
       return res.status(404).json({ error: 'Fornecedor não encontrado' });
     }
@@ -37,8 +37,8 @@ export const createFornecedor = async (req: Request, res: Response) => {
 
 export const updateFornecedor = async (req: Request, res: Response) => {
   try {
-    const fornecedor = await Fornecedor.findByIdAndUpdate(
-      req.params.id,
+    const fornecedor = await Fornecedor.findOneAndUpdate(
+      { codigoFornecedor: req.params.codigo },
       req.body,
       { new: true, runValidators: true }
     );
@@ -54,7 +54,7 @@ export const updateFornecedor = async (req: Request, res: Response) => {
 
 export const deleteFornecedor = async (req: Request, res: Response) => {
   try {
-    const fornecedor = await Fornecedor.findByIdAndDelete(req.params.id);
+    const fornecedor = await Fornecedor.findOneAndDelete({ codigoFornecedor: req.params.codigo });
     if (!fornecedor) {
       return res.status(404).json({ error: 'Fornecedor não encontrado' });
     }

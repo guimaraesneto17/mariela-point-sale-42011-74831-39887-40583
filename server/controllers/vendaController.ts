@@ -11,9 +11,9 @@ export const getAllVendas = async (req: Request, res: Response) => {
   }
 };
 
-export const getVendaById = async (req: Request, res: Response) => {
+export const getVendaByCodigo = async (req: Request, res: Response) => {
   try {
-    const venda = await Venda.findById(req.params.id);
+    const venda = await Venda.findOne({ codigoVenda: req.params.codigo });
     if (!venda) {
       return res.status(404).json({ error: 'Venda não encontrada' });
     }
@@ -37,8 +37,8 @@ export const createVenda = async (req: Request, res: Response) => {
 
 export const updateVenda = async (req: Request, res: Response) => {
   try {
-    const venda = await Venda.findByIdAndUpdate(
-      req.params.id,
+    const venda = await Venda.findOneAndUpdate(
+      { codigoVenda: req.params.codigo },
       req.body,
       { new: true, runValidators: true }
     );
@@ -54,7 +54,7 @@ export const updateVenda = async (req: Request, res: Response) => {
 
 export const deleteVenda = async (req: Request, res: Response) => {
   try {
-    const venda = await Venda.findByIdAndDelete(req.params.id);
+    const venda = await Venda.findOneAndDelete({ codigoVenda: req.params.codigo });
     if (!venda) {
       return res.status(404).json({ error: 'Venda não encontrada' });
     }

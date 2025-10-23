@@ -19,23 +19,25 @@ router.get('/', produtoController.getAllProdutos);
 
 /**
  * @swagger
- * /api/produtos/{id}:
+ * /api/produtos/{codigo}:
  *   get:
- *     summary: Busca um produto por ID
+ *     summary: Busca um produto por código
  *     tags: [Produtos]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: codigo
  *         required: true
  *         schema:
  *           type: string
+ *         example: P101
+ *         description: Código do produto (formato P + 3 dígitos)
  *     responses:
  *       200:
  *         description: Produto encontrado
  *       404:
  *         description: Produto não encontrado
  */
-router.get('/:id', produtoController.getProdutoById);
+router.get('/:codigo', produtoController.getProdutoByCodigo);
 
 /**
  * @swagger
@@ -59,16 +61,17 @@ router.post('/', produtoController.createProduto);
 
 /**
  * @swagger
- * /api/produtos/{id}:
+ * /api/produtos/{codigo}:
  *   put:
  *     summary: Atualiza um produto
  *     tags: [Produtos]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: codigo
  *         required: true
  *         schema:
  *           type: string
+ *         example: P101
  *     requestBody:
  *       required: true
  *       content:
@@ -83,20 +86,21 @@ router.post('/', produtoController.createProduto);
  *       400:
  *         description: Erro ao atualizar produto
  */
-router.put('/:id', produtoController.updateProduto);
+router.put('/:codigo', produtoController.updateProduto);
 
 /**
  * @swagger
- * /api/produtos/{id}:
+ * /api/produtos/{codigo}:
  *   delete:
  *     summary: Remove um produto
  *     tags: [Produtos]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: codigo
  *         required: true
  *         schema:
  *           type: string
+ *         example: P101
  *     responses:
  *       200:
  *         description: Produto removido com sucesso
@@ -105,6 +109,6 @@ router.put('/:id', produtoController.updateProduto);
  *       500:
  *         description: Erro ao remover produto
  */
-router.delete('/:id', produtoController.deleteProduto);
+router.delete('/:codigo', produtoController.deleteProduto);
 
 export default router;

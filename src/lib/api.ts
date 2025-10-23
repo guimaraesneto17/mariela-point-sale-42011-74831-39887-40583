@@ -21,58 +21,57 @@ async function fetchAPI(endpoint: string, options?: RequestInit) {
 // ============= CLIENTES =============
 export const clientesAPI = {
   getAll: () => fetchAPI('/clientes'),
-  getById: (id: string) => fetchAPI(`/clientes/${id}`),
+  getByCodigo: (codigo: string) => fetchAPI(`/clientes/${codigo}`),
   create: (data: any) => fetchAPI('/clientes', {
     method: 'POST',
     body: JSON.stringify(data),
   }),
-  update: (id: string, data: any) => fetchAPI(`/clientes/${id}`, {
+  update: (codigo: string, data: any) => fetchAPI(`/clientes/${codigo}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   }),
-  delete: (id: string) => fetchAPI(`/clientes/${id}`, { method: 'DELETE' }),
+  delete: (codigo: string) => fetchAPI(`/clientes/${codigo}`, { method: 'DELETE' }),
 };
 
 // ============= PRODUTOS =============
 export const produtosAPI = {
   getAll: () => fetchAPI('/produtos'),
-  getById: (id: string) => fetchAPI(`/produtos/${id}`),
+  getByCodigo: (codigo: string) => fetchAPI(`/produtos/${codigo}`),
   create: (data: any) => fetchAPI('/produtos', {
     method: 'POST',
     body: JSON.stringify(data),
   }),
-  update: (id: string, data: any) => fetchAPI(`/produtos/${id}`, {
+  update: (codigo: string, data: any) => fetchAPI(`/produtos/${codigo}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   }),
-  delete: (id: string) => fetchAPI(`/produtos/${id}`, { method: 'DELETE' }),
+  delete: (codigo: string) => fetchAPI(`/produtos/${codigo}`, { method: 'DELETE' }),
 };
 
 // ============= VENDAS =============
 export const vendasAPI = {
   getAll: () => fetchAPI('/vendas'),
-  getById: (id: string) => fetchAPI(`/vendas/${id}`),
+  getByCodigo: (codigo: string) => fetchAPI(`/vendas/${codigo}`),
   create: (data: any) => fetchAPI('/vendas', {
     method: 'POST',
     body: JSON.stringify(data),
   }),
-  update: (id: string, data: any) => fetchAPI(`/vendas/${id}`, {
+  update: (codigo: string, data: any) => fetchAPI(`/vendas/${codigo}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   }),
-  delete: (id: string) => fetchAPI(`/vendas/${id}`, { method: 'DELETE' }),
+  delete: (codigo: string) => fetchAPI(`/vendas/${codigo}`, { method: 'DELETE' }),
 };
 
 // ============= ESTOQUE =============
 export const estoqueAPI = {
   getAll: () => fetchAPI('/estoque'),
-  getById: (id: string) => fetchAPI(`/estoque/${id}`),
   getByCodigo: (codigo: string) => fetchAPI(`/estoque/codigo/${codigo}`),
   create: (data: any) => fetchAPI('/estoque', {
     method: 'POST',
     body: JSON.stringify(data),
   }),
-  update: (id: string, data: any) => fetchAPI(`/estoque/${id}`, {
+  update: (codigo: string, data: any) => fetchAPI(`/estoque/${codigo}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   }),
@@ -88,43 +87,42 @@ export const estoqueAPI = {
     method: 'PATCH',
     body: JSON.stringify({ isNovidade }),
   }),
-  delete: (id: string) => fetchAPI(`/estoque/${id}`, { method: 'DELETE' }),
+  delete: (codigo: string) => fetchAPI(`/estoque/${codigo}`, { method: 'DELETE' }),
 };
 
 // ============= FORNECEDORES =============
 export const fornecedoresAPI = {
   getAll: () => fetchAPI('/fornecedores'),
-  getById: (id: string) => fetchAPI(`/fornecedores/${id}`),
+  getByCodigo: (codigo: string) => fetchAPI(`/fornecedores/${codigo}`),
   create: (data: any) => fetchAPI('/fornecedores', {
     method: 'POST',
     body: JSON.stringify(data),
   }),
-  update: (id: string, data: any) => fetchAPI(`/fornecedores/${id}`, {
+  update: (codigo: string, data: any) => fetchAPI(`/fornecedores/${codigo}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   }),
-  delete: (id: string) => fetchAPI(`/fornecedores/${id}`, { method: 'DELETE' }),
+  delete: (codigo: string) => fetchAPI(`/fornecedores/${codigo}`, { method: 'DELETE' }),
 };
 
 // ============= VENDEDORES =============
 export const vendedoresAPI = {
   getAll: () => fetchAPI('/vendedores'),
-  getById: (id: string) => fetchAPI(`/vendedores/${id}`),
+  getByCodigo: (codigo: string) => fetchAPI(`/vendedores/${codigo}`),
   create: (data: any) => fetchAPI('/vendedores', {
     method: 'POST',
     body: JSON.stringify(data),
   }),
-  update: (id: string, data: any) => fetchAPI(`/vendedores/${id}`, {
+  update: (codigo: string, data: any) => fetchAPI(`/vendedores/${codigo}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   }),
-  delete: (id: string) => fetchAPI(`/vendedores/${id}`, { method: 'DELETE' }),
+  delete: (codigo: string) => fetchAPI(`/vendedores/${codigo}`, { method: 'DELETE' }),
 };
 
 // ============= VITRINE VIRTUAL =============
 export const vitrineVirtualAPI = {
   getAll: () => fetchAPI('/vitrine'),
-  getById: (id: string) => fetchAPI(`/vitrine/${id}`),
   getByCodigo: (codigo: string) => fetchAPI(`/vitrine/codigo/${codigo}`),
   getNovidades: () => fetchAPI('/vitrine/novidades'),
   getPromocoes: () => fetchAPI('/vitrine/promocoes'),
@@ -132,9 +130,9 @@ export const vitrineVirtualAPI = {
     method: 'POST',
     body: JSON.stringify(data),
   }),
-  update: (id: string, data: any) => fetchAPI(`/vitrine/${id}`, {
+  update: (codigo: string, data: any) => fetchAPI(`/vitrine/${codigo}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   }),
-  delete: (id: string) => fetchAPI(`/vitrine/${id}`, { method: 'DELETE' }),
+  delete: (codigo: string) => fetchAPI(`/vitrine/${codigo}`, { method: 'DELETE' }),
 };

@@ -19,23 +19,25 @@ router.get('/', fornecedorController.getAllFornecedores);
 
 /**
  * @swagger
- * /api/fornecedores/{id}:
+ * /api/fornecedores/{codigo}:
  *   get:
- *     summary: Busca um fornecedor por ID
+ *     summary: Busca um fornecedor por código
  *     tags: [Fornecedores]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: codigo
  *         required: true
  *         schema:
  *           type: string
+ *         example: F001
+ *         description: Código do fornecedor (formato F + 3 dígitos)
  *     responses:
  *       200:
  *         description: Fornecedor encontrado
  *       404:
  *         description: Fornecedor não encontrado
  */
-router.get('/:id', fornecedorController.getFornecedorById);
+router.get('/:codigo', fornecedorController.getFornecedorByCodigo);
 
 /**
  * @swagger
@@ -59,16 +61,17 @@ router.post('/', fornecedorController.createFornecedor);
 
 /**
  * @swagger
- * /api/fornecedores/{id}:
+ * /api/fornecedores/{codigo}:
  *   put:
  *     summary: Atualiza um fornecedor
  *     tags: [Fornecedores]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: codigo
  *         required: true
  *         schema:
  *           type: string
+ *         example: F001
  *     requestBody:
  *       required: true
  *       content:
@@ -83,20 +86,21 @@ router.post('/', fornecedorController.createFornecedor);
  *       400:
  *         description: Erro ao atualizar fornecedor
  */
-router.put('/:id', fornecedorController.updateFornecedor);
+router.put('/:codigo', fornecedorController.updateFornecedor);
 
 /**
  * @swagger
- * /api/fornecedores/{id}:
+ * /api/fornecedores/{codigo}:
  *   delete:
  *     summary: Remove um fornecedor
  *     tags: [Fornecedores]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: codigo
  *         required: true
  *         schema:
  *           type: string
+ *         example: F001
  *     responses:
  *       200:
  *         description: Fornecedor removido com sucesso
@@ -105,6 +109,6 @@ router.put('/:id', fornecedorController.updateFornecedor);
  *       500:
  *         description: Erro ao remover fornecedor
  */
-router.delete('/:id', fornecedorController.deleteFornecedor);
+router.delete('/:codigo', fornecedorController.deleteFornecedor);
 
 export default router;

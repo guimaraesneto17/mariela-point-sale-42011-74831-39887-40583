@@ -19,23 +19,25 @@ router.get('/', vendaController.getAllVendas);
 
 /**
  * @swagger
- * /api/vendas/{id}:
+ * /api/vendas/{codigo}:
  *   get:
- *     summary: Busca uma venda por ID
+ *     summary: Busca uma venda por código
  *     tags: [Vendas]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: codigo
  *         required: true
  *         schema:
  *           type: string
+ *         example: VENDA20250117-001
+ *         description: Código da venda (formato VENDA + data + número sequencial)
  *     responses:
  *       200:
  *         description: Venda encontrada
  *       404:
  *         description: Venda não encontrada
  */
-router.get('/:id', vendaController.getVendaById);
+router.get('/:codigo', vendaController.getVendaByCodigo);
 
 /**
  * @swagger
@@ -59,16 +61,17 @@ router.post('/', vendaController.createVenda);
 
 /**
  * @swagger
- * /api/vendas/{id}:
+ * /api/vendas/{codigo}:
  *   put:
  *     summary: Atualiza uma venda
  *     tags: [Vendas]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: codigo
  *         required: true
  *         schema:
  *           type: string
+ *         example: VENDA20250117-001
  *     requestBody:
  *       required: true
  *       content:
@@ -83,20 +86,21 @@ router.post('/', vendaController.createVenda);
  *       400:
  *         description: Erro ao atualizar venda
  */
-router.put('/:id', vendaController.updateVenda);
+router.put('/:codigo', vendaController.updateVenda);
 
 /**
  * @swagger
- * /api/vendas/{id}:
+ * /api/vendas/{codigo}:
  *   delete:
  *     summary: Remove uma venda
  *     tags: [Vendas]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: codigo
  *         required: true
  *         schema:
  *           type: string
+ *         example: VENDA20250117-001
  *     responses:
  *       200:
  *         description: Venda removida com sucesso
@@ -105,6 +109,6 @@ router.put('/:id', vendaController.updateVenda);
  *       500:
  *         description: Erro ao remover venda
  */
-router.delete('/:id', vendaController.deleteVenda);
+router.delete('/:codigo', vendaController.deleteVenda);
 
 export default router;

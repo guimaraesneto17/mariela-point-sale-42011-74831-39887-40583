@@ -19,23 +19,25 @@ router.get('/', vendedorController.getAllVendedores);
 
 /**
  * @swagger
- * /api/vendedores/{id}:
+ * /api/vendedores/{codigo}:
  *   get:
- *     summary: Busca um vendedor por ID
+ *     summary: Busca um vendedor por código
  *     tags: [Vendedores]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: codigo
  *         required: true
  *         schema:
  *           type: string
+ *         example: V001
+ *         description: Código do vendedor (formato V + 3 dígitos)
  *     responses:
  *       200:
  *         description: Vendedor encontrado
  *       404:
  *         description: Vendedor não encontrado
  */
-router.get('/:id', vendedorController.getVendedorById);
+router.get('/:codigo', vendedorController.getVendedorByCodigo);
 
 /**
  * @swagger
@@ -64,16 +66,17 @@ router.post('/', vendedorController.createVendedor);
 
 /**
  * @swagger
- * /api/vendedores/{id}:
+ * /api/vendedores/{codigo}:
  *   put:
  *     summary: Atualiza um vendedor
  *     tags: [Vendedores]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: codigo
  *         required: true
  *         schema:
  *           type: string
+ *         example: V001
  *     requestBody:
  *       required: true
  *       content:
@@ -88,20 +91,21 @@ router.post('/', vendedorController.createVendedor);
  *       400:
  *         description: Erro ao atualizar vendedor
  */
-router.put('/:id', vendedorController.updateVendedor);
+router.put('/:codigo', vendedorController.updateVendedor);
 
 /**
  * @swagger
- * /api/vendedores/{id}:
+ * /api/vendedores/{codigo}:
  *   delete:
  *     summary: Remove um vendedor
  *     tags: [Vendedores]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: codigo
  *         required: true
  *         schema:
  *           type: string
+ *         example: V001
  *     responses:
  *       200:
  *         description: Vendedor removido com sucesso
@@ -110,6 +114,6 @@ router.put('/:id', vendedorController.updateVendedor);
  *       500:
  *         description: Erro ao remover vendedor
  */
-router.delete('/:id', vendedorController.deleteVendedor);
+router.delete('/:codigo', vendedorController.deleteVendedor);
 
 export default router;

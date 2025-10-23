@@ -12,9 +12,9 @@ export const getAllProdutos = async (req: Request, res: Response) => {
   }
 };
 
-export const getProdutoById = async (req: Request, res: Response) => {
+export const getProdutoByCodigo = async (req: Request, res: Response) => {
   try {
-    const produto = await Produto.findById(req.params.id);
+    const produto = await Produto.findOne({ codigo: req.params.codigo });
     if (!produto) {
       return res.status(404).json({ error: 'Produto não encontrado' });
     }
@@ -67,8 +67,8 @@ export const updateProduto = async (req: Request, res: Response) => {
   try {
     const { precoCusto, precoVenda, margemDeLucro, ...produtoData } = req.body;
     
-    const produto = await Produto.findByIdAndUpdate(
-      req.params.id,
+    const produto = await Produto.findOneAndUpdate(
+      { codigo: req.params.codigo },
       produtoData,
       { new: true, runValidators: true }
     );
@@ -80,7 +80,7 @@ export const updateProduto = async (req: Request, res: Response) => {
     // Atualizar também os preços no estoque
     if (precoCusto !== undefined || precoVenda !== undefined || margemDeLucro !== undefined) {
       await Estoque.updateMany(
-        { codigoProduto: produto.codigoProduto },
+        { codigoProduto: produto.codigo },
         { 
           $set: {
             ...(precoCusto !== undefined && { precoCusto }),
@@ -100,14 +100,14 @@ export const updateProduto = async (req: Request, res: Response) => {
 
 export const deleteProduto = async (req: Request, res: Response) => {
   try {
-    const produto = await Produto.findById(req.params.id);
+    const produto = await Produto.findOne({ codigo: req.params.codigo });
     if (!produto) {
       return res.status(404).json({ error: 'Produto não encontrado' });
     }
 
-    // Remover também o registro de estoque
-    await Estoque.findOneAndDelete({ codigoProduto: produto.codigoProduto });
-    await Produto.findByIdAndDelete(req.params.id);
+    // Remover também todos os registros de estoque
+    await Estoque.deleteMany({ codigoProduto: produto.codigo });
+    await Produto.findOneAndDelete({ codigo: req.params.codigo });
     
     res.json({ message: 'Produto removido com sucesso' });
   } catch (error) {
