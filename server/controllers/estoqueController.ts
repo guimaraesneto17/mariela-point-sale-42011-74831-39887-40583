@@ -1,6 +1,36 @@
 import { Request, Response } from 'express';
 import Estoque from '../models/Estoque';
 
+// Helper para formatar erros de validação do Mongoose
+const formatValidationError = (error: any) => {
+  if (error.name === 'ValidationError') {
+    const errors = Object.keys(error.errors).map(key => ({
+      field: key,
+      message: error.errors[key].message,
+      value: error.errors[key].value
+    }));
+    return {
+      error: 'Erro de validação',
+      message: 'Um ou mais campos estão inválidos',
+      fields: errors
+    };
+  }
+  
+  if (error.code === 11000) {
+    const field = Object.keys(error.keyPattern)[0];
+    return {
+      error: 'Erro de duplicação',
+      message: `O campo ${field} já existe no sistema`,
+      fields: [{ field, message: 'Valor duplicado', value: error.keyValue[field] }]
+    };
+  }
+  
+  return {
+    error: 'Erro ao processar requisição',
+    message: error.message || 'Erro desconhecido'
+  };
+};
+
 export const getAllEstoque = async (req: Request, res: Response) => {
   try {
     const estoque = await Estoque.find().sort({ codigoProduto: 1 });
@@ -44,7 +74,7 @@ export const createEstoque = async (req: Request, res: Response) => {
     res.status(201).json(estoque);
   } catch (error) {
     console.error('Erro ao criar item de estoque:', error);
-    res.status(400).json({ error: 'Erro ao criar item de estoque' });
+    res.status(400).json(formatValidationError(error));
   }
 };
 
@@ -61,13 +91,25 @@ export const updateEstoque = async (req: Request, res: Response) => {
     res.json(estoque);
   } catch (error) {
     console.error('Erro ao atualizar item de estoque:', error);
-    res.status(400).json({ error: 'Erro ao atualizar item de estoque' });
+    res.status(400).json(formatValidationError(error));
   }
 };
 
 export const registrarEntrada = async (req: Request, res: Response) => {
   try {
     const { codigoProduto, tamanho, quantidade, fornecedor, valorUnitario, observacao } = req.body;
+    
+    // Validação de campos obrigatórios
+    if (!codigoProduto || !quantidade) {
+      return res.status(400).json({
+        error: 'Erro de validação',
+        message: 'Campos obrigatórios não preenchidos',
+        fields: [
+          ...(!codigoProduto ? [{ field: 'codigoProduto', message: 'Código do produto é obrigatório' }] : []),
+          ...(!quantidade ? [{ field: 'quantidade', message: 'Quantidade é obrigatória' }] : [])
+        ]
+      });
+    }
     
     const estoque = await Estoque.findOne({ codigoProduto });
     if (!estoque) {
@@ -87,7 +129,7 @@ export const registrarEntrada = async (req: Request, res: Response) => {
     res.json(estoque);
   } catch (error) {
     console.error('Erro ao registrar entrada:', error);
-    res.status(400).json({ error: 'Erro ao registrar entrada' });
+    res.status(400).json(formatValidationError(error));
   }
 };
 
@@ -95,13 +137,33 @@ export const registrarSaida = async (req: Request, res: Response) => {
   try {
     const { codigoProduto, tamanho, quantidade, motivo, observacao } = req.body;
     
+    // Validação de campos obrigatórios
+    if (!codigoProduto || !quantidade) {
+      return res.status(400).json({
+        error: 'Erro de validação',
+        message: 'Campos obrigatórios não preenchidos',
+        fields: [
+          ...(!codigoProduto ? [{ field: 'codigoProduto', message: 'Código do produto é obrigatório' }] : []),
+          ...(!quantidade ? [{ field: 'quantidade', message: 'Quantidade é obrigatória' }] : [])
+        ]
+      });
+    }
+    
     const estoque = await Estoque.findOne({ codigoProduto });
     if (!estoque) {
       return res.status(404).json({ error: 'Item de estoque não encontrado' });
     }
 
     if (estoque.quantidadeDisponivel < quantidade) {
-      return res.status(400).json({ error: 'Quantidade insuficiente em estoque' });
+      return res.status(400).json({
+        error: 'Erro de validação',
+        message: 'Quantidade insuficiente em estoque',
+        fields: [{
+          field: 'quantidade',
+          message: `Quantidade disponível: ${estoque.quantidadeDisponivel}`,
+          value: quantidade
+        }]
+      });
     }
 
     estoque.quantidadeDisponivel -= quantidade;
@@ -117,7 +179,7 @@ export const registrarSaida = async (req: Request, res: Response) => {
     res.json(estoque);
   } catch (error) {
     console.error('Erro ao registrar saída:', error);
-    res.status(400).json({ error: 'Erro ao registrar saída' });
+    res.status(400).json(formatValidationError(error));
   }
 };
 
@@ -137,7 +199,7 @@ export const toggleNovidade = async (req: Request, res: Response) => {
     res.json(estoque);
   } catch (error) {
     console.error('Erro ao atualizar novidade:', error);
-    res.status(400).json({ error: 'Erro ao atualizar novidade' });
+    res.status(400).json(formatValidationError(error));
   }
 };
 

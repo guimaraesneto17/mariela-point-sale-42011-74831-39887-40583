@@ -55,7 +55,32 @@ router.get('/:codigo', vendaController.getVendaByCodigo);
  *       201:
  *         description: Venda criada com sucesso
  *       400:
- *         description: Erro ao criar venda
+ *         description: Erro na validação dos dados
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Erro de validação"
+ *                 message:
+ *                   type: string
+ *                   example: "Um ou mais campos estão inválidos"
+ *                 fields:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       field:
+ *                         type: string
+ *                         example: "codigoVenda"
+ *                       message:
+ *                         type: string
+ *                         example: "Código da venda é obrigatório"
+ *                       value:
+ *                         type: string
+ *                         example: ""
  */
 router.post('/', vendaController.createVenda);
 
@@ -84,7 +109,29 @@ router.post('/', vendaController.createVenda);
  *       404:
  *         description: Venda não encontrada
  *       400:
- *         description: Erro ao atualizar venda
+ *         description: Erro na validação dos dados
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Erro de validação"
+ *                 message:
+ *                   type: string
+ *                   example: "Um ou mais campos estão inválidos"
+ *                 fields:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       field:
+ *                         type: string
+ *                       message:
+ *                         type: string
+ *                       value:
+ *                         type: string
  */
 router.put('/:codigo', vendaController.updateVenda);
 

@@ -36,6 +36,8 @@ router.get('/', fornecedorController.getAllFornecedores);
  *         description: Fornecedor encontrado
  *       404:
  *         description: Fornecedor não encontrado
+ *       500:
+ *         description: Erro ao buscar fornecedor
  */
 router.get('/:codigo', fornecedorController.getFornecedorByCodigo);
 
@@ -55,7 +57,32 @@ router.get('/:codigo', fornecedorController.getFornecedorByCodigo);
  *       201:
  *         description: Fornecedor criado com sucesso
  *       400:
- *         description: Erro ao criar fornecedor
+ *         description: Erro na validação dos dados
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Erro de validação"
+ *                 message:
+ *                   type: string
+ *                   example: "Um ou mais campos estão inválidos"
+ *                 fields:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       field:
+ *                         type: string
+ *                         example: "nome"
+ *                       message:
+ *                         type: string
+ *                         example: "Nome é obrigatório"
+ *                       value:
+ *                         type: string
+ *                         example: ""
  */
 router.post('/', fornecedorController.createFornecedor);
 
@@ -84,7 +111,32 @@ router.post('/', fornecedorController.createFornecedor);
  *       404:
  *         description: Fornecedor não encontrado
  *       400:
- *         description: Erro ao atualizar fornecedor
+ *         description: Erro na validação dos dados
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Erro de validação"
+ *                 message:
+ *                   type: string
+ *                   example: "Um ou mais campos estão inválidos"
+ *                 fields:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       field:
+ *                         type: string
+ *                         example: "telefone"
+ *                       message:
+ *                         type: string
+ *                         example: "Telefone deve estar no formato (99) 99999-9999"
+ *                       value:
+ *                         type: string
+ *                         example: "123456"
  */
 router.put('/:codigo', fornecedorController.updateFornecedor);
 

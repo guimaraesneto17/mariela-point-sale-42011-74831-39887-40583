@@ -111,7 +111,29 @@ router.post('/', estoqueController.createEstoque);
  *       404:
  *         description: Produto não encontrado no estoque
  *       400:
- *         description: Erro ao registrar entrada
+ *         description: Erro ao registrar entrada ou campos obrigatórios faltando
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Erro de validação"
+ *                 message:
+ *                   type: string
+ *                   example: "Campos obrigatórios não preenchidos"
+ *                 fields:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       field:
+ *                         type: string
+ *                         example: "codigoProduto"
+ *                       message:
+ *                         type: string
+ *                         example: "Código do produto é obrigatório"
  */
 router.post('/entrada', estoqueController.registrarEntrada);
 
@@ -147,7 +169,32 @@ router.post('/entrada', estoqueController.registrarEntrada);
  *       404:
  *         description: Produto não encontrado no estoque
  *       400:
- *         description: Erro ao registrar saída
+ *         description: Erro ao registrar saída, campos faltando ou quantidade insuficiente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Erro de validação"
+ *                 message:
+ *                   type: string
+ *                   example: "Quantidade insuficiente em estoque"
+ *                 fields:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       field:
+ *                         type: string
+ *                         example: "quantidade"
+ *                       message:
+ *                         type: string
+ *                         example: "Quantidade disponível: 5"
+ *                       value:
+ *                         type: number
+ *                         example: 10
  */
 router.post('/saida', estoqueController.registrarSaida);
 

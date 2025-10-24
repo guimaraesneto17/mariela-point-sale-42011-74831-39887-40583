@@ -1,6 +1,36 @@
 import { Request, Response } from 'express';
 import Venda from '../models/Venda';
 
+// Helper para formatar erros de validação do Mongoose
+const formatValidationError = (error: any) => {
+  if (error.name === 'ValidationError') {
+    const errors = Object.keys(error.errors).map(key => ({
+      field: key,
+      message: error.errors[key].message,
+      value: error.errors[key].value
+    }));
+    return {
+      error: 'Erro de validação',
+      message: 'Um ou mais campos estão inválidos',
+      fields: errors
+    };
+  }
+  
+  if (error.code === 11000) {
+    const field = Object.keys(error.keyPattern)[0];
+    return {
+      error: 'Erro de duplicação',
+      message: `O campo ${field} já existe no sistema`,
+      fields: [{ field, message: 'Valor duplicado', value: error.keyValue[field] }]
+    };
+  }
+  
+  return {
+    error: 'Erro ao processar requisição',
+    message: error.message || 'Erro desconhecido'
+  };
+};
+
 export const getAllVendas = async (req: Request, res: Response) => {
   try {
     const vendas = await Venda.find().sort({ dataVenda: -1 });
@@ -31,7 +61,7 @@ export const createVenda = async (req: Request, res: Response) => {
     res.status(201).json(venda);
   } catch (error) {
     console.error('Erro ao criar venda:', error);
-    res.status(400).json({ error: 'Erro ao criar venda' });
+    res.status(400).json(formatValidationError(error));
   }
 };
 
@@ -48,7 +78,7 @@ export const updateVenda = async (req: Request, res: Response) => {
     res.json(venda);
   } catch (error) {
     console.error('Erro ao atualizar venda:', error);
-    res.status(400).json({ error: 'Erro ao atualizar venda' });
+    res.status(400).json(formatValidationError(error));
   }
 };
 

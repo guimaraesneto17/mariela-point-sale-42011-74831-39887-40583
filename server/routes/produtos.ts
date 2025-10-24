@@ -55,7 +55,32 @@ router.get('/:codigo', produtoController.getProdutoByCodigo);
  *       201:
  *         description: Produto criado com sucesso
  *       400:
- *         description: Erro ao criar produto
+ *         description: Erro na validação dos dados
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Erro de validação"
+ *                 message:
+ *                   type: string
+ *                   example: "Um ou mais campos estão inválidos"
+ *                 fields:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       field:
+ *                         type: string
+ *                         example: "codigoProduto"
+ *                       message:
+ *                         type: string
+ *                         example: "Código deve seguir o formato P001, P002, etc."
+ *                       value:
+ *                         type: string
+ *                         example: "P1"
  */
 router.post('/', produtoController.createProduto);
 
@@ -84,7 +109,29 @@ router.post('/', produtoController.createProduto);
  *       404:
  *         description: Produto não encontrado
  *       400:
- *         description: Erro ao atualizar produto
+ *         description: Erro na validação dos dados
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Erro de validação"
+ *                 message:
+ *                   type: string
+ *                   example: "Um ou mais campos estão inválidos"
+ *                 fields:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       field:
+ *                         type: string
+ *                       message:
+ *                         type: string
+ *                       value:
+ *                         type: string
  */
 router.put('/:codigo', produtoController.updateProduto);
 

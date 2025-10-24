@@ -57,7 +57,32 @@ router.get('/:codigo', clienteController.getClienteByCodigo);
  *       201:
  *         description: Cliente criado com sucesso
  *       400:
- *         description: Erro ao criar cliente
+ *         description: Erro na validação dos dados
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Erro de validação"
+ *                 message:
+ *                   type: string
+ *                   example: "Um ou mais campos estão inválidos"
+ *                 fields:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       field:
+ *                         type: string
+ *                         example: "nome"
+ *                       message:
+ *                         type: string
+ *                         example: "Nome é obrigatório"
+ *                       value:
+ *                         type: string
+ *                         example: ""
  */
 router.post('/', clienteController.createCliente);
 
@@ -86,7 +111,32 @@ router.post('/', clienteController.createCliente);
  *       404:
  *         description: Cliente não encontrado
  *       400:
- *         description: Erro ao atualizar cliente
+ *         description: Erro na validação dos dados
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Erro de validação"
+ *                 message:
+ *                   type: string
+ *                   example: "Um ou mais campos estão inválidos"
+ *                 fields:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       field:
+ *                         type: string
+ *                         example: "telefone"
+ *                       message:
+ *                         type: string
+ *                         example: "Telefone deve estar no formato (99) 99999-9999"
+ *                       value:
+ *                         type: string
+ *                         example: "123456"
  */
 router.put('/:codigo', clienteController.updateCliente);
 
