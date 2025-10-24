@@ -79,17 +79,26 @@ const Produtos = () => {
   const precoVenda = form.watch("precoVenda") || 0;
   const margemLucro = form.watch("margemLucro");
   
-  const calcularLucro = () => {
-    if (precoCusto === 0) return 0;
-    return parseFloat((((precoVenda - precoCusto) / precoCusto) * 100).toFixed(2));
-  };
-
-  const handleMargemChange = (margem: number) => {
-    if (precoCusto > 0) {
-      const novoPrecoVenda = precoCusto * (1 + margem / 100);
-      form.setValue("precoVenda", parseFloat(novoPrecoVenda.toFixed(2)));
+  // Recalcula preço de venda quando preço de custo ou margem mudam
+  useEffect(() => {
+    if (margemLucro !== undefined && precoCusto > 0) {
+      const novoPrecoVenda = precoCusto * (1 + margemLucro / 100);
+      const precoCalculado = parseFloat(novoPrecoVenda.toFixed(2));
+      if (precoCalculado !== precoVenda) {
+        form.setValue("precoVenda", precoCalculado, { shouldValidate: false });
+      }
     }
-  };
+  }, [precoCusto, margemLucro]);
+
+  // Recalcula margem de lucro quando preço de venda muda (se margem não estiver sendo editada)
+  useEffect(() => {
+    if (precoCusto > 0 && precoVenda > 0) {
+      const margemCalculada = parseFloat((((precoVenda - precoCusto) / precoCusto) * 100).toFixed(2));
+      if (margemLucro === undefined || Math.abs((margemLucro || 0) - margemCalculada) > 0.01) {
+        form.setValue("margemLucro", margemCalculada, { shouldValidate: false });
+      }
+    }
+  }, [precoVenda, precoCusto]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -391,14 +400,21 @@ const Produtos = () => {
                         name="precoCusto"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm font-semibold text-foreground">Preço de Custo *</FormLabel>
+                            <FormLabel className="text-sm font-semibold text-foreground flex items-center gap-2">
+                              Preço de Custo *
+                              <span className="text-xs text-muted-foreground font-normal">(R$)</span>
+                            </FormLabel>
                             <FormControl>
                               <Input 
                                 {...field}
                                 type="number"
                                 step="0.01"
+                                min="0"
                                 placeholder="0.00"
-                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                onChange={(e) => {
+                                  const valor = parseFloat(e.target.value) || 0;
+                                  field.onChange(valor);
+                                }}
                                 className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
                               />
                             </FormControl>
@@ -416,14 +432,21 @@ const Produtos = () => {
                         name="precoVenda"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm font-semibold text-foreground">Preço de Venda *</FormLabel>
+                            <FormLabel className="text-sm font-semibold text-foreground flex items-center gap-2">
+                              Preço de Venda *
+                              <span className="text-xs text-muted-foreground font-normal">(R$)</span>
+                            </FormLabel>
                             <FormControl>
                               <Input 
                                 {...field}
                                 type="number"
                                 step="0.01"
+                                min="0"
                                 placeholder="0.00"
-                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                onChange={(e) => {
+                                  const valor = parseFloat(e.target.value) || 0;
+                                  field.onChange(valor);
+                                }}
                                 className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
                               />
                             </FormControl>
@@ -441,18 +464,21 @@ const Produtos = () => {
                         name="margemLucro"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm font-semibold text-foreground">Margem de Lucro (%)</FormLabel>
+                            <FormLabel className="text-sm font-semibold text-foreground flex items-center gap-2">
+                              Margem de Lucro
+                              <span className="text-xs text-muted-foreground font-normal">(%)</span>
+                            </FormLabel>
                             <FormControl>
                               <Input 
                                 {...field}
                                 type="number"
                                 step="0.01"
+                                min="0"
                                 placeholder="0.00"
-                                value={field.value ?? calcularLucro()}
+                                value={field.value ?? ""}
                                 onChange={(e) => {
                                   const margem = parseFloat(e.target.value) || 0;
                                   field.onChange(margem);
-                                  handleMargemChange(margem);
                                 }}
                                 className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
                               />
@@ -659,14 +685,6 @@ const Produtos = () => {
                       : '0.00'}%
                   </span>
                 </div>
-                {produto.emPromocao && produto.precoPromocional && (
-                  <div className="flex justify-between text-sm mt-2 pt-2 border-t">
-                    <span className="text-muted-foreground">Preço Promocional:</span>
-                    <span className="font-semibold text-primary">
-                      R$ {produto.precoPromocional.toFixed(2)}
-                    </span>
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>
