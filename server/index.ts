@@ -28,7 +28,7 @@ const allowedOrigins = [
   'https://a9daa95e-02e8-4bad-a82b-327ad991a1b4.lovableproject.com',
   'http://localhost:8080',
   'http://localhost:5173',
-  'http://192.168.0.10:8080' // 👈 Adicionado para testes em rede local
+  'http://192.168.0.11:8080/' // 👈 Adicionado para testes em rede local
 ];
 
 // Configuração do CORS
