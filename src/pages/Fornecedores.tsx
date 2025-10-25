@@ -114,7 +114,7 @@ const Fornecedores = () => {
       telefone: fornecedor.telefone,
       cnpj: fornecedor.cnpj,
       instagram: fornecedor.instagram,
-      endereco: {
+      endereco: fornecedor.endereco || {
         rua: "",
         numero: "",
         bairro: "",
@@ -122,7 +122,7 @@ const Fornecedores = () => {
         estado: "",
         cep: "",
       },
-      observacao: "",
+      observacao: fornecedor.observacao || "",
     });
     setManualCode(true);
     setIsDialogOpen(true);
@@ -570,9 +570,16 @@ const Fornecedores = () => {
               <div className="text-sm">
                 <span className="text-muted-foreground">Instagram:</span> {fornecedor.instagram}
               </div>
-              <div className="text-sm text-muted-foreground pt-2 border-t">
-                {fornecedor.endereco}
-              </div>
+              {fornecedor.endereco && (
+                <div className="text-sm text-muted-foreground pt-2 border-t">
+                  {[
+                    fornecedor.endereco.rua && `${fornecedor.endereco.rua}${fornecedor.endereco.numero ? `, ${fornecedor.endereco.numero}` : ''}`,
+                    fornecedor.endereco.bairro,
+                    fornecedor.endereco.cidade && fornecedor.endereco.estado ? `${fornecedor.endereco.cidade} - ${fornecedor.endereco.estado}` : fornecedor.endereco.cidade || fornecedor.endereco.estado,
+                    fornecedor.endereco.cep
+                  ].filter(Boolean).join(' • ')}
+                </div>
+              )}
             </div>
           </Card>
         ))}
