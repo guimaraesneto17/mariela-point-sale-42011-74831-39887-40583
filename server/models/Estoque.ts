@@ -4,7 +4,11 @@ const EstoqueSchema = new mongoose.Schema({
   codigoProduto: {
     type: String,
     required: true,
-    unique: true,
+    trim: true
+  },
+  cor: {
+    type: String,
+    required: true,
     trim: true
   },
   quantidade: {
@@ -19,36 +23,14 @@ const EstoqueSchema = new mongoose.Schema({
     enum: ['PP', 'P', 'M', 'G', 'GG', 'U'],
     trim: true
   },
-  precoCusto: {
-    type: Number,
-    required: true,
-    min: 0
-  },
-  precoVenda: {
-    type: Number,
-    required: true,
-    min: 0
-  },
-  margemDeLucro: {
-    type: Number,
-    required: true,
-    min: 0
-  },
   emPromocao: {
     type: Boolean,
+    required: true,
     default: false
-  },
-  precoPromocional: {
-    type: Number,
-    min: 0
-  },
-  tipoPrecoPromocional: {
-    type: String,
-    enum: ['valor direto', 'porcentagem'],
-    trim: true
   },
   isNovidade: {
     type: Boolean,
+    required: true,
     default: false
   },
   logMovimentacao: [{
@@ -64,8 +46,8 @@ const EstoqueSchema = new mongoose.Schema({
       min: 1
     },
     data: {
-      type: Date,
-      default: Date.now
+      type: String,
+      required: true
     },
     origem: {
       type: String,
@@ -86,9 +68,18 @@ const EstoqueSchema = new mongoose.Schema({
     },
     observacao: {
       type: String,
-      trim: true
+      trim: true,
+      maxLength: 300
     }
-  }]
+  }],
+  dataCadastro: {
+    type: String,
+    default: () => new Date().toISOString()
+  },
+  dataAtualizacao: {
+    type: String,
+    default: null
+  }
 }, {
   timestamps: true,
   collection: 'estoque'

@@ -34,7 +34,27 @@ const formatValidationError = (error: any) => {
 export const getAllEstoque = async (req: Request, res: Response) => {
   try {
     const estoque = await Estoque.find().sort({ createdAt: -1 });
-    res.json(estoque);
+    
+    // Buscar dados dos produtos relacionados
+    const Produto = require('../models/Produto').default;
+    const estoqueComProdutos = await Promise.all(
+      estoque.map(async (item) => {
+        const produto = await Produto.findOne({ codigoProduto: item.codigoProduto });
+        return {
+          ...item.toObject(),
+          nomeProduto: produto?.nome || 'Produto não encontrado',
+          categoria: produto?.categoria || '',
+          descricao: produto?.descricao || '',
+          imagens: produto?.imagens || [],
+          precoCusto: produto?.precoCusto || 0,
+          precoVenda: produto?.precoVenda || 0,
+          margemDeLucro: produto?.margemDeLucro || 0,
+          precoPromocional: produto?.precoPromocional
+        };
+      })
+    );
+    
+    res.json(estoqueComProdutos);
   } catch (error) {
     console.error('Erro ao buscar estoque:', error);
     res.status(500).json({ error: 'Erro ao buscar estoque' });
@@ -133,7 +153,7 @@ export const registrarEntrada = async (req: Request, res: Response) => {
     estoque.logMovimentacao.push({
       tipo: 'entrada',
       quantidade,
-      data: new Date(),
+      data: new Date().toISOString(),
       origem,
       fornecedor: fornecedor || undefined,
       observacao: observacao || undefined
@@ -184,7 +204,7 @@ export const registrarSaida = async (req: Request, res: Response) => {
     estoque.logMovimentacao.push({
       tipo: 'saida',
       quantidade,
-      data: new Date(),
+      data: new Date().toISOString(),
       origem: origem || 'baixa no estoque',
       motivo: motivo || undefined,
       codigoVenda: codigoVenda || undefined,

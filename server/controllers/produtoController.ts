@@ -44,7 +44,7 @@ export const getAllProdutos = async (req: Request, res: Response) => {
 
 export const getProdutoByCodigo = async (req: Request, res: Response) => {
   try {
-    const produto = await Produto.findOne({ codigo: req.params.codigo });
+    const produto = await Produto.findOne({ codigoProduto: req.params.codigo });
     if (!produto) {
       return res.status(404).json({ error: 'Produto não encontrado' });
     }
@@ -57,34 +57,12 @@ export const getProdutoByCodigo = async (req: Request, res: Response) => {
 
 export const createProduto = async (req: Request, res: Response) => {
   try {
-    const { precoCusto, precoVenda, margemDeLucro, tamanho = 'U', ...produtoData } = req.body;
-    
-    // Criar produto sem campos de preço
     const produto = new Produto({
-      ...produtoData,
-      ativo: true
+      ...req.body,
+      ativo: true,
+      dataCadastro: new Date().toISOString()
     });
     await produto.save();
-
-    // Criar registro de estoque com os dados de preço
-    const estoque = new Estoque({
-      codigoProduto: produto.codigoProduto,
-      quantidade: 1,
-      tamanho: tamanho,
-      precoCusto: precoCusto,
-      precoVenda: precoVenda,
-      margemDeLucro: margemDeLucro,
-      emPromocao: false,
-      isNovidade: false,
-      logMovimentacao: [{
-        tipo: 'entrada',
-        quantidade: 1,
-        data: new Date(),
-        origem: 'entrada',
-        observacao: 'Cadastro inicial do produto'
-      }]
-    });
-    await estoque.save();
 
     res.status(201).json(produto);
   } catch (error) {
@@ -95,30 +73,17 @@ export const createProduto = async (req: Request, res: Response) => {
 
 export const updateProduto = async (req: Request, res: Response) => {
   try {
-    const { precoCusto, precoVenda, margemDeLucro, ...produtoData } = req.body;
-    
     const produto = await Produto.findOneAndUpdate(
-      { codigo: req.params.codigo },
-      produtoData,
+      { codigoProduto: req.params.codigo },
+      { 
+        ...req.body,
+        dataAtualizacao: new Date().toISOString()
+      },
       { new: true, runValidators: true }
     );
     
     if (!produto) {
       return res.status(404).json({ error: 'Produto não encontrado' });
-    }
-
-    // Atualizar também os preços no estoque
-    if (precoCusto !== undefined || precoVenda !== undefined || margemDeLucro !== undefined) {
-      await Estoque.updateMany(
-        { codigoProduto: produto.codigo },
-        { 
-          $set: {
-            ...(precoCusto !== undefined && { precoCusto }),
-            ...(precoVenda !== undefined && { precoVenda }),
-            ...(margemDeLucro !== undefined && { margemDeLucro })
-          }
-        }
-      );
     }
     
     res.json(produto);
@@ -130,14 +95,14 @@ export const updateProduto = async (req: Request, res: Response) => {
 
 export const deleteProduto = async (req: Request, res: Response) => {
   try {
-    const produto = await Produto.findOne({ codigo: req.params.codigo });
+    const produto = await Produto.findOne({ codigoProduto: req.params.codigo });
     if (!produto) {
       return res.status(404).json({ error: 'Produto não encontrado' });
     }
 
     // Remover também todos os registros de estoque
-    await Estoque.deleteMany({ codigoProduto: produto.codigo });
-    await Produto.findOneAndDelete({ codigo: req.params.codigo });
+    await Estoque.deleteMany({ codigoProduto: produto.codigoProduto });
+    await Produto.findOneAndDelete({ codigoProduto: req.params.codigo });
     
     res.json({ message: 'Produto removido com sucesso' });
   } catch (error) {

@@ -21,10 +21,24 @@ const ProdutoSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  cor: {
-    type: String,
+  precoCusto: {
+    type: Number,
     required: true,
-    trim: true
+    min: 0
+  },
+  margemDeLucro: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  precoVenda: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  precoPromocional: {
+    type: Number,
+    min: 0
   },
   imagens: [{
     type: String,
@@ -35,8 +49,12 @@ const ProdutoSchema = new mongoose.Schema({
     default: true
   },
   dataCadastro: {
-    type: Date,
-    default: Date.now
+    type: String,
+    default: () => new Date().toISOString()
+  },
+  dataAtualizacao: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: true,

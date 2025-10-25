@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Search, Plus, CheckCircle2, AlertCircle, Package, Edit, Trash2, X, Upload, PackagePlus } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,7 +32,6 @@ const Produtos = () => {
   const [selectedProductForStock, setSelectedProductForStock] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
-  const isCalculatingRef = useRef(false);
 
   const form = useForm<ProdutoFormData>({
     resolver: zodResolver(produtoSchema),
@@ -41,11 +40,9 @@ const Produtos = () => {
       nome: "",
       descricao: "",
       categoria: "Outro",
-      cor: "",
       precoCusto: 0,
       precoVenda: 0,
-      margemLucro: undefined,
-      tamanho: "U",
+      margemDeLucro: 0,
     },
   });
 
@@ -84,55 +81,30 @@ const Produtos = () => {
 
   const precoCusto = form.watch("precoCusto") || 0;
   const precoVenda = form.watch("precoVenda") || 0;
-  const margemLucro = form.watch("margemLucro");
-  
-  // Atualiza preço de venda quando custo ou margem mudam
+  const margemDeLucro = form.watch("margemDeLucro") || 0;
+
   const handlePrecoCustoChange = (value: number) => {
-    if (isCalculatingRef.current) return;
-    isCalculatingRef.current = true;
-    
     form.setValue("precoCusto", value);
-    
-    if (margemLucro !== undefined && value > 0) {
-      const novoPrecoVenda = value * (1 + margemLucro / 100);
+    if (margemDeLucro > 0) {
+      const novoPrecoVenda = value * (1 + margemDeLucro / 100);
       form.setValue("precoVenda", parseFloat(novoPrecoVenda.toFixed(2)));
     }
-    
-    setTimeout(() => {
-      isCalculatingRef.current = false;
-    }, 100);
   };
 
   const handlePrecoVendaChange = (value: number) => {
-    if (isCalculatingRef.current) return;
-    isCalculatingRef.current = true;
-    
     form.setValue("precoVenda", value);
-    
-    if (precoCusto > 0 && value > 0) {
+    if (precoCusto > 0) {
       const novaMargem = ((value - precoCusto) / precoCusto) * 100;
-      form.setValue("margemLucro", parseFloat(novaMargem.toFixed(2)));
+      form.setValue("margemDeLucro", parseFloat(novaMargem.toFixed(2)));
     }
-    
-    setTimeout(() => {
-      isCalculatingRef.current = false;
-    }, 100);
   };
 
-  const handleMargemLucroChange = (value: number) => {
-    if (isCalculatingRef.current) return;
-    isCalculatingRef.current = true;
-    
-    form.setValue("margemLucro", value);
-    
+  const handleMargemDeLucroChange = (value: number) => {
+    form.setValue("margemDeLucro", value);
     if (precoCusto > 0) {
       const novoPrecoVenda = precoCusto * (1 + value / 100);
       form.setValue("precoVenda", parseFloat(novoPrecoVenda.toFixed(2)));
     }
-    
-    setTimeout(() => {
-      isCalculatingRef.current = false;
-    }, 100);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -166,11 +138,6 @@ const Produtos = () => {
         nome: data.nome,
         descricao: data.descricao,
         categoria: data.categoria,
-        cor: data.cor,
-        precoCusto: data.precoCusto,
-        precoVenda: data.precoVenda,
-        margemLucro: data.margemLucro,
-        tamanho: data.tamanho,
         imagens: imagens,
       };
 
@@ -204,20 +171,16 @@ const Produtos = () => {
 
   const handleEdit = (product: any) => {
     setEditingProduct(product);
-    const margem = product.precoCusto > 0 
-      ? parseFloat(((((product.precoVenda ?? product.preco ?? 0) - product.precoCusto) / product.precoCusto) * 100).toFixed(2))
-      : 0;
     
     form.reset({
       codigoProduto: product.codigoProduto,
       nome: product.nome,
       descricao: product.descricao,
       categoria: product.categoria,
-      cor: product.cor,
       precoCusto: product.precoCusto,
-      precoVenda: (product.precoVenda ?? product.preco ?? 0),
-      margemLucro: margem,
-      tamanho: product.tamanho || "U",
+      precoVenda: product.precoVenda,
+      margemDeLucro: product.margemDeLucro,
+      precoPromocional: product.precoPromocional,
     });
     setManualCode(true);
     setIsDialogOpen(true);
@@ -252,11 +215,9 @@ const Produtos = () => {
       nome: "",
       descricao: "",
       categoria: "Outro",
-      cor: "",
       precoCusto: 0,
       precoVenda: 0,
-      margemLucro: undefined,
-      tamanho: "U",
+      margemDeLucro: 0,
     });
     setManualCode(false);
     setImagemURL("");
@@ -413,28 +374,6 @@ const Produtos = () => {
                           </FormItem>
                         )}
                       />
-
-                      <FormField
-                        control={form.control}
-                        name="cor"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-sm font-semibold text-foreground">Cor *</FormLabel>
-                            <FormControl>
-                              <Input 
-                                {...field} 
-                                placeholder="Ex: Azul, Vermelho, Estampado"
-                                className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-xs flex items-center gap-1">
-                              {form.formState.errors.cor && (
-                                <AlertCircle className="h-3 w-3" />
-                              )}
-                            </FormMessage>
-                          </FormItem>
-                        )}
-                      />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -450,14 +389,12 @@ const Produtos = () => {
                             <FormControl>
                               <Input 
                                 {...field}
-                                type="text"
-                                inputMode="decimal"
+                                type="number"
+                                step="0.01"
+                                min="0"
                                 placeholder="0.00"
                                 value={field.value || ''}
-                                onChange={(e) => {
-                                  const valor = parseFloat(e.target.value.replace(',', '.')) || 0;
-                                  handlePrecoCustoChange(valor);
-                                }}
+                                onChange={(e) => handlePrecoCustoChange(parseFloat(e.target.value) || 0)}
                                 className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
                               />
                             </FormControl>
@@ -482,14 +419,12 @@ const Produtos = () => {
                             <FormControl>
                               <Input 
                                 {...field}
-                                type="text"
-                                inputMode="decimal"
+                                type="number"
+                                step="0.01"
+                                min="0"
                                 placeholder="0.00"
                                 value={field.value || ''}
-                                onChange={(e) => {
-                                  const valor = parseFloat(e.target.value.replace(',', '.')) || 0;
-                                  handlePrecoVendaChange(valor);
-                                }}
+                                onChange={(e) => handlePrecoVendaChange(parseFloat(e.target.value) || 0)}
                                 className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
                               />
                             </FormControl>
@@ -504,29 +439,27 @@ const Produtos = () => {
 
                       <FormField
                         control={form.control}
-                        name="margemLucro"
+                        name="margemDeLucro"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-sm font-semibold text-foreground flex items-center gap-2">
-                              Margem de Lucro
+                              Margem de Lucro *
                               <span className="text-xs text-muted-foreground font-normal">(%)</span>
                             </FormLabel>
                             <FormControl>
                               <Input 
                                 {...field}
-                                type="text"
-                                inputMode="decimal"
+                                type="number"
+                                step="0.01"
+                                min="0"
                                 placeholder="0.00"
                                 value={field.value ?? ''}
-                                onChange={(e) => {
-                                  const margem = parseFloat(e.target.value.replace(',', '.')) || 0;
-                                  handleMargemLucroChange(margem);
-                                }}
+                                onChange={(e) => handleMargemDeLucroChange(parseFloat(e.target.value) || 0)}
                                 className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
                               />
                             </FormControl>
                             <FormMessage className="text-xs flex items-center gap-1">
-                              {form.formState.errors.margemLucro && (
+                              {form.formState.errors.margemDeLucro && (
                                 <AlertCircle className="h-3 w-3" />
                               )}
                             </FormMessage>

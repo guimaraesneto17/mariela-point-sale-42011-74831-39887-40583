@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +16,8 @@ interface AddToStockDialogProps {
 
 export function AddToStockDialog({ open, onOpenChange, produto, onSuccess }: AddToStockDialogProps) {
   const [quantidade, setQuantidade] = useState(1);
-  const [tamanho, setTamanho] = useState(produto?.tamanho || "U");
+  const [tamanho, setTamanho] = useState("U");
+  const [cor, setCor] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
@@ -25,24 +26,28 @@ export function AddToStockDialog({ open, onOpenChange, produto, onSuccess }: Add
       return;
     }
 
+    if (!cor.trim()) {
+      toast.error("Cor é obrigatória");
+      return;
+    }
+
     try {
       setLoading(true);
       const estoqueData = {
         codigoProduto: produto.codigoProduto,
+        cor: cor.trim(),
         quantidade: quantidade,
         tamanho: tamanho,
-        precoCusto: produto.precoCusto,
-        precoVenda: produto.preco,
-        margemDeLucro: produto.margemLucro || 0,
         emPromocao: false,
         isNovidade: false,
         logMovimentacao: [{
           tipo: 'entrada',
           quantidade: quantidade,
-          data: new Date(),
+          data: new Date().toISOString(),
           origem: 'entrada',
-          observacao: 'Adicionado ao estoque via cadastro de produto'
-        }]
+          observacao: 'Adicionado ao estoque'
+        }],
+        dataCadastro: new Date().toISOString()
       };
 
       await estoqueAPI.create(estoqueData);
@@ -51,7 +56,8 @@ export function AddToStockDialog({ open, onOpenChange, produto, onSuccess }: Add
       onSuccess?.();
       // Reset
       setQuantidade(1);
-      setTamanho(produto?.tamanho || "U");
+      setTamanho("U");
+      setCor("");
     } catch (error: any) {
       toast.error("Erro ao adicionar ao estoque", {
         description: error.message || "Tente novamente",
@@ -63,15 +69,49 @@ export function AddToStockDialog({ open, onOpenChange, produto, onSuccess }: Add
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Adicionar ao Estoque</DialogTitle>
-          <p className="text-sm text-muted-foreground">
+          <DialogDescription>
             {produto?.nome} ({produto?.codigoProduto})
-          </p>
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Cor *</Label>
+              <Input
+                value={cor}
+                onChange={(e) => setCor(e.target.value)}
+                placeholder="Ex: Azul, Vermelho, Estampado"
+              />
+            </div>
+
+            <div>
+              <Label>Tamanho *</Label>
+              <Select value={tamanho} onValueChange={setTamanho}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PP">PP</SelectItem>
+                  <SelectItem value="P">P</SelectItem>
+                  <SelectItem value="M">M</SelectItem>
+                  <SelectItem value="G">G</SelectItem>
+                  <SelectItem value="GG">GG</SelectItem>
+                  <SelectItem value="U">U (Único)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="text-sm text-muted-foreground bg-muted p-3 rounded">
+            <p><strong>Preço de Custo:</strong> R$ {produto?.precoCusto?.toFixed(2)}</p>
+            <p><strong>Preço de Venda:</strong> R$ {produto?.precoVenda?.toFixed(2)}</p>
+            <p><strong>Margem de Lucro:</strong> {produto?.margemDeLucro?.toFixed(2)}%</p>
+          </div>
+
           <div>
             <Label>Quantidade Inicial *</Label>
             <Input
@@ -80,32 +120,6 @@ export function AddToStockDialog({ open, onOpenChange, produto, onSuccess }: Add
               value={quantidade}
               onChange={(e) => setQuantidade(parseInt(e.target.value) || 1)}
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              O produto só aparecerá no estoque se a quantidade for maior que 1
-            </p>
-          </div>
-
-          <div>
-            <Label>Tamanho *</Label>
-            <Select value={tamanho} onValueChange={setTamanho}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="PP">PP</SelectItem>
-                <SelectItem value="P">P</SelectItem>
-                <SelectItem value="M">M</SelectItem>
-                <SelectItem value="G">G</SelectItem>
-                <SelectItem value="GG">GG</SelectItem>
-                <SelectItem value="U">U (Único)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="text-sm text-muted-foreground bg-muted p-3 rounded">
-            <p><strong>Cor:</strong> {produto?.cor}</p>
-            <p><strong>Preço de Custo:</strong> R$ {produto?.precoCusto?.toFixed(2)}</p>
-            <p><strong>Preço de Venda:</strong> R$ {produto?.preco?.toFixed(2)}</p>
           </div>
 
           <div className="flex gap-2 pt-2">

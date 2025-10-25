@@ -119,8 +119,10 @@ const Estoque = () => {
   const filteredInventory = displayInventory.filter(item => {
     const nomeProduto = item.nomeProduto || '';
     const codigoProduto = item.codigoProduto || '';
+    const cor = item.cor || '';
     return nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
+      codigoProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cor.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   const openEntryDialog = (item: any) => {
@@ -191,7 +193,9 @@ const Estoque = () => {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-foreground">{item.nomeProduto}</h3>
-                  <p className="text-sm text-muted-foreground">Código: {item.codigoProduto}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {item.codigoProduto} • {item.categoria || 'Sem categoria'}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -200,7 +204,7 @@ const Estoque = () => {
                     Promoção
                   </Badge>
                 )}
-                {item.novidade && (
+                {item.isNovidade && (
                   <Badge className="bg-green-600 text-white">
                     Novidade
                   </Badge>
@@ -227,11 +231,17 @@ const Estoque = () => {
                   {item.cor}
                 </p>
               </div>
-              {item.emPromocao && (
+              <div className="p-4 rounded-lg bg-background/50 border border-border">
+                <p className="text-sm text-muted-foreground mb-1">Preço de Venda</p>
+                <p className="text-2xl font-bold text-foreground">
+                  R$ {item.precoVenda?.toFixed(2)}
+                </p>
+              </div>
+              {item.emPromocao && item.precoPromocional && (
                 <div className="p-4 rounded-lg bg-accent/10 border border-accent">
                   <p className="text-sm text-muted-foreground mb-1">Valor Promocional</p>
                   <p className="text-2xl font-bold text-accent">
-                    R$ {item.valorPromocional?.toFixed(2)}
+                    R$ {item.precoPromocional?.toFixed(2)}
                   </p>
                 </div>
               )}
@@ -257,12 +267,12 @@ const Estoque = () => {
               </Button>
               <Button 
                 size="sm" 
-                variant={item.novidade ? "default" : "outline"}
-                className={`gap-2 ${item.novidade ? 'bg-green-600 text-white hover:bg-green-700' : ''}`}
+                variant={item.isNovidade ? "default" : "outline"}
+                className={`gap-2 ${item.isNovidade ? 'bg-green-600 text-white hover:bg-green-700' : ''}`}
                 onClick={() => openNovidadeDialog(item)}
               >
                 <Sparkles className="h-4 w-4" />
-                {item.novidade ? "É Novidade" : "Colocar como Novidade"}
+                {item.isNovidade ? "É Novidade" : "Colocar como Novidade"}
               </Button>
               <Button 
                 size="sm" 
@@ -339,7 +349,7 @@ const Estoque = () => {
             onOpenChange={setShowNovidadeDialog}
             codigoProduto={selectedItem.codigoProduto}
             nomeProduto={selectedItem.nomeProduto}
-            isNovidade={selectedItem.novidade || false}
+            isNovidade={selectedItem.isNovidade || false}
             onSuccess={loadEstoque}
           />
 

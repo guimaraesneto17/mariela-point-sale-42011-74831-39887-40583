@@ -103,35 +103,6 @@ export const produtoSchema = z.object({
   categoria: z.enum(["Calça", "Saia", "Vestido", "Blusa", "Bolsa", "Acessório", "Outro"], {
     errorMap: () => ({ message: "Selecione uma categoria válida" }),
   }),
-  cor: z.string().min(1, "Cor é obrigatória"),
-  ativo: z.boolean().optional().default(true),
-  precoCusto: z
-    .number({ invalid_type_error: "Preço de custo deve ser um número" })
-    .min(0, "Preço de custo deve ser maior ou igual a 0")
-    .optional(),
-  precoVenda: z
-    .number({ invalid_type_error: "Preço de venda deve ser um número" })
-    .min(0, "Preço de venda deve ser maior que 0")
-    .optional(),
-  margemLucro: z
-    .number({ invalid_type_error: "Margem de lucro deve ser um número" })
-    .min(0, "Margem de lucro deve ser maior ou igual a 0")
-    .optional(),
-  tamanho: z.enum(["PP", "P", "M", "G", "GG", "U"]).optional().default("U"),
-});
-
-// Estoque Schema
-export const estoqueSchema = z.object({
-  codigoProduto: z
-    .string()
-    .regex(/^P\d{3}$/, "Código do produto deve seguir o formato P001, P002, etc."),
-  tamanho: z.enum(["PP", "P", "M", "G", "GG", "U"], {
-    errorMap: () => ({ message: "Selecione um tamanho válido" }),
-  }),
-  quantidade: z
-    .number({ invalid_type_error: "Quantidade deve ser um número" })
-    .int("Quantidade deve ser um número inteiro")
-    .min(0, "Quantidade deve ser maior ou igual a 0"),
   precoCusto: z
     .number({ invalid_type_error: "Preço de custo deve ser um número" })
     .min(0, "Preço de custo deve ser maior ou igual a 0"),
@@ -140,14 +111,28 @@ export const estoqueSchema = z.object({
     .min(0, "Preço de venda deve ser maior que 0"),
   margemDeLucro: z
     .number({ invalid_type_error: "Margem de lucro deve ser um número" })
-    .min(0, "Margem de lucro deve ser maior ou igual a 0")
-    .optional(),
-  emPromocao: z.boolean().optional().default(false),
+    .min(0, "Margem de lucro deve ser maior ou igual a 0"),
   precoPromocional: z
     .number({ invalid_type_error: "Preço promocional deve ser um número" })
     .min(0, "Preço promocional deve ser maior ou igual a 0")
     .optional(),
-  tipoPrecoPromocional: z.enum(["valor direto", "porcentagem"]).optional(),
+  ativo: z.boolean().optional().default(true),
+});
+
+// Estoque Schema
+export const estoqueSchema = z.object({
+  codigoProduto: z
+    .string()
+    .regex(/^P\d{3}$/, "Código do produto deve seguir o formato P001, P002, etc."),
+  cor: z.string().min(1, "Cor é obrigatória"),
+  tamanho: z.enum(["PP", "P", "M", "G", "GG", "U"], {
+    errorMap: () => ({ message: "Selecione um tamanho válido" }),
+  }),
+  quantidade: z
+    .number({ invalid_type_error: "Quantidade deve ser um número" })
+    .int("Quantidade deve ser um número inteiro")
+    .min(0, "Quantidade deve ser maior ou igual a 0"),
+  emPromocao: z.boolean().optional().default(false),
   isNovidade: z.boolean().optional().default(false),
 });
 
