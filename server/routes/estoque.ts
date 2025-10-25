@@ -210,6 +210,8 @@ router.post('/saida', estoqueController.registrarSaida);
  *         required: true
  *         schema:
  *           type: string
+ *         example: P101
+ *         description: Código do produto
  *     requestBody:
  *       required: true
  *       content:
@@ -221,6 +223,8 @@ router.post('/saida', estoqueController.registrarSaida);
  *             properties:
  *               isNovidade:
  *                 type: boolean
+ *                 example: true
+ *                 description: Status de novidade (true ou false)
  *     responses:
  *       200:
  *         description: Status de novidade atualizado com sucesso
@@ -230,6 +234,47 @@ router.post('/saida', estoqueController.registrarSaida);
  *         description: Erro ao atualizar novidade
  */
 router.patch('/novidade/:codigo', estoqueController.toggleNovidade);
+
+/**
+ * @swagger
+ * /api/estoque/promocao/{codigo}:
+ *   patch:
+ *     summary: Atualiza o status de promoção de um produto
+ *     tags: [Estoque]
+ *     parameters:
+ *       - in: path
+ *         name: codigo
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: P101
+ *         description: Código do produto
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - emPromocao
+ *             properties:
+ *               emPromocao:
+ *                 type: boolean
+ *                 example: true
+ *                 description: Status de promoção
+ *               valorPromocional:
+ *                 type: number
+ *                 minimum: 0
+ *                 example: 79.90
+ *                 description: Valor promocional (obrigatório quando emPromocao=true)
+ *     responses:
+ *       200:
+ *         description: Status de promoção atualizado com sucesso
+ *       404:
+ *         description: Produto não encontrado no estoque
+ *       400:
+ *         description: Erro ao atualizar promoção ou valor promocional não informado
+ */
 
 /**
  * @swagger

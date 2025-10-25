@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Search, Plus, CheckCircle2, AlertCircle, Package, Edit, Trash2, X, Upload, PackagePlus } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,6 +16,7 @@ import { produtoSchema } from "@/lib/validationSchemas";
 import { z } from "zod";
 import { produtosAPI } from "@/lib/api";
 import { AddToStockDialog } from "@/components/AddToStockDialog";
+import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 
 type ProdutoFormData = z.infer<typeof produtoSchema>;
 
@@ -29,6 +30,9 @@ const Produtos = () => {
   const [imagemBase64, setImagemBase64] = useState<string[]>([]);
   const [showAddToStockDialog, setShowAddToStockDialog] = useState(false);
   const [selectedProductForStock, setSelectedProductForStock] = useState<any>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const isCalculatingRef = useRef(false);
 
   const form = useForm<ProdutoFormData>({
     resolver: zodResolver(produtoSchema),
@@ -82,26 +86,54 @@ const Produtos = () => {
   const precoVenda = form.watch("precoVenda") || 0;
   const margemLucro = form.watch("margemLucro");
   
-  // Recalcula preço de venda quando preço de custo ou margem mudam
-  useEffect(() => {
-    if (margemLucro !== undefined && precoCusto > 0) {
-      const novoPrecoVenda = precoCusto * (1 + margemLucro / 100);
-      const precoCalculado = parseFloat(novoPrecoVenda.toFixed(2));
-      if (precoCalculado !== precoVenda) {
-        form.setValue("precoVenda", precoCalculado, { shouldValidate: false });
-      }
+  // Atualiza preço de venda quando custo ou margem mudam
+  const handlePrecoCustoChange = (value: number) => {
+    if (isCalculatingRef.current) return;
+    isCalculatingRef.current = true;
+    
+    form.setValue("precoCusto", value);
+    
+    if (margemLucro !== undefined && value > 0) {
+      const novoPrecoVenda = value * (1 + margemLucro / 100);
+      form.setValue("precoVenda", parseFloat(novoPrecoVenda.toFixed(2)));
     }
-  }, [precoCusto, margemLucro]);
+    
+    setTimeout(() => {
+      isCalculatingRef.current = false;
+    }, 100);
+  };
 
-  // Recalcula margem de lucro quando preço de venda muda (se margem não estiver sendo editada)
-  useEffect(() => {
-    if (precoCusto > 0 && precoVenda > 0) {
-      const margemCalculada = parseFloat((((precoVenda - precoCusto) / precoCusto) * 100).toFixed(2));
-      if (margemLucro === undefined || Math.abs((margemLucro || 0) - margemCalculada) > 0.01) {
-        form.setValue("margemLucro", margemCalculada, { shouldValidate: false });
-      }
+  const handlePrecoVendaChange = (value: number) => {
+    if (isCalculatingRef.current) return;
+    isCalculatingRef.current = true;
+    
+    form.setValue("precoVenda", value);
+    
+    if (precoCusto > 0 && value > 0) {
+      const novaMargem = ((value - precoCusto) / precoCusto) * 100;
+      form.setValue("margemLucro", parseFloat(novaMargem.toFixed(2)));
     }
-  }, [precoVenda, precoCusto]);
+    
+    setTimeout(() => {
+      isCalculatingRef.current = false;
+    }, 100);
+  };
+
+  const handleMargemLucroChange = (value: number) => {
+    if (isCalculatingRef.current) return;
+    isCalculatingRef.current = true;
+    
+    form.setValue("margemLucro", value);
+    
+    if (precoCusto > 0) {
+      const novoPrecoVenda = precoCusto * (1 + value / 100);
+      form.setValue("precoVenda", parseFloat(novoPrecoVenda.toFixed(2)));
+    }
+    
+    setTimeout(() => {
+      isCalculatingRef.current = false;
+    }, 100);
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -192,16 +224,24 @@ const Produtos = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("Tem certeza que deseja excluir este produto?")) {
-      try {
-        await produtosAPI.delete(id);
-        toast.success("Produto excluído com sucesso!");
-        loadProdutos();
-      } catch (error: any) {
-        toast.error("Erro ao excluir produto", {
-          description: error.message || "Tente novamente",
-        });
-      }
+    setProductToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
+    
+    try {
+      await produtosAPI.delete(productToDelete);
+      toast.success("Produto excluído com sucesso!");
+      loadProdutos();
+    } catch (error: any) {
+      toast.error("Erro ao excluir produto", {
+        description: error.message || "Tente novamente",
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setProductToDelete(null);
     }
   };
 
@@ -410,13 +450,13 @@ const Produtos = () => {
                             <FormControl>
                               <Input 
                                 {...field}
-                                type="number"
-                                step="0.01"
-                                min="0"
+                                type="text"
+                                inputMode="decimal"
                                 placeholder="0.00"
+                                value={field.value || ''}
                                 onChange={(e) => {
-                                  const valor = parseFloat(e.target.value) || 0;
-                                  field.onChange(valor);
+                                  const valor = parseFloat(e.target.value.replace(',', '.')) || 0;
+                                  handlePrecoCustoChange(valor);
                                 }}
                                 className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
                               />
@@ -442,13 +482,13 @@ const Produtos = () => {
                             <FormControl>
                               <Input 
                                 {...field}
-                                type="number"
-                                step="0.01"
-                                min="0"
+                                type="text"
+                                inputMode="decimal"
                                 placeholder="0.00"
+                                value={field.value || ''}
                                 onChange={(e) => {
-                                  const valor = parseFloat(e.target.value) || 0;
-                                  field.onChange(valor);
+                                  const valor = parseFloat(e.target.value.replace(',', '.')) || 0;
+                                  handlePrecoVendaChange(valor);
                                 }}
                                 className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
                               />
@@ -474,14 +514,13 @@ const Produtos = () => {
                             <FormControl>
                               <Input 
                                 {...field}
-                                type="number"
-                                step="0.01"
-                                min="0"
+                                type="text"
+                                inputMode="decimal"
                                 placeholder="0.00"
-                                value={field.value ?? ""}
+                                value={field.value ?? ''}
                                 onChange={(e) => {
-                                  const margem = parseFloat(e.target.value) || 0;
-                                  field.onChange(margem);
+                                  const margem = parseFloat(e.target.value.replace(',', '.')) || 0;
+                                  handleMargemLucroChange(margem);
                                 }}
                                 className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
                               />
@@ -714,6 +753,14 @@ const Produtos = () => {
           onSuccess={loadProdutos}
         />
       )}
+
+      <AlertDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={confirmDelete}
+        title="Confirmar exclusão de produto"
+        description="Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita e removerá também todos os registros de estoque associados."
+      />
     </div>
   );
 };

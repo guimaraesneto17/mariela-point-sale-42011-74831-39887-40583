@@ -14,6 +14,7 @@ import { maskPhone } from "@/lib/masks";
 import { z } from "zod";
 import { vendedoresAPI } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
+import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 
 type VendedorFormData = z.infer<typeof vendedorSchema>;
 
@@ -23,6 +24,8 @@ const Vendedores = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [editingVendedor, setEditingVendedor] = useState<any>(null);
   const [manualCode, setManualCode] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [vendedorToDelete, setVendedorToDelete] = useState<string | null>(null);
 
   const form = useForm<VendedorFormData>({
     resolver: zodResolver(vendedorSchema),
@@ -112,16 +115,24 @@ const Vendedores = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("Tem certeza que deseja excluir este vendedor?")) {
-      try {
-        await vendedoresAPI.delete(id);
-        toast.success("Vendedor excluído com sucesso!");
-        loadVendedores();
-      } catch (error: any) {
-        toast.error("Erro ao excluir vendedor", {
-          description: error.message || "Tente novamente",
-        });
-      }
+    setVendedorToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!vendedorToDelete) return;
+    
+    try {
+      await vendedoresAPI.delete(vendedorToDelete);
+      toast.success("Vendedor excluído com sucesso!");
+      loadVendedores();
+    } catch (error: any) {
+      toast.error("Erro ao excluir vendedor", {
+        description: error.message || "Tente novamente",
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setVendedorToDelete(null);
     }
   };
 
@@ -400,6 +411,14 @@ const Vendedores = () => {
           </Card>
         ))}
       </div>
+
+      <AlertDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={confirmDelete}
+        title="Confirmar exclusão de vendedor"
+        description="Tem certeza que deseja excluir este vendedor? Esta ação não pode ser desfeita."
+      />
     </div>
   );
 };

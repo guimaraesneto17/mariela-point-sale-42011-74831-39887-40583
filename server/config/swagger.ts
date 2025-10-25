@@ -11,7 +11,11 @@ const options: swaggerJsdoc.Options = {
     servers: [
       {
         url: 'https://mariela-pdv-backend.onrender.com',
-        description: 'Servidor de Producao'
+        description: 'Servidor de Produção (Render)'
+      },
+      {
+        url: 'http://localhost:3001',
+        description: 'Servidor de Desenvolvimento Local'
       }
     ],
     tags: [
@@ -88,9 +92,9 @@ const options: swaggerJsdoc.Options = {
         },
         Produto: {
           type: 'object',
-          required: ['codigo', 'nome', 'categoria', 'cor'],
+          required: ['codigoProduto', 'nome', 'categoria', 'cor'],
           properties: {
-            codigo: {
+            codigoProduto: {
               type: 'string',
               pattern: '^P\\d{3}$',
               example: 'P101',

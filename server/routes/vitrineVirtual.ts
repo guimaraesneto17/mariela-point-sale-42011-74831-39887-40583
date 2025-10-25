@@ -97,11 +97,23 @@ router.get('/:id', vitrineVirtualController.getVitrineVirtualById);
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - codigoProduto
+ *             properties:
+ *               codigoProduto:
+ *                 type: string
+ *                 pattern: '^P\\d{3}$'
+ *                 example: 'P101'
+ *                 description: 'Código do produto a ser adicionado à vitrine'
+ *               destaque:
+ *                 type: boolean
+ *                 example: true
+ *                 description: 'Define se o produto deve ser exibido em destaque'
  *     responses:
  *       201:
- *         description: Produto adicionado com sucesso
+ *         description: Produto adicionado à vitrine com sucesso
  *       400:
- *         description: Erro ao adicionar produto
+ *         description: Erro ao adicionar produto (produto já está na vitrine ou não existe)
  */
 router.post('/', vitrineVirtualController.createVitrineVirtual);
 
@@ -117,17 +129,27 @@ router.post('/', vitrineVirtualController.createVitrineVirtual);
  *         required: true
  *         schema:
  *           type: string
+ *         description: ID do registro da vitrine virtual
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               destaque:
+ *                 type: boolean
+ *                 example: false
+ *                 description: 'Atualiza o status de destaque do produto'
+ *               visivel:
+ *                 type: boolean
+ *                 example: true
+ *                 description: 'Define se o produto está visível na vitrine'
  *     responses:
  *       200:
- *         description: Produto atualizado com sucesso
+ *         description: Produto da vitrine atualizado com sucesso
  *       404:
- *         description: Produto não encontrado
+ *         description: Produto não encontrado na vitrine
  *       400:
  *         description: Erro ao atualizar produto
  */

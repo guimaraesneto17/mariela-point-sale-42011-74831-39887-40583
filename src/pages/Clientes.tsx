@@ -14,6 +14,7 @@ import { maskPhone } from "@/lib/masks";
 import { z } from "zod";
 import { clientesAPI } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
+import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 
 type ClienteFormData = z.infer<typeof clienteSchema>;
 
@@ -23,6 +24,8 @@ const Clientes = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [editingCliente, setEditingCliente] = useState<any>(null);
   const [manualCode, setManualCode] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [clienteToDelete, setClienteToDelete] = useState<string | null>(null);
   
   const form = useForm<ClienteFormData>({
     resolver: zodResolver(clienteSchema),
@@ -112,16 +115,24 @@ const Clientes = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("Tem certeza que deseja excluir este cliente?")) {
-      try {
-        await clientesAPI.delete(id);
-        toast.success("Cliente excluído com sucesso!");
-        loadClientes();
-      } catch (error: any) {
-        toast.error("Erro ao excluir cliente", {
-          description: error.message || "Tente novamente",
-        });
-      }
+    setClienteToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!clienteToDelete) return;
+    
+    try {
+      await clientesAPI.delete(clienteToDelete);
+      toast.success("Cliente excluído com sucesso!");
+      loadClientes();
+    } catch (error: any) {
+      toast.error("Erro ao excluir cliente", {
+        description: error.message || "Tente novamente",
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setClienteToDelete(null);
     }
   };
 
@@ -405,6 +416,14 @@ const Clientes = () => {
           </Card>
         ))}
       </div>
+
+      <AlertDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={confirmDelete}
+        title="Confirmar exclusão de cliente"
+        description="Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita."
+      />
     </div>
   );
 };

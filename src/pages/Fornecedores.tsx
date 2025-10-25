@@ -13,6 +13,7 @@ import { fornecedorSchema } from "@/lib/validationSchemas";
 import { maskPhone, maskCNPJ, maskCEP, maskInstagram } from "@/lib/masks";
 import { z } from "zod";
 import { fornecedoresAPI } from "@/lib/api";
+import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 
 type FornecedorFormData = z.infer<typeof fornecedorSchema>;
 
@@ -22,6 +23,8 @@ const Fornecedores = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [editingFornecedor, setEditingFornecedor] = useState<any>(null);
   const [manualCode, setManualCode] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [fornecedorToDelete, setFornecedorToDelete] = useState<string | null>(null);
 
   const form = useForm<FornecedorFormData>({
     resolver: zodResolver(fornecedorSchema),
@@ -129,16 +132,24 @@ const Fornecedores = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("Tem certeza que deseja excluir este fornecedor?")) {
-      try {
-        await fornecedoresAPI.delete(id);
-        toast.success("Fornecedor excluído com sucesso!");
-        loadFornecedores();
-      } catch (error: any) {
-        toast.error("Erro ao excluir fornecedor", {
-          description: error.message || "Tente novamente",
-        });
-      }
+    setFornecedorToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!fornecedorToDelete) return;
+    
+    try {
+      await fornecedoresAPI.delete(fornecedorToDelete);
+      toast.success("Fornecedor excluído com sucesso!");
+      loadFornecedores();
+    } catch (error: any) {
+      toast.error("Erro ao excluir fornecedor", {
+        description: error.message || "Tente novamente",
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setFornecedorToDelete(null);
     }
   };
 
@@ -584,6 +595,14 @@ const Fornecedores = () => {
           </Card>
         ))}
       </div>
+
+      <AlertDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={confirmDelete}
+        title="Confirmar exclusão de fornecedor"
+        description="Tem certeza que deseja excluir este fornecedor? Esta ação não pode ser desfeita."
+      />
     </div>
   );
 };
