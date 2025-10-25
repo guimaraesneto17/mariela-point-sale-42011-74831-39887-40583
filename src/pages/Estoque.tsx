@@ -330,8 +330,8 @@ const Estoque = () => {
             onOpenChange={setShowPromotionDialog}
             codigoProduto={selectedItem.codigoProduto}
             nomeProduto={selectedItem.nomeProduto}
-            precoOriginal={selectedItem.precoVenda}
-            emPromocao={selectedItem.emPromocao}
+            precoOriginal={selectedItem.precoVenda || 0}
+            emPromocao={selectedItem.emPromocao || false}
           />
 
           <NovidadeDialog 
@@ -339,7 +339,8 @@ const Estoque = () => {
             onOpenChange={setShowNovidadeDialog}
             codigoProduto={selectedItem.codigoProduto}
             nomeProduto={selectedItem.nomeProduto}
-            isNovidade={selectedItem.novidade}
+            isNovidade={selectedItem.novidade || false}
+            onSuccess={loadEstoque}
           />
 
           <MovimentacaoDialog 

@@ -21,17 +21,18 @@ export function PromotionDialog({
   onOpenChange, 
   codigoProduto, 
   nomeProduto, 
-  precoOriginal,
+  precoOriginal = 0,
   emPromocao = false
 }: PromotionDialogProps) {
   const [tipoDesconto, setTipoDesconto] = useState<"valor" | "porcentagem">("valor");
   const [valor, setValor] = useState(0);
 
   const calcularPrecoPromocional = () => {
+    const preco = precoOriginal || 0;
     if (tipoDesconto === "valor") {
-      return Math.max(0, precoOriginal - valor);
+      return Math.max(0, preco - valor);
     } else {
-      return Math.max(0, precoOriginal * (1 - valor / 100));
+      return Math.max(0, preco * (1 - valor / 100));
     }
   };
 
