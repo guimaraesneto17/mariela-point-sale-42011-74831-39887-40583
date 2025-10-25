@@ -173,7 +173,7 @@ const Produtos = () => {
   const handleEdit = (product: any) => {
     setEditingProduct(product);
     const margem = product.precoCusto > 0 
-      ? parseFloat((((product.preco - product.precoCusto) / product.precoCusto) * 100).toFixed(2))
+      ? parseFloat(((((product.precoVenda ?? product.preco ?? 0) - product.precoCusto) / product.precoCusto) * 100).toFixed(2))
       : 0;
     
     form.reset({
@@ -183,7 +183,7 @@ const Produtos = () => {
       categoria: product.categoria,
       cor: product.cor,
       precoCusto: product.precoCusto,
-      precoVenda: product.preco,
+      precoVenda: (product.precoVenda ?? product.preco ?? 0),
       margemLucro: margem,
       tamanho: product.tamanho || "U",
     });
@@ -674,17 +674,17 @@ const Produtos = () => {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Preço de Custo:</span>
-                  <span className="font-medium">R$ {produto.precoCusto?.toFixed(2) || '0.00'}</span>
+                  <span className="font-medium">R$ {Number(produto.precoCusto ?? 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Preço de Venda:</span>
-                  <span className="font-medium">R$ {produto.preco.toFixed(2)}</span>
+                  <span className="font-medium">R$ {Number(produto.precoVenda ?? produto.preco ?? 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Lucro (%):</span>
                   <span className="font-semibold text-green-600">
                     {produto.precoCusto 
-                      ? (((produto.preco - produto.precoCusto) / produto.precoCusto) * 100).toFixed(2) 
+                      ? ((((Number(produto.precoVenda ?? produto.preco ?? 0) - Number(produto.precoCusto)) / Number(produto.precoCusto)) * 100)).toFixed(2)
                       : '0.00'}%
                   </span>
                 </div>

@@ -109,14 +109,15 @@ const NovaVenda = () => {
       return;
     }
 
-    const precoComDesconto = produtoSelecionado.preco * (1 - descontoProduto / 100);
+    const precoBase = Number(produtoSelecionado.precoVenda ?? produtoSelecionado.preco ?? 0);
+    const precoComDesconto = precoBase * (1 - descontoProduto / 100);
     const subtotal = precoComDesconto * quantidadeProduto;
 
     const novoItem: ItemVenda = {
       codigoProduto: produtoSelecionado.codigo,
       nomeProduto: produtoSelecionado.nome,
       quantidade: quantidadeProduto,
-      precoUnitario: produtoSelecionado.preco,
+      precoUnitario: precoBase,
       descontoAplicado: descontoProduto,
       subtotal: subtotal
     };
@@ -435,7 +436,7 @@ const NovaVenda = () => {
                     <div>
                       <Label>Valor Atual do Produto</Label>
                       <Input
-                        value={`R$ ${produtoSelecionado.preco.toFixed(2)}`}
+                        value={`R$ ${Number((produtoSelecionado.precoVenda ?? produtoSelecionado.preco ?? 0)).toFixed(2)}`}
                         disabled
                         className="bg-muted"
                       />
@@ -624,7 +625,16 @@ const NovaVenda = () => {
       <SelectProductDialog 
         open={showProductDialog}
         onOpenChange={setShowProductDialog}
-        produtos={produtos}
+        produtos={
+          produtos.length > 0 
+            ? produtos.map((p: any) => ({
+                codigo: p.codigo || p.codigoProduto,
+                nome: p.nome,
+                preco: Number(p.preco ?? p.precoVenda ?? 0),
+                categoria: p.categoria,
+              }))
+            : mockProdutos
+        }
         onSelect={setProdutoSelecionado}
       />
     </div>

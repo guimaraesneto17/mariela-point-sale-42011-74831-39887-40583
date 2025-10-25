@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://mariela-pdv-backend.onrender.com/api';
 
 // Helper para fazer requisições HTTP
 async function fetchAPI(endpoint: string, options?: RequestInit) {
