@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { estoqueAPI } from "@/lib/api";
 
 interface StockExitDialogProps {
   open: boolean;
@@ -18,7 +19,7 @@ export function StockExitDialog({ open, onOpenChange, codigoProduto, nomeProduto
   const [motivo, setMotivo] = useState("");
   const [observacao, setObservacao] = useState("");
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (quantidade <= 0) {
       toast.error("Quantidade deve ser maior que zero");
       return;
@@ -29,12 +30,26 @@ export function StockExitDialog({ open, onOpenChange, codigoProduto, nomeProduto
       return;
     }
 
-    toast.success(`Saída de ${quantidade} unidade(s) registrada com sucesso!`);
-    onOpenChange(false);
-    // Reset form
-    setQuantidade(1);
-    setMotivo("");
-    setObservacao("");
+    try {
+      await estoqueAPI.registrarSaida({
+        codigoProduto,
+        quantidade,
+        origem: 'baixa no estoque',
+        motivo,
+        observacao: observacao || undefined
+      });
+
+      toast.success(`Saída de ${quantidade} unidade(s) registrada com sucesso!`);
+      onOpenChange(false);
+      // Reset form
+      setQuantidade(1);
+      setMotivo("");
+      setObservacao("");
+    } catch (error: any) {
+      toast.error("Erro ao registrar saída", {
+        description: error.message || "Tente novamente"
+      });
+    }
   };
 
   return (

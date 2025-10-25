@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Venda from '../models/Venda';
+import Estoque from '../models/Estoque';
 
 // Helper para formatar erros de validação do Mongoose
 const formatValidationError = (error: any) => {
@@ -57,6 +58,42 @@ export const getVendaByCodigo = async (req: Request, res: Response) => {
 export const createVenda = async (req: Request, res: Response) => {
   try {
     const venda = new Venda(req.body);
+    
+    // Processar baixa no estoque para cada item da venda
+    for (const item of venda.itens) {
+      try {
+        const estoque = await Estoque.findOne({ codigoProduto: item.codigoProduto });
+        
+        if (estoque) {
+          // Verificar se há quantidade suficiente
+          if (estoque.quantidade < item.quantidade) {
+            return res.status(400).json({
+              error: 'Quantidade insuficiente no estoque',
+              message: `Produto ${item.nomeProduto} possui apenas ${estoque.quantidade} unidades disponíveis`,
+              produto: item.codigoProduto
+            });
+          }
+          
+          // Dar baixa no estoque
+          estoque.quantidade -= item.quantidade;
+          
+          // Registrar movimentação
+          estoque.logMovimentacao.push({
+            tipo: 'saida',
+            quantidade: item.quantidade,
+            data: new Date(),
+            origem: 'venda',
+            codigoVenda: venda.codigoVenda
+          } as any);
+          
+          await estoque.save();
+        }
+      } catch (estoqueError) {
+        console.error(`Erro ao processar estoque do produto ${item.codigoProduto}:`, estoqueError);
+        // Continua processando os outros itens mesmo se houver erro
+      }
+    }
+    
     await venda.save();
     res.status(201).json(venda);
   } catch (error) {

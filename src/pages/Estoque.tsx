@@ -116,10 +116,12 @@ const Estoque = () => {
   ];
 
   const displayInventory = inventory.length > 0 ? inventory : mockInventory;
-  const filteredInventory = displayInventory.filter(item =>
-    item.nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.codigoProduto.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredInventory = displayInventory.filter(item => {
+    const nomeProduto = item.nomeProduto || '';
+    const codigoProduto = item.codigoProduto || '';
+    return nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   const openEntryDialog = (item: any) => {
     setSelectedItem(item);
@@ -144,6 +146,14 @@ const Estoque = () => {
   const openMovimentacaoDialog = (item: any) => {
     setSelectedItem(item);
     setShowMovimentacaoDialog(true);
+  };
+
+  const handleEntrySuccess = () => {
+    loadEstoque();
+  };
+
+  const handleExitSuccess = () => {
+    loadEstoque();
   };
 
   return (
@@ -202,7 +212,7 @@ const Estoque = () => {
               <div className="p-4 rounded-lg bg-background/50 border border-border">
                 <p className="text-sm text-muted-foreground mb-1">Quantidade Disponível</p>
                 <p className="text-2xl font-bold text-primary">
-                  {item.quantidadeDisponivel} un.
+                  {item.quantidade || item.quantidadeDisponivel || 0} un.
                 </p>
               </div>
               <div className="p-4 rounded-lg bg-background/50 border border-border">
@@ -307,7 +317,10 @@ const Estoque = () => {
           
           <StockExitDialog 
             open={showExitDialog}
-            onOpenChange={setShowExitDialog}
+            onOpenChange={(open) => {
+              setShowExitDialog(open);
+              if (!open) handleExitSuccess();
+            }}
             codigoProduto={selectedItem.codigoProduto}
             nomeProduto={selectedItem.nomeProduto}
           />

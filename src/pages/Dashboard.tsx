@@ -254,18 +254,6 @@ const Dashboard = () => {
     }
   };
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const { cards: storedCards, order } = JSON.parse(stored);
-      setCards(storedCards);
-      setCardOrder(order);
-    } else {
-      setCards(defaultCards);
-      setCardOrder(defaultCards.map((c) => c.id));
-    }
-  }, []);
-
   const saveConfig = (newCards: DashboardCardConfig[]) => {
     setCards(newCards);
     localStorage.setItem(

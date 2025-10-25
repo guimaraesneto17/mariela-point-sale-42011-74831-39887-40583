@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { estoqueAPI } from "@/lib/api";
 
 interface StockEntryDialogProps {
   open: boolean;
@@ -28,19 +29,38 @@ export function StockEntryDialog({ open, onOpenChange, codigoProduto, nomeProdut
     "Outros"
   ];
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (quantidade <= 0) {
       toast.error("Quantidade deve ser maior que zero");
       return;
     }
 
-    toast.success(`Entrada de ${quantidade} unidade(s) registrada com sucesso!`);
-    onOpenChange(false);
-    // Reset form
-    setOrigem("entrada");
-    setQuantidade(1);
-    setFornecedor("");
-    setObservacao("");
+    try {
+      const entradaData: any = {
+        codigoProduto,
+        quantidade,
+        origem,
+        observacao: observacao || undefined
+      };
+
+      if (origem === "compra" && fornecedor) {
+        entradaData.fornecedor = fornecedor;
+      }
+
+      await estoqueAPI.registrarEntrada(entradaData);
+
+      toast.success(`Entrada de ${quantidade} unidade(s) registrada com sucesso!`);
+      onOpenChange(false);
+      // Reset form
+      setOrigem("entrada");
+      setQuantidade(1);
+      setFornecedor("");
+      setObservacao("");
+    } catch (error: any) {
+      toast.error("Erro ao registrar entrada", {
+        description: error.message || "Tente novamente"
+      });
+    }
   };
 
   return (

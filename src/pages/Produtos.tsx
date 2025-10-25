@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Plus, CheckCircle2, AlertCircle, Package, Edit, Trash2, X, Upload } from "lucide-react";
+import { Search, Plus, CheckCircle2, AlertCircle, Package, Edit, Trash2, X, Upload, PackagePlus } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { produtoSchema } from "@/lib/validationSchemas";
 import { z } from "zod";
 import { produtosAPI } from "@/lib/api";
+import { AddToStockDialog } from "@/components/AddToStockDialog";
 
 type ProdutoFormData = z.infer<typeof produtoSchema>;
 
@@ -26,6 +27,8 @@ const Produtos = () => {
   const [manualCode, setManualCode] = useState(false);
   const [imagemURL, setImagemURL] = useState("");
   const [imagemBase64, setImagemBase64] = useState<string[]>([]);
+  const [showAddToStockDialog, setShowAddToStockDialog] = useState(false);
+  const [selectedProductForStock, setSelectedProductForStock] = useState<any>(null);
 
   const form = useForm<ProdutoFormData>({
     resolver: zodResolver(produtoSchema),
@@ -686,10 +689,31 @@ const Produtos = () => {
                   </span>
                 </div>
               </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full mt-4 gap-2"
+                onClick={() => {
+                  setSelectedProductForStock(produto);
+                  setShowAddToStockDialog(true);
+                }}
+              >
+                <PackagePlus className="h-4 w-4" />
+                Adicionar ao Estoque
+              </Button>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {selectedProductForStock && (
+        <AddToStockDialog
+          open={showAddToStockDialog}
+          onOpenChange={setShowAddToStockDialog}
+          produto={selectedProductForStock}
+          onSuccess={loadProdutos}
+        />
+      )}
     </div>
   );
 };
