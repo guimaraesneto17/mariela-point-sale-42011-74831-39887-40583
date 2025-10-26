@@ -12,11 +12,13 @@ import { Badge } from "@/components/ui/badge";
 import { SelectProductDialog } from "@/components/SelectProductDialog";
 import { SelectClientDialog } from "@/components/SelectClientDialog";
 import { SelectVendedorDialog } from "@/components/SelectVendedorDialog";
-import { clientesAPI, vendedoresAPI, produtosAPI, vendasAPI } from "@/lib/api";
+import { clientesAPI, vendedoresAPI, estoqueAPI, vendasAPI } from "@/lib/api";
 
 interface ItemVenda {
   codigoProduto: string;
   nomeProduto: string;
+  cor: string;
+  tamanho: string;
   quantidade: number;
   precoUnitario: number;
   descontoAplicado: number;
@@ -48,7 +50,7 @@ const NovaVenda = () => {
   const [itemEmEdicao, setItemEmEdicao] = useState<number | null>(null);
   const [clientes, setClientes] = useState<any[]>([]);
   const [vendedores, setVendedores] = useState<any[]>([]);
-  const [produtos, setProdutos] = useState<any[]>([]);
+  const [estoque, setEstoque] = useState<any[]>([]);
 
   useEffect(() => {
     loadData();
@@ -56,14 +58,14 @@ const NovaVenda = () => {
 
   const loadData = async () => {
     try {
-      const [clientesData, vendedoresData, produtosData] = await Promise.all([
+      const [clientesData, vendedoresData, estoqueData] = await Promise.all([
         clientesAPI.getAll(),
         vendedoresAPI.getAll(),
-        produtosAPI.getAll(),
+        estoqueAPI.getAll(),
       ]);
       setClientes(clientesData);
       setVendedores(vendedoresData);
-      setProdutos(produtosData);
+      setEstoque(estoqueData);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       toast.error('Erro ao carregar dados');
@@ -82,10 +84,34 @@ const NovaVenda = () => {
     { codigo: "V002", nome: "Juliana Lima" },
   ];
 
-  const mockProdutos = [
-    { codigo: "P101", nome: "Vestido Floral Curto", preco: 149.90, categoria: "Vestido" },
-    { codigo: "P102", nome: "Blusa Manga Longa", preco: 89.90, categoria: "Blusa" },
-    { codigo: "P103", nome: "Calça Jeans Skinny", preco: 199.90, categoria: "Calça" },
+  const mockEstoque = [
+    { 
+      codigoProduto: "P101", 
+      nomeProduto: "Vestido Floral Curto", 
+      precoVenda: 149.90, 
+      categoria: "Vestido",
+      cor: "Azul",
+      tamanho: "M",
+      quantidade: 10
+    },
+    { 
+      codigoProduto: "P102", 
+      nomeProduto: "Blusa Manga Longa", 
+      precoVenda: 89.90, 
+      categoria: "Blusa",
+      cor: "Preto",
+      tamanho: "G",
+      quantidade: 5
+    },
+    { 
+      codigoProduto: "P103", 
+      nomeProduto: "Calça Jeans Skinny", 
+      precoVenda: 199.90, 
+      categoria: "Calça",
+      cor: "Azul Escuro",
+      tamanho: "38",
+      quantidade: 8
+    },
   ];
 
   // Calcular subtotal dos itens
@@ -109,13 +135,21 @@ const NovaVenda = () => {
       return;
     }
 
-    const precoBase = Number(produtoSelecionado.precoVenda ?? produtoSelecionado.preco ?? 0);
+    // Verificar quantidade disponível em estoque
+    if (quantidadeProduto > (produtoSelecionado.quantidade || 0)) {
+      toast.error(`Quantidade indisponível! Estoque atual: ${produtoSelecionado.quantidade || 0} un.`);
+      return;
+    }
+
+    const precoBase = Number(produtoSelecionado.precoVenda ?? 0);
     const precoComDesconto = precoBase * (1 - descontoProduto / 100);
     const subtotal = precoComDesconto * quantidadeProduto;
 
     const novoItem: ItemVenda = {
-      codigoProduto: produtoSelecionado.codigo,
-      nomeProduto: produtoSelecionado.nome,
+      codigoProduto: produtoSelecionado.codigoProduto,
+      nomeProduto: produtoSelecionado.nomeProduto,
+      cor: produtoSelecionado.cor,
+      tamanho: produtoSelecionado.tamanho,
       quantidade: quantidadeProduto,
       precoUnitario: precoBase,
       descontoAplicado: descontoProduto,
@@ -141,9 +175,13 @@ const NovaVenda = () => {
 
   const editarProduto = (index: number) => {
     const item = itensVenda[index];
-    const allProdutos = produtos.length > 0 ? produtos : mockProdutos;
-    const produto = allProdutos.find(p => (p.codigo || p.codigoProduto) === item.codigoProduto);
-    setProdutoSelecionado(produto);
+    const allEstoque = estoque.length > 0 ? estoque : mockEstoque;
+    const itemEstoque = allEstoque.find(e => 
+      e.codigoProduto === item.codigoProduto && 
+      e.cor === item.cor && 
+      e.tamanho === item.tamanho
+    );
+    setProdutoSelecionado(itemEstoque);
     setQuantidadeProduto(item.quantidade);
     setDescontoProduto(item.descontoAplicado);
     setItemEmEdicao(index);
@@ -197,7 +235,8 @@ const NovaVenda = () => {
         itens: itensVenda.map(item => ({
           codigoProduto: item.codigoProduto,
           nomeProduto: item.nomeProduto,
-          tamanho: "U",
+          cor: item.cor,
+          tamanho: item.tamanho,
           quantidade: item.quantidade,
           precoUnitario: item.precoUnitario,
           precoFinalUnitario: item.precoUnitario * (1 - item.descontoAplicado / 100),
@@ -409,8 +448,13 @@ const NovaVenda = () => {
                   {produtoSelecionado ? (
                     <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg mt-2">
                       <div>
-                        <p className="font-medium">{produtoSelecionado.nome}</p>
-                        <p className="text-sm text-muted-foreground">{produtoSelecionado.codigo}</p>
+                        <p className="font-medium">{produtoSelecionado.nomeProduto}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {produtoSelecionado.codigoProduto} • {produtoSelecionado.cor} • {produtoSelecionado.tamanho}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Disponível: {produtoSelecionado.quantidade} un.
+                        </p>
                       </div>
                       <Button
                         size="sm"
@@ -436,7 +480,7 @@ const NovaVenda = () => {
                     <div>
                       <Label>Valor Atual do Produto</Label>
                       <Input
-                        value={`R$ ${Number((produtoSelecionado.precoVenda ?? produtoSelecionado.preco ?? 0)).toFixed(2)}`}
+                        value={`R$ ${Number(produtoSelecionado.precoVenda ?? 0).toFixed(2)}`}
                         disabled
                         className="bg-muted"
                       />
@@ -513,7 +557,7 @@ const NovaVenda = () => {
                       <div className="flex-1">
                         <p className="font-medium">{item.nomeProduto}</p>
                         <p className="text-sm text-muted-foreground">
-                          {item.quantidade}x R$ {item.precoUnitario.toFixed(2)}
+                          {item.codigoProduto} • {item.cor} • Tam: {item.tamanho} • {item.quantidade}x R$ {item.precoUnitario.toFixed(2)}
                           {item.descontoAplicado > 0 && (
                             <Badge className="ml-2 bg-accent">-{item.descontoAplicado}%</Badge>
                           )}
@@ -625,16 +669,7 @@ const NovaVenda = () => {
       <SelectProductDialog 
         open={showProductDialog}
         onOpenChange={setShowProductDialog}
-        produtos={
-          produtos.length > 0 
-            ? produtos.map((p: any) => ({
-                codigo: p.codigo || p.codigoProduto,
-                nome: p.nome,
-                preco: Number(p.preco ?? p.precoVenda ?? 0),
-                categoria: p.categoria,
-              }))
-            : mockProdutos
-        }
+        estoque={estoque.length > 0 ? estoque : mockEstoque}
         onSelect={setProdutoSelecionado}
       />
     </div>
