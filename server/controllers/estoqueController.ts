@@ -248,3 +248,66 @@ export const toggleNovidade = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Erro ao atualizar status de novidade' });
   }
 };
+
+// Toggle status de promoção
+export const togglePromocao = async (req: Request, res: Response) => {
+  try {
+    const { codigo } = req.params;
+    const { emPromocao, precoPromocional } = req.body;
+
+    // Buscar o produto para validar o preço
+    const Produto = require('../models/Produto').default;
+    const produto = await Produto.findOne({ codigoProduto: codigo });
+    
+    if (!produto) {
+      return res.status(404).json({ error: 'Produto não encontrado' });
+    }
+
+    // Validar preço promocional se estiver ativando a promoção
+    if (emPromocao) {
+      if (!precoPromocional || precoPromocional <= 0) {
+        return res.status(400).json({ 
+          error: 'Preço promocional inválido',
+          message: 'O preço promocional deve ser maior que zero'
+        });
+      }
+
+      if (precoPromocional >= produto.precoVenda) {
+        return res.status(400).json({ 
+          error: 'Preço promocional inválido',
+          message: 'O preço promocional deve ser menor que o preço de venda'
+        });
+      }
+    }
+
+    // Atualizar estoque
+    const updateData: any = { 
+      emPromocao,
+      dataAtualizacao: new Date().toISOString()
+    };
+    
+    if (emPromocao) {
+      updateData.precoPromocional = precoPromocional;
+    } else {
+      updateData.precoPromocional = null;
+    }
+
+    const estoque = await Estoque.findOneAndUpdate(
+      { codigoProduto: codigo },
+      updateData,
+      { new: true }
+    );
+
+    if (!estoque) {
+      return res.status(404).json({ error: 'Produto não encontrado no estoque' });
+    }
+
+    res.json({
+      message: `Promoção ${emPromocao ? 'ativada' : 'desativada'} com sucesso`,
+      estoque
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar status de promoção:', error);
+    res.status(500).json({ error: 'Erro ao atualizar status de promoção' });
+  }
+};

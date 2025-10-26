@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { estoqueAPI } from "@/lib/api";
 
 interface PromotionDialogProps {
   open: boolean;
@@ -14,6 +15,8 @@ interface PromotionDialogProps {
   nomeProduto: string;
   precoOriginal: number;
   emPromocao?: boolean;
+  precoPromocionalAtual?: number;
+  onSuccess?: () => void;
 }
 
 export function PromotionDialog({ 
@@ -22,10 +25,13 @@ export function PromotionDialog({
   codigoProduto, 
   nomeProduto, 
   precoOriginal = 0,
-  emPromocao = false
+  emPromocao = false,
+  precoPromocionalAtual,
+  onSuccess
 }: PromotionDialogProps) {
   const [tipoDesconto, setTipoDesconto] = useState<"valor" | "porcentagem">("valor");
   const [valor, setValor] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   const calcularPrecoPromocional = () => {
     const preco = precoOriginal || 0;
@@ -38,7 +44,7 @@ export function PromotionDialog({
 
   const precoPromocional = calcularPrecoPromocional();
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (valor <= 0) {
       toast.error("Informe um valor válido para o desconto");
       return;
@@ -49,17 +55,38 @@ export function PromotionDialog({
       return;
     }
 
-    toast.success(`Promoção aplicada! Novo preço: R$ ${precoPromocional.toFixed(2)}`);
-    onOpenChange(false);
-    // Reset
-    setValor(0);
-    setTipoDesconto("valor");
+    if (precoPromocional >= precoOriginal) {
+      toast.error("O preço promocional deve ser menor que o preço de venda");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await estoqueAPI.togglePromocao(codigoProduto, true, precoPromocional);
+      toast.success(`Promoção aplicada! Novo preço: R$ ${precoPromocional.toFixed(2)}`);
+      onOpenChange(false);
+      setValor(0);
+      setTipoDesconto("valor");
+      onSuccess?.();
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao aplicar promoção");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRemovePromotion = () => {
-    toast.success(`Promoção removida de "${nomeProduto}"!`);
-    onOpenChange(false);
-    // Aqui você implementaria a lógica com a API
+  const handleRemovePromotion = async () => {
+    try {
+      setLoading(true);
+      await estoqueAPI.togglePromocao(codigoProduto, false);
+      toast.success(`Promoção removida de "${nomeProduto}"!`);
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao remover promoção");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (emPromocao) {
@@ -89,14 +116,16 @@ export function PromotionDialog({
               variant="outline" 
               className="flex-1"
               onClick={() => onOpenChange(false)}
+              disabled={loading}
             >
               Manter Promoção
             </Button>
             <Button 
               className="flex-1"
               onClick={handleRemovePromotion}
+              disabled={loading}
             >
-              Cancelar Promoção
+              {loading ? "Cancelando..." : "Cancelar Promoção"}
             </Button>
           </div>
         </DialogContent>
@@ -154,11 +183,11 @@ export function PromotionDialog({
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)} disabled={loading}>
               Cancelar
             </Button>
-            <Button className="flex-1" onClick={handleSubmit}>
-              Aplicar Promoção
+            <Button className="flex-1" onClick={handleSubmit} disabled={loading}>
+              {loading ? "Aplicando..." : "Aplicar Promoção"}
             </Button>
           </div>
         </div>

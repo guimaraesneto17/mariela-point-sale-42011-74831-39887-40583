@@ -87,6 +87,10 @@ export const estoqueAPI = {
     method: 'PATCH',
     body: JSON.stringify({ isNovidade }),
   }),
+  togglePromocao: (codigo: string, emPromocao: boolean, precoPromocional?: number) => fetchAPI(`/estoque/promocao/${codigo}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ emPromocao, precoPromocional }),
+  }),
   delete: (codigo: string) => fetchAPI(`/estoque/${codigo}`, { method: 'DELETE' }),
 };
 

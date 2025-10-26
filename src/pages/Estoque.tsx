@@ -342,6 +342,8 @@ const Estoque = () => {
             nomeProduto={selectedItem.nomeProduto}
             precoOriginal={selectedItem.precoVenda || 0}
             emPromocao={selectedItem.emPromocao || false}
+            precoPromocionalAtual={selectedItem.precoPromocional}
+            onSuccess={loadEstoque}
           />
 
           <NovidadeDialog 

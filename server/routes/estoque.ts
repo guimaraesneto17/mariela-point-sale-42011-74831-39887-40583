@@ -262,7 +262,7 @@ router.patch('/novidade/:codigo', estoqueController.toggleNovidade);
  *                 type: boolean
  *                 example: true
  *                 description: Status de promoção
- *               valorPromocional:
+ *               precoPromocional:
  *                 type: number
  *                 minimum: 0
  *                 example: 79.90
@@ -275,6 +275,7 @@ router.patch('/novidade/:codigo', estoqueController.toggleNovidade);
  *       400:
  *         description: Erro ao atualizar promoção ou valor promocional não informado
  */
+router.patch('/promocao/:codigo', estoqueController.togglePromocao);
 
 /**
  * @swagger

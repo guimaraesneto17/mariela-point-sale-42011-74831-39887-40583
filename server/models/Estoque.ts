@@ -33,6 +33,11 @@ const EstoqueSchema = new mongoose.Schema({
     required: true,
     default: false
   },
+  precoPromocional: {
+    type: Number,
+    min: 0,
+    default: null
+  },
   logMovimentacao: [{
     tipo: {
       type: String,
