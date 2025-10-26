@@ -234,14 +234,14 @@ const Estoque = () => {
               <div className="p-4 rounded-lg bg-background/50 border border-border">
                 <p className="text-sm text-muted-foreground mb-1">Preço de Venda</p>
                 <p className="text-2xl font-bold text-foreground">
-                  R$ {item.precoVenda?.toFixed(2)}
+                  R$ {(item.precoVenda || 0).toFixed(2)}
                 </p>
               </div>
               {item.emPromocao && item.precoPromocional && (
                 <div className="p-4 rounded-lg bg-accent/10 border border-accent">
                   <p className="text-sm text-muted-foreground mb-1">Valor Promocional</p>
                   <p className="text-2xl font-bold text-accent">
-                    R$ {item.precoPromocional?.toFixed(2)}
+                    R$ {(item.precoPromocional || 0).toFixed(2)}
                   </p>
                 </div>
               )}

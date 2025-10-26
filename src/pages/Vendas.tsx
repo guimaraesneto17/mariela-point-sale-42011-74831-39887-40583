@@ -82,6 +82,28 @@ const Vendas = () => {
     }
   };
 
+  // Helper para formatar data para exibição
+  const formatDisplayDate = (dateValue: any): string => {
+    if (!dateValue) return '—';
+    try {
+      const date = new Date(dateValue);
+      if (isNaN(date.getTime())) return '—';
+      return new Intl.DateTimeFormat('pt-BR', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric' 
+      }).format(date);
+    } catch (error) {
+      return '—';
+    }
+  };
+
+  // Helper para formatar valores monetários
+  const formatCurrency = (value: any): string => {
+    const numValue = Number(value);
+    return isNaN(numValue) ? 'R$ 0,00' : `R$ ${numValue.toFixed(2).replace('.', ',')}`;
+  };
+
   const displayVendas = vendas.length > 0 ? vendas : mockVendas;
   const filteredVendas = displayVendas.filter((venda: any) => {
     // Busca inteligente: procura em vendedor, código vendedor, cliente, código cliente, código venda
@@ -140,12 +162,12 @@ const Vendas = () => {
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h3 className="text-xl font-bold">{venda.codigo || venda.codigoVenda || venda._id}</h3>
-                <p className="text-muted-foreground text-sm">{venda.data || ''}</p>
+                <p className="text-muted-foreground text-sm">{formatDisplayDate(venda.data)}</p>
               </div>
               <div className="flex gap-2">
                 <Badge className="bg-primary">{venda.formaPagamento || '—'}</Badge>
                 {venda.formaPagamento === "Cartão de Crédito" && Number(venda.parcelas || 1) > 1 && (
-                  <Badge variant="outline">{venda.parcelas}x de R$ {Number((venda.total || 0) / (venda.parcelas || 1)).toFixed(2)}</Badge>
+                  <Badge variant="outline">{venda.parcelas}x de {formatCurrency((venda.total || 0) / (venda.parcelas || 1))}</Badge>
                 )}
               </div>
             </div>
@@ -165,8 +187,8 @@ const Vendas = () => {
               <p className="font-medium text-sm mb-2">Itens:</p>
               {Array.isArray(venda.itens) && venda.itens.map((item: any, idx: number) => (
                 <div key={idx} className="flex justify-between text-sm bg-background/50 p-2 rounded">
-                  <span>{item.nome || item.nomeProduto} (x{item.quantidade})</span>
-                  <span className="font-medium">R$ {Number(item.preco || item.precoUnitario || item.precoFinalUnitario || 0).toFixed(2)}</span>
+                  <span>{item.nome || item.nomeProduto} (x{item.quantidade || 1})</span>
+                  <span className="font-medium">{formatCurrency(item.preco || item.precoUnitario || item.precoFinalUnitario || 0)}</span>
                 </div>
               ))}
             </div>
@@ -174,18 +196,18 @@ const Vendas = () => {
             <div className="mt-4 pt-4 border-t space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-lg font-medium">Total:</span>
-                <span className="text-2xl font-bold text-primary">R$ {Number(venda.total || 0).toFixed(2)}</span>
+                <span className="text-2xl font-bold text-primary">{formatCurrency(venda.total || 0)}</span>
               </div>
               
               {Number(venda.taxaMaquininha || 0) > 0 && (
                 <>
                   <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>Taxa maquininha ({venda.taxaMaquininha}%):</span>
-                    <span>- R$ {Number(venda.valorTaxa || 0).toFixed(2)}</span>
+                    <span>Taxa maquininha ({Number(venda.taxaMaquininha || 0).toFixed(2)}%):</span>
+                    <span>- {formatCurrency(venda.valorTaxa || 0)}</span>
                   </div>
                   <div className="flex justify-between text-base font-bold text-accent pt-2 border-t">
                     <span>Recebido pelo Lojista:</span>
-                    <span>R$ {Number(venda.valorRecebido ?? (Number(venda.total || 0) - Number(venda.valorTaxa || 0))).toFixed(2)}</span>
+                    <span>{formatCurrency(venda.valorRecebido ?? (Number(venda.total || 0) - Number(venda.valorTaxa || 0)))}</span>
                   </div>
                 </>
               )}
