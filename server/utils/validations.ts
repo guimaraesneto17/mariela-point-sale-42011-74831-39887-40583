@@ -15,7 +15,7 @@ const regex = {
   codigoVendedor: /^V\d{3}$/,
   codigoVenda: /^VENDA\d{8}-\d{3}$/,
   telefone: /^\(\d{2}\) \d{4,5}-\d{4}$/,
-  dataISO: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/,
+  dataISO: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/,
   data: /^\d{4}-\d{2}-\d{2}$/,
   cnpj: /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/,
   instagram: /^@\w+/,
