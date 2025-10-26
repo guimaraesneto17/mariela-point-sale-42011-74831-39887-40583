@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Fornecedor from '../models/Fornecedor';
+import Validations from '../utils/validations';
 
 // Helper para formatar erros de validação do Mongoose
 const formatValidationError = (error: any) => {
@@ -56,6 +57,16 @@ export const getFornecedorByCodigo = async (req: Request, res: Response) => {
 
 export const createFornecedor = async (req: Request, res: Response) => {
   try {
+    // Validar dados antes de criar
+    const erros = Validations.fornecedor(req.body);
+    if (erros.length > 0) {
+      return res.status(400).json({
+        error: 'Erro de validação',
+        message: 'Um ou mais campos estão inválidos',
+        fields: erros.map(erro => ({ message: erro }))
+      });
+    }
+
     const fornecedor = new Fornecedor(req.body);
     await fornecedor.save();
     res.status(201).json(fornecedor);
@@ -67,6 +78,16 @@ export const createFornecedor = async (req: Request, res: Response) => {
 
 export const updateFornecedor = async (req: Request, res: Response) => {
   try {
+    // Validar dados antes de atualizar
+    const erros = Validations.fornecedor(req.body);
+    if (erros.length > 0) {
+      return res.status(400).json({
+        error: 'Erro de validação',
+        message: 'Um ou mais campos estão inválidos',
+        fields: erros.map(erro => ({ message: erro }))
+      });
+    }
+
     const fornecedor = await Fornecedor.findOneAndUpdate(
       { codigoFornecedor: req.params.codigo },
       req.body,

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Estoque from '../models/Estoque';
+import Validations from '../utils/validations';
 
 // Helper para formatar erros de validação do Mongoose
 const formatValidationError = (error: any) => {
@@ -89,6 +90,16 @@ export const getEstoqueByCodigo = async (req: Request, res: Response) => {
 
 export const createEstoque = async (req: Request, res: Response) => {
   try {
+    // Validar dados antes de criar
+    const erros = Validations.estoque(req.body);
+    if (erros.length > 0) {
+      return res.status(400).json({
+        error: 'Erro de validação',
+        message: 'Um ou mais campos estão inválidos',
+        fields: erros.map(erro => ({ message: erro }))
+      });
+    }
+
     const estoque = new Estoque(req.body);
     await estoque.save();
     res.status(201).json(estoque);
@@ -100,6 +111,16 @@ export const createEstoque = async (req: Request, res: Response) => {
 
 export const updateEstoque = async (req: Request, res: Response) => {
   try {
+    // Validar dados antes de atualizar
+    const erros = Validations.estoque(req.body);
+    if (erros.length > 0) {
+      return res.status(400).json({
+        error: 'Erro de validação',
+        message: 'Um ou mais campos estão inválidos',
+        fields: erros.map(erro => ({ message: erro }))
+      });
+    }
+
     const estoque = await Estoque.findByIdAndUpdate(
       req.params.id,
       req.body,

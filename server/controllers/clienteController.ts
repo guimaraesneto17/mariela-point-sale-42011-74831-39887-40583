@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Cliente from '../models/Cliente';
+import Validations from '../utils/validations';
 
 // Helper para formatar erros de validação do Mongoose
 const formatValidationError = (error: any) => {
@@ -56,6 +57,16 @@ export const getClienteByCodigo = async (req: Request, res: Response) => {
 
 export const createCliente = async (req: Request, res: Response) => {
   try {
+    // Validar dados antes de criar
+    const erros = Validations.cliente(req.body);
+    if (erros.length > 0) {
+      return res.status(400).json({
+        error: 'Erro de validação',
+        message: 'Um ou mais campos estão inválidos',
+        fields: erros.map(erro => ({ message: erro }))
+      });
+    }
+
     const cliente = new Cliente(req.body);
     await cliente.save();
     res.status(201).json(cliente);
@@ -67,6 +78,16 @@ export const createCliente = async (req: Request, res: Response) => {
 
 export const updateCliente = async (req: Request, res: Response) => {
   try {
+    // Validar dados antes de atualizar
+    const erros = Validations.cliente(req.body);
+    if (erros.length > 0) {
+      return res.status(400).json({
+        error: 'Erro de validação',
+        message: 'Um ou mais campos estão inválidos',
+        fields: erros.map(erro => ({ message: erro }))
+      });
+    }
+
     const cliente = await Cliente.findOneAndUpdate(
       { codigoCliente: req.params.codigo },
       req.body,

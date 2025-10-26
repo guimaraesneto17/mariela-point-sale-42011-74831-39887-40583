@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Produto from '../models/Produto';
 import Estoque from '../models/Estoque';
+import Validations from '../utils/validations';
 
 // Helper para formatar erros de validação do Mongoose
 const formatValidationError = (error: any) => {
@@ -57,11 +58,23 @@ export const getProdutoByCodigo = async (req: Request, res: Response) => {
 
 export const createProduto = async (req: Request, res: Response) => {
   try {
-    const produto = new Produto({
+    const produtoData = {
       ...req.body,
       ativo: true,
       dataCadastro: new Date().toISOString()
-    });
+    };
+
+    // Validar dados antes de criar
+    const erros = Validations.produto(produtoData);
+    if (erros.length > 0) {
+      return res.status(400).json({
+        error: 'Erro de validação',
+        message: 'Um ou mais campos estão inválidos',
+        fields: erros.map(erro => ({ message: erro }))
+      });
+    }
+
+    const produto = new Produto(produtoData);
     await produto.save();
 
     res.status(201).json(produto);
@@ -73,12 +86,24 @@ export const createProduto = async (req: Request, res: Response) => {
 
 export const updateProduto = async (req: Request, res: Response) => {
   try {
+    const produtoData = { 
+      ...req.body,
+      dataAtualizacao: new Date().toISOString()
+    };
+
+    // Validar dados antes de atualizar
+    const erros = Validations.produto(produtoData);
+    if (erros.length > 0) {
+      return res.status(400).json({
+        error: 'Erro de validação',
+        message: 'Um ou mais campos estão inválidos',
+        fields: erros.map(erro => ({ message: erro }))
+      });
+    }
+
     const produto = await Produto.findOneAndUpdate(
       { codigoProduto: req.params.codigo },
-      { 
-        ...req.body,
-        dataAtualizacao: new Date().toISOString()
-      },
+      produtoData,
       { new: true, runValidators: true }
     );
     

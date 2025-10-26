@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Venda from '../models/Venda';
 import Estoque from '../models/Estoque';
+import Validations from '../utils/validations';
 
 // Helper para formatar erros de validação do Mongoose
 const formatValidationError = (error: any) => {
@@ -57,6 +58,16 @@ export const getVendaByCodigo = async (req: Request, res: Response) => {
 
 export const createVenda = async (req: Request, res: Response) => {
   try {
+    // Validar dados antes de criar
+    const erros = Validations.venda(req.body);
+    if (erros.length > 0) {
+      return res.status(400).json({
+        error: 'Erro de validação',
+        message: 'Um ou mais campos estão inválidos',
+        fields: erros.map(erro => ({ message: erro }))
+      });
+    }
+
     const venda = new Venda(req.body);
     
     // Processar baixa no estoque para cada item da venda
@@ -104,6 +115,16 @@ export const createVenda = async (req: Request, res: Response) => {
 
 export const updateVenda = async (req: Request, res: Response) => {
   try {
+    // Validar dados antes de atualizar
+    const erros = Validations.venda(req.body);
+    if (erros.length > 0) {
+      return res.status(400).json({
+        error: 'Erro de validação',
+        message: 'Um ou mais campos estão inválidos',
+        fields: erros.map(erro => ({ message: erro }))
+      });
+    }
+
     const venda = await Venda.findOneAndUpdate(
       { codigoVenda: req.params.codigo },
       req.body,
