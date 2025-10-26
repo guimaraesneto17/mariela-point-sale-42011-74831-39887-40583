@@ -13,6 +13,7 @@ import Estoque from "./pages/Estoque";
 import Fornecedores from "./pages/Fornecedores";
 import Vendedores from "./pages/Vendedores";
 import Relatorios from "./pages/Relatorios";
+import VitrineVirtual from "./pages/VitrineVirtual";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/fornecedores" element={<Fornecedores />} />
             <Route path="/vendedores" element={<Vendedores />} />
             <Route path="/relatorios" element={<Relatorios />} />
+            <Route path="/vitrine-virtual" element={<VitrineVirtual />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

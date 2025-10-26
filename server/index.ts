@@ -27,29 +27,51 @@ const allowedOrigins = [
   'https://mariela-pdv.lovable.app',
   'https://mariela-point-sale.vercel.app',
   'https://a9daa95e-02e8-4bad-a82b-327ad991a1b4.lovableproject.com',
-  'https://mariela-point-sale-k2ly11fpm-guimaraesneto17s-projects.vercel.app',
   'https://id-preview--abd15f43-0482-44aa-9acd-05f459b644cb.lovable.app',
   'https://id-preview--474e004e-52f2-4568-9eac-ca58590d8820.lovable.app',
   'http://localhost:8080',
   'http://localhost:5173',
-  'http://192.168.0.11:8080/'
+  'http://localhost:3000',
+  'http://127.0.0.1:8080',
+  'http://127.0.0.1:5173',
+  'http://192.168.0.11:8080'
 ];
 
 // Configuração do CORS
 app.use(cors({
   origin: (origin, callback) => {
-    if (
-      !origin ||
-      allowedOrigins.includes(origin) ||
-      origin.endsWith('.lovableproject.com')
-    ) {
-      callback(null, true);
-    } else {
-      console.warn(`🚫 Bloqueado por CORS: ${origin}`);
-      callback(new Error('Não permitido pelo CORS'));
+    // Permitir requisições sem origin (ex: mobile apps, Postman, server-to-server)
+    if (!origin) {
+      return callback(null, true);
     }
+
+    // Verificar se a origem está na lista de permitidas
+    if (allowedOrigins.includes(origin)) {
+      console.log(`✅ CORS permitido: ${origin}`);
+      return callback(null, true);
+    }
+
+    // Permitir qualquer subdomínio do Lovable
+    if (origin.endsWith('.lovableproject.com') || origin.endsWith('.lovable.app')) {
+      console.log(`✅ CORS permitido (Lovable): ${origin}`);
+      return callback(null, true);
+    }
+
+    // Permitir qualquer subdomínio da Vercel em desenvolvimento
+    if (origin.includes('.vercel.app')) {
+      console.log(`✅ CORS permitido (Vercel): ${origin}`);
+      return callback(null, true);
+    }
+
+    // Bloquear outras origens
+    console.warn(`🚫 Bloqueado por CORS: ${origin}`);
+    callback(new Error('Não permitido pelo CORS'));
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 86400 // 24 horas
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
