@@ -276,12 +276,11 @@ export const togglePromocao = async (req: Request, res: Response) => {
     const { codigo } = req.params;
     const { emPromocao, precoPromocional } = req.body;
 
-    // Buscar o produto para validar o preço
-    const Produto = require('../models/Produto').default;
-    const produto = await Produto.findOne({ codigoProduto: codigo });
+    // Buscar todos os itens de estoque com esse código de produto
+    const itensEstoque = await Estoque.find({ codigoProduto: codigo });
     
-    if (!produto) {
-      return res.status(404).json({ error: 'Produto não encontrado' });
+    if (!itensEstoque || itensEstoque.length === 0) {
+      return res.status(404).json({ error: 'Produto não encontrado no estoque' });
     }
 
     // Validar preço promocional se estiver ativando a promoção
@@ -292,40 +291,25 @@ export const togglePromocao = async (req: Request, res: Response) => {
           message: 'O preço promocional deve ser maior que zero'
         });
       }
-
-      if (precoPromocional >= produto.precoVenda) {
-        return res.status(400).json({ 
-          error: 'Preço promocional inválido',
-          message: 'O preço promocional deve ser menor que o preço de venda'
-        });
-      }
     }
 
-    // Atualizar estoque
+    // Atualizar todos os itens de estoque com esse código de produto
     const updateData: any = { 
-      emPromocao,
-      dataAtualizacao: new Date().toISOString()
+      emPromocao: emPromocao,
+      precoPromocional: emPromocao ? precoPromocional : null
     };
-    
-    if (emPromocao) {
-      updateData.precoPromocional = precoPromocional;
-    } else {
-      updateData.precoPromocional = null;
-    }
 
-    const estoque = await Estoque.findOneAndUpdate(
+    await Estoque.updateMany(
       { codigoProduto: codigo },
-      updateData,
-      { new: true }
+      { $set: updateData }
     );
 
-    if (!estoque) {
-      return res.status(404).json({ error: 'Produto não encontrado no estoque' });
-    }
+    // Buscar os itens atualizados
+    const estoqueAtualizado = await Estoque.find({ codigoProduto: codigo });
 
     res.json({
       message: `Promoção ${emPromocao ? 'ativada' : 'desativada'} com sucesso`,
-      estoque
+      estoque: estoqueAtualizado
     });
   } catch (error) {
     console.error('Erro ao atualizar status de promoção:', error);
