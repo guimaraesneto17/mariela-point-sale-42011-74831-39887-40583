@@ -57,8 +57,13 @@ export const getClienteByCodigo = async (req: Request, res: Response) => {
 
 export const createCliente = async (req: Request, res: Response) => {
   try {
+    const clienteData = {
+      ...req.body,
+      dataCadastro: new Date().toISOString()
+    };
+
     // Validar dados antes de criar
-    const erros = Validations.cliente(req.body);
+    const erros = Validations.cliente(clienteData);
     if (erros.length > 0) {
       return res.status(400).json({
         error: 'Erro de validação',
@@ -67,7 +72,7 @@ export const createCliente = async (req: Request, res: Response) => {
       });
     }
 
-    const cliente = new Cliente(req.body);
+    const cliente = new Cliente(clienteData);
     await cliente.save();
     res.status(201).json(cliente);
   } catch (error) {
@@ -78,8 +83,13 @@ export const createCliente = async (req: Request, res: Response) => {
 
 export const updateCliente = async (req: Request, res: Response) => {
   try {
+    const clienteData = {
+      ...req.body,
+      dataAtualizacao: new Date().toISOString()
+    };
+
     // Validar dados antes de atualizar
-    const erros = Validations.cliente(req.body);
+    const erros = Validations.cliente(clienteData);
     if (erros.length > 0) {
       return res.status(400).json({
         error: 'Erro de validação',
@@ -90,7 +100,7 @@ export const updateCliente = async (req: Request, res: Response) => {
 
     const cliente = await Cliente.findOneAndUpdate(
       { codigoCliente: req.params.codigo },
-      req.body,
+      clienteData,
       { new: true, runValidators: true }
     );
     if (!cliente) {

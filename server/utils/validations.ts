@@ -24,6 +24,22 @@ const regex = {
 };
 
 /**
+ * Helper para limpar strings vazias e tratar como null
+ */
+function limparDados(data: any): any {
+  const cleaned = { ...data };
+  Object.keys(cleaned).forEach(key => {
+    if (cleaned[key] === '') {
+      cleaned[key] = null;
+    }
+    if (typeof cleaned[key] === 'object' && cleaned[key] !== null && !Array.isArray(cleaned[key])) {
+      cleaned[key] = limparDados(cleaned[key]);
+    }
+  });
+  return cleaned;
+}
+
+/**
  * Função genérica de validação condicional
  */
 function validarCampo(valor: any, pattern: RegExp, nomeCampo: string): boolean | string {
@@ -35,7 +51,7 @@ function validarCampo(valor: any, pattern: RegExp, nomeCampo: string): boolean |
  * Helper para checar tamanho mínimo/máximo
  */
 function validarTamanho(valor: any, min: number, max: number, nomeCampo: string): boolean | string {
-  if (valor === null || valor === undefined) return true;
+  if (valor === null || valor === undefined || valor === '') return true;
   if (typeof valor !== 'string') return `${nomeCampo} deve ser uma string.`;
   if (valor.length < min) return `${nomeCampo} deve ter pelo menos ${min} caracteres.`;
   if (valor.length > max) return `${nomeCampo} deve ter no máximo ${max} caracteres.`;
@@ -52,29 +68,30 @@ const Validations = {
   // -------------------- CLIENTE --------------------
   cliente: (data: any): string[] => {
     const erros: string[] = [];
+    const cleaned = limparDados(data);
 
     // Campos obrigatórios
-    if (!data.codigoCliente) erros.push('codigoCliente é obrigatório.');
-    else if (!regex.codigoCliente.test(data.codigoCliente))
+    if (!cleaned.codigoCliente) erros.push('codigoCliente é obrigatório.');
+    else if (!regex.codigoCliente.test(cleaned.codigoCliente))
       erros.push('codigoCliente deve seguir o formato C001.');
 
-    if (!data.nome || data.nome.length < 3 || data.nome.length > 100)
+    if (!cleaned.nome || cleaned.nome.length < 3 || cleaned.nome.length > 100)
       erros.push('nome deve ter entre 3 e 100 caracteres.');
 
-    if (!data.dataCadastro || !regex.dataISO.test(data.dataCadastro))
+    if (!cleaned.dataCadastro || !regex.dataISO.test(cleaned.dataCadastro))
       erros.push('dataCadastro é obrigatória e deve estar em formato ISO.');
 
     // Campos opcionais
-    if (data.telefone && !regex.telefone.test(data.telefone))
+    if (cleaned.telefone && !regex.telefone.test(cleaned.telefone))
       erros.push('telefone deve estar no formato (XX) XXXXX-XXXX.');
 
-    if (data.dataNascimento && !regex.data.test(data.dataNascimento))
+    if (cleaned.dataNascimento && !regex.data.test(cleaned.dataNascimento))
       erros.push('dataNascimento deve estar no formato YYYY-MM-DD.');
 
-    if (data.observacao && data.observacao.length > 500)
+    if (cleaned.observacao && cleaned.observacao.length > 500)
       erros.push('observacao deve ter no máximo 500 caracteres.');
 
-    if (data.dataAtualizacao && !regex.dataISO.test(data.dataAtualizacao))
+    if (cleaned.dataAtualizacao && !regex.dataISO.test(cleaned.dataAtualizacao))
       erros.push('dataAtualizacao deve estar em formato ISO.');
 
     return erros;
@@ -83,19 +100,20 @@ const Validations = {
   // -------------------- FORNECEDOR --------------------
   fornecedor: (data: any): string[] => {
     const erros: string[] = [];
+    const cleaned = limparDados(data);
 
-    if (!data.codigoFornecedor || !regex.codigoFornecedor.test(data.codigoFornecedor))
+    if (!cleaned.codigoFornecedor || !regex.codigoFornecedor.test(cleaned.codigoFornecedor))
       erros.push('codigoFornecedor é obrigatório e deve seguir o formato F001.');
 
-    if (!data.nome || data.nome.length < 3 || data.nome.length > 150)
+    if (!cleaned.nome || cleaned.nome.length < 3 || cleaned.nome.length > 150)
       erros.push('nome é obrigatório e deve ter entre 3 e 150 caracteres.');
 
-    if (!data.endereco) erros.push('endereco é obrigatório.');
+    if (!cleaned.endereco) erros.push('endereco é obrigatório.');
     else {
-      const e = data.endereco;
+      const e = cleaned.endereco;
       const camposObrig = ['rua', 'numero', 'bairro', 'cidade', 'estado', 'cep'];
       camposObrig.forEach((c) => {
-        if (e[c] === undefined || e[c] === null || e[c] === '')
+        if (e[c] === undefined || e[c] === null)
           erros.push(`endereco.${c} é obrigatório.`);
       });
 
@@ -106,19 +124,19 @@ const Validations = {
         erros.push('endereco.cep deve estar no formato 00000-000.');
     }
 
-    if (!data.dataCadastro || !regex.dataISO.test(data.dataCadastro))
+    if (!cleaned.dataCadastro || !regex.dataISO.test(cleaned.dataCadastro))
       erros.push('dataCadastro é obrigatória e deve estar em formato ISO.');
 
-    if (data.telefone && !regex.telefone.test(data.telefone))
+    if (cleaned.telefone && !regex.telefone.test(cleaned.telefone))
       erros.push('telefone deve estar no formato (XX) XXXXX-XXXX.');
 
-    if (data.cnpj && !regex.cnpj.test(data.cnpj))
+    if (cleaned.cnpj && !regex.cnpj.test(cleaned.cnpj))
       erros.push('CNPJ deve estar no formato NN.NNN.NNN/NNNN-NN.');
 
-    if (data.instagram && !regex.instagram.test(data.instagram))
+    if (cleaned.instagram && !regex.instagram.test(cleaned.instagram))
       erros.push('instagram deve iniciar com @.');
 
-    if (data.observacao && data.observacao.length > 500)
+    if (cleaned.observacao && cleaned.observacao.length > 500)
       erros.push('observacao deve ter no máximo 500 caracteres.');
 
     return erros;
@@ -212,29 +230,24 @@ const Validations = {
   // -------------------- VENDEDOR --------------------
   vendedor: (data: any): string[] => {
     const erros: string[] = [];
+    const cleaned = limparDados(data);
 
-    if (!data.codigoVendedor || !regex.codigoVendedor.test(data.codigoVendedor))
+    if (!cleaned.codigoVendedor || !regex.codigoVendedor.test(cleaned.codigoVendedor))
       erros.push('codigoVendedor é obrigatório e deve seguir o formato V001.');
 
-    if (!data.nome || data.nome.length < 3 || data.nome.length > 120)
+    if (!cleaned.nome || cleaned.nome.length < 3 || cleaned.nome.length > 120)
       erros.push('nome é obrigatório e deve ter entre 3 e 120 caracteres.');
 
-    if (typeof data.ativo !== 'boolean')
-      erros.push('ativo é obrigatório e deve ser booleano.');
-
-    if (typeof data.vendasRealizadas !== 'number' || data.vendasRealizadas < 0)
-      erros.push('vendasRealizadas é obrigatório e deve ser >= 0.');
-
-    if (!data.dataCadastro || !regex.dataISO.test(data.dataCadastro))
+    if (!cleaned.dataCadastro || !regex.dataISO.test(cleaned.dataCadastro))
       erros.push('dataCadastro é obrigatória e deve estar em formato ISO.');
 
-    if (data.telefone && !regex.telefone.test(data.telefone))
+    if (cleaned.telefone && !regex.telefone.test(cleaned.telefone))
       erros.push('telefone deve estar no formato (XX) XXXXX-XXXX.');
 
-    if (data.metaMensal && data.metaMensal < 0)
+    if (cleaned.metaMensal !== null && cleaned.metaMensal !== undefined && cleaned.metaMensal < 0)
       erros.push('metaMensal deve ser >= 0.');
 
-    if (data.observacao && data.observacao.length > 300)
+    if (cleaned.observacao && cleaned.observacao.length > 300)
       erros.push('observacao deve ter no máximo 300 caracteres.');
 
     return erros;

@@ -57,8 +57,13 @@ export const getVendedorByCodigo = async (req: Request, res: Response) => {
 
 export const createVendedor = async (req: Request, res: Response) => {
   try {
+    const vendedorData = {
+      ...req.body,
+      dataCadastro: new Date().toISOString()
+    };
+
     // Validar dados antes de criar
-    const erros = Validations.vendedor(req.body);
+    const erros = Validations.vendedor(vendedorData);
     if (erros.length > 0) {
       return res.status(400).json({
         error: 'Erro de validação',
@@ -67,7 +72,7 @@ export const createVendedor = async (req: Request, res: Response) => {
       });
     }
 
-    const vendedor = new Vendedor(req.body);
+    const vendedor = new Vendedor(vendedorData);
     await vendedor.save();
     res.status(201).json(vendedor);
   } catch (error) {
@@ -78,8 +83,13 @@ export const createVendedor = async (req: Request, res: Response) => {
 
 export const updateVendedor = async (req: Request, res: Response) => {
   try {
+    const vendedorData = {
+      ...req.body,
+      dataAtualizacao: new Date().toISOString()
+    };
+
     // Validar dados antes de atualizar
-    const erros = Validations.vendedor(req.body);
+    const erros = Validations.vendedor(vendedorData);
     if (erros.length > 0) {
       return res.status(400).json({
         error: 'Erro de validação',
@@ -90,7 +100,7 @@ export const updateVendedor = async (req: Request, res: Response) => {
 
     const vendedor = await Vendedor.findOneAndUpdate(
       { codigoVendedor: req.params.codigo },
-      req.body,
+      vendedorData,
       { new: true, runValidators: true }
     );
     if (!vendedor) {
@@ -115,3 +125,4 @@ export const deleteVendedor = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Erro ao remover vendedor' });
   }
 };
+

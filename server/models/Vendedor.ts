@@ -27,6 +27,11 @@ const VendedorSchema = new mongoose.Schema({
     type: Number,
     min: 0
   },
+  vendasRealizadas: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
   observacao: {
     type: String,
     trim: true
@@ -34,6 +39,9 @@ const VendedorSchema = new mongoose.Schema({
   dataCadastro: {
     type: Date,
     default: Date.now
+  },
+  dataAtualizacao: {
+    type: Date
   }
 }, {
   timestamps: true,

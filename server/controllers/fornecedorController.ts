@@ -57,8 +57,13 @@ export const getFornecedorByCodigo = async (req: Request, res: Response) => {
 
 export const createFornecedor = async (req: Request, res: Response) => {
   try {
+    const fornecedorData = {
+      ...req.body,
+      dataCadastro: new Date().toISOString()
+    };
+
     // Validar dados antes de criar
-    const erros = Validations.fornecedor(req.body);
+    const erros = Validations.fornecedor(fornecedorData);
     if (erros.length > 0) {
       return res.status(400).json({
         error: 'Erro de validação',
@@ -67,7 +72,7 @@ export const createFornecedor = async (req: Request, res: Response) => {
       });
     }
 
-    const fornecedor = new Fornecedor(req.body);
+    const fornecedor = new Fornecedor(fornecedorData);
     await fornecedor.save();
     res.status(201).json(fornecedor);
   } catch (error) {
@@ -78,8 +83,13 @@ export const createFornecedor = async (req: Request, res: Response) => {
 
 export const updateFornecedor = async (req: Request, res: Response) => {
   try {
+    const fornecedorData = {
+      ...req.body,
+      dataAtualizacao: new Date().toISOString()
+    };
+
     // Validar dados antes de atualizar
-    const erros = Validations.fornecedor(req.body);
+    const erros = Validations.fornecedor(fornecedorData);
     if (erros.length > 0) {
       return res.status(400).json({
         error: 'Erro de validação',
@@ -90,7 +100,7 @@ export const updateFornecedor = async (req: Request, res: Response) => {
 
     const fornecedor = await Fornecedor.findOneAndUpdate(
       { codigoFornecedor: req.params.codigo },
-      req.body,
+      fornecedorData,
       { new: true, runValidators: true }
     );
     if (!fornecedor) {
