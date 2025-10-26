@@ -15,6 +15,7 @@ const regex = {
   codigoVendedor: /^V\d{3}$/,
   codigoVenda: /^VENDA\d{8}-\d{3}$/,
   telefone: /^\(\d{2}\) \d{4,5}-\d{4}$/,
+  dataISO: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/,
   data: /^\d{4}-\d{2}-\d{2}$/,
   cnpj: /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/,
   instagram: /^@\w+/,
@@ -77,6 +78,9 @@ const Validations = {
     if (!cleaned.nome || cleaned.nome.length < 3 || cleaned.nome.length > 100)
       erros.push('nome deve ter entre 3 e 100 caracteres.');
 
+    if (!cleaned.dataCadastro || !regex.dataISO.test(cleaned.dataCadastro))
+      erros.push('dataCadastro é obrigatória e deve estar em formato ISO.');
+
     // Campos opcionais
     if (cleaned.telefone && !regex.telefone.test(cleaned.telefone))
       erros.push('telefone deve estar no formato (XX) XXXXX-XXXX.');
@@ -86,7 +90,10 @@ const Validations = {
 
     if (cleaned.observacao && cleaned.observacao.length > 500)
       erros.push('observacao deve ter no máximo 500 caracteres.');
-    
+
+    if (cleaned.dataAtualizacao && !regex.dataISO.test(cleaned.dataAtualizacao))
+      erros.push('dataAtualizacao deve estar em formato ISO.');
+
     return erros;
   },
 
@@ -116,6 +123,9 @@ const Validations = {
       if (e.cep && !regex.cep.test(e.cep))
         erros.push('endereco.cep deve estar no formato 00000-000.');
     }
+
+    if (!cleaned.dataCadastro || !regex.dataISO.test(cleaned.dataCadastro))
+      erros.push('dataCadastro é obrigatória e deve estar em formato ISO.');
 
     if (cleaned.telefone && !regex.telefone.test(cleaned.telefone))
       erros.push('telefone deve estar no formato (XX) XXXXX-XXXX.');
@@ -150,8 +160,14 @@ const Validations = {
         erros.push(`${campo} é obrigatório e deve ser >= 0.`);
     });
 
+    if (!data.dataCadastro || !regex.dataISO.test(data.dataCadastro))
+      erros.push('dataCadastro é obrigatória e deve estar em formato ISO.');
+
     if (data.descricao && (data.descricao.length < 10 || data.descricao.length > 500))
       erros.push('descricao deve ter entre 10 e 500 caracteres.');
+
+    if (data.dataAtualizacao && !regex.dataISO.test(data.dataAtualizacao))
+      erros.push('dataAtualizacao deve estar em formato ISO.');
 
     return erros;
   },
@@ -180,6 +196,12 @@ const Validations = {
     if (!Array.isArray(data.logMovimentacao) || data.logMovimentacao.length < 1)
       erros.push('logMovimentacao deve ter pelo menos 1 item.');
 
+    if (!data.dataCadastro || !regex.dataISO.test(data.dataCadastro))
+      erros.push('dataCadastro é obrigatória e deve estar em formato ISO.');
+
+    if (data.dataAtualizacao && !regex.dataISO.test(data.dataAtualizacao))
+      erros.push('dataAtualizacao deve estar em formato ISO.');
+
     return erros;
   },
 
@@ -189,6 +211,9 @@ const Validations = {
 
     if (!data.codigoVenda || !regex.codigoVenda.test(data.codigoVenda))
       erros.push('codigoVenda é obrigatório e deve seguir o formato VENDAyyyymmdd-xxx.');
+
+    if (!data.data || !regex.dataISO.test(data.data))
+      erros.push('data é obrigatória e deve estar em formato ISO.');
 
     if (!data.formaPagamento || !['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro'].includes(data.formaPagamento))
       erros.push('formaPagamento é obrigatória e deve ser válida.');
@@ -212,6 +237,9 @@ const Validations = {
 
     if (!cleaned.nome || cleaned.nome.length < 3 || cleaned.nome.length > 120)
       erros.push('nome é obrigatório e deve ter entre 3 e 120 caracteres.');
+
+    if (!cleaned.dataCadastro || !regex.dataISO.test(cleaned.dataCadastro))
+      erros.push('dataCadastro é obrigatória e deve estar em formato ISO.');
 
     if (cleaned.telefone && !regex.telefone.test(cleaned.telefone))
       erros.push('telefone deve estar no formato (XX) XXXXX-XXXX.');
