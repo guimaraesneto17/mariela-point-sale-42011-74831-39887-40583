@@ -27,6 +27,7 @@ const allowedOrigins = [
   'https://mariela-pdv.lovable.app',
   'https://mariela-point-sale.vercel.app',
   'https://a9daa95e-02e8-4bad-a82b-327ad991a1b4.lovableproject.com',
+  'https://mariela-point-sale-k2ly11fpm-guimaraesneto17s-projects.vercel.app',
   'https://id-preview--abd15f43-0482-44aa-9acd-05f459b644cb.lovable.app',
   'https://id-preview--474e004e-52f2-4568-9eac-ca58590d8820.lovable.app',
   'http://localhost:8080',
