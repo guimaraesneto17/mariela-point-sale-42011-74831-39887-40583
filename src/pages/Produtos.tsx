@@ -40,9 +40,9 @@ const Produtos = () => {
       nome: "",
       descricao: "",
       categoria: "Outro",
-      precoCusto: 0,
-      precoVenda: 0,
-      margemDeLucro: 0,
+      precoCusto: undefined,
+      precoVenda: undefined,
+      margemDeLucro: undefined,
     },
   });
 
@@ -138,6 +138,9 @@ const Produtos = () => {
         nome: data.nome,
         descricao: data.descricao,
         categoria: data.categoria,
+        precoCusto: data.precoCusto,
+        precoVenda: data.precoVenda,
+        margemDeLucro: data.margemDeLucro,
         imagens: imagens,
       };
 
@@ -215,9 +218,9 @@ const Produtos = () => {
       nome: "",
       descricao: "",
       categoria: "Outro",
-      precoCusto: 0,
-      precoVenda: 0,
-      margemDeLucro: 0,
+      precoCusto: undefined,
+      precoVenda: undefined,
+      margemDeLucro: undefined,
     });
     setManualCode(false);
     setImagemURL("");

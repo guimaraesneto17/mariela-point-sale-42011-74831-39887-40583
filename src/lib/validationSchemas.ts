@@ -4,9 +4,11 @@ import { z } from "zod";
 export const clienteSchema = z.object({
   codigoCliente: z
     .string()
+    .min(1, "Código do cliente é obrigatório")
     .regex(/^C\d{3}$/, "Código deve seguir o formato C001, C002, etc."),
   nome: z
     .string()
+    .min(1, "Nome é obrigatório")
     .min(3, "Nome deve ter no mínimo 3 caracteres")
     .max(100, "Nome deve ter no máximo 100 caracteres"),
   telefone: z
@@ -27,9 +29,11 @@ export const clienteSchema = z.object({
 export const vendedorSchema = z.object({
   codigoVendedor: z
     .string()
+    .min(1, "Código do vendedor é obrigatório")
     .regex(/^V\d{3}$/, "Código deve seguir o formato V001, V002, etc."),
   nome: z
     .string()
+    .min(1, "Nome é obrigatório")
     .min(3, "Nome deve ter no mínimo 3 caracteres")
     .max(100, "Nome deve ter no máximo 100 caracteres"),
   telefone: z
@@ -50,9 +54,11 @@ export const vendedorSchema = z.object({
 export const fornecedorSchema = z.object({
   codigoFornecedor: z
     .string()
+    .min(1, "Código do fornecedor é obrigatório")
     .regex(/^F\d{3}$/, "Código deve seguir o formato F001, F002, etc."),
   nome: z
     .string()
+    .min(1, "Nome é obrigatório")
     .min(3, "Nome deve ter no mínimo 3 caracteres")
     .max(150, "Nome deve ter no máximo 150 caracteres"),
   telefone: z
@@ -74,6 +80,7 @@ export const fornecedorSchema = z.object({
     cidade: z.string().min(1, "Cidade é obrigatória"),
     estado: z
       .string()
+      .min(1, "Estado é obrigatório")
       .regex(/^[A-Z]{2}$/, "Estado deve ser uma sigla de 2 letras maiúsculas (ex: SP, RJ)"),
     cep: z
       .string()
@@ -90,9 +97,11 @@ export const fornecedorSchema = z.object({
 export const produtoSchema = z.object({
   codigoProduto: z
     .string()
+    .min(1, "Código do produto é obrigatório")
     .regex(/^P\d{3}$/, "Código deve seguir o formato P001, P002, etc."),
   nome: z
     .string()
+    .min(1, "Nome do produto é obrigatório")
     .min(3, "Nome deve ter no mínimo 3 caracteres")
     .max(100, "Nome deve ter no máximo 100 caracteres"),
   descricao: z
@@ -101,16 +110,25 @@ export const produtoSchema = z.object({
     .max(500, "Descrição deve ter no máximo 500 caracteres")
     .or(z.literal("")),
   categoria: z.enum(["Calça", "Saia", "Vestido", "Blusa", "Bolsa", "Acessório", "Outro"], {
-    errorMap: () => ({ message: "Selecione uma categoria válida" }),
+    errorMap: () => ({ message: "Categoria é obrigatória" }),
   }),
   precoCusto: z
-    .number({ invalid_type_error: "Preço de custo deve ser um número" })
-    .min(0, "Preço de custo deve ser maior ou igual a 0"),
+    .number({ 
+      required_error: "Preço de custo é obrigatório",
+      invalid_type_error: "Preço de custo deve ser um número" 
+    })
+    .min(0.01, "Preço de custo deve ser maior que 0"),
   precoVenda: z
-    .number({ invalid_type_error: "Preço de venda deve ser um número" })
-    .min(0, "Preço de venda deve ser maior que 0"),
+    .number({ 
+      required_error: "Preço de venda é obrigatório",
+      invalid_type_error: "Preço de venda deve ser um número" 
+    })
+    .min(0.01, "Preço de venda deve ser maior que 0"),
   margemDeLucro: z
-    .number({ invalid_type_error: "Margem de lucro deve ser um número" })
+    .number({ 
+      required_error: "Margem de lucro é obrigatória",
+      invalid_type_error: "Margem de lucro deve ser um número" 
+    })
     .min(0, "Margem de lucro deve ser maior ou igual a 0"),
   precoPromocional: z
     .number({ invalid_type_error: "Preço promocional deve ser um número" })
@@ -123,13 +141,17 @@ export const produtoSchema = z.object({
 export const estoqueSchema = z.object({
   codigoProduto: z
     .string()
+    .min(1, "Código do produto é obrigatório")
     .regex(/^P\d{3}$/, "Código do produto deve seguir o formato P001, P002, etc."),
   cor: z.string().min(1, "Cor é obrigatória"),
   tamanho: z.enum(["PP", "P", "M", "G", "GG", "U"], {
-    errorMap: () => ({ message: "Selecione um tamanho válido" }),
+    errorMap: () => ({ message: "Tamanho é obrigatório" }),
   }),
   quantidade: z
-    .number({ invalid_type_error: "Quantidade deve ser um número" })
+    .number({ 
+      required_error: "Quantidade é obrigatória",
+      invalid_type_error: "Quantidade deve ser um número" 
+    })
     .int("Quantidade deve ser um número inteiro")
     .min(0, "Quantidade deve ser maior ou igual a 0"),
   emPromocao: z.boolean().optional().default(false),
