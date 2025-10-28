@@ -61,7 +61,7 @@ export const createCliente = async (req: Request, res: Response) => {
     
     const clienteData = {
       ...req.body,
-      dataCadastro: new Date()
+      dataCadastro: new Date().toISOString()
     };
 
     console.log('Dados preparados para salvar:', JSON.stringify(clienteData, null, 2));
@@ -112,9 +112,14 @@ export const createCliente = async (req: Request, res: Response) => {
 
 export const updateCliente = async (req: Request, res: Response) => {
   try {
+    const updateData = {
+      ...req.body,
+      dataAtualizacao: new Date().toISOString()
+    };
+    
     const cliente = await Cliente.findOneAndUpdate(
       { codigoCliente: req.params.codigo },
-      req.body,
+      updateData,
       { new: true, runValidators: true }
     );
     if (!cliente) {

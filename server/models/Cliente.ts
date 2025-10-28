@@ -25,8 +25,11 @@ const ClienteSchema = new mongoose.Schema({
     trim: true
   },
   dataCadastro: {
-    type: Date,
-    default: Date.now
+    type: String,
+    default: () => new Date().toISOString()
+  },
+  dataAtualizacao: {
+    type: String
   }
 }, {
   timestamps: true,

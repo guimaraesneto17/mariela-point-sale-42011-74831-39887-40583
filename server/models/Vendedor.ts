@@ -17,7 +17,8 @@ const VendedorSchema = new mongoose.Schema({
     trim: true
   },
   dataNascimento: {
-    type: Date
+    type: String,
+    trim: true
   },
   ativo: {
     type: Boolean,
@@ -37,11 +38,11 @@ const VendedorSchema = new mongoose.Schema({
     trim: true
   },
   dataCadastro: {
-    type: Date,
-    default: Date.now
+    type: String,
+    default: () => new Date().toISOString()
   },
   dataAtualizacao: {
-    type: Date
+    type: String
   }
 }, {
   timestamps: true,

@@ -61,7 +61,7 @@ export const createVendedor = async (req: Request, res: Response) => {
     
     const vendedorData = {
       ...req.body,
-      dataCadastro: new Date()
+      dataCadastro: new Date().toISOString()
     };
 
     console.log('Dados preparados para salvar:', JSON.stringify(vendedorData, null, 2));
@@ -112,9 +112,14 @@ export const createVendedor = async (req: Request, res: Response) => {
 
 export const updateVendedor = async (req: Request, res: Response) => {
   try {
+    const updateData = {
+      ...req.body,
+      dataAtualizacao: new Date().toISOString()
+    };
+    
     const vendedor = await Vendedor.findOneAndUpdate(
       { codigoVendedor: req.params.codigo },
-      req.body,
+      updateData,
       { new: true, runValidators: true }
     );
     if (!vendedor) {
