@@ -59,57 +59,89 @@ export const createVendedor = async (req: Request, res: Response) => {
   try {
     const vendedorData = {
       ...req.body,
-      dataCadastro: new Date().toISOString()
+      dataCadastro: new Date()
     };
-
-    // Validar dados antes de criar
-    const erros = Validations.vendedor(vendedorData);
-    if (erros.length > 0) {
-      return res.status(400).json({
-        error: 'Erro de validação',
-        message: 'Um ou mais campos estão inválidos',
-        fields: erros.map(erro => ({ message: erro }))
-      });
-    }
 
     const vendedor = new Vendedor(vendedorData);
     await vendedor.save();
     res.status(201).json(vendedor);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao criar vendedor:', error);
-    res.status(400).json(formatValidationError(error));
+    
+    // Tratamento detalhado de erros de validação do MongoDB
+    if (error.name === 'ValidationError') {
+      const errors = Object.keys(error.errors).map(key => ({
+        field: key,
+        message: error.errors[key].message,
+        value: error.errors[key].value,
+        kind: error.errors[key].kind
+      }));
+      return res.status(400).json({
+        error: 'Erro de validação',
+        message: 'Um ou mais campos estão inválidos',
+        fields: errors
+      });
+    }
+    
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({
+        error: 'Erro de duplicação',
+        message: `O campo ${field} já existe no sistema`,
+        fields: [{ field, message: 'Valor duplicado', value: error.keyValue[field] }]
+      });
+    }
+    
+    res.status(400).json({
+      error: 'Erro ao processar requisição',
+      message: error.message || 'Erro desconhecido',
+      details: error.toString()
+    });
   }
 };
 
 export const updateVendedor = async (req: Request, res: Response) => {
   try {
-    const vendedorData = {
-      ...req.body,
-      dataAtualizacao: new Date().toISOString()
-    };
-
-    // Validar dados antes de atualizar
-    const erros = Validations.vendedor(vendedorData);
-    if (erros.length > 0) {
-      return res.status(400).json({
-        error: 'Erro de validação',
-        message: 'Um ou mais campos estão inválidos',
-        fields: erros.map(erro => ({ message: erro }))
-      });
-    }
-
     const vendedor = await Vendedor.findOneAndUpdate(
       { codigoVendedor: req.params.codigo },
-      vendedorData,
+      req.body,
       { new: true, runValidators: true }
     );
     if (!vendedor) {
       return res.status(404).json({ error: 'Vendedor não encontrado' });
     }
     res.json(vendedor);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao atualizar vendedor:', error);
-    res.status(400).json(formatValidationError(error));
+    
+    if (error.name === 'ValidationError') {
+      const errors = Object.keys(error.errors).map(key => ({
+        field: key,
+        message: error.errors[key].message,
+        value: error.errors[key].value,
+        kind: error.errors[key].kind
+      }));
+      return res.status(400).json({
+        error: 'Erro de validação',
+        message: 'Um ou mais campos estão inválidos',
+        fields: errors
+      });
+    }
+    
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({
+        error: 'Erro de duplicação',
+        message: `O campo ${field} já existe no sistema`,
+        fields: [{ field, message: 'Valor duplicado', value: error.keyValue[field] }]
+      });
+    }
+    
+    res.status(400).json({
+      error: 'Erro ao processar requisição',
+      message: error.message || 'Erro desconhecido',
+      details: error.toString()
+    });
   }
 };
 

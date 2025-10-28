@@ -59,57 +59,89 @@ export const createCliente = async (req: Request, res: Response) => {
   try {
     const clienteData = {
       ...req.body,
-      dataCadastro: new Date().toISOString()
+      dataCadastro: new Date()
     };
-
-    // Validar dados antes de criar
-    const erros = Validations.cliente(clienteData);
-    if (erros.length > 0) {
-      return res.status(400).json({
-        error: 'Erro de validação',
-        message: 'Um ou mais campos estão inválidos',
-        fields: erros.map(erro => ({ message: erro }))
-      });
-    }
 
     const cliente = new Cliente(clienteData);
     await cliente.save();
     res.status(201).json(cliente);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao criar cliente:', error);
-    res.status(400).json(formatValidationError(error));
+    
+    // Tratamento detalhado de erros de validação do MongoDB
+    if (error.name === 'ValidationError') {
+      const errors = Object.keys(error.errors).map(key => ({
+        field: key,
+        message: error.errors[key].message,
+        value: error.errors[key].value,
+        kind: error.errors[key].kind
+      }));
+      return res.status(400).json({
+        error: 'Erro de validação',
+        message: 'Um ou mais campos estão inválidos',
+        fields: errors
+      });
+    }
+    
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({
+        error: 'Erro de duplicação',
+        message: `O campo ${field} já existe no sistema`,
+        fields: [{ field, message: 'Valor duplicado', value: error.keyValue[field] }]
+      });
+    }
+    
+    res.status(400).json({
+      error: 'Erro ao processar requisição',
+      message: error.message || 'Erro desconhecido',
+      details: error.toString()
+    });
   }
 };
 
 export const updateCliente = async (req: Request, res: Response) => {
   try {
-    const clienteData = {
-      ...req.body,
-      dataAtualizacao: new Date().toISOString()
-    };
-
-    // Validar dados antes de atualizar
-    const erros = Validations.cliente(clienteData);
-    if (erros.length > 0) {
-      return res.status(400).json({
-        error: 'Erro de validação',
-        message: 'Um ou mais campos estão inválidos',
-        fields: erros.map(erro => ({ message: erro }))
-      });
-    }
-
     const cliente = await Cliente.findOneAndUpdate(
       { codigoCliente: req.params.codigo },
-      clienteData,
+      req.body,
       { new: true, runValidators: true }
     );
     if (!cliente) {
       return res.status(404).json({ error: 'Cliente não encontrado' });
     }
     res.json(cliente);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao atualizar cliente:', error);
-    res.status(400).json(formatValidationError(error));
+    
+    if (error.name === 'ValidationError') {
+      const errors = Object.keys(error.errors).map(key => ({
+        field: key,
+        message: error.errors[key].message,
+        value: error.errors[key].value,
+        kind: error.errors[key].kind
+      }));
+      return res.status(400).json({
+        error: 'Erro de validação',
+        message: 'Um ou mais campos estão inválidos',
+        fields: errors
+      });
+    }
+    
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({
+        error: 'Erro de duplicação',
+        message: `O campo ${field} já existe no sistema`,
+        fields: [{ field, message: 'Valor duplicado', value: error.keyValue[field] }]
+      });
+    }
+    
+    res.status(400).json({
+      error: 'Erro ao processar requisição',
+      message: error.message || 'Erro desconhecido',
+      details: error.toString()
+    });
   }
 };
 
