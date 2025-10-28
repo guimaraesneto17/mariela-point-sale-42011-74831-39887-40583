@@ -75,13 +75,21 @@ const Clientes = () => {
   const onSubmit = async (data: ClienteFormData) => {
     setIsLoading(true);
     try {
+      // Limpar campos vazios antes de enviar
+      const cleanData = {
+        ...data,
+        telefone: data.telefone || undefined,
+        dataNascimento: data.dataNascimento || undefined,
+        observacao: data.observacao || undefined,
+      };
+
       if (editingCliente) {
-        await clientesAPI.update(editingCliente._id, data);
+        await clientesAPI.update(editingCliente.codigoCliente, cleanData);
         toast.success("✅ Cliente atualizado com sucesso!", {
           description: `${data.nome} foi atualizado no sistema`,
         });
       } else {
-        await clientesAPI.create(data);
+        await clientesAPI.create(cleanData);
         toast.success("✅ Cliente cadastrado com sucesso!", {
           description: `${data.nome} foi adicionado ao sistema`,
         });
@@ -122,8 +130,11 @@ const Clientes = () => {
   const confirmDelete = async () => {
     if (!clienteToDelete) return;
     
+    const cliente = clientes.find(c => c._id === clienteToDelete);
+    if (!cliente) return;
+    
     try {
-      await clientesAPI.delete(clienteToDelete);
+      await clientesAPI.delete(cliente.codigoCliente);
       toast.success("Cliente excluído com sucesso!");
       loadClientes();
     } catch (error: any) {

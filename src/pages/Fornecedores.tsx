@@ -83,13 +83,30 @@ const Fornecedores = () => {
   const onSubmit = async (data: FornecedorFormData) => {
     setIsLoading(true);
     try {
+      // Limpar campos vazios do endereço antes de enviar
+      const cleanData = {
+        ...data,
+        telefone: data.telefone || undefined,
+        cnpj: data.cnpj || undefined,
+        instagram: data.instagram || undefined,
+        endereco: {
+          rua: data.endereco.rua || undefined,
+          numero: data.endereco.numero || undefined,
+          bairro: data.endereco.bairro || undefined,
+          cidade: data.endereco.cidade,
+          estado: data.endereco.estado,
+          cep: data.endereco.cep || undefined,
+        },
+        observacao: data.observacao || undefined,
+      };
+
       if (editingFornecedor) {
-        await fornecedoresAPI.update(editingFornecedor._id, data);
+        await fornecedoresAPI.update(editingFornecedor.codigoFornecedor, cleanData);
         toast.success("✅ Fornecedor atualizado com sucesso!", {
           description: `${data.nome} foi atualizado no sistema`,
         });
       } else {
-        await fornecedoresAPI.create(data);
+        await fornecedoresAPI.create(cleanData);
         toast.success("✅ Fornecedor cadastrado com sucesso!", {
           description: `${data.nome} foi adicionado ao sistema`,
         });
@@ -139,8 +156,11 @@ const Fornecedores = () => {
   const confirmDelete = async () => {
     if (!fornecedorToDelete) return;
     
+    const fornecedor = fornecedores.find(f => f._id === fornecedorToDelete);
+    if (!fornecedor) return;
+    
     try {
-      await fornecedoresAPI.delete(fornecedorToDelete);
+      await fornecedoresAPI.delete(fornecedor.codigoFornecedor);
       toast.success("Fornecedor excluído com sucesso!");
       loadFornecedores();
     } catch (error: any) {

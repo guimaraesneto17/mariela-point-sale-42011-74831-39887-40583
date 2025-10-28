@@ -75,13 +75,21 @@ const Vendedores = () => {
   const onSubmit = async (data: VendedorFormData) => {
     setIsLoading(true);
     try {
+      // Limpar campos vazios antes de enviar
+      const cleanData = {
+        ...data,
+        telefone: data.telefone || undefined,
+        dataNascimento: data.dataNascimento || undefined,
+        observacao: data.observacao || undefined,
+      };
+
       if (editingVendedor) {
-        await vendedoresAPI.update(editingVendedor._id, data);
+        await vendedoresAPI.update(editingVendedor.codigoVendedor, cleanData);
         toast.success("✅ Vendedor atualizado com sucesso!", {
           description: `${data.nome} foi atualizado no sistema`,
         });
       } else {
-        await vendedoresAPI.create(data);
+        await vendedoresAPI.create(cleanData);
         toast.success("✅ Vendedor cadastrado com sucesso!", {
           description: `${data.nome} foi adicionado ao sistema`,
         });
@@ -122,8 +130,11 @@ const Vendedores = () => {
   const confirmDelete = async () => {
     if (!vendedorToDelete) return;
     
+    const vendedor = vendedores.find(v => v._id === vendedorToDelete);
+    if (!vendedor) return;
+    
     try {
-      await vendedoresAPI.delete(vendedorToDelete);
+      await vendedoresAPI.delete(vendedor.codigoVendedor);
       toast.success("Vendedor excluído com sucesso!");
       loadVendedores();
     } catch (error: any) {

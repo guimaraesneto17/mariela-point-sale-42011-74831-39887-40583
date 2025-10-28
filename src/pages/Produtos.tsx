@@ -145,7 +145,7 @@ const Produtos = () => {
       };
 
       if (editingProduct) {
-        await produtosAPI.update(editingProduct._id, produtoData);
+        await produtosAPI.update(editingProduct.codigoProduto, produtoData);
         toast.success("✅ Produto atualizado com sucesso!", {
           description: `${data.nome} foi atualizado no sistema`,
         });
@@ -197,8 +197,11 @@ const Produtos = () => {
   const confirmDelete = async () => {
     if (!productToDelete) return;
     
+    const produto = produtos.find(p => p._id === productToDelete);
+    if (!produto) return;
+    
     try {
-      await produtosAPI.delete(productToDelete);
+      await produtosAPI.delete(produto.codigoProduto);
       toast.success("Produto excluído com sucesso!");
       loadProdutos();
     } catch (error: any) {

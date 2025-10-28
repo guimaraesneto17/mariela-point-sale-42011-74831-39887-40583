@@ -100,7 +100,7 @@ const Vendas = () => {
 
   // Helper para formatar valores monetários
   const formatCurrency = (value: any): string => {
-    const numValue = Number(value);
+    const numValue = Number(value ?? 0);
     return isNaN(numValue) ? 'R$ 0,00' : `R$ ${numValue.toFixed(2).replace('.', ',')}`;
   };
 
