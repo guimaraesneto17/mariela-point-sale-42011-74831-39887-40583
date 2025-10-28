@@ -59,14 +59,32 @@ export const createVendedor = async (req: Request, res: Response) => {
   try {
     console.log('Dados recebidos para criar vendedor:', JSON.stringify(req.body, null, 2));
     
-    const vendedorData = {
-      ...req.body,
-      dataCadastro: new Date().toISOString()
+    // Limpa campos vazios (converte "" para undefined para não salvar no MongoDB)
+    const cleanData: any = {
+      codigoVendedor: req.body.codigoVendedor,
+      nome: req.body.nome,
+      dataCadastro: new Date().toISOString(),
+      ativo: req.body.ativo !== undefined ? req.body.ativo : true,
+      vendasRealizadas: req.body.vendasRealizadas || 0
     };
 
-    console.log('Dados preparados para salvar:', JSON.stringify(vendedorData, null, 2));
+    // Adiciona campos opcionais apenas se tiverem valor
+    if (req.body.telefone && req.body.telefone.trim() !== '') {
+      cleanData.telefone = req.body.telefone.trim();
+    }
+    if (req.body.dataNascimento && req.body.dataNascimento.trim() !== '') {
+      cleanData.dataNascimento = req.body.dataNascimento.trim();
+    }
+    if (req.body.metaMensal !== undefined && req.body.metaMensal !== null) {
+      cleanData.metaMensal = req.body.metaMensal;
+    }
+    if (req.body.observacao && req.body.observacao.trim() !== '') {
+      cleanData.observacao = req.body.observacao.trim();
+    }
 
-    const vendedor = new Vendedor(vendedorData);
+    console.log('Dados limpos para salvar:', JSON.stringify(cleanData, null, 2));
+
+    const vendedor = new Vendedor(cleanData);
     await vendedor.save();
     res.status(201).json(vendedor);
   } catch (error: any) {
@@ -112,14 +130,36 @@ export const createVendedor = async (req: Request, res: Response) => {
 
 export const updateVendedor = async (req: Request, res: Response) => {
   try {
-    const updateData = {
-      ...req.body,
+    // Limpa campos vazios
+    const cleanData: any = {
       dataAtualizacao: new Date().toISOString()
     };
+
+    if (req.body.nome && req.body.nome.trim() !== '') {
+      cleanData.nome = req.body.nome.trim();
+    }
+    if (req.body.telefone && req.body.telefone.trim() !== '') {
+      cleanData.telefone = req.body.telefone.trim();
+    }
+    if (req.body.dataNascimento && req.body.dataNascimento.trim() !== '') {
+      cleanData.dataNascimento = req.body.dataNascimento.trim();
+    }
+    if (req.body.ativo !== undefined) {
+      cleanData.ativo = req.body.ativo;
+    }
+    if (req.body.metaMensal !== undefined && req.body.metaMensal !== null) {
+      cleanData.metaMensal = req.body.metaMensal;
+    }
+    if (req.body.vendasRealizadas !== undefined && req.body.vendasRealizadas !== null) {
+      cleanData.vendasRealizadas = req.body.vendasRealizadas;
+    }
+    if (req.body.observacao && req.body.observacao.trim() !== '') {
+      cleanData.observacao = req.body.observacao.trim();
+    }
     
     const vendedor = await Vendedor.findOneAndUpdate(
       { codigoVendedor: req.params.codigo },
-      updateData,
+      cleanData,
       { new: true, runValidators: true }
     );
     if (!vendedor) {
@@ -172,4 +212,3 @@ export const deleteVendedor = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Erro ao remover vendedor' });
   }
 };
-

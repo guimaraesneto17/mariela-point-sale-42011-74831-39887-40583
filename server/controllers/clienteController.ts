@@ -59,14 +59,27 @@ export const createCliente = async (req: Request, res: Response) => {
   try {
     console.log('Dados recebidos para criar cliente:', JSON.stringify(req.body, null, 2));
     
-    const clienteData = {
-      ...req.body,
+    // Limpa campos vazios (converte "" para undefined para não salvar no MongoDB)
+    const cleanData: any = {
+      codigoCliente: req.body.codigoCliente,
+      nome: req.body.nome,
       dataCadastro: new Date().toISOString()
     };
 
-    console.log('Dados preparados para salvar:', JSON.stringify(clienteData, null, 2));
+    // Adiciona campos opcionais apenas se tiverem valor
+    if (req.body.telefone && req.body.telefone.trim() !== '') {
+      cleanData.telefone = req.body.telefone.trim();
+    }
+    if (req.body.dataNascimento && req.body.dataNascimento.trim() !== '') {
+      cleanData.dataNascimento = req.body.dataNascimento.trim();
+    }
+    if (req.body.observacao && req.body.observacao.trim() !== '') {
+      cleanData.observacao = req.body.observacao.trim();
+    }
 
-    const cliente = new Cliente(clienteData);
+    console.log('Dados limpos para salvar:', JSON.stringify(cleanData, null, 2));
+
+    const cliente = new Cliente(cleanData);
     await cliente.save();
     res.status(201).json(cliente);
   } catch (error: any) {
@@ -112,14 +125,27 @@ export const createCliente = async (req: Request, res: Response) => {
 
 export const updateCliente = async (req: Request, res: Response) => {
   try {
-    const updateData = {
-      ...req.body,
+    // Limpa campos vazios
+    const cleanData: any = {
       dataAtualizacao: new Date().toISOString()
     };
+
+    if (req.body.nome && req.body.nome.trim() !== '') {
+      cleanData.nome = req.body.nome.trim();
+    }
+    if (req.body.telefone && req.body.telefone.trim() !== '') {
+      cleanData.telefone = req.body.telefone.trim();
+    }
+    if (req.body.dataNascimento && req.body.dataNascimento.trim() !== '') {
+      cleanData.dataNascimento = req.body.dataNascimento.trim();
+    }
+    if (req.body.observacao && req.body.observacao.trim() !== '') {
+      cleanData.observacao = req.body.observacao.trim();
+    }
     
     const cliente = await Cliente.findOneAndUpdate(
       { codigoCliente: req.params.codigo },
-      updateData,
+      cleanData,
       { new: true, runValidators: true }
     );
     if (!cliente) {
