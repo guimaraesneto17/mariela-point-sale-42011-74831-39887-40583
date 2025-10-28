@@ -87,6 +87,7 @@ const EstoqueSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true,
+  versionKey: false,
   collection: 'estoque'
 });
 

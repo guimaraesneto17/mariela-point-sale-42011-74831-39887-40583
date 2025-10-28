@@ -119,6 +119,7 @@ const VendaSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true,
+  versionKey: false,
   collection: 'venda'
 });
 

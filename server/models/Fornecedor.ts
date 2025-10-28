@@ -62,6 +62,7 @@ const FornecedorSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true,
+  versionKey: false,
   collection: 'fornecedor'
 });
 
