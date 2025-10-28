@@ -57,16 +57,26 @@ export const getClienteByCodigo = async (req: Request, res: Response) => {
 
 export const createCliente = async (req: Request, res: Response) => {
   try {
+    console.log('Dados recebidos para criar cliente:', JSON.stringify(req.body, null, 2));
+    
     const clienteData = {
       ...req.body,
       dataCadastro: new Date()
     };
 
+    console.log('Dados preparados para salvar:', JSON.stringify(clienteData, null, 2));
+
     const cliente = new Cliente(clienteData);
     await cliente.save();
     res.status(201).json(cliente);
   } catch (error: any) {
-    console.error('Erro ao criar cliente:', error);
+    console.error('Erro completo ao criar cliente:', JSON.stringify({
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      errors: error.errors,
+      stack: error.stack
+    }, null, 2));
     
     // Tratamento detalhado de erros de validação do MongoDB
     if (error.name === 'ValidationError') {

@@ -57,16 +57,26 @@ export const getVendedorByCodigo = async (req: Request, res: Response) => {
 
 export const createVendedor = async (req: Request, res: Response) => {
   try {
+    console.log('Dados recebidos para criar vendedor:', JSON.stringify(req.body, null, 2));
+    
     const vendedorData = {
       ...req.body,
       dataCadastro: new Date()
     };
 
+    console.log('Dados preparados para salvar:', JSON.stringify(vendedorData, null, 2));
+
     const vendedor = new Vendedor(vendedorData);
     await vendedor.save();
     res.status(201).json(vendedor);
   } catch (error: any) {
-    console.error('Erro ao criar vendedor:', error);
+    console.error('Erro completo ao criar vendedor:', JSON.stringify({
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      errors: error.errors,
+      stack: error.stack
+    }, null, 2));
     
     // Tratamento detalhado de erros de validação do MongoDB
     if (error.name === 'ValidationError') {
