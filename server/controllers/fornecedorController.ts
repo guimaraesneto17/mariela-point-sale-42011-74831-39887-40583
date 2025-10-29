@@ -144,12 +144,16 @@ export const createFornecedor = async (req: Request, res: Response) => {
 
 export const updateFornecedor = async (req: Request, res: Response) => {
   try {
-    // Limpa campos vazios
-    const cleanData: any = {};
+    // Limpa campos vazios - mantém mesma lógica do create
+    const cleanData: any = {
+      nome: req.body.nome,
+      endereco: {
+        cidade: req.body.endereco?.cidade,
+        estado: req.body.endereco?.estado
+      }
+    };
 
-    if (req.body.nome && req.body.nome.trim() !== '') {
-      cleanData.nome = req.body.nome.trim();
-    }
+    // Adiciona campos opcionais apenas se tiverem valor
     if (req.body.cnpj && req.body.cnpj.trim() !== '') {
       cleanData.cnpj = req.body.cnpj.trim();
     }
@@ -163,27 +167,18 @@ export const updateFornecedor = async (req: Request, res: Response) => {
       cleanData.observacao = req.body.observacao.trim();
     }
     
-    // Atualizar endereço se fornecido
-    if (req.body.endereco) {
-      cleanData.endereco = {};
-      if (req.body.endereco.rua && req.body.endereco.rua.trim() !== '') {
-        cleanData.endereco.rua = req.body.endereco.rua.trim();
-      }
-      if (req.body.endereco.numero && req.body.endereco.numero.trim() !== '') {
-        cleanData.endereco.numero = req.body.endereco.numero.trim();
-      }
-      if (req.body.endereco.bairro && req.body.endereco.bairro.trim() !== '') {
-        cleanData.endereco.bairro = req.body.endereco.bairro.trim();
-      }
-      if (req.body.endereco.cidade && req.body.endereco.cidade.trim() !== '') {
-        cleanData.endereco.cidade = req.body.endereco.cidade.trim();
-      }
-      if (req.body.endereco.estado && req.body.endereco.estado.trim() !== '') {
-        cleanData.endereco.estado = req.body.endereco.estado.trim();
-      }
-      if (req.body.endereco.cep && req.body.endereco.cep.trim() !== '') {
-        cleanData.endereco.cep = req.body.endereco.cep.trim();
-      }
+    // Adiciona campos opcionais do endereço
+    if (req.body.endereco?.rua && req.body.endereco.rua.trim() !== '') {
+      cleanData.endereco.rua = req.body.endereco.rua.trim();
+    }
+    if (req.body.endereco?.numero && req.body.endereco.numero.trim() !== '') {
+      cleanData.endereco.numero = req.body.endereco.numero.trim();
+    }
+    if (req.body.endereco?.bairro && req.body.endereco.bairro.trim() !== '') {
+      cleanData.endereco.bairro = req.body.endereco.bairro.trim();
+    }
+    if (req.body.endereco?.cep && req.body.endereco.cep.trim() !== '') {
+      cleanData.endereco.cep = req.body.endereco.cep.trim();
     }
     
     const fornecedor = await Fornecedor.findOneAndUpdate(

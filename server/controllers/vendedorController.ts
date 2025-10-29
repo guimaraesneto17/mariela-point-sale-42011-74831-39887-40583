@@ -129,26 +129,22 @@ export const createVendedor = async (req: Request, res: Response) => {
 
 export const updateVendedor = async (req: Request, res: Response) => {
   try {
-    // Limpa campos vazios
-    const cleanData: any = {};
+    // Limpa campos vazios - mantém mesma lógica do create
+    const cleanData: any = {
+      nome: req.body.nome,
+      ativo: req.body.ativo !== undefined ? req.body.ativo : true,
+      vendasRealizadas: req.body.vendasRealizadas !== undefined ? req.body.vendasRealizadas : 0
+    };
 
-    if (req.body.nome && req.body.nome.trim() !== '') {
-      cleanData.nome = req.body.nome.trim();
-    }
+    // Adiciona campos opcionais apenas se tiverem valor
     if (req.body.telefone && req.body.telefone.trim() !== '') {
       cleanData.telefone = req.body.telefone.trim();
     }
     if (req.body.dataNascimento && req.body.dataNascimento.trim() !== '') {
       cleanData.dataNascimento = req.body.dataNascimento.trim();
     }
-    if (req.body.ativo !== undefined) {
-      cleanData.ativo = req.body.ativo;
-    }
     if (req.body.metaMensal !== undefined && req.body.metaMensal !== null) {
       cleanData.metaMensal = req.body.metaMensal;
-    }
-    if (req.body.vendasRealizadas !== undefined && req.body.vendasRealizadas !== null) {
-      cleanData.vendasRealizadas = req.body.vendasRealizadas;
     }
     if (req.body.observacao && req.body.observacao.trim() !== '') {
       cleanData.observacao = req.body.observacao.trim();

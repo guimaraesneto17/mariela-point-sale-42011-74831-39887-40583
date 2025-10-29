@@ -124,12 +124,12 @@ export const createCliente = async (req: Request, res: Response) => {
 
 export const updateCliente = async (req: Request, res: Response) => {
   try {
-    // Limpa campos vazios
-    const cleanData: any = {};
+    // Limpa campos vazios - mantém mesma lógica do create
+    const cleanData: any = {
+      nome: req.body.nome
+    };
 
-    if (req.body.nome && req.body.nome.trim() !== '') {
-      cleanData.nome = req.body.nome.trim();
-    }
+    // Adiciona campos opcionais apenas se tiverem valor
     if (req.body.telefone && req.body.telefone.trim() !== '') {
       cleanData.telefone = req.body.telefone.trim();
     }

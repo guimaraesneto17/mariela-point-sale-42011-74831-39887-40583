@@ -90,49 +90,131 @@ export const getEstoqueByCodigo = async (req: Request, res: Response) => {
 
 export const createEstoque = async (req: Request, res: Response) => {
   try {
-    // Validar dados antes de criar
-    const erros = Validations.estoque(req.body);
-    if (erros.length > 0) {
+    console.log('Dados recebidos para criar estoque:', JSON.stringify(req.body, null, 2));
+    
+    // Limpa campos vazios - mantém mesma lógica
+    const cleanData: any = {
+      codigoProduto: req.body.codigoProduto,
+      cor: req.body.cor,
+      tamanho: req.body.tamanho,
+      quantidade: req.body.quantidade,
+      emPromocao: req.body.emPromocao || false,
+      isNovidade: req.body.isNovidade || false
+    };
+
+    // Adiciona campos opcionais apenas se tiverem valor
+    if (req.body.precoPromocional !== undefined && req.body.precoPromocional !== null) {
+      cleanData.precoPromocional = req.body.precoPromocional;
+    }
+    if (req.body.logMovimentacao && Array.isArray(req.body.logMovimentacao)) {
+      cleanData.logMovimentacao = req.body.logMovimentacao;
+    }
+
+    console.log('Dados limpos para salvar:', JSON.stringify(cleanData, null, 2));
+
+    const estoque = new Estoque(cleanData);
+    await estoque.save();
+    res.status(201).json(estoque);
+  } catch (error: any) {
+    console.error('Erro completo ao criar estoque:', JSON.stringify({
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      errors: error.errors,
+      stack: error.stack
+    }, null, 2));
+    
+    if (error.name === 'ValidationError') {
+      const errors = Object.keys(error.errors).map(key => ({
+        field: key,
+        message: error.errors[key].message,
+        value: error.errors[key].value,
+        kind: error.errors[key].kind
+      }));
       return res.status(400).json({
         error: 'Erro de validação',
         message: 'Um ou mais campos estão inválidos',
-        fields: erros.map(erro => ({ message: erro }))
+        fields: errors
       });
     }
-
-    const estoque = new Estoque(req.body);
-    await estoque.save();
-    res.status(201).json(estoque);
-  } catch (error) {
-    console.error('Erro ao criar item no estoque:', error);
-    res.status(400).json(formatValidationError(error));
+    
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({
+        error: 'Erro de duplicação',
+        message: `O campo ${field} já existe no sistema`,
+        fields: [{ field, message: 'Valor duplicado', value: error.keyValue[field] }]
+      });
+    }
+    
+    res.status(400).json({
+      error: 'Erro ao processar requisição',
+      message: error.message || 'Erro desconhecido',
+      details: error.toString()
+    });
   }
 };
 
 export const updateEstoque = async (req: Request, res: Response) => {
   try {
-    // Validar dados antes de atualizar
-    const erros = Validations.estoque(req.body);
-    if (erros.length > 0) {
-      return res.status(400).json({
-        error: 'Erro de validação',
-        message: 'Um ou mais campos estão inválidos',
-        fields: erros.map(erro => ({ message: erro }))
-      });
+    // Limpa campos vazios - mantém mesma lógica do create
+    const cleanData: any = {
+      codigoProduto: req.body.codigoProduto,
+      cor: req.body.cor,
+      tamanho: req.body.tamanho,
+      quantidade: req.body.quantidade,
+      emPromocao: req.body.emPromocao !== undefined ? req.body.emPromocao : false,
+      isNovidade: req.body.isNovidade !== undefined ? req.body.isNovidade : false
+    };
+
+    // Adiciona campos opcionais apenas se tiverem valor
+    if (req.body.precoPromocional !== undefined && req.body.precoPromocional !== null) {
+      cleanData.precoPromocional = req.body.precoPromocional;
+    }
+    if (req.body.logMovimentacao && Array.isArray(req.body.logMovimentacao)) {
+      cleanData.logMovimentacao = req.body.logMovimentacao;
     }
 
     const estoque = await Estoque.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      cleanData,
       { new: true, runValidators: true }
     );
     if (!estoque) {
       return res.status(404).json({ error: 'Item não encontrado no estoque' });
     }
     res.json(estoque);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao atualizar estoque:', error);
-    res.status(400).json(formatValidationError(error));
+    
+    if (error.name === 'ValidationError') {
+      const errors = Object.keys(error.errors).map(key => ({
+        field: key,
+        message: error.errors[key].message,
+        value: error.errors[key].value,
+        kind: error.errors[key].kind
+      }));
+      return res.status(400).json({
+        error: 'Erro de validação',
+        message: 'Um ou mais campos estão inválidos',
+        fields: errors
+      });
+    }
+    
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({
+        error: 'Erro de duplicação',
+        message: `O campo ${field} já existe no sistema`,
+        fields: [{ field, message: 'Valor duplicado', value: error.keyValue[field] }]
+      });
+    }
+    
+    res.status(400).json({
+      error: 'Erro ao processar requisição',
+      message: error.message || 'Erro desconhecido',
+      details: error.toString()
+    });
   }
 };
 

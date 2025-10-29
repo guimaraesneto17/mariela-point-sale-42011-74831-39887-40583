@@ -129,34 +129,24 @@ export const createProduto = async (req: Request, res: Response) => {
 
 export const updateProduto = async (req: Request, res: Response) => {
   try {
-    // Limpa campos vazios
-    const cleanData: any = {};
+    // Limpa campos vazios - mantém mesma lógica do create
+    const cleanData: any = {
+      nome: req.body.nome,
+      categoria: req.body.categoria,
+      precoCusto: req.body.precoCusto,
+      margemDeLucro: req.body.margemDeLucro,
+      precoVenda: req.body.precoVenda,
+      ativo: req.body.ativo !== undefined ? req.body.ativo : true
+    };
 
-    if (req.body.nome && req.body.nome.trim() !== '') {
-      cleanData.nome = req.body.nome.trim();
-    }
+    // Adiciona campos opcionais apenas se tiverem valor
     if (req.body.descricao && req.body.descricao.trim() !== '') {
       cleanData.descricao = req.body.descricao.trim();
-    }
-    if (req.body.categoria && req.body.categoria.trim() !== '') {
-      cleanData.categoria = req.body.categoria.trim();
-    }
-    if (req.body.precoCusto !== undefined && req.body.precoCusto !== null) {
-      cleanData.precoCusto = req.body.precoCusto;
-    }
-    if (req.body.margemDeLucro !== undefined && req.body.margemDeLucro !== null) {
-      cleanData.margemDeLucro = req.body.margemDeLucro;
-    }
-    if (req.body.precoVenda !== undefined && req.body.precoVenda !== null) {
-      cleanData.precoVenda = req.body.precoVenda;
     }
     if (req.body.precoPromocional !== undefined && req.body.precoPromocional !== null) {
       cleanData.precoPromocional = req.body.precoPromocional;
     }
-    if (req.body.ativo !== undefined) {
-      cleanData.ativo = req.body.ativo;
-    }
-    if (req.body.imagens && Array.isArray(req.body.imagens)) {
+    if (req.body.imagens && Array.isArray(req.body.imagens) && req.body.imagens.length > 0) {
       cleanData.imagens = req.body.imagens;
     }
     
