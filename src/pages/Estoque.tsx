@@ -23,6 +23,8 @@ const Estoque = () => {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [inventory, setInventory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filterPromocao, setFilterPromocao] = useState<boolean | null>(null);
+  const [filterNovidade, setFilterNovidade] = useState<boolean | null>(null);
 
   useEffect(() => {
     loadEstoque();
@@ -120,9 +122,19 @@ const Estoque = () => {
     const nomeProduto = item.nomeProduto || '';
     const codigoProduto = item.codigoProduto || '';
     const cor = item.cor || '';
-    return nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    
+    // Filtro de texto
+    const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
       codigoProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cor.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Filtro de promoção
+    const matchesPromocao = filterPromocao === null || item.emPromocao === filterPromocao;
+    
+    // Filtro de novidade
+    const matchesNovidade = filterNovidade === null || item.isNovidade === filterNovidade;
+    
+    return matchesSearch && matchesPromocao && matchesNovidade;
   });
 
   const openEntryDialog = (item: any) => {
@@ -168,14 +180,51 @@ const Estoque = () => {
       </div>
 
       <Card className="p-6 shadow-card">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por código ou nome do produto..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por código ou nome do produto..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              size="sm"
+              variant={filterPromocao === null ? "outline" : "default"}
+              onClick={() => setFilterPromocao(filterPromocao === null ? true : null)}
+              className={filterPromocao === true ? "bg-accent text-accent-foreground" : ""}
+            >
+              <Tag className="h-4 w-4 mr-2" />
+              Em Promoção
+            </Button>
+            
+            <Button
+              size="sm"
+              variant={filterNovidade === null ? "outline" : "default"}
+              onClick={() => setFilterNovidade(filterNovidade === null ? true : null)}
+              className={filterNovidade === true ? "bg-green-600 text-white hover:bg-green-700" : ""}
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              Novidades
+            </Button>
+            
+            {(filterPromocao !== null || filterNovidade !== null) && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setFilterPromocao(null);
+                  setFilterNovidade(null);
+                }}
+              >
+                Limpar Filtros
+              </Button>
+            )}
+          </div>
         </div>
       </Card>
 
@@ -237,7 +286,7 @@ const Estoque = () => {
                   R$ {(item.precoVenda || 0).toFixed(2)}
                 </p>
               </div>
-              {item.emPromocao && item.precoPromocional && (
+              {item.emPromocao && (
                 <div className="p-4 rounded-lg bg-accent/10 border border-accent">
                   <p className="text-sm text-muted-foreground mb-1">Valor Promocional</p>
                   <p className="text-2xl font-bold text-accent">
