@@ -45,13 +45,14 @@ export function AddToStockDialog({ open, onOpenChange, produto, onSuccess }: Add
           quantidade: quantidade,
           data: new Date().toISOString(),
           origem: 'entrada',
-          observacao: 'Adicionado ao estoque'
-        }],
-        dataCadastro: new Date().toISOString()
+          observacao: 'Entrada inicial automática'
+        }]
       };
 
       await estoqueAPI.create(estoqueData);
-      toast.success(`${produto.nome} adicionado ao estoque!`);
+      toast.success(`${produto.nome} adicionado ao estoque!`, {
+        description: `Cor: ${cor.trim()} | Tamanho: ${tamanho} | Qtd: ${quantidade}`
+      });
       onOpenChange(false);
       onSuccess?.();
       // Reset
@@ -59,9 +60,17 @@ export function AddToStockDialog({ open, onOpenChange, produto, onSuccess }: Add
       setTamanho("U");
       setCor("");
     } catch (error: any) {
-      toast.error("Erro ao adicionar ao estoque", {
-        description: error.message || "Tente novamente",
-      });
+      const errorMessage = error.response?.data?.message || error.message || "Tente novamente";
+      
+      if (errorMessage.includes("Já existe estoque")) {
+        toast.error("Estoque duplicado", {
+          description: "Já existe estoque para essa cor e tamanho deste produto. Escolha uma combinação diferente.",
+        });
+      } else {
+        toast.error("Erro ao adicionar ao estoque", {
+          description: errorMessage,
+        });
+      }
     } finally {
       setLoading(false);
     }

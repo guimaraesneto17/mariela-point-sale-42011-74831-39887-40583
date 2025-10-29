@@ -92,6 +92,25 @@ export const createEstoque = async (req: Request, res: Response) => {
   try {
     console.log('Dados recebidos para criar estoque:', JSON.stringify(req.body, null, 2));
     
+    // Verificar se já existe estoque com a mesma combinação produto+cor+tamanho
+    const estoqueExistente = await Estoque.findOne({
+      codigoProduto: req.body.codigoProduto,
+      cor: req.body.cor,
+      tamanho: req.body.tamanho
+    });
+
+    if (estoqueExistente) {
+      return res.status(400).json({
+        error: 'Estoque duplicado',
+        message: 'Já existe estoque para essa cor e tamanho deste produto',
+        details: {
+          codigoProduto: req.body.codigoProduto,
+          cor: req.body.cor,
+          tamanho: req.body.tamanho
+        }
+      });
+    }
+    
     // Limpa campos vazios - mantém mesma lógica
     const cleanData: any = {
       codigoProduto: req.body.codigoProduto,

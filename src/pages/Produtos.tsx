@@ -183,7 +183,6 @@ const Produtos = () => {
       precoCusto: product.precoCusto,
       precoVenda: product.precoVenda,
       margemDeLucro: product.margemDeLucro,
-      precoPromocional: product.precoPromocional,
     });
     setManualCode(true);
     setIsDialogOpen(true);
@@ -645,10 +644,6 @@ const Produtos = () => {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Código:</span>
                   <span className="font-medium">{produto.codigoProduto}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Cor:</span>
-                  <span className="font-medium">{produto.cor}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Preço de Custo:</span>
