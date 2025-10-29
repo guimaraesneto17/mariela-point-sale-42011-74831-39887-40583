@@ -38,7 +38,7 @@ export function AddToStockDialog({
         logMovimentacao: [{
           tipo: 'entrada',
           quantidade: 1,
-          data: new Date().toISOString(),
+          data: new Date().toISOString().split('.')[0] + 'Z',
           origem: 'entrada',
           observacao: 'Entrada inicial automática'
         }]
@@ -105,7 +105,9 @@ export function AddToStockDialog({
             <p><strong>Preço de Custo:</strong> R$ {produto?.precoCusto?.toFixed(2)}</p>
             <p><strong>Preço de Venda:</strong> R$ {produto?.precoVenda?.toFixed(2)}</p>
             <p><strong>Margem de Lucro:</strong> {produto?.margemDeLucro?.toFixed(2)}%</p>
-          </div>   
+          </div>
+
+          
 
           <div className="flex gap-2 pt-2">
             <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
