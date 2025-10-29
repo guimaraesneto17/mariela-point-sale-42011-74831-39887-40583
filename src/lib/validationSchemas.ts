@@ -64,7 +64,7 @@ export const fornecedorSchema = z.object({
     rua: optionalString(),
     numero: optionalString(),
     bairro: optionalString(),
-    cidade: optionalString(), // agora opcional
+    cidade: z.string().min(1, "Cidade é obrigatória"),
     estado: z.string()
       .regex(regex.estado, "Estado deve ser uma sigla de 2 letras maiúsculas (ex: SP, RJ)"),
     cep: optionalString(z.string().regex(regex.cep, "CEP deve estar no formato 99999-999")),
@@ -85,10 +85,25 @@ export const produtoSchema = z.object({
   categoria: z.enum(["Calça", "Saia", "Vestido", "Blusa", "Bolsa", "Acessório", "Outro"], {
     errorMap: () => ({ message: "Categoria é obrigatória" }),
   }),
-  precoCusto: z.number().min(0.01, "Preço de custo deve ser maior que 0"),
-  precoVenda: z.number().min(0.01, "Preço de venda deve ser maior que 0"),
-  margemDeLucro: z.number().min(0, "Margem de lucro deve ser maior ou igual a 0"),
-});
+  precoCusto: z
+    .number({ 
+      required_error: "Preço de custo é obrigatório",
+      invalid_type_error: "Preço de custo deve ser um número" 
+    })
+    .min(0.01, "Preço de custo deve ser maior que 0"),
+  precoVenda: z
+    .number({ 
+      required_error: "Preço de venda é obrigatório",
+      invalid_type_error: "Preço de venda deve ser um número" 
+    })
+    .min(0.01, "Preço de venda deve ser maior que 0"),
+  margemDeLucro: z
+    .number({ 
+      required_error: "Margem de lucro é obrigatória",
+      invalid_type_error: "Margem de lucro deve ser um número" 
+    })
+    .min(0, "Margem de lucro deve ser maior ou igual a 0"),
+  });
 
 // ESTOQUE
 export const estoqueSchema = z.object({
