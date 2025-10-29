@@ -6,78 +6,68 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { estoqueAPI } from "@/lib/api";
-
 interface AddToStockDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   produto: any;
   onSuccess?: () => void;
 }
-
-export function AddToStockDialog({ open, onOpenChange, produto, onSuccess }: AddToStockDialogProps) {
-  const [quantidade, setQuantidade] = useState(1);
+export function AddToStockDialog({
+  open,
+  onOpenChange,
+  produto,
+  onSuccess
+}: AddToStockDialogProps) {
   const [tamanho, setTamanho] = useState("U");
   const [cor, setCor] = useState("");
   const [loading, setLoading] = useState(false);
-
   const handleSubmit = async () => {
-    if (quantidade <= 0) {
-      toast.error("Quantidade deve ser maior que zero");
-      return;
-    }
-
     if (!cor.trim()) {
       toast.error("Cor é obrigatória");
       return;
     }
-
     try {
       setLoading(true);
       const estoqueData = {
         codigoProduto: produto.codigoProduto,
         cor: cor.trim(),
-        quantidade: quantidade,
+        quantidade: 1,
         tamanho: tamanho,
         emPromocao: false,
         isNovidade: false,
         logMovimentacao: [{
           tipo: 'entrada',
-          quantidade: quantidade,
+          quantidade: 1,
           data: new Date().toISOString(),
           origem: 'entrada',
           observacao: 'Entrada inicial automática'
         }]
       };
-
       await estoqueAPI.create(estoqueData);
       toast.success(`${produto.nome} adicionado ao estoque!`, {
-        description: `Cor: ${cor.trim()} | Tamanho: ${tamanho} | Qtd: ${quantidade}`
+        description: `Cor: ${cor.trim()} | Tamanho: ${tamanho} | Qtd: 1`
       });
       onOpenChange(false);
       onSuccess?.();
       // Reset
-      setQuantidade(1);
       setTamanho("U");
       setCor("");
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || "Tente novamente";
-      
       if (errorMessage.includes("Já existe estoque")) {
         toast.error("Estoque duplicado", {
-          description: "Já existe estoque para essa cor e tamanho deste produto. Escolha uma combinação diferente.",
+          description: "Já existe estoque para essa cor e tamanho deste produto. Escolha uma combinação diferente."
         });
       } else {
         toast.error("Erro ao adicionar ao estoque", {
-          description: errorMessage,
+          description: errorMessage
         });
       }
     } finally {
       setLoading(false);
     }
   };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+  return <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Adicionar ao Estoque</DialogTitle>
@@ -90,11 +80,7 @@ export function AddToStockDialog({ open, onOpenChange, produto, onSuccess }: Add
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Cor *</Label>
-              <Input
-                value={cor}
-                onChange={(e) => setCor(e.target.value)}
-                placeholder="Ex: Azul, Vermelho, Estampado"
-              />
+              <Input value={cor} onChange={e => setCor(e.target.value)} placeholder="Ex: Azul, Vermelho, Estampado" />
             </div>
 
             <div>
@@ -119,36 +105,17 @@ export function AddToStockDialog({ open, onOpenChange, produto, onSuccess }: Add
             <p><strong>Preço de Custo:</strong> R$ {produto?.precoCusto?.toFixed(2)}</p>
             <p><strong>Preço de Venda:</strong> R$ {produto?.precoVenda?.toFixed(2)}</p>
             <p><strong>Margem de Lucro:</strong> {produto?.margemDeLucro?.toFixed(2)}%</p>
-          </div>
-
-          <div>
-            <Label>Quantidade Inicial *</Label>
-            <Input
-              type="number"
-              min="1"
-              value={quantidade}
-              onChange={(e) => setQuantidade(parseInt(e.target.value) || 1)}
-            />
-          </div>
+          </div>   
 
           <div className="flex gap-2 pt-2">
-            <Button 
-              variant="outline" 
-              className="flex-1" 
-              onClick={() => onOpenChange(false)}
-            >
+            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button 
-              className="flex-1" 
-              onClick={handleSubmit}
-              disabled={loading}
-            >
+            <Button className="flex-1" onClick={handleSubmit} disabled={loading}>
               {loading ? "Adicionando..." : "Adicionar ao Estoque"}
             </Button>
           </div>
         </div>
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>;
 }
