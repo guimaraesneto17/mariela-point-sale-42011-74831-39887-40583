@@ -11,10 +11,20 @@ export function cn(...inputs: ClassValue[]) {
  */
 export function formatDate(dateValue: any, options?: Intl.DateTimeFormatOptions): string {
   if (!dateValue) return 'Data não informada';
-  
+
   try {
-    const date = new Date(dateValue);
+    let date: Date;
+
+    // Detecta formato simples YYYY-MM-DD e trata como data local (sem timezone)
+    if (typeof dateValue === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+      const [y, m, d] = dateValue.split('-').map(Number);
+      date = new Date(y, m - 1, d);
+    } else {
+      date = new Date(dateValue);
+    }
+
     if (isNaN(date.getTime())) return 'Data inválida';
+
     return date.toLocaleDateString('pt-BR', options || {
       day: '2-digit',
       month: '2-digit',
