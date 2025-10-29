@@ -55,14 +55,9 @@ const FornecedorSchema = new mongoose.Schema({
   observacao: {
     type: String,
     trim: true
-  },
-  dataCadastro: {
-    type: Date,
-    default: Date.now
   }
 }, {
-  timestamps: true,
-  versionKey: false,
+  timestamps: { createdAt: 'dataCadastro', updatedAt: 'dataAtualizacao' },
   collection: 'fornecedor'
 });
 

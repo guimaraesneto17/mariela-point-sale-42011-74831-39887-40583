@@ -63,14 +63,9 @@ const VitrineVirtualSchema = new mongoose.Schema({
   isNovidade: {
     type: Boolean,
     default: false
-  },
-  dataCadastro: {
-    type: Date,
-    default: Date.now
   }
 }, {
-  timestamps: true,
-  versionKey: false,
+  timestamps: { createdAt: 'dataCadastro', updatedAt: 'dataAtualizacao' },
   collection: 'vitrineVirtual'
 });
 

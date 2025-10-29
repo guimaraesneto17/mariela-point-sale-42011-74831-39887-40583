@@ -118,8 +118,7 @@ const VendaSchema = new mongoose.Schema({
     default: 1
   }
 }, {
-  timestamps: true,
-  versionKey: false,
+  timestamps: { createdAt: 'dataCadastro', updatedAt: 'dataAtualizacao' },
   collection: 'venda'
 });
 

@@ -35,7 +35,7 @@ const formatValidationError = (error: any) => {
 
 export const getAllProdutos = async (req: Request, res: Response) => {
   try {
-    const produtos = await Produto.find().sort({ dataCadastro: -1 });
+    const produtos = await Produto.find().select('-__v').sort({ dataCadastro: -1 });
     res.json(produtos);
   } catch (error) {
     console.error('Erro ao buscar produtos:', error);
@@ -45,7 +45,7 @@ export const getAllProdutos = async (req: Request, res: Response) => {
 
 export const getProdutoByCodigo = async (req: Request, res: Response) => {
   try {
-    const produto = await Produto.findOne({ codigoProduto: req.params.codigo });
+    const produto = await Produto.findOne({ codigoProduto: req.params.codigo }).select('-__v');
     if (!produto) {
       return res.status(404).json({ error: 'Produto não encontrado' });
     }
@@ -58,63 +58,150 @@ export const getProdutoByCodigo = async (req: Request, res: Response) => {
 
 export const createProduto = async (req: Request, res: Response) => {
   try {
-    const produtoData = {
-      ...req.body,
-      ativo: true,
-      dataCadastro: new Date().toISOString()
+    console.log('Dados recebidos para criar produto:', JSON.stringify(req.body, null, 2));
+    
+    // Limpa campos vazios
+    const cleanData: any = {
+      codigoProduto: req.body.codigoProduto,
+      nome: req.body.nome,
+      categoria: req.body.categoria,
+      precoCusto: req.body.precoCusto,
+      margemDeLucro: req.body.margemDeLucro,
+      precoVenda: req.body.precoVenda,
+      ativo: req.body.ativo !== undefined ? req.body.ativo : true
     };
 
-    // Validar dados antes de criar
-    const erros = Validations.produto(produtoData);
-    if (erros.length > 0) {
+    // Adiciona campos opcionais apenas se tiverem valor
+    if (req.body.descricao && req.body.descricao.trim() !== '') {
+      cleanData.descricao = req.body.descricao.trim();
+    }
+    if (req.body.precoPromocional !== undefined && req.body.precoPromocional !== null) {
+      cleanData.precoPromocional = req.body.precoPromocional;
+    }
+    if (req.body.imagens && Array.isArray(req.body.imagens) && req.body.imagens.length > 0) {
+      cleanData.imagens = req.body.imagens;
+    }
+
+    console.log('Dados limpos para salvar:', JSON.stringify(cleanData, null, 2));
+
+    const produto = new Produto(cleanData);
+    await produto.save();
+    res.status(201).json(produto);
+  } catch (error: any) {
+    console.error('Erro completo ao criar produto:', JSON.stringify({
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      errors: error.errors,
+      stack: error.stack
+    }, null, 2));
+    
+    if (error.name === 'ValidationError') {
+      const errors = Object.keys(error.errors).map(key => ({
+        field: key,
+        message: error.errors[key].message,
+        value: error.errors[key].value,
+        kind: error.errors[key].kind
+      }));
       return res.status(400).json({
         error: 'Erro de validação',
         message: 'Um ou mais campos estão inválidos',
-        fields: erros.map(erro => ({ message: erro }))
+        fields: errors
       });
     }
-
-    const produto = new Produto(produtoData);
-    await produto.save();
-
-    res.status(201).json(produto);
-  } catch (error) {
-    console.error('Erro ao criar produto:', error);
-    res.status(400).json(formatValidationError(error));
+    
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({
+        error: 'Erro de duplicação',
+        message: `O campo ${field} já existe no sistema`,
+        fields: [{ field, message: 'Valor duplicado', value: error.keyValue[field] }]
+      });
+    }
+    
+    res.status(400).json({
+      error: 'Erro ao processar requisição',
+      message: error.message || 'Erro desconhecido',
+      details: error.toString()
+    });
   }
 };
 
 export const updateProduto = async (req: Request, res: Response) => {
   try {
-    const produtoData = { 
-      ...req.body,
-      dataAtualizacao: new Date().toISOString()
-    };
+    // Limpa campos vazios
+    const cleanData: any = {};
 
-    // Validar dados antes de atualizar
-    const erros = Validations.produto(produtoData);
-    if (erros.length > 0) {
-      return res.status(400).json({
-        error: 'Erro de validação',
-        message: 'Um ou mais campos estão inválidos',
-        fields: erros.map(erro => ({ message: erro }))
-      });
+    if (req.body.nome && req.body.nome.trim() !== '') {
+      cleanData.nome = req.body.nome.trim();
     }
-
+    if (req.body.descricao && req.body.descricao.trim() !== '') {
+      cleanData.descricao = req.body.descricao.trim();
+    }
+    if (req.body.categoria && req.body.categoria.trim() !== '') {
+      cleanData.categoria = req.body.categoria.trim();
+    }
+    if (req.body.precoCusto !== undefined && req.body.precoCusto !== null) {
+      cleanData.precoCusto = req.body.precoCusto;
+    }
+    if (req.body.margemDeLucro !== undefined && req.body.margemDeLucro !== null) {
+      cleanData.margemDeLucro = req.body.margemDeLucro;
+    }
+    if (req.body.precoVenda !== undefined && req.body.precoVenda !== null) {
+      cleanData.precoVenda = req.body.precoVenda;
+    }
+    if (req.body.precoPromocional !== undefined && req.body.precoPromocional !== null) {
+      cleanData.precoPromocional = req.body.precoPromocional;
+    }
+    if (req.body.ativo !== undefined) {
+      cleanData.ativo = req.body.ativo;
+    }
+    if (req.body.imagens && Array.isArray(req.body.imagens)) {
+      cleanData.imagens = req.body.imagens;
+    }
+    
     const produto = await Produto.findOneAndUpdate(
       { codigoProduto: req.params.codigo },
-      produtoData,
+      cleanData,
       { new: true, runValidators: true }
-    );
+    ).select('-__v');
     
     if (!produto) {
       return res.status(404).json({ error: 'Produto não encontrado' });
     }
     
     res.json(produto);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao atualizar produto:', error);
-    res.status(400).json(formatValidationError(error));
+    
+    if (error.name === 'ValidationError') {
+      const errors = Object.keys(error.errors).map(key => ({
+        field: key,
+        message: error.errors[key].message,
+        value: error.errors[key].value,
+        kind: error.errors[key].kind
+      }));
+      return res.status(400).json({
+        error: 'Erro de validação',
+        message: 'Um ou mais campos estão inválidos',
+        fields: errors
+      });
+    }
+    
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({
+        error: 'Erro de duplicação',
+        message: `O campo ${field} já existe no sistema`,
+        fields: [{ field, message: 'Valor duplicado', value: error.keyValue[field] }]
+      });
+    }
+    
+    res.status(400).json({
+      error: 'Erro ao processar requisição',
+      message: error.message || 'Erro desconhecido',
+      details: error.toString()
+    });
   }
 };
 

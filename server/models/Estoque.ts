@@ -76,18 +76,9 @@ const EstoqueSchema = new mongoose.Schema({
       trim: true,
       maxLength: 300
     }
-  }],
-  dataCadastro: {
-    type: String,
-    default: () => new Date().toISOString()
-  },
-  dataAtualizacao: {
-    type: String,
-    default: null
-  }
+  }]
 }, {
-  timestamps: true,
-  versionKey: false,
+  timestamps: { createdAt: 'dataCadastro', updatedAt: 'dataAtualizacao' },
   collection: 'estoque'
 });
 

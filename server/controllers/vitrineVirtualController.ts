@@ -3,7 +3,7 @@ import VitrineVirtual from '../models/VitrineVirtual';
 
 export const getAllVitrineVirtual = async (req: Request, res: Response) => {
   try {
-    const produtos = await VitrineVirtual.find().sort({ dataCadastro: -1 });
+    const produtos = await VitrineVirtual.find().select('-__v').sort({ dataCadastro: -1 });
     res.json(produtos);
   } catch (error) {
     console.error('Erro ao buscar vitrine virtual:', error);
@@ -13,7 +13,7 @@ export const getAllVitrineVirtual = async (req: Request, res: Response) => {
 
 export const getVitrineVirtualById = async (req: Request, res: Response) => {
   try {
-    const produto = await VitrineVirtual.findById(req.params.id);
+    const produto = await VitrineVirtual.findById(req.params.id).select('-__v');
     if (!produto) {
       return res.status(404).json({ error: 'Produto da vitrine não encontrado' });
     }
@@ -26,7 +26,7 @@ export const getVitrineVirtualById = async (req: Request, res: Response) => {
 
 export const getNovidades = async (req: Request, res: Response) => {
   try {
-    const novidades = await VitrineVirtual.find({ isNovidade: true }).sort({ dataCadastro: -1 });
+    const novidades = await VitrineVirtual.find({ isNovidade: true }).select('-__v').sort({ dataCadastro: -1 });
     res.json(novidades);
   } catch (error) {
     console.error('Erro ao buscar novidades:', error);
@@ -36,7 +36,7 @@ export const getNovidades = async (req: Request, res: Response) => {
 
 export const getPromocoes = async (req: Request, res: Response) => {
   try {
-    const promocoes = await VitrineVirtual.find({ emPromocao: true }).sort({ dataCadastro: -1 });
+    const promocoes = await VitrineVirtual.find({ emPromocao: true }).select('-__v').sort({ dataCadastro: -1 });
     res.json(promocoes);
   } catch (error) {
     console.error('Erro ao buscar promoções:', error);
@@ -46,7 +46,7 @@ export const getPromocoes = async (req: Request, res: Response) => {
 
 export const getVitrineVirtualByCodigo = async (req: Request, res: Response) => {
   try {
-    const produto = await VitrineVirtual.findOne({ codigoProduto: req.params.codigo });
+    const produto = await VitrineVirtual.findOne({ codigoProduto: req.params.codigo }).select('-__v');
     if (!produto) {
       return res.status(404).json({ error: 'Produto da vitrine não encontrado' });
     }
@@ -74,7 +74,7 @@ export const updateVitrineVirtual = async (req: Request, res: Response) => {
       req.params.id,
       req.body,
       { new: true, runValidators: true }
-    );
+    ).select('-__v');
     if (!produto) {
       return res.status(404).json({ error: 'Produto da vitrine não encontrado' });
     }

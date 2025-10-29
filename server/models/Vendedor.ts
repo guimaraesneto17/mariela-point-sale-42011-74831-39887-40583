@@ -36,17 +36,9 @@ const VendedorSchema = new mongoose.Schema({
   observacao: {
     type: String,
     trim: true
-  },
-  dataCadastro: {
-    type: String,
-    default: () => new Date().toISOString()
-  },
-  dataAtualizacao: {
-    type: String
   }
 }, {
-  timestamps: true,
-  versionKey: false,
+  timestamps: { createdAt: 'dataCadastro', updatedAt: 'dataAtualizacao' },
   collection: 'vendedor'
 });
 

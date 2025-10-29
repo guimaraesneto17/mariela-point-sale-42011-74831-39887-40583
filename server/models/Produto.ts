@@ -47,18 +47,9 @@ const ProdutoSchema = new mongoose.Schema({
   ativo: {
     type: Boolean,
     default: true
-  },
-  dataCadastro: {
-    type: String,
-    default: () => new Date().toISOString()
-  },
-  dataAtualizacao: {
-    type: String,
-    default: null
   }
 }, {
-  timestamps: true,
-  versionKey: false,
+  timestamps: { createdAt: 'dataCadastro', updatedAt: 'dataAtualizacao' },
   collection: 'produto'
 });
 

@@ -34,7 +34,7 @@ const formatValidationError = (error: any) => {
 
 export const getAllEstoque = async (req: Request, res: Response) => {
   try {
-    const estoque = await Estoque.find().sort({ createdAt: -1 });
+    const estoque = await Estoque.find().select('-__v').sort({ dataCadastro: -1 });
     
     // Buscar dados dos produtos relacionados
     const Produto = require('../models/Produto').default;
@@ -64,7 +64,7 @@ export const getAllEstoque = async (req: Request, res: Response) => {
 
 export const getEstoqueById = async (req: Request, res: Response) => {
   try {
-    const estoque = await Estoque.findById(req.params.id);
+    const estoque = await Estoque.findById(req.params.id).select('-__v');
     if (!estoque) {
       return res.status(404).json({ error: 'Item não encontrado no estoque' });
     }
@@ -77,7 +77,7 @@ export const getEstoqueById = async (req: Request, res: Response) => {
 
 export const getEstoqueByCodigo = async (req: Request, res: Response) => {
   try {
-    const estoque = await Estoque.findOne({ codigoProduto: req.params.codigo });
+    const estoque = await Estoque.findOne({ codigoProduto: req.params.codigo }).select('-__v');
     if (!estoque) {
       return res.status(404).json({ error: 'Item não encontrado no estoque' });
     }
@@ -161,7 +161,7 @@ export const registrarEntrada = async (req: Request, res: Response) => {
       });
     }
 
-    const estoque = await Estoque.findOne({ codigoProduto });
+    const estoque = await Estoque.findOne({ codigoProduto }).select('-__v');
     
     if (!estoque) {
       return res.status(404).json({ error: 'Produto não encontrado no estoque' });
@@ -204,7 +204,7 @@ export const registrarSaida = async (req: Request, res: Response) => {
       });
     }
 
-    const estoque = await Estoque.findOne({ codigoProduto });
+    const estoque = await Estoque.findOne({ codigoProduto }).select('-__v');
     
     if (!estoque) {
       return res.status(404).json({ error: 'Produto não encontrado no estoque' });
@@ -254,7 +254,7 @@ export const toggleNovidade = async (req: Request, res: Response) => {
       { codigoProduto: codigo },
       { isNovidade },
       { new: true }
-    );
+    ).select('-__v');
 
     if (!estoque) {
       return res.status(404).json({ error: 'Produto não encontrado no estoque' });
@@ -277,7 +277,7 @@ export const togglePromocao = async (req: Request, res: Response) => {
     const { emPromocao, precoPromocional } = req.body;
 
     // Buscar todos os itens de estoque com esse código de produto
-    const itensEstoque = await Estoque.find({ codigoProduto: codigo });
+    const itensEstoque = await Estoque.find({ codigoProduto: codigo }).select('-__v');
     
     if (!itensEstoque || itensEstoque.length === 0) {
       return res.status(404).json({ error: 'Produto não encontrado no estoque' });
@@ -305,7 +305,7 @@ export const togglePromocao = async (req: Request, res: Response) => {
     );
 
     // Buscar os itens atualizados
-    const estoqueAtualizado = await Estoque.find({ codigoProduto: codigo });
+    const estoqueAtualizado = await Estoque.find({ codigoProduto: codigo }).select('-__v');
 
     res.json({
       message: `Promoção ${emPromocao ? 'ativada' : 'desativada'} com sucesso`,

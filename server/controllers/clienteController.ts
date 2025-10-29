@@ -34,7 +34,7 @@ const formatValidationError = (error: any) => {
 
 export const getAllClientes = async (req: Request, res: Response) => {
   try {
-    const clientes = await Cliente.find().sort({ dataCadastro: -1 });
+    const clientes = await Cliente.find().select('-__v').sort({ dataCadastro: -1 });
     res.json(clientes);
   } catch (error) {
     console.error('Erro ao buscar clientes:', error);
@@ -44,7 +44,7 @@ export const getAllClientes = async (req: Request, res: Response) => {
 
 export const getClienteByCodigo = async (req: Request, res: Response) => {
   try {
-    const cliente = await Cliente.findOne({ codigoCliente: req.params.codigo });
+    const cliente = await Cliente.findOne({ codigoCliente: req.params.codigo }).select('-__v');
     if (!cliente) {
       return res.status(404).json({ error: 'Cliente não encontrado' });
     }
@@ -62,8 +62,7 @@ export const createCliente = async (req: Request, res: Response) => {
     // Limpa campos vazios (converte "" para undefined para não salvar no MongoDB)
     const cleanData: any = {
       codigoCliente: req.body.codigoCliente,
-      nome: req.body.nome,
-      dataCadastro: new Date().toISOString()
+      nome: req.body.nome
     };
 
     // Adiciona campos opcionais apenas se tiverem valor
@@ -126,9 +125,7 @@ export const createCliente = async (req: Request, res: Response) => {
 export const updateCliente = async (req: Request, res: Response) => {
   try {
     // Limpa campos vazios
-    const cleanData: any = {
-      dataAtualizacao: new Date().toISOString()
-    };
+    const cleanData: any = {};
 
     if (req.body.nome && req.body.nome.trim() !== '') {
       cleanData.nome = req.body.nome.trim();
