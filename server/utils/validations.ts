@@ -111,7 +111,7 @@ const Validations = {
     if (!cleaned.endereco) erros.push('endereco é obrigatório.');
     else {
       const e = cleaned.endereco;
-      const camposObrig = ['rua', 'numero', 'bairro', 'cidade', 'estado', 'cep'];
+      const camposObrig = ['cidade', 'estado'];
       camposObrig.forEach((c) => {
         if (e[c] === undefined || e[c] === null)
           erros.push(`endereco.${c} é obrigatório.`);
