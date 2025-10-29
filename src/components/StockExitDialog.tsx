@@ -12,9 +12,10 @@ interface StockExitDialogProps {
   onOpenChange: (open: boolean) => void;
   codigoProduto: string;
   nomeProduto: string;
+  onSuccess?: () => void;
 }
 
-export function StockExitDialog({ open, onOpenChange, codigoProduto, nomeProduto }: StockExitDialogProps) {
+export function StockExitDialog({ open, onOpenChange, codigoProduto, nomeProduto, onSuccess }: StockExitDialogProps) {
   const [quantidade, setQuantidade] = useState(1);
   const [motivo, setMotivo] = useState("");
   const [observacao, setObservacao] = useState("");
@@ -45,6 +46,8 @@ export function StockExitDialog({ open, onOpenChange, codigoProduto, nomeProduto
       setQuantidade(1);
       setMotivo("");
       setObservacao("");
+      // Reload data
+      onSuccess?.();
     } catch (error: any) {
       toast.error("Erro ao registrar saída", {
         description: error.message || "Tente novamente"

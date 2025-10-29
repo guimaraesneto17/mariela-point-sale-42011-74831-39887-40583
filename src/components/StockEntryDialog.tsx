@@ -14,9 +14,10 @@ interface StockEntryDialogProps {
   onOpenChange: (open: boolean) => void;
   codigoProduto: string;
   nomeProduto: string;
+  onSuccess?: () => void;
 }
 
-export function StockEntryDialog({ open, onOpenChange, codigoProduto, nomeProduto }: StockEntryDialogProps) {
+export function StockEntryDialog({ open, onOpenChange, codigoProduto, nomeProduto, onSuccess }: StockEntryDialogProps) {
   const [origem, setOrigem] = useState<"entrada" | "compra">("entrada");
   const [quantidade, setQuantidade] = useState(1);
   const [fornecedor, setFornecedor] = useState("");
@@ -56,6 +57,8 @@ export function StockEntryDialog({ open, onOpenChange, codigoProduto, nomeProdut
       setQuantidade(1);
       setFornecedor("");
       setObservacao("");
+      // Reload data
+      onSuccess?.();
     } catch (error: any) {
       toast.error("Erro ao registrar entrada", {
         description: error.message || "Tente novamente"

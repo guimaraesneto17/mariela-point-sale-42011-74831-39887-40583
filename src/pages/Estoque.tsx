@@ -323,16 +323,15 @@ const Estoque = () => {
             onOpenChange={setShowEntryDialog}
             codigoProduto={selectedItem.codigoProduto}
             nomeProduto={selectedItem.nomeProduto}
+            onSuccess={loadEstoque}
           />
           
           <StockExitDialog 
             open={showExitDialog}
-            onOpenChange={(open) => {
-              setShowExitDialog(open);
-              if (!open) handleExitSuccess();
-            }}
+            onOpenChange={setShowExitDialog}
             codigoProduto={selectedItem.codigoProduto}
             nomeProduto={selectedItem.nomeProduto}
+            onSuccess={loadEstoque}
           />
 
           <PromotionDialog 
