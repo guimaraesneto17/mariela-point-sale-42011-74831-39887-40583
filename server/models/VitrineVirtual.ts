@@ -66,7 +66,8 @@ const VitrineVirtualSchema = new mongoose.Schema({
   }
 }, {
   timestamps: { createdAt: 'dataCadastro', updatedAt: 'dataAtualizacao' },
-  collection: 'vitrineVirtual'
+  collection: 'vitrineVirtual',
+  versionKey: false
 });
 
 // Índices para melhor performance

@@ -35,7 +35,7 @@ const formatValidationError = (error: any) => {
 
 export const getAllVendas = async (req: Request, res: Response) => {
   try {
-    const vendas = await Venda.find().sort({ dataVenda: -1 });
+    const vendas = await Venda.find().sort({ data: -1 });
     res.json(vendas);
   } catch (error) {
     console.error('Erro ao buscar vendas:', error);

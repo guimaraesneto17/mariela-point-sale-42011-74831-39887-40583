@@ -58,7 +58,8 @@ const FornecedorSchema = new mongoose.Schema({
   }
 }, {
   timestamps: { createdAt: 'dataCadastro', updatedAt: 'dataAtualizacao' },
-  collection: 'fornecedor'
+  collection: 'fornecedor',
+  versionKey: false
 });
 
 // Índices para melhor performance

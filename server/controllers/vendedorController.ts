@@ -63,7 +63,6 @@ export const createVendedor = async (req: Request, res: Response) => {
     const cleanData: any = {
       codigoVendedor: req.body.codigoVendedor,
       nome: req.body.nome,
-      dataCadastro: new Date().toISOString(),
       ativo: req.body.ativo !== undefined ? req.body.ativo : true,
       vendasRealizadas: req.body.vendasRealizadas || 0
     };
@@ -131,9 +130,7 @@ export const createVendedor = async (req: Request, res: Response) => {
 export const updateVendedor = async (req: Request, res: Response) => {
   try {
     // Limpa campos vazios
-    const cleanData: any = {
-      dataAtualizacao: new Date().toISOString()
-    };
+    const cleanData: any = {};
 
     if (req.body.nome && req.body.nome.trim() !== '') {
       cleanData.nome = req.body.nome.trim();
@@ -212,3 +209,4 @@ export const deleteVendedor = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Erro ao remover vendedor' });
   }
 };
+

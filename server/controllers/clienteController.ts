@@ -34,7 +34,7 @@ const formatValidationError = (error: any) => {
 
 export const getAllClientes = async (req: Request, res: Response) => {
   try {
-    const clientes = await Cliente.find().select('-__v').sort({ dataCadastro: -1 });
+    const clientes = await Cliente.find().sort({ dataCadastro: -1 });
     res.json(clientes);
   } catch (error) {
     console.error('Erro ao buscar clientes:', error);
@@ -44,7 +44,7 @@ export const getAllClientes = async (req: Request, res: Response) => {
 
 export const getClienteByCodigo = async (req: Request, res: Response) => {
   try {
-    const cliente = await Cliente.findOne({ codigoCliente: req.params.codigo }).select('-__v');
+    const cliente = await Cliente.findOne({ codigoCliente: req.params.codigo });
     if (!cliente) {
       return res.status(404).json({ error: 'Cliente não encontrado' });
     }

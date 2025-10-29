@@ -79,7 +79,8 @@ const EstoqueSchema = new mongoose.Schema({
   }]
 }, {
   timestamps: { createdAt: 'dataCadastro', updatedAt: 'dataAtualizacao' },
-  collection: 'estoque'
+  collection: 'estoque',
+  versionKey: false
 });
 
 // Índices para melhor performance

@@ -35,7 +35,7 @@ const formatValidationError = (error: any) => {
 
 export const getAllProdutos = async (req: Request, res: Response) => {
   try {
-    const produtos = await Produto.find().select('-__v').sort({ dataCadastro: -1 });
+    const produtos = await Produto.find().sort({ dataCadastro: -1 });
     res.json(produtos);
   } catch (error) {
     console.error('Erro ao buscar produtos:', error);
@@ -45,7 +45,7 @@ export const getAllProdutos = async (req: Request, res: Response) => {
 
 export const getProdutoByCodigo = async (req: Request, res: Response) => {
   try {
-    const produto = await Produto.findOne({ codigoProduto: req.params.codigo }).select('-__v');
+    const produto = await Produto.findOne({ codigoProduto: req.params.codigo });
     if (!produto) {
       return res.status(404).json({ error: 'Produto não encontrado' });
     }
@@ -164,7 +164,7 @@ export const updateProduto = async (req: Request, res: Response) => {
       { codigoProduto: req.params.codigo },
       cleanData,
       { new: true, runValidators: true }
-    ).select('-__v');
+    );
     
     if (!produto) {
       return res.status(404).json({ error: 'Produto não encontrado' });

@@ -119,7 +119,8 @@ const VendaSchema = new mongoose.Schema({
   }
 }, {
   timestamps: { createdAt: 'dataCadastro', updatedAt: 'dataAtualizacao' },
-  collection: 'venda'
+  collection: 'venda',
+  versionKey: false
 });
 
 // Índices para melhor performance

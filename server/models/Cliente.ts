@@ -26,7 +26,8 @@ const ClienteSchema = new mongoose.Schema({
   }
 }, {
   timestamps: { createdAt: 'dataCadastro', updatedAt: 'dataAtualizacao' },
-  collection: 'cliente'
+  collection: 'cliente',
+  versionKey: false
 });
 
 // Índices para melhor performance

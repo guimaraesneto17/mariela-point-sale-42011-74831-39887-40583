@@ -34,7 +34,7 @@ const formatValidationError = (error: any) => {
 
 export const getAllFornecedores = async (req: Request, res: Response) => {
   try {
-    const fornecedores = await Fornecedor.find().select('-__v').sort({ dataCadastro: -1 });
+    const fornecedores = await Fornecedor.find().sort({ dataCadastro: -1 });
     res.json(fornecedores);
   } catch (error) {
     console.error('Erro ao buscar fornecedores:', error);
@@ -44,7 +44,7 @@ export const getAllFornecedores = async (req: Request, res: Response) => {
 
 export const getFornecedorByCodigo = async (req: Request, res: Response) => {
   try {
-    const fornecedor = await Fornecedor.findOne({ codigoFornecedor: req.params.codigo }).select('-__v');
+    const fornecedor = await Fornecedor.findOne({ codigoFornecedor: req.params.codigo });
     if (!fornecedor) {
       return res.status(404).json({ error: 'Fornecedor não encontrado' });
     }
@@ -190,7 +190,7 @@ export const updateFornecedor = async (req: Request, res: Response) => {
       { codigoFornecedor: req.params.codigo },
       cleanData,
       { new: true, runValidators: true }
-    ).select('-__v');
+    );
     
     if (!fornecedor) {
       return res.status(404).json({ error: 'Fornecedor não encontrado' });

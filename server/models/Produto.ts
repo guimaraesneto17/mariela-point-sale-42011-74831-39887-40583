@@ -50,7 +50,8 @@ const ProdutoSchema = new mongoose.Schema({
   }
 }, {
   timestamps: { createdAt: 'dataCadastro', updatedAt: 'dataAtualizacao' },
-  collection: 'produto'
+  collection: 'produto',
+  versionKey: false
 });
 
 // Índices para melhor performance

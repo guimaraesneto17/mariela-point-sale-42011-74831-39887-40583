@@ -39,7 +39,8 @@ const VendedorSchema = new mongoose.Schema({
   }
 }, {
   timestamps: { createdAt: 'dataCadastro', updatedAt: 'dataAtualizacao' },
-  collection: 'vendedor'
+  collection: 'vendedor',
+  versionKey: false
 });
 
 VendedorSchema.index({ nome: 1 });
