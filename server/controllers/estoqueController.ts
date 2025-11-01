@@ -263,7 +263,12 @@ export const createEstoque = async (req: Request, res: Response) => {
     let estoque = await Estoque.findOne({ codigoProduto });
 
     if (estoque) {
-      // Verificar se já existe essa variante
+      // Remover variantes com quantidade <= 0 (legado) antes de validar duplicidade
+      const originalLen = Array.isArray(estoque.variantes) ? estoque.variantes.length : 0;
+      estoque.variantes = (estoque.variantes || []).filter((v: any) => Number(v.quantidade) > 0);
+      const cleaned = originalLen !== estoque.variantes.length;
+
+      // Verificar se já existe essa variante (apenas variantes com estoque)
       const varianteExistente = estoque.variantes.find(
         (v: any) => v.cor === cor && v.tamanho === tamanho
       );
@@ -279,7 +284,7 @@ export const createEstoque = async (req: Request, res: Response) => {
       estoque.variantes.push({ cor, tamanho, quantidade });
       
       // Atualizar quantidade total
-      estoque.quantidade = estoque.variantes.reduce((total: number, v: any) => total + (v.quantidade || 0), 0);
+      estoque.quantidade = estoque.variantes.reduce((total: number, v: any) => total + (Number(v.quantidade) || 0), 0);
       
       // Adicionar log de movimentação
       if (req.body.logMovimentacao && Array.isArray(req.body.logMovimentacao)) {
