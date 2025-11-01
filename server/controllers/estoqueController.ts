@@ -210,6 +210,9 @@ export const getAllEstoque = async (req: Request, res: Response) => {
         const produto = await Produto.findOne({ codigoProduto: item.codigoProduto });
         const quantidadeTotal = item.variantes.reduce((sum: number, v: any) => sum + (Number(v.quantidade) || 0), 0);
         if (quantidadeTotal === 0) return null;
+        
+        console.log(`📝 Produto ${item.codigoProduto} tem ${item.logMovimentacao?.length || 0} movimentações`);
+        
         return {
           ...item,
           quantidadeTotal,
@@ -220,7 +223,10 @@ export const getAllEstoque = async (req: Request, res: Response) => {
           precoCusto: produto?.precoCusto || 0,
           precoVenda: produto?.precoVenda || 0,
           margemDeLucro: produto?.margemDeLucro || 0,
-          precoPromocional: produto?.precoPromocional ?? item.precoPromocional
+          precoPromocional: produto?.precoPromocional ?? item.precoPromocional,
+          // Garantir que logMovimentacao e logPromocao sejam incluídos
+          logMovimentacao: item.logMovimentacao || [],
+          logPromocao: item.logPromocao || []
         };
       })
     );
