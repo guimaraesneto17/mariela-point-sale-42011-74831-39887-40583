@@ -282,13 +282,28 @@ const Estoque = () => {
                   </div>
 
                   {/* Seletores de Cor e Tamanho */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div>
                       <label className="text-sm font-semibold text-muted-foreground mb-2 block">
                         Quantidade Disponível
                       </label>
                       <div className="text-3xl font-bold text-primary">
                         {varianteSelecionada ? varianteSelecionada.quantidade : 0} un.
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {selectedCor} - {selectedTamanho}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-semibold text-muted-foreground mb-2 block">
+                        Quantidade Total
+                      </label>
+                      <div className="text-3xl font-bold text-secondary">
+                        {item.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0} un.
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Todas as variantes
                       </div>
                     </div>
 
