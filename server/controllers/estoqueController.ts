@@ -97,6 +97,13 @@ const validateEstoquePayload = (payload: any): FieldIssue[] => {
   if (!CODIGO_PRODUTO_RE.test(payload?.codigoProduto || '')) {
     issues.push({ field: 'codigoProduto', message: 'Deve seguir o padrão P###', value: payload?.codigoProduto });
   }
+  
+  // Validar quantidade total
+  const qtdTotal = Number(payload?.quantidade);
+  if (!Number.isInteger(qtdTotal) || qtdTotal < 0) {
+    issues.push({ field: 'quantidade', message: 'Quantidade total deve ser inteiro >= 0', value: payload?.quantidade });
+  }
+  
   // Validar variantes
   if (!payload?.variantes || !Array.isArray(payload.variantes) || payload.variantes.length === 0) {
     issues.push({ field: 'variantes', message: 'Deve ter pelo menos uma variante', value: payload?.variantes });
@@ -271,6 +278,9 @@ export const createEstoque = async (req: Request, res: Response) => {
       // Adicionar nova variante
       estoque.variantes.push({ cor, tamanho, quantidade });
       
+      // Atualizar quantidade total
+      estoque.quantidade = estoque.variantes.reduce((total: number, v: any) => total + (v.quantidade || 0), 0);
+      
       // Adicionar log de movimentação
       if (req.body.logMovimentacao && Array.isArray(req.body.logMovimentacao)) {
         estoque.logMovimentacao.push(...req.body.logMovimentacao.map((m: any) => ({
@@ -289,6 +299,7 @@ export const createEstoque = async (req: Request, res: Response) => {
     // Criar novo registro de estoque
     const cleanData: any = {
       codigoProduto,
+      quantidade: quantidade || 0,
       variantes: [{ cor, tamanho, quantidade }],
       emPromocao: req.body.emPromocao || false,
       isNovidade: req.body.isNovidade || false,
@@ -462,6 +473,9 @@ export const registrarEntrada = async (req: Request, res: Response) => {
 
     // Atualizar quantidade
     variante.quantidade += quantidade;
+    
+    // Recalcular quantidade total
+    estoque.quantidade = estoque.variantes.reduce((total: number, v: any) => total + (v.quantidade || 0), 0);
 
     // Adicionar log de movimentação
     estoque.logMovimentacao.push({
@@ -522,6 +536,9 @@ export const registrarSaida = async (req: Request, res: Response) => {
 
     // Atualizar quantidade
     variante.quantidade -= quantidade;
+    
+    // Recalcular quantidade total
+    estoque.quantidade = estoque.variantes.reduce((total: number, v: any) => total + (v.quantidade || 0), 0);
 
     // Adicionar log de movimentação
     estoque.logMovimentacao.push({
