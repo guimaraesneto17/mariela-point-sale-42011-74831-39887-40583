@@ -115,17 +115,20 @@ const Estoque = () => {
     loadEstoque();
   };
 
-  // Obter cores únicas para um item
+  // Obter cores únicas para um item (apenas com quantidade > 0)
   const getCoresDisponiveis = (item: any) => {
     if (!item.variantes) return [];
-    return [...new Set(item.variantes.map((v: any) => v.cor))];
+    const coresComEstoque = item.variantes
+      .filter((v: any) => v.quantidade > 0)
+      .map((v: any) => v.cor);
+    return [...new Set(coresComEstoque)];
   };
 
-  // Obter tamanhos disponíveis para uma cor específica
+  // Obter tamanhos disponíveis para uma cor específica (apenas com quantidade > 0)
   const getTamanhosDisponiveis = (item: any, cor: string) => {
     if (!item.variantes) return [];
     return item.variantes
-      .filter((v: any) => v.cor === cor)
+      .filter((v: any) => v.cor === cor && v.quantidade > 0)
       .map((v: any) => v.tamanho);
   };
 
