@@ -173,7 +173,7 @@ export const getAllEstoque = async (req: Request, res: Response) => {
       return map;
     }, new Map());
 
-    const aggregated = Array.from(groups.values()).map(aggregateEstoqueByCodigo);
+    const aggregated = Array.from(groups.values()).map((docs: any[]) => aggregateEstoqueByCodigo(docs));
 
     // Enriquecer com dados do produto e filtrar sem estoque
     const Produto = require('../models/Produto').default;
