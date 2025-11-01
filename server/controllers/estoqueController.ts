@@ -38,7 +38,6 @@ const isoSeconds = (date?: string | Date) => {
   return d.toISOString().split('.')[0] + 'Z';
 };
 
-const ALLOWED_TAMANHOS = ['PP', 'P', 'M', 'G', 'GG', 'U'] as const;
 const ALLOWED_ORIGENS = ['venda', 'compra', 'entrada', 'baixa no estoque'] as const;
 const CODIGO_PRODUTO_RE = /^P\d{3}$/;
 const DATA_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
@@ -52,11 +51,13 @@ const validateEstoquePayload = (payload: any): FieldIssue[] => {
   if (!CODIGO_PRODUTO_RE.test(payload?.codigoProduto || '')) {
     issues.push({ field: 'codigoProduto', message: 'Deve seguir o padrão P###', value: payload?.codigoProduto });
   }
-  if (!payload?.cor || typeof payload.cor !== 'string') {
-    issues.push({ field: 'cor', message: 'Cor é obrigatória', value: payload?.cor });
+  // Validar cor como array
+  if (!payload?.cor || !Array.isArray(payload.cor) || payload.cor.length === 0) {
+    issues.push({ field: 'cor', message: 'Cor é obrigatória e deve ser um array não vazio', value: payload?.cor });
   }
-  if (!ALLOWED_TAMANHOS.includes(payload?.tamanho)) {
-    issues.push({ field: 'tamanho', message: `Deve ser um dos: ${ALLOWED_TAMANHOS.join(', ')}`, value: payload?.tamanho });
+  // Validar tamanho como array (sem enum fixo)
+  if (!payload?.tamanho || !Array.isArray(payload.tamanho) || payload.tamanho.length === 0) {
+    issues.push({ field: 'tamanho', message: 'Tamanho é obrigatório e deve ser um array não vazio', value: payload?.tamanho });
   }
   const q = Number(payload?.quantidade);
   if (!Number.isInteger(q) || q < 0) {
