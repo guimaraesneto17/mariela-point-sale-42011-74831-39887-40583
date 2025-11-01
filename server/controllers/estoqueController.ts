@@ -537,9 +537,6 @@ export const registrarSaida = async (req: Request, res: Response) => {
     // Atualizar quantidade
     variante.quantidade -= quantidade;
     
-    // Recalcular quantidade total
-    estoque.quantidade = estoque.variantes.reduce((total: number, v: any) => total + (v.quantidade || 0), 0);
-
     // Adicionar log de movimentação
     estoque.logMovimentacao.push({
       tipo: 'saida',
@@ -552,6 +549,25 @@ export const registrarSaida = async (req: Request, res: Response) => {
       codigoVenda: codigoVenda || undefined,
       observacao: observacao || undefined
     } as any);
+
+    // Se a variante ficou com quantidade 0, remove ela do array
+    if (variante.quantidade === 0) {
+      estoque.variantes = estoque.variantes.filter(
+        (v: any) => !(v.cor === cor && v.tamanho === tamanho)
+      );
+    }
+    
+    // Recalcular quantidade total
+    estoque.quantidade = estoque.variantes.reduce((total: number, v: any) => total + (v.quantidade || 0), 0);
+
+    // Se não há mais variantes, exclui o documento inteiro
+    if (estoque.variantes.length === 0) {
+      await Estoque.findByIdAndDelete(estoque._id);
+      return res.json({
+        message: 'Saída registrada com sucesso. Produto removido do estoque (sem variantes disponíveis)',
+        removido: true
+      });
+    }
 
     await estoque.save();
     
