@@ -46,6 +46,52 @@ const FORNECEDOR_RE = /^F\d{3}$/;
 
 type FieldIssue = { field: string; message: string; value?: any };
 
+// Agrega múltiplos documentos (legado) de um mesmo produto em um único registro com variantes
+const aggregateEstoqueByCodigo = (docs: any[]) => {
+  if (!docs || docs.length === 0) return null;
+  const acc: any = {
+    codigoProduto: docs[0].codigoProduto,
+    variantes: [] as Array<{ cor: string; tamanho: string; quantidade: number }>,
+    emPromocao: false,
+    isNovidade: false,
+    precoPromocional: null as number | null,
+    logMovimentacao: [] as any[],
+    dataCadastro: docs[0].dataCadastro,
+    dataAtualizacao: docs[0].dataAtualizacao,
+    _id: docs[0]._id,
+  };
+
+  docs.forEach((doc) => {
+    acc.emPromocao = acc.emPromocao || !!doc.emPromocao;
+    acc.isNovidade = acc.isNovidade || !!doc.isNovidade;
+    if (doc.precoPromocional != null) acc.precoPromocional = doc.precoPromocional;
+    if (doc.dataAtualizacao && (!acc.dataAtualizacao || doc.dataAtualizacao > acc.dataAtualizacao)) {
+      acc.dataAtualizacao = doc.dataAtualizacao;
+    }
+
+    const variantes = Array.isArray(doc.variantes) && doc.variantes.length
+      ? doc.variantes
+      : (() => {
+          const cores = Array.isArray(doc.cor) ? doc.cor : (doc.cor ? [doc.cor] : []);
+          const tamanhos = Array.isArray(doc.tamanho) ? doc.tamanho : (doc.tamanho ? [doc.tamanho] : []);
+          const c = cores[0];
+          const t = tamanhos[0];
+          const q = Number(doc.quantidade) || 0;
+          return c && t ? [{ cor: c, tamanho: t, quantidade: q }] : [];
+        })();
+
+    variantes.forEach((v: any) => {
+      const existing = acc.variantes.find((x: any) => x.cor === v.cor && x.tamanho === v.tamanho);
+      if (existing) existing.quantidade += Number(v.quantidade) || 0;
+      else acc.variantes.push({ cor: v.cor, tamanho: v.tamanho, quantidade: Number(v.quantidade) || 0 });
+    });
+
+    if (Array.isArray(doc.logMovimentacao)) acc.logMovimentacao.push(...doc.logMovimentacao);
+  });
+
+  return acc;
+};
+
 const validateEstoquePayload = (payload: any): FieldIssue[] => {
   const issues: FieldIssue[] = [];
   if (!CODIGO_PRODUTO_RE.test(payload?.codigoProduto || '')) {
@@ -116,24 +162,28 @@ const validateEstoquePayload = (payload: any): FieldIssue[] => {
 
 export const getAllEstoque = async (req: Request, res: Response) => {
   try {
-    const estoque = await Estoque.find().sort({ dataCadastro: -1 });
-    
-    // Buscar dados dos produtos relacionados
+    const docs = await Estoque.find().sort({ dataCadastro: -1 });
+
+    // Agrupar por código do produto e agregar variantes/quantidades
+    const groups = docs.reduce((map: Map<string, any[]>, doc: any) => {
+      const key = doc.codigoProduto;
+      const list = map.get(key) || [];
+      list.push(doc);
+      map.set(key, list);
+      return map;
+    }, new Map());
+
+    const aggregated = Array.from(groups.values()).map(aggregateEstoqueByCodigo);
+
+    // Enriquecer com dados do produto e filtrar sem estoque
     const Produto = require('../models/Produto').default;
     const estoqueComProdutos = await Promise.all(
-      estoque.map(async (item) => {
+      aggregated.map(async (item: any) => {
         const produto = await Produto.findOne({ codigoProduto: item.codigoProduto });
-        
-        // Calcular quantidade total
-        const quantidadeTotal = item.variantes.reduce((sum: number, v: any) => sum + v.quantidade, 0);
-        
-        // Filtrar apenas produtos com estoque disponível
-        if (quantidadeTotal === 0) {
-          return null;
-        }
-        
+        const quantidadeTotal = item.variantes.reduce((sum: number, v: any) => sum + (Number(v.quantidade) || 0), 0);
+        if (quantidadeTotal === 0) return null;
         return {
-          ...item.toObject(),
+          ...item,
           quantidadeTotal,
           nomeProduto: produto?.nome || 'Produto não encontrado',
           categoria: produto?.categoria || '',
@@ -142,15 +192,12 @@ export const getAllEstoque = async (req: Request, res: Response) => {
           precoCusto: produto?.precoCusto || 0,
           precoVenda: produto?.precoVenda || 0,
           margemDeLucro: produto?.margemDeLucro || 0,
-          precoPromocional: produto?.precoPromocional
+          precoPromocional: produto?.precoPromocional ?? item.precoPromocional
         };
       })
     );
-    
-    // Remover itens nulos (sem estoque)
-    const estoqueDisponivel = estoqueComProdutos.filter(item => item !== null);
-    
-    res.json(estoqueDisponivel);
+
+    res.json(estoqueComProdutos.filter(Boolean));
   } catch (error) {
     console.error('Erro ao buscar estoque:', error);
     res.status(500).json({ error: 'Erro ao buscar estoque' });
@@ -172,11 +219,27 @@ export const getEstoqueById = async (req: Request, res: Response) => {
 
 export const getEstoqueByCodigo = async (req: Request, res: Response) => {
   try {
-    const estoque = await Estoque.findOne({ codigoProduto: req.params.codigo });
-    if (!estoque) {
+    const docs = await Estoque.find({ codigoProduto: req.params.codigo });
+    if (!docs || docs.length === 0) {
       return res.status(404).json({ error: 'Item não encontrado no estoque' });
     }
-    res.json(estoque);
+
+    const item = aggregateEstoqueByCodigo(docs);
+
+    // Buscar dados do produto relacionado
+    const Produto = require('../models/Produto').default;
+    const produto = await Produto.findOne({ codigoProduto: req.params.codigo });
+
+    res.json({
+      ...item,
+      nomeProduto: produto?.nome || 'Produto não encontrado',
+      categoria: produto?.categoria || '',
+      descricao: produto?.descricao || '',
+      imagens: produto?.imagens || [],
+      precoCusto: produto?.precoCusto || 0,
+      precoVenda: produto?.precoVenda || 0,
+      margemDeLucro: produto?.margemDeLucro || 0
+    });
   } catch (error) {
     console.error('Erro ao buscar item do estoque:', error);
     res.status(500).json({ error: 'Erro ao buscar item do estoque' });
