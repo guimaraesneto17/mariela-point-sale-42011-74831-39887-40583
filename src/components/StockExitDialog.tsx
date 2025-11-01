@@ -36,8 +36,8 @@ export function StockExitDialog({ open, onOpenChange, codigoProduto, nomeProduto
     try {
       const data = await estoqueAPI.getByCodigo(codigoProduto);
       if (data) {
-        const cores = Array.isArray(data.cor) ? data.cor : [data.cor];
-        const tamanhos = Array.isArray(data.tamanho) ? data.tamanho : [data.tamanho];
+        const cores = Array.isArray(data.cor) ? data.cor.filter(c => c) : [data.cor].filter(c => c);
+        const tamanhos = Array.isArray(data.tamanho) ? data.tamanho.filter(t => t) : [data.tamanho].filter(t => t);
         setCoresDisponiveis(cores);
         setTamanhosDisponiveis(tamanhos);
         // Selecionar primeiro automaticamente
