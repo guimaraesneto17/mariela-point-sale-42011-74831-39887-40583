@@ -326,8 +326,21 @@ const Estoque = () => {
 
                     <div>
                       <label className="text-sm font-semibold text-muted-foreground mb-2 block">Preço de Venda</label>
-                      <div className="text-2xl font-bold text-foreground">
-                        R$ {item.emPromocao && item.precoPromocional ? item.precoPromocional.toFixed(2) : item.precoVenda?.toFixed(2) || '0.00'}
+                      <div className="space-y-1">
+                        {item.emPromocao && item.precoPromocional ? (
+                          <>
+                            <div className="text-lg font-semibold text-muted-foreground line-through">
+                              R$ {item.precoVenda?.toFixed(2) || '0.00'}
+                            </div>
+                            <div className="text-2xl font-bold text-accent">
+                              R$ {item.precoPromocional.toFixed(2)}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-2xl font-bold text-foreground">
+                            R$ {item.precoVenda?.toFixed(2) || '0.00'}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -358,7 +371,7 @@ const Estoque = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => openPromotionDialog(item)}
-                      className="gap-2"
+                      className={item.emPromocao ? "gap-2 bg-purple-600 text-white hover:bg-purple-700 hover:text-white border-purple-600" : "gap-2"}
                     >
                       <Tag className="h-4 w-4" />
                       {item.emPromocao ? 'Remover' : 'Colocar'} em Promoção
@@ -367,7 +380,7 @@ const Estoque = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => openNovidadeDialog(item)}
-                      className="gap-2"
+                      className={item.isNovidade ? "gap-2 bg-green-600 text-white hover:bg-green-700 hover:text-white border-green-600" : "gap-2"}
                     >
                       <Sparkles className="h-4 w-4" />
                       {item.isNovidade ? 'Remover' : 'Marcar'} como Novidade
