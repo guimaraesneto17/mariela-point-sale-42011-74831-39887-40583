@@ -15,11 +15,11 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   
   // Login state
-  const [loginEmail, setLoginEmail] = useState("");
+  const [loginEmail, setLoginEmail] = useState("marielamodaf@gmail.com");
   const [loginPassword, setLoginPassword] = useState("");
   
   // Signup state
-  const [signupEmail, setSignupEmail] = useState("");
+  const [signupEmail, setSignupEmail] = useState("marielamodaf@gmail.com");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupPasswordConfirm, setSignupPasswordConfirm] = useState("");
 
