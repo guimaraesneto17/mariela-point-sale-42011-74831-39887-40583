@@ -42,6 +42,11 @@ const Estoque = () => {
     try {
       setLoading(true);
       const data = await estoqueAPI.getAll();
+      console.log('📦 Dados recebidos do estoque:', data);
+      if (data.length > 0) {
+        console.log('📝 Primeiro item:', data[0]);
+        console.log('📝 logMovimentacao do primeiro item:', data[0].logMovimentacao);
+      }
       setInventory(data);
       
       // Inicializar seleção de cor e tamanho para cada item
@@ -105,6 +110,8 @@ const Estoque = () => {
   };
 
   const openMovimentacaoDialog = (item: any) => {
+    console.log('🔍 Abrindo dialog de movimentações para:', item.codigoProduto);
+    console.log('📝 logMovimentacao:', item.logMovimentacao);
     setSelectedItem(item);
     setShowMovimentacaoDialog(true);
   };

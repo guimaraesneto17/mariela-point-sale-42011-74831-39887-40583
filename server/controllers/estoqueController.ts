@@ -56,6 +56,8 @@ const aggregateEstoqueByCodigo = (docs: any[]) => {
     isNovidade: false,
     precoPromocional: null as number | null,
     logPromocao: [] as any[],
+    logMovimentacao: [] as any[],
+    ativo: true,
     dataCadastro: docs[0].dataCadastro,
     dataAtualizacao: docs[0].dataAtualizacao,
     _id: docs[0]._id,
@@ -64,6 +66,7 @@ const aggregateEstoqueByCodigo = (docs: any[]) => {
   docs.forEach((doc) => {
     acc.emPromocao = acc.emPromocao || !!doc.emPromocao;
     acc.isNovidade = acc.isNovidade || !!doc.isNovidade;
+    acc.ativo = acc.ativo && (doc.ativo !== false);
     if (doc.precoPromocional != null) acc.precoPromocional = doc.precoPromocional;
     if (doc.dataAtualizacao && (!acc.dataAtualizacao || doc.dataAtualizacao > acc.dataAtualizacao)) {
       acc.dataAtualizacao = doc.dataAtualizacao;
@@ -86,8 +89,21 @@ const aggregateEstoqueByCodigo = (docs: any[]) => {
       else acc.variantes.push({ cor: v.cor, tamanho: v.tamanho, quantidade: Number(v.quantidade) || 0 });
     });
 
+    // Agregar logs de promoção
     if (Array.isArray(doc.logPromocao)) acc.logPromocao.push(...doc.logPromocao);
+    
+    // Agregar logs de movimentação
+    if (Array.isArray(doc.logMovimentacao)) acc.logMovimentacao.push(...doc.logMovimentacao);
   });
+
+  // Ordenar movimentações por data (mais recente primeiro)
+  if (acc.logMovimentacao.length > 0) {
+    acc.logMovimentacao.sort((a: any, b: any) => {
+      const dateA = new Date(a.data).getTime();
+      const dateB = new Date(b.data).getTime();
+      return dateB - dateA;
+    });
+  }
 
   return acc;
 };
@@ -181,6 +197,11 @@ export const getAllEstoque = async (req: Request, res: Response) => {
     }, new Map<string, any[]>());
 
     const aggregated = Array.from<any[]>(groups.values()).map((docsArr) => aggregateEstoqueByCodigo(docsArr));
+
+    console.log('📦 Total de produtos agregados:', aggregated.length);
+    if (aggregated.length > 0 && aggregated[0].logMovimentacao) {
+      console.log('📝 Primeiro produto tem', aggregated[0].logMovimentacao.length, 'movimentações');
+    }
 
     // Enriquecer com dados do produto e filtrar sem estoque
     const Produto = require('../models/Produto').default;
@@ -490,6 +511,8 @@ export const registrarEntrada = async (req: Request, res: Response) => {
     }
     estoque.logMovimentacao.push(logEntry);
 
+    console.log(`✅ Log de entrada registrado para ${codigoProduto}:`, logEntry);
+
     // Se estava inativo e agora tem estoque, marcar como ativo
     if (!estoque.ativo && estoque.quantidade > 0) {
       estoque.ativo = true;
@@ -561,6 +584,8 @@ export const registrarSaida = async (req: Request, res: Response) => {
     }
     estoque.logMovimentacao.push(logEntry);
     
+    console.log(`✅ Log de saída registrado para ${codigoProduto}:`, logEntry);
+
     // Se a variante ficou com quantidade 0, remove ela do array
     if (variante.quantidade === 0) {
       estoque.variantes = estoque.variantes.filter(

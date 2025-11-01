@@ -222,6 +222,7 @@ const Dashboard = () => {
           });
         }
       });
+      console.log('📦 Total de movimentações coletadas:', todasMovimentacoes.length);
       setMovimentacoesEstoque(todasMovimentacoes);
 
       // Calcular estatísticas
