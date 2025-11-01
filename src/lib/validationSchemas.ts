@@ -109,19 +109,36 @@ export const produtoSchema = z.object({
 export const estoqueSchema = z.object({
   codigoProduto: z.string()
     .regex(regex.codigoProduto, "Código do produto deve seguir o formato P001, P002, etc."),
-  cor: z.string().min(1, "Cor é obrigatória"),
-  tamanho: z.enum(["PP", "P", "M", "G", "GG", "U"], {
-    errorMap: () => ({ message: "Tamanho é obrigatório" }),
-  }),
   quantidade: z.number()
     .int("Quantidade deve ser um número inteiro")
     .min(0, "Quantidade deve ser maior ou igual a 0"),
+  emPromocao: z.boolean().default(false),
+  isNovidade: z.boolean().default(false),
   precoPromocional: z.number()
     .min(0, "Preço promocional deve ser maior ou igual a 0")
+    .nullable()
     .optional(),
-  ativo: z.boolean().optional().default(true),
-  emPromocao: z.boolean().optional().default(false),
-  isNovidade: z.boolean().optional().default(false),
+  variantes: z.array(z.object({
+    cor: z.string().min(1, "Cor é obrigatória"),
+    tamanho: z.enum(["PP", "P", "M", "G", "GG", "U"], {
+      errorMap: () => ({ message: "Tamanho é obrigatório" }),
+    }),
+    quantidade: z.number()
+      .int("Quantidade deve ser um número inteiro")
+      .min(0, "Quantidade deve ser maior ou igual a 0"),
+  })).optional(),
+  logMovimentacao: z.array(z.object({
+    tipo: z.enum(["entrada", "saida"]),
+    data: z.string(),
+    quantidade: z.number().int().min(1),
+    origem: z.enum(["venda", "compra", "entrada", "baixa no estoque"]).optional(),
+    codigoVenda: z.string().regex(/^VENDA\d{8}-\d{3}$/).nullable().optional(),
+    motivo: z.string().nullable().optional(),
+    fornecedor: z.string().regex(regex.codigoFornecedor).nullable().optional(),
+    observacao: z.string().max(300).nullable().optional(),
+    cor: z.string().nullable().optional(),
+    tamanho: z.string().nullable().optional(),
+  })).optional(),
 });
 
 // ===========================================================

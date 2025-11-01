@@ -5,7 +5,29 @@ const EstoqueSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
-    unique: true
+    unique: true,
+    match: /^P\d{3}$/
+  },
+  quantidade: {
+    type: Number,
+    required: true,
+    min: 0,
+    default: 0
+  },
+  emPromocao: {
+    type: Boolean,
+    required: true,
+    default: false
+  },
+  isNovidade: {
+    type: Boolean,
+    required: true,
+    default: false
+  },
+  precoPromocional: {
+    type: Number,
+    min: 0,
+    default: null
   },
   variantes: [{
     cor: {
@@ -25,21 +47,6 @@ const EstoqueSchema = new mongoose.Schema({
       default: 0
     }
   }],
-  emPromocao: {
-    type: Boolean,
-    required: true,
-    default: false
-  },
-  isNovidade: {
-    type: Boolean,
-    required: true,
-    default: false
-  },
-  precoPromocional: {
-    type: Number,
-    min: 0,
-    default: null
-  },
   logMovimentacao: [{
     tipo: {
       type: String,
@@ -71,7 +78,8 @@ const EstoqueSchema = new mongoose.Schema({
     },
     fornecedor: {
       type: String,
-      trim: true
+      trim: true,
+      match: /^F\d{3}$/
     },
     motivo: {
       type: String,
@@ -79,7 +87,8 @@ const EstoqueSchema = new mongoose.Schema({
     },
     codigoVenda: {
       type: String,
-      trim: true
+      trim: true,
+      match: /^VENDA\d{8}-\d{3}$/
     },
     observacao: {
       type: String,
