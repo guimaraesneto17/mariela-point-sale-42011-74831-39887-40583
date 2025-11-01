@@ -10,6 +10,8 @@ interface MovimentacaoLog {
   fornecedor?: string;
   codigoVenda?: string;
   observacao?: string;
+  cor?: string;
+  tamanho?: string;
 }
 
 interface MovimentacaoDialogProps {
@@ -81,6 +83,20 @@ export const MovimentacaoDialog = ({
                           <span className="text-muted-foreground">Quantidade:</span>
                           <span className="font-semibold">{log.quantidade} un.</span>
                         </div>
+                        
+                        {log.cor && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Cor:</span>
+                            <span className="font-medium">{log.cor}</span>
+                          </div>
+                        )}
+                        
+                        {log.tamanho && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Tamanho:</span>
+                            <span className="font-medium">{log.tamanho}</span>
+                          </div>
+                        )}
                         
                         {log.fornecedor && (
                           <div className="flex justify-between">

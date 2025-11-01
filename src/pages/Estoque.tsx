@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Package, TrendingUp, TrendingDown, Search, Plus, Minus, Tag, List, Sparkles } from "lucide-react";
+import { Package, TrendingUp, TrendingDown, Search, Plus, Minus, Tag, List, Sparkles, Filter } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { StockEntryDialog } from "@/components/StockEntryDialog";
 import { StockExitDialog } from "@/components/StockExitDialog";
@@ -25,6 +26,10 @@ const Estoque = () => {
   const [loading, setLoading] = useState(true);
   const [filterPromocao, setFilterPromocao] = useState<boolean | null>(null);
   const [filterNovidade, setFilterNovidade] = useState<boolean | null>(null);
+  const [filterCor, setFilterCor] = useState<string>("");
+  const [filterTamanho, setFilterTamanho] = useState<string>("");
+  const [coresDisponiveis, setCoresDisponiveis] = useState<string[]>([]);
+  const [tamanhosDisponiveis, setTamanhosDisponiveis] = useState<string[]>([]);
 
   useEffect(() => {
     loadEstoque();
@@ -35,6 +40,27 @@ const Estoque = () => {
       setLoading(true);
       const data = await estoqueAPI.getAll();
       setInventory(data);
+      
+      // Extrair cores e tamanhos únicos
+      const cores = new Set<string>();
+      const tamanhos = new Set<string>();
+      
+      data.forEach((item: any) => {
+        if (Array.isArray(item.cor)) {
+          item.cor.forEach((c: string) => cores.add(c));
+        } else if (item.cor) {
+          cores.add(item.cor);
+        }
+        
+        if (Array.isArray(item.tamanho)) {
+          item.tamanho.forEach((t: string) => tamanhos.add(t));
+        } else if (item.tamanho) {
+          tamanhos.add(item.tamanho);
+        }
+      });
+      
+      setCoresDisponiveis(Array.from(cores).sort());
+      setTamanhosDisponiveis(Array.from(tamanhos).sort());
     } catch (error) {
       console.error('Erro ao carregar estoque:', error);
       toast.error('Erro ao carregar estoque');
@@ -43,90 +69,16 @@ const Estoque = () => {
     }
   };
 
-  // Mock data - será substituído por dados reais da API
-  const mockInventory = [
-    {
-      _id: "1",
-      codigoProduto: "P101",
-      nomeProduto: "Vestido Floral Curto",
-      quantidadeDisponivel: 15,
-      tamanho: "M",
-      cor: "Azul Claro",
-      emPromocao: true,
-      valorPromocional: 119.90,
-      precoVenda: 149.90,
-      novidade: false,
-      logMovimentacao: [
-        {
-          data: "2025-10-01T08:00:00Z",
-          tipo: "entrada",
-          quantidade: 20,
-          fornecedor: "Elegance Fashion"
-        },
-        {
-          data: "2025-10-12T14:30:00Z",
-          tipo: "saida",
-          quantidade: 5,
-          codigoVenda: "VENDA20251012-001"
-        }
-      ]
-    },
-    {
-      _id: "2",
-      codigoProduto: "P102",
-      nomeProduto: "Blusa Manga Longa",
-      quantidadeDisponivel: 8,
-      tamanho: "G",
-      cor: "Preto",
-      emPromocao: false,
-      precoVenda: 89.90,
-      novidade: true,
-      logMovimentacao: [
-        {
-          data: "2025-10-03T11:00:00Z",
-          tipo: "entrada",
-          quantidade: 15,
-          fornecedor: "Moda Style"
-        }
-      ]
-    },
-    {
-      _id: "3",
-      codigoProduto: "P103",
-      nomeProduto: "Calça Jeans Skinny",
-      quantidadeDisponivel: 12,
-      tamanho: "38",
-      cor: "Azul Escuro",
-      emPromocao: false,
-      precoVenda: 199.90,
-      novidade: false,
-      logMovimentacao: [
-        {
-          data: "2025-10-10T09:30:00Z",
-          tipo: "entrada",
-          quantidade: 25,
-          fornecedor: "Denim Co."
-        },
-        {
-          data: "2025-10-13T16:15:00Z",
-          tipo: "saida",
-          quantidade: 13,
-          codigoVenda: "VENDA20251013-003"
-        }
-      ]
-    },
-  ];
-
-  const displayInventory = inventory.length > 0 ? inventory : mockInventory;
-  const filteredInventory = displayInventory.filter(item => {
+  const filteredInventory = inventory.filter(item => {
     const nomeProduto = item.nomeProduto || '';
     const codigoProduto = item.codigoProduto || '';
-    const cor = item.cor || '';
+    const cores = Array.isArray(item.cor) ? item.cor : [item.cor || ''];
+    const tamanhos = Array.isArray(item.tamanho) ? item.tamanho : [item.tamanho || ''];
     
     // Filtro de texto
     const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
       codigoProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cor.toLowerCase().includes(searchTerm.toLowerCase());
+      cores.some((c: string) => c.toLowerCase().includes(searchTerm.toLowerCase()));
     
     // Filtro de promoção
     const matchesPromocao = filterPromocao === null || item.emPromocao === filterPromocao;
@@ -134,7 +86,13 @@ const Estoque = () => {
     // Filtro de novidade
     const matchesNovidade = filterNovidade === null || item.isNovidade === filterNovidade;
     
-    return matchesSearch && matchesPromocao && matchesNovidade;
+    // Filtro de cor
+    const matchesCor = !filterCor || cores.includes(filterCor);
+    
+    // Filtro de tamanho
+    const matchesTamanho = !filterTamanho || tamanhos.includes(filterTamanho);
+    
+    return matchesSearch && matchesPromocao && matchesNovidade && matchesCor && matchesTamanho;
   });
 
   const openEntryDialog = (item: any) => {
@@ -211,14 +169,43 @@ const Estoque = () => {
               <Sparkles className="h-4 w-4 mr-2" />
               Novidades
             </Button>
+
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select value={filterCor} onValueChange={setFilterCor}>
+                <SelectTrigger className="w-[140px] h-8">
+                  <SelectValue placeholder="Todas as cores" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todas as cores</SelectItem>
+                  {coresDisponiveis.map((cor) => (
+                    <SelectItem key={cor} value={cor}>{cor}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={filterTamanho} onValueChange={setFilterTamanho}>
+                <SelectTrigger className="w-[140px] h-8">
+                  <SelectValue placeholder="Todos os tamanhos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos os tamanhos</SelectItem>
+                  {tamanhosDisponiveis.map((tamanho) => (
+                    <SelectItem key={tamanho} value={tamanho}>{tamanho}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             
-            {(filterPromocao !== null || filterNovidade !== null) && (
+            {(filterPromocao !== null || filterNovidade !== null || filterCor || filterTamanho) && (
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => {
                   setFilterPromocao(null);
                   setFilterNovidade(null);
+                  setFilterCor("");
+                  setFilterTamanho("");
                 }}
               >
                 Limpar Filtros
@@ -269,16 +256,24 @@ const Estoque = () => {
                 </p>
               </div>
               <div className="p-4 rounded-lg bg-background/50 border border-border">
-                <p className="text-sm text-muted-foreground mb-1">Tamanho</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {item.tamanho}
-                </p>
+                <p className="text-sm text-muted-foreground mb-1">Tamanhos</p>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {(Array.isArray(item.tamanho) ? item.tamanho : [item.tamanho]).map((tam: string, idx: number) => (
+                    <Badge key={idx} variant="outline" className="text-sm">
+                      {tam}
+                    </Badge>
+                  ))}
+                </div>
               </div>
               <div className="p-4 rounded-lg bg-background/50 border border-border">
-                <p className="text-sm text-muted-foreground mb-1">Cor</p>
-                <p className="text-lg font-medium text-foreground">
-                  {item.cor}
-                </p>
+                <p className="text-sm text-muted-foreground mb-1">Cores</p>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {(Array.isArray(item.cor) ? item.cor : [item.cor]).map((c: string, idx: number) => (
+                    <Badge key={idx} variant="secondary" className="text-sm">
+                      {c}
+                    </Badge>
+                  ))}
+                </div>
               </div>
               <div className="p-4 rounded-lg bg-background/50 border border-border">
                 <p className="text-sm text-muted-foreground mb-1">Preço de Venda</p>
