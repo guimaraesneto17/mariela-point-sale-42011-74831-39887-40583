@@ -5,7 +5,7 @@ const options: swaggerJsdoc.Options = {
     openapi: '3.0.0',
     info: {
       title: 'Mariela Moda - API Documentation',
-      version: '1.0.0',
+      version: '1.0.1',
       description: 'API para o sistema de PDV da Mariela Moda Feminina',
     },
     servers: [
