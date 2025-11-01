@@ -47,15 +47,15 @@ const Estoque = () => {
       
       data.forEach((item: any) => {
         if (Array.isArray(item.cor)) {
-          item.cor.forEach((c: string) => cores.add(c));
-        } else if (item.cor) {
-          cores.add(item.cor);
+          item.cor.forEach((c: string) => { if (c && String(c).trim()) cores.add(String(c).trim()); });
+        } else if (item.cor && String(item.cor).trim()) {
+          cores.add(String(item.cor).trim());
         }
         
         if (Array.isArray(item.tamanho)) {
-          item.tamanho.forEach((t: string) => tamanhos.add(t));
-        } else if (item.tamanho) {
-          tamanhos.add(item.tamanho);
+          item.tamanho.forEach((t: string) => { if (t && String(t).trim()) tamanhos.add(String(t).trim()); });
+        } else if (item.tamanho && String(item.tamanho).trim()) {
+          tamanhos.add(String(item.tamanho).trim());
         }
       });
       
@@ -172,24 +172,24 @@ const Estoque = () => {
 
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
-              <Select value={filterCor} onValueChange={setFilterCor}>
+              <Select value={filterCor} onValueChange={(v) => setFilterCor(v === "all" ? "" : v)}>
                 <SelectTrigger className="w-[140px] h-8">
                   <SelectValue placeholder="Todas as cores" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as cores</SelectItem>
+                  <SelectItem value="all">Todas as cores</SelectItem>
                   {coresDisponiveis.map((cor) => (
                     <SelectItem key={cor} value={cor}>{cor}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select value={filterTamanho} onValueChange={setFilterTamanho}>
+              <Select value={filterTamanho} onValueChange={(v) => setFilterTamanho(v === "all" ? "" : v)}>
                 <SelectTrigger className="w-[140px] h-8">
                   <SelectValue placeholder="Todos os tamanhos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os tamanhos</SelectItem>
+                  <SelectItem value="all">Todos os tamanhos</SelectItem>
                   {tamanhosDisponiveis.map((tamanho) => (
                     <SelectItem key={tamanho} value={tamanho}>{tamanho}</SelectItem>
                   ))}
