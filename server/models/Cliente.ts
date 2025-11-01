@@ -23,6 +23,19 @@ const ClienteSchema = new mongoose.Schema({
   observacao: {
     type: String,
     trim: true
+  },
+  valorTotalComprado: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  quantidadeCompras: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  dataUltimaCompra: {
+    type: Date
   }
 }, {
   timestamps: { createdAt: 'dataCadastro', updatedAt: 'dataAtualizacao' },

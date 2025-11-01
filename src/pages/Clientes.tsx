@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Plus, User, CheckCircle2, AlertCircle, Edit, Trash2, X } from "lucide-react";
+import { Search, Plus, User, CheckCircle2, AlertCircle, Edit, Trash2, X, ShoppingCart, DollarSign, Calendar } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,9 @@ const Clientes = () => {
       nome: "",
       telefone: "",
       dataNascimento: "",
+      valorTotalComprado: 0,
+      quantidadeCompras: 0,
+      dataUltimaCompra: undefined,
       observacao: "",
     },
   });
@@ -80,6 +83,9 @@ const Clientes = () => {
         ...data,
         telefone: data.telefone || undefined,
         dataNascimento: data.dataNascimento || undefined,
+        valorTotalComprado: data.valorTotalComprado ?? 0,
+        quantidadeCompras: data.quantidadeCompras ?? 0,
+        dataUltimaCompra: data.dataUltimaCompra || undefined,
         observacao: data.observacao || undefined,
       };
 
@@ -116,6 +122,9 @@ const Clientes = () => {
       nome: cliente.nome,
       telefone: cliente.telefone,
       dataNascimento: cliente.dataNascimento,
+      valorTotalComprado: cliente.valorTotalComprado ?? 0,
+      quantidadeCompras: cliente.quantidadeCompras ?? 0,
+      dataUltimaCompra: cliente.dataUltimaCompra ? new Date(cliente.dataUltimaCompra).toISOString().split('T')[0] : undefined,
       observacao: cliente.observacao || "",
     });
     setManualCode(true);
@@ -154,6 +163,9 @@ const Clientes = () => {
       nome: "",
       telefone: "",
       dataNascimento: "",
+      valorTotalComprado: 0,
+      quantidadeCompras: 0,
+      dataUltimaCompra: undefined,
       observacao: "",
     });
     setManualCode(false);
@@ -304,6 +316,78 @@ const Clientes = () => {
                       )}
                     />
 
+                    {/* Estatísticas do Cliente (somente leitura) */}
+                    {editingCliente && (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 p-4 bg-muted/30 rounded-lg border">
+                        <FormField
+                          control={form.control}
+                          name="quantidadeCompras"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-sm font-semibold text-foreground flex items-center gap-2">
+                                <ShoppingCart className="h-4 w-4" />
+                                Compras Realizadas
+                              </FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field}
+                                  type="number"
+                                  value={field.value ?? 0}
+                                  disabled
+                                  className="bg-muted"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="valorTotalComprado"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-sm font-semibold text-foreground flex items-center gap-2">
+                                <DollarSign className="h-4 w-4" />
+                                Total Comprado (R$)
+                              </FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field}
+                                  type="number"
+                                  step="0.01"
+                                  value={field.value ?? 0}
+                                  disabled
+                                  className="bg-muted"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="dataUltimaCompra"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-sm font-semibold text-foreground flex items-center gap-2">
+                                <Calendar className="h-4 w-4" />
+                                Última Compra
+                              </FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field}
+                                  type="date"
+                                  value={field.value || ""}
+                                  disabled
+                                  className="bg-muted"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
+
                     {/* Observação */}
                     <FormField
                       control={form.control}
@@ -412,12 +496,41 @@ const Clientes = () => {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Telefone:</span>
-                <span className="font-medium">{cliente.telefone}</span>
+                <span className="font-medium">{cliente.telefone || "-"}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Nascimento:</span>
                 <span className="font-medium">{formatDate(cliente.dataNascimento)}</span>
               </div>
+              
+              <div className="pt-2 border-t space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <ShoppingCart className="h-3 w-3" />
+                    Compras:
+                  </span>
+                  <span className="font-medium">{cliente.quantidadeCompras || 0}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <DollarSign className="h-3 w-3" />
+                    Total Comprado:
+                  </span>
+                  <span className="font-medium">
+                    R$ {(cliente.valorTotalComprado || 0).toFixed(2)}
+                  </span>
+                </div>
+                {cliente.dataUltimaCompra && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      Última Compra:
+                    </span>
+                    <span className="font-medium">{formatDate(cliente.dataUltimaCompra)}</span>
+                  </div>
+                )}
+              </div>
+
               {cliente.observacao && (
                 <div className="pt-2 border-t">
                   <p className="text-sm text-muted-foreground">{cliente.observacao}</p>

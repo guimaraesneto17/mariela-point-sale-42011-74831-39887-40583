@@ -35,6 +35,19 @@ export const clienteSchema = z.object({
     .max(100, "Nome deve ter no máximo 100 caracteres"),
   telefone: optionalString(z.string().regex(regex.telefone, "Telefone deve estar no formato (99) 99999-9999")),
   dataNascimento: optionalString(z.string().regex(regex.data, "Data deve estar no formato YYYY-MM-DD")),
+  valorTotalComprado: z.number()
+    .min(0, "Valor total comprado deve ser maior ou igual a 0")
+    .default(0)
+    .optional(),
+  quantidadeCompras: z.number()
+    .int("Quantidade de compras deve ser um número inteiro")
+    .min(0, "Quantidade de compras deve ser maior ou igual a 0")
+    .default(0)
+    .optional(),
+  dataUltimaCompra: z.string()
+    .regex(regex.data, "Data deve estar no formato YYYY-MM-DD")
+    .nullable()
+    .optional(),
   observacao: z.string().max(500, "Observação deve ter no máximo 500 caracteres").optional(),
 });
 
