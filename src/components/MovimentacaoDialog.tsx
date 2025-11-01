@@ -7,6 +7,8 @@ interface MovimentacaoLog {
   data: string;
   tipo: "entrada" | "saida";
   quantidade: number;
+  origem?: string;
+  motivo?: string;
   fornecedor?: string;
   codigoVenda?: string;
   observacao?: string;
@@ -95,6 +97,20 @@ export const MovimentacaoDialog = ({
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Tamanho:</span>
                             <span className="font-medium">{log.tamanho}</span>
+                          </div>
+                        )}
+                        
+                        {log.origem && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Origem:</span>
+                            <span className="font-medium">{log.origem}</span>
+                          </div>
+                        )}
+                        
+                        {log.motivo && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Motivo:</span>
+                            <span className="font-medium">{log.motivo}</span>
                           </div>
                         )}
                         
