@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Plus, UserCheck, CheckCircle2, AlertCircle, Edit, Trash2, X } from "lucide-react";
+import { Search, Plus, UserCheck, CheckCircle2, AlertCircle, Edit, Trash2, X, TrendingUp, DollarSign } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { vendedorSchema } from "@/lib/validationSchemas";
 import { maskPhone } from "@/lib/masks";
@@ -34,6 +36,10 @@ const Vendedores = () => {
       nome: "",
       telefone: "",
       dataNascimento: "",
+      ativo: true,
+      metaMensal: undefined,
+      vendasRealizadas: 0,
+      totalVendido: 0,
       observacao: "",
     },
   });
@@ -80,6 +86,10 @@ const Vendedores = () => {
         ...data,
         telefone: data.telefone || undefined,
         dataNascimento: data.dataNascimento || undefined,
+        ativo: data.ativo ?? true,
+        metaMensal: data.metaMensal || undefined,
+        vendasRealizadas: data.vendasRealizadas ?? 0,
+        totalVendido: data.totalVendido ?? 0,
         observacao: data.observacao || undefined,
       };
 
@@ -116,6 +126,10 @@ const Vendedores = () => {
       nome: vendedor.nome,
       telefone: vendedor.telefone,
       dataNascimento: vendedor.dataNascimento,
+      ativo: vendedor.ativo ?? true,
+      metaMensal: vendedor.metaMensal,
+      vendasRealizadas: vendedor.vendasRealizadas ?? 0,
+      totalVendido: vendedor.totalVendido ?? 0,
       observacao: vendedor.observacao || "",
     });
     setManualCode(true);
@@ -154,6 +168,10 @@ const Vendedores = () => {
       nome: "",
       telefone: "",
       dataNascimento: "",
+      ativo: true,
+      metaMensal: undefined,
+      vendasRealizadas: 0,
+      totalVendido: 0,
       observacao: "",
     });
     setManualCode(false);
@@ -300,6 +318,104 @@ const Vendedores = () => {
                       )}
                     />
 
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <FormField
+                        control={form.control}
+                        name="ativo"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center justify-between space-y-0 rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-sm font-semibold text-foreground">Status</FormLabel>
+                              <p className="text-xs text-muted-foreground">
+                                {field.value ? "Ativo no sistema" : "Inativo no sistema"}
+                              </p>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="metaMensal"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-semibold text-foreground">Meta Mensal (R$)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field}
+                                type="number"
+                                step="0.01"
+                                placeholder="0.00"
+                                value={field.value ?? ""}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                              />
+                            </FormControl>
+                            <FormMessage className="text-xs flex items-center gap-1">
+                              {form.formState.errors.metaMensal && (
+                                <AlertCircle className="h-3 w-3" />
+                              )}
+                            </FormMessage>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    {editingVendedor && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 p-4 bg-muted/30 rounded-lg border">
+                        <FormField
+                          control={form.control}
+                          name="vendasRealizadas"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-sm font-semibold text-foreground flex items-center gap-2">
+                                <TrendingUp className="h-4 w-4" />
+                                Vendas Realizadas
+                              </FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field}
+                                  type="number"
+                                  value={field.value ?? 0}
+                                  disabled
+                                  className="bg-muted"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="totalVendido"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-sm font-semibold text-foreground flex items-center gap-2">
+                                <DollarSign className="h-4 w-4" />
+                                Total Vendido (R$)
+                              </FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field}
+                                  type="number"
+                                  step="0.01"
+                                  value={field.value ?? 0}
+                                  disabled
+                                  className="bg-muted"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
+
                     <FormField
                       control={form.control}
                       name="observacao"
@@ -376,13 +492,19 @@ const Vendedores = () => {
         {filteredVendedores.map((vendedor) => (
           <Card key={vendedor._id} className="p-6 bg-gradient-card hover:shadow-elegant transition-all">
             <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-md">
                   <UserCheck className="h-6 w-6 text-white" />
                 </div>
                 <div>
                   <h3 className="font-bold text-lg">{vendedor.nome}</h3>
                   <p className="text-sm text-muted-foreground">{vendedor.codigoVendedor}</p>
+                  <Badge 
+                    variant={vendedor.ativo ? "default" : "secondary"}
+                    className="mt-1"
+                  >
+                    {vendedor.ativo ? "Ativo" : "Inativo"}
+                  </Badge>
                 </div>
               </div>
               <div className="flex gap-1">
@@ -407,12 +529,38 @@ const Vendedores = () => {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Telefone:</span>
-                <span className="font-medium">{vendedor.telefone}</span>
+                <span className="font-medium">{vendedor.telefone || "-"}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Nascimento:</span>
                 <span className="font-medium">{formatDate(vendedor.dataNascimento)}</span>
               </div>
+              
+              <div className="pt-2 border-t space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <TrendingUp className="h-3 w-3" />
+                    Vendas:
+                  </span>
+                  <span className="font-medium">{vendedor.vendasRealizadas || 0}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <DollarSign className="h-3 w-3" />
+                    Total Vendido:
+                  </span>
+                  <span className="font-medium">
+                    R$ {(vendedor.totalVendido || 0).toFixed(2)}
+                  </span>
+                </div>
+                {vendedor.metaMensal && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Meta Mensal:</span>
+                    <span className="font-medium">R$ {vendedor.metaMensal.toFixed(2)}</span>
+                  </div>
+                )}
+              </div>
+
               {vendedor.observacao && (
                 <div className="pt-2 border-t">
                   <p className="text-sm text-muted-foreground">{vendedor.observacao}</p>

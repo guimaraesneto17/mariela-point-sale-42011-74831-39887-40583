@@ -47,6 +47,20 @@ export const vendedorSchema = z.object({
     .max(120, "Nome deve ter no máximo 120 caracteres"),
   telefone: optionalString(z.string().regex(regex.telefone, "Telefone deve estar no formato (99) 99999-9999")),
   dataNascimento: optionalString(z.string().regex(regex.data, "Data deve estar no formato YYYY-MM-DD")),
+  ativo: z.boolean().default(true),
+  metaMensal: z.number()
+    .min(0, "Meta mensal deve ser maior ou igual a 0")
+    .nullable()
+    .optional(),
+  vendasRealizadas: z.number()
+    .int("Vendas realizadas deve ser um número inteiro")
+    .min(0, "Vendas realizadas deve ser maior ou igual a 0")
+    .default(0)
+    .optional(),
+  totalVendido: z.number()
+    .min(0, "Total vendido deve ser maior ou igual a 0")
+    .default(0)
+    .optional(),
   observacao: z.string().max(500, "Observação deve ter no máximo 500 caracteres").optional(),
 });
 

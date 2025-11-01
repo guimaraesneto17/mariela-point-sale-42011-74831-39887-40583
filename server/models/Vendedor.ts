@@ -33,6 +33,11 @@ const VendedorSchema = new mongoose.Schema({
     default: 0,
     min: 0
   },
+  totalVendido: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
   observacao: {
     type: String,
     trim: true
