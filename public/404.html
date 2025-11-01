@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Carregando...</title>
+    <meta name="robots" content="noindex" />
+    <script>
+      (function() {
+        try {
+          var redirectPath = location.pathname + location.search + location.hash;
+          sessionStorage.setItem('SPA_REDIRECT_PATH', redirectPath);
+          // Redireciona para a raiz para que o SPA carregue
+          location.replace('/');
+        } catch (e) {
+          // Se falhar, tenta meta refresh após 100ms
+          setTimeout(function(){ location.replace('/'); }, 100);
+        }
+      })();
+    </script>
+    <noscript>
+      Esta aplicação requer JavaScript. <a href="/">Voltar para a página inicial</a>.
+    </noscript>
+  </head>
+  <body></body>
+</html>
