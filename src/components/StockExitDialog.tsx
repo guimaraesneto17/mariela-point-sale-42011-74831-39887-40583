@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { produtosAPI } from "@/lib/api";
+import { estoqueAPI } from "@/lib/api";
 
 interface StockExitDialogProps {
   open: boolean;
@@ -41,7 +41,8 @@ export function StockExitDialog({ open, onOpenChange, codigoProduto, nomeProduto
     }
 
     try {
-      await produtosAPI.registrarSaida(codigoProduto, {
+      await estoqueAPI.registrarSaida({
+        codigoProduto,
         quantidade,
         origem: 'baixa no estoque',
         motivo,

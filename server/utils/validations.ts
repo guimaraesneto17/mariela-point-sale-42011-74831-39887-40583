@@ -12,6 +12,7 @@ const regex = {
   codigoCliente: /^C\d{3}$/,
   codigoFornecedor: /^F\d{3}$/,
   codigoProduto: /^P\d{3}$/,
+  codigoEstoque: /^E\d{3}$/,
   codigoVendedor: /^V\d{3}$/,
   codigoVenda: /^VENDA\d{8}-\d{3}$/,
   telefone: /^\(\d{2}\) \d{4,5}-\d{4}$/,
@@ -169,18 +170,6 @@ const Validations = {
     if (data.dataAtualizacao && !regex.dataISO.test(data.dataAtualizacao))
       erros.push('dataAtualizacao deve estar em formato ISO.');
 
-    // Validar logMovimentacao se existir
-    if (data.logMovimentacao && Array.isArray(data.logMovimentacao)) {
-      data.logMovimentacao.forEach((log: any, idx: number) => {
-        if (!['entrada', 'saida'].includes(log.tipo))
-          erros.push(`logMovimentacao[${idx}]: tipo deve ser 'entrada' ou 'saida'.`);
-        if (!log.data || !regex.dataISO.test(log.data))
-          erros.push(`logMovimentacao[${idx}]: data é obrigatória e deve estar em formato ISO.`);
-        if (log.quantidade === undefined || log.quantidade < 1)
-          erros.push(`logMovimentacao[${idx}]: quantidade deve ser >= 1.`);
-      });
-    }
-
     return erros;
   },
 
@@ -188,11 +177,17 @@ const Validations = {
   estoque: (data: any): string[] => {
     const erros: string[] = [];
 
+    if (data.codigoEstoque && !regex.codigoEstoque.test(data.codigoEstoque))
+      erros.push('codigoEstoque deve seguir o formato E001.');
+
     if (!data.codigoProduto || !regex.codigoProduto.test(data.codigoProduto))
       erros.push('codigoProduto é obrigatório e deve seguir o formato P001.');
 
     if (data.quantidade === undefined || data.quantidade === null || data.quantidade < 0)
       erros.push('quantidade é obrigatória e deve ser >= 0.');
+
+    if (data.ativo === undefined || data.ativo === null)
+      erros.push('ativo é obrigatório.');
 
     if (data.emPromocao === undefined || data.emPromocao === null)
       erros.push('emPromocao é obrigatório.');
@@ -214,6 +209,20 @@ const Validations = {
           erros.push(`logPromocao[${idx}]: ativo é obrigatório.`);
         if (log.tipoDeDesconto && !['valorDireto', 'porcentagem'].includes(log.tipoDeDesconto))
           erros.push(`logPromocao[${idx}]: tipoDeDesconto deve ser 'valorDireto' ou 'porcentagem'.`);
+      });
+    }
+
+    // Validar logMovimentacao se existir
+    if (data.logMovimentacao && Array.isArray(data.logMovimentacao)) {
+      data.logMovimentacao.forEach((log: any, idx: number) => {
+        if (!['entrada', 'saida'].includes(log.tipo))
+          erros.push(`logMovimentacao[${idx}]: tipo deve ser 'entrada' ou 'saida'.`);
+        if (!log.data || !regex.dataISO.test(log.data))
+          erros.push(`logMovimentacao[${idx}]: data é obrigatória e deve estar em formato ISO.`);
+        if (log.quantidade === undefined || log.quantidade < 1)
+          erros.push(`logMovimentacao[${idx}]: quantidade deve ser >= 1.`);
+        if (log.origem && !['venda', 'compra', 'entrada', 'baixa no estoque'].includes(log.origem))
+          erros.push(`logMovimentacao[${idx}]: origem deve ser um valor válido.`);
       });
     }
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Package, Search, Plus, Minus, Tag, Sparkles, Filter } from "lucide-react";
+import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { StockEntryDialog } from "@/components/StockEntryDialog";
 import { StockExitDialog } from "@/components/StockExitDialog";
 import { PromotionDialog } from "@/components/PromotionDialog";
 import { NovidadeDialog } from "@/components/NovidadeDialog";
+import { MovimentacaoDialog } from "@/components/MovimentacaoDialog";
 import { estoqueAPI } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
 
@@ -19,6 +20,7 @@ const Estoque = () => {
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [showPromotionDialog, setShowPromotionDialog] = useState(false);
   const [showNovidadeDialog, setShowNovidadeDialog] = useState(false);
+  const [showMovimentacaoDialog, setShowMovimentacaoDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [inventory, setInventory] = useState<any[]>([]);
@@ -98,6 +100,11 @@ const Estoque = () => {
   const openNovidadeDialog = (item: any) => {
     setSelectedItem(item);
     setShowNovidadeDialog(true);
+  };
+
+  const openMovimentacaoDialog = (item: any) => {
+    setSelectedItem(item);
+    setShowMovimentacaoDialog(true);
   };
 
   const handleEntrySuccess = () => {
@@ -385,7 +392,51 @@ const Estoque = () => {
                       <Sparkles className="h-4 w-4" />
                       {item.isNovidade ? 'Remover' : 'Marcar'} como Novidade
                     </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openMovimentacaoDialog(item)}
+                      className="gap-2"
+                    >
+                      <List className="h-4 w-4" />
+                      Ver Movimentações
+                    </Button>
                   </div>
+
+                  {/* Últimas Movimentações */}
+                  {item.logMovimentacao && item.logMovimentacao.length > 0 && (
+                    <div className="pt-4 border-t border-border/50">
+                      <h4 className="text-sm font-semibold text-muted-foreground mb-3">
+                        Últimas Movimentações
+                      </h4>
+                      <div className="space-y-2">
+                        {item.logMovimentacao.slice(-3).reverse().map((log: any, idx: number) => (
+                          <div key={idx} className="flex items-center gap-3 text-sm p-2 bg-muted/30 rounded">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                              log.tipo === 'entrada' 
+                                ? 'bg-green-500/10 text-green-600' 
+                                : 'bg-red-500/10 text-red-600'
+                            }`}>
+                              {log.tipo === 'entrada' ? '↑' : '↓'}
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-medium">
+                                {log.tipo === 'entrada' ? 'Entrada' : 'Saída'} de {log.quantidade} un.
+                              </div>
+                              {log.cor && log.tamanho && (
+                                <div className="text-xs text-muted-foreground">
+                                  {log.cor} - {log.tamanho}
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {new Date(log.data).toLocaleDateString('pt-BR')}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </Card>
             );
@@ -439,6 +490,14 @@ const Estoque = () => {
             nomeProduto={selectedItem.nomeProduto}
             isNovidade={selectedItem.isNovidade}
             onSuccess={loadEstoque}
+          />
+
+          <MovimentacaoDialog
+            open={showMovimentacaoDialog}
+            onOpenChange={setShowMovimentacaoDialog}
+            codigoProduto={selectedItem.codigoProduto}
+            nomeProduto={selectedItem.nomeProduto}
+            logMovimentacao={selectedItem.logMovimentacao || []}
           />
         </>
       )}

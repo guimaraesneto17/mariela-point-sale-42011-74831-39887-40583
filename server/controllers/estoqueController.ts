@@ -433,7 +433,7 @@ export const deleteEstoque = async (req: Request, res: Response) => {
 // Registrar entrada de estoque
 export const registrarEntrada = async (req: Request, res: Response) => {
   try {
-    const { codigoProduto, cor, tamanho, quantidade } = req.body;
+    const { codigoProduto, cor, tamanho, quantidade, origem, fornecedor, observacao } = req.body;
 
     if (!codigoProduto || !cor || !tamanho || !quantidade) {
       return res.status(400).json({ 
@@ -442,10 +442,22 @@ export const registrarEntrada = async (req: Request, res: Response) => {
       });
     }
 
+    if (!origem || !['venda', 'compra', 'entrada', 'baixa no estoque'].includes(origem)) {
+      return res.status(400).json({ 
+        error: 'Dados inválidos',
+        message: 'Origem é obrigatória e deve ser um valor válido'
+      });
+    }
+
     const estoque = await Estoque.findOne({ codigoProduto });
     
     if (!estoque) {
       return res.status(404).json({ error: 'Produto não encontrado no estoque' });
+    }
+
+    // Se estava inativo, reativar
+    if (!estoque.ativo) {
+      estoque.ativo = true;
     }
 
     // Encontrar a variante
@@ -460,6 +472,28 @@ export const registrarEntrada = async (req: Request, res: Response) => {
     
     // Recalcular quantidade total
     estoque.quantidade = estoque.variantes.reduce((total: number, v: any) => total + (v.quantidade || 0), 0);
+
+    // Adicionar log de movimentação
+    const logEntry: any = {
+      tipo: 'entrada',
+      data: isoSeconds(),
+      quantidade: parseInt(quantidade, 10),
+      origem,
+      cor,
+      tamanho,
+      fornecedor: fornecedor || null,
+      observacao: observacao || null
+    };
+
+    if (!estoque.logMovimentacao) {
+      estoque.logMovimentacao = [];
+    }
+    estoque.logMovimentacao.push(logEntry);
+
+    // Se estava inativo e agora tem estoque, marcar como ativo
+    if (!estoque.ativo && estoque.quantidade > 0) {
+      estoque.ativo = true;
+    }
 
     await estoque.save();
     
@@ -476,7 +510,7 @@ export const registrarEntrada = async (req: Request, res: Response) => {
 // Registrar saída de estoque
 export const registrarSaida = async (req: Request, res: Response) => {
   try {
-    const { codigoProduto, cor, tamanho, quantidade } = req.body;
+    const { codigoProduto, cor, tamanho, quantidade, origem, motivo, codigoVenda, observacao } = req.body;
 
     if (!codigoProduto || !cor || !tamanho || !quantidade) {
       return res.status(400).json({ 
@@ -509,6 +543,24 @@ export const registrarSaida = async (req: Request, res: Response) => {
     // Atualizar quantidade
     variante.quantidade -= quantidade;
     
+    // Adicionar log de movimentação ANTES de remover a variante
+    const logEntry: any = {
+      tipo: 'saida',
+      data: isoSeconds(),
+      quantidade: parseInt(quantidade, 10),
+      origem: origem || 'baixa no estoque',
+      cor,
+      tamanho,
+      motivo: motivo || null,
+      codigoVenda: codigoVenda || null,
+      observacao: observacao || null
+    };
+
+    if (!estoque.logMovimentacao) {
+      estoque.logMovimentacao = [];
+    }
+    estoque.logMovimentacao.push(logEntry);
+    
     // Se a variante ficou com quantidade 0, remove ela do array
     if (variante.quantidade === 0) {
       estoque.variantes = estoque.variantes.filter(
@@ -519,12 +571,14 @@ export const registrarSaida = async (req: Request, res: Response) => {
     // Recalcular quantidade total
     estoque.quantidade = estoque.variantes.reduce((total: number, v: any) => total + (v.quantidade || 0), 0);
 
-    // Se não há mais variantes, exclui o documento inteiro
-    if (estoque.variantes.length === 0) {
-      await Estoque.findByIdAndDelete(estoque._id);
+    // Se não há mais variantes ou quantidade zerou, marcar como inativo ao invés de deletar
+    if (estoque.variantes.length === 0 || estoque.quantidade === 0) {
+      estoque.ativo = false;
+      await estoque.save();
       return res.json({
-        message: 'Saída registrada com sucesso. Produto removido do estoque (sem variantes disponíveis)',
-        removido: true
+        message: 'Saída registrada com sucesso. Produto marcado como inativo (sem estoque disponível)',
+        estoque,
+        inativo: true
       });
     }
 
