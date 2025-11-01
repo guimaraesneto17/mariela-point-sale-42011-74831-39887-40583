@@ -412,3 +412,4 @@ const Estoque = () => {
 };
 
 export default Estoque;
+ 
