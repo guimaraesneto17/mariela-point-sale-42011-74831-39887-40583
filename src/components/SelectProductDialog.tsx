@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { Search, Package, Tag } from "lucide-react";
+import { Search, Package, Tag, ArrowLeft } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 interface ItemEstoque {
   codigoProduto: string;
@@ -24,105 +26,243 @@ interface SelectProductDialogProps {
   onSelect: (item: ItemEstoque) => void;
 }
 
+interface ProdutoAgrupado {
+  codigoProduto: string;
+  nomeProduto: string;
+  categoria?: string;
+  variantes: ItemEstoque[];
+  quantidadeTotal: number;
+  emPromocao: boolean;
+  isNovidade: boolean;
+}
+
 export function SelectProductDialog({ open, onOpenChange, estoque, onSelect }: SelectProductDialogProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [produtoSelecionado, setProdutoSelecionado] = useState<ProdutoAgrupado | null>(null);
+  const [corSelecionada, setCorSelecionada] = useState("");
+  const [tamanhoSelecionado, setTamanhoSelecionado] = useState("");
 
-  const filteredEstoque = estoque.filter(item => 
-    item.nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.codigoProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (item.cor && item.cor.toLowerCase().includes(searchTerm.toLowerCase()))
+  // Agrupar estoque por produto
+  const produtosAgrupados: ProdutoAgrupado[] = [];
+  estoque.forEach(item => {
+    let produto = produtosAgrupados.find(p => p.codigoProduto === item.codigoProduto);
+    if (!produto) {
+      produto = {
+        codigoProduto: item.codigoProduto,
+        nomeProduto: item.nomeProduto,
+        categoria: item.categoria,
+        variantes: [],
+        quantidadeTotal: 0,
+        emPromocao: false,
+        isNovidade: false
+      };
+      produtosAgrupados.push(produto);
+    }
+    produto.variantes.push(item);
+    produto.quantidadeTotal += item.quantidade;
+    if (item.emPromocao) produto.emPromocao = true;
+    if (item.isNovidade) produto.isNovidade = true;
+  });
+
+  const filteredProdutos = produtosAgrupados.filter(produto => 
+    produto.nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    produto.codigoProduto.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Cores disponíveis do produto selecionado
+  const coresDisponiveis = produtoSelecionado 
+    ? [...new Set(produtoSelecionado.variantes.map(v => v.cor))]
+    : [];
+
+  // Tamanhos disponíveis para a cor selecionada
+  const tamanhosDisponiveis = produtoSelecionado && corSelecionada
+    ? produtoSelecionado.variantes
+        .filter(v => v.cor === corSelecionada && v.quantidade > 0)
+        .map(v => ({ tamanho: v.tamanho, quantidade: v.quantidade }))
+    : [];
+
+  const handleSelecionarProduto = (produto: ProdutoAgrupado) => {
+    setProdutoSelecionado(produto);
+    setCorSelecionada("");
+    setTamanhoSelecionado("");
+  };
+
+  const handleVoltar = () => {
+    setProdutoSelecionado(null);
+    setCorSelecionada("");
+    setTamanhoSelecionado("");
+  };
+
+  const handleConfirmar = () => {
+    if (!produtoSelecionado || !corSelecionada || !tamanhoSelecionado) return;
+    
+    const varianteSelecionada = produtoSelecionado.variantes.find(
+      v => v.cor === corSelecionada && v.tamanho === tamanhoSelecionado
+    );
+    
+    if (varianteSelecionada) {
+      onSelect(varianteSelecionada);
+      onOpenChange(false);
+      setProdutoSelecionado(null);
+      setCorSelecionada("");
+      setTamanhoSelecionado("");
+      setSearchTerm("");
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[80vh]">
         <DialogHeader>
-          <DialogTitle>Selecionar Produto do Estoque</DialogTitle>
+          <DialogTitle>
+            {produtoSelecionado ? (
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={handleVoltar}>
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                Selecionar Cor e Tamanho
+              </div>
+            ) : (
+              "Selecionar Produto"
+            )}
+          </DialogTitle>
         </DialogHeader>
         
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Buscar por nome, código ou cor..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-
-        <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
-          {filteredEstoque.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>Nenhum produto encontrado no estoque</p>
+        {!produtoSelecionado ? (
+          <>
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Buscar por nome ou código..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
-          ) : (
-            filteredEstoque.map((item, index) => (
-              <Button
-                key={`${item.codigoProduto}-${item.cor}-${item.tamanho}-${index}`}
-                variant="outline"
-                className="w-full justify-between h-auto p-4 hover:bg-primary/5"
-                onClick={() => {
-                  if (item.quantidade <= 0) {
-                    return; // Não permitir selecionar item sem estoque
-                  }
-                  onSelect(item);
-                  onOpenChange(false);
-                  setSearchTerm("");
-                }}
-                disabled={item.quantidade <= 0}
-              >
-                <div className="flex items-start gap-3 flex-1">
-                  <Package className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
-                  <div className="text-left flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-medium">{item.nomeProduto}</p>
-                      {item.emPromocao && (
-                        <Badge variant="secondary" className="text-xs bg-accent text-accent-foreground">
-                          Promoção
-                        </Badge>
-                      )}
-                      {item.isNovidade && (
-                        <Badge variant="secondary" className="text-xs bg-green-600 text-white">
-                          Novidade
+
+            <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+              {filteredProdutos.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>Nenhum produto encontrado no estoque</p>
+                </div>
+              ) : (
+                filteredProdutos.map((produto) => (
+                  <Button
+                    key={produto.codigoProduto}
+                    variant="outline"
+                    className="w-full justify-between h-auto p-4 hover:bg-primary/5"
+                    onClick={() => handleSelecionarProduto(produto)}
+                    disabled={produto.quantidadeTotal <= 0}
+                  >
+                    <div className="flex items-start gap-3 flex-1">
+                      <Package className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+                      <div className="text-left flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-medium">{produto.nomeProduto}</p>
+                          {produto.emPromocao && (
+                            <Badge variant="secondary" className="text-xs bg-accent text-accent-foreground">
+                              Promoção
+                            </Badge>
+                          )}
+                          {produto.isNovidade && (
+                            <Badge variant="secondary" className="text-xs bg-green-600 text-white">
+                              Novidade
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Código: {produto.codigoProduto}
+                          {produto.categoria && ` • ${produto.categoria}`}
+                        </p>
+                        <p className="text-xs">
+                          <span className={produto.quantidadeTotal <= 5 ? 'text-orange-600 font-bold' : 'text-green-600'}>
+                            {produto.variantes.length} variante(s) • Total: <strong>{produto.quantidadeTotal} un.</strong>
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 ml-3">
+                      <span className="font-bold text-lg">R$ {produto.variantes[0].precoVenda.toFixed(2)}</span>
+                      {produto.quantidadeTotal <= 0 && (
+                        <Badge variant="destructive" className="text-xs">
+                          Esgotado
                         </Badge>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground mb-1">
-                      Código: {item.codigoProduto}
-                      {item.categoria && ` • ${item.categoria}`}
-                    </p>
-                    <div className="flex items-center gap-3 text-xs">
-                      <span className="flex items-center gap-1">
-                        <Tag className="h-3 w-3" />
-                        Cor: <strong>{item.cor}</strong>
-                      </span>
-                      <span>
-                        Tamanho: <strong>{item.tamanho}</strong>
-                      </span>
-                      <span className={item.quantidade <= 5 ? 'text-orange-600 font-bold' : 'text-green-600'}>
-                        Estoque: <strong>{item.quantidade} un.</strong>
-                      </span>
-                    </div>
+                  </Button>
+                ))
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="space-y-6">
+            {/* Informações do produto */}
+            <div className="bg-primary/10 p-4 rounded-lg">
+              <p className="font-medium text-lg">{produtoSelecionado.nomeProduto}</p>
+              <p className="text-sm text-muted-foreground">
+                {produtoSelecionado.codigoProduto}
+                {produtoSelecionado.categoria && ` • ${produtoSelecionado.categoria}`}
+              </p>
+            </div>
+
+            {/* Seleção de Cor */}
+            <div className="space-y-3">
+              <Label className="text-base font-medium">Selecione a Cor *</Label>
+              <RadioGroup value={corSelecionada} onValueChange={setCorSelecionada}>
+                <div className="grid grid-cols-2 gap-2">
+                  {coresDisponiveis.map((cor) => {
+                    const qtdTotal = produtoSelecionado.variantes
+                      .filter(v => v.cor === cor)
+                      .reduce((sum, v) => sum + v.quantidade, 0);
+                    return (
+                      <div key={cor} className="flex items-center space-x-2 border rounded-lg p-3 hover:bg-primary/5">
+                        <RadioGroupItem value={cor} id={`cor-${cor}`} />
+                        <Label htmlFor={`cor-${cor}`} className="flex-1 cursor-pointer">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">{cor}</span>
+                            <span className="text-xs text-muted-foreground">{qtdTotal} un.</span>
+                          </div>
+                        </Label>
+                      </div>
+                    );
+                  })}
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* Seleção de Tamanho */}
+            {corSelecionada && (
+              <div className="space-y-3">
+                <Label className="text-base font-medium">Selecione o Tamanho *</Label>
+                <RadioGroup value={tamanhoSelecionado} onValueChange={setTamanhoSelecionado}>
+                  <div className="grid grid-cols-2 gap-2">
+                    {tamanhosDisponiveis.map(({ tamanho, quantidade }) => (
+                      <div key={tamanho} className="flex items-center space-x-2 border rounded-lg p-3 hover:bg-primary/5">
+                        <RadioGroupItem value={tamanho} id={`tamanho-${tamanho}`} />
+                        <Label htmlFor={`tamanho-${tamanho}`} className="flex-1 cursor-pointer">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">{tamanho}</span>
+                            <span className="text-xs text-muted-foreground">{quantidade} un.</span>
+                          </div>
+                        </Label>
+                      </div>
+                    ))}
                   </div>
-                </div>
-                <div className="flex flex-col items-end gap-1 ml-3">
-                  <span className="font-bold text-lg">R$ {item.precoVenda.toFixed(2)}</span>
-                  {item.quantidade <= 0 && (
-                    <Badge variant="destructive" className="text-xs">
-                      Esgotado
-                    </Badge>
-                  )}
-                  {item.quantidade > 0 && item.quantidade <= 5 && (
-                    <Badge variant="outline" className="text-xs text-orange-600 border-orange-600">
-                      Estoque baixo
-                    </Badge>
-                  )}
-                </div>
-              </Button>
-            ))
-          )}
-        </div>
+                </RadioGroup>
+              </div>
+            )}
+
+            {/* Botão Confirmar */}
+            <Button 
+              className="w-full" 
+              onClick={handleConfirmar}
+              disabled={!corSelecionada || !tamanhoSelecionado}
+            >
+              Confirmar Seleção
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
