@@ -184,8 +184,13 @@ const Validations = {
     if (data.codigoProduto && !regex.codigoProduto.test(data.codigoProduto))
       erros.push('codigoProduto deve seguir o formato P001.');
 
-    if (!['PP', 'P', 'M', 'G', 'GG', 'U'].includes(data.tamanho))
-      erros.push('tamanho deve ser um dos valores válidos.');
+    // Validar cor como array
+    if (data.cor && (!Array.isArray(data.cor) || data.cor.length === 0))
+      erros.push('cor deve ser um array com pelo menos um item.');
+
+    // Validar tamanho como array (sem enum fixo)
+    if (data.tamanho && (!Array.isArray(data.tamanho) || data.tamanho.length === 0))
+      erros.push('tamanho deve ser um array com pelo menos um item.');
 
     if (typeof data.quantidade !== 'number' || data.quantidade < 0)
       erros.push('quantidade deve ser >= 0.');

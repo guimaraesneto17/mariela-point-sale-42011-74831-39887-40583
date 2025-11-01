@@ -7,9 +7,8 @@ const EstoqueSchema = new mongoose.Schema({
     trim: true
   },
   cor: {
-    type: String,
-    required: true,
-    trim: true
+    type: [String],
+    required: true
   },
   quantidade: {
     type: Number,
@@ -18,10 +17,8 @@ const EstoqueSchema = new mongoose.Schema({
     default: 1
   },
   tamanho: {
-    type: String,
-    required: true,
-    enum: ['PP', 'P', 'M', 'G', 'GG', 'U'],
-    trim: true
+    type: [String],
+    required: true
   },
   emPromocao: {
     type: Boolean,
@@ -43,6 +40,14 @@ const EstoqueSchema = new mongoose.Schema({
       type: String,
       required: true,
       enum: ['entrada', 'saida'],
+      trim: true
+    },
+    cor: {
+      type: String,
+      trim: true
+    },
+    tamanho: {
+      type: String,
       trim: true
     },
     quantidade: {
