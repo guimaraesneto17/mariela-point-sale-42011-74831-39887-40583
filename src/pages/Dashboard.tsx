@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import StatsCard from "@/components/StatsCard";
 import { DashboardCard } from "@/components/DashboardCard";
+import { DashboardMovimentacoes } from "@/components/DashboardMovimentacoes";
 import {
   DashboardConfigDialog,
   DashboardCardConfig,
@@ -44,6 +45,13 @@ import { formatDateTime, safeDate } from "@/lib/utils";
 const STORAGE_KEY = "mariela-dashboard-config";
 
 const defaultCards: DashboardCardConfig[] = [
+  {
+    id: "movimentacoes-estoque",
+    title: "Movimentações de Estoque",
+    description: "Últimas movimentações de entrada e saída",
+    visible: true,
+    category: "sales",
+  },
   {
     id: "vendas-hoje",
     title: "Vendas Hoje",
@@ -167,6 +175,7 @@ const Dashboard = () => {
   const [topVendedores, setTopVendedores] = useState<any[]>([]);
   const [recentSales, setRecentSales] = useState<any[]>([]);
   const [produtosBaixoEstoque, setProdutosBaixoEstoque] = useState<any[]>([]);
+  const [movimentacoesEstoque, setMovimentacoesEstoque] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const sensors = useSensors(
@@ -199,6 +208,21 @@ const Dashboard = () => {
         estoqueAPI.getAll(),
         vendedoresAPI.getAll(),
       ]);
+
+      // Coletar todas as movimentações de todos os itens do estoque
+      const todasMovimentacoes: any[] = [];
+      estoque.forEach((item: any) => {
+        if (item.logMovimentacao && Array.isArray(item.logMovimentacao)) {
+          item.logMovimentacao.forEach((mov: any) => {
+            todasMovimentacoes.push({
+              ...mov,
+              codigoProduto: item.codigoProduto,
+              nomeProduto: item.nomeProduto || item.nome || item.codigoProduto,
+            });
+          });
+        }
+      });
+      setMovimentacoesEstoque(todasMovimentacoes);
 
       // Calcular estatísticas
       const hoje = new Date();
@@ -285,6 +309,12 @@ const Dashboard = () => {
 
   const renderCard = (cardConfig: DashboardCardConfig) => {
     switch (cardConfig.id) {
+      case "movimentacoes-estoque":
+        return (
+          <div key={cardConfig.id} className="col-span-full">
+            <DashboardMovimentacoes movimentacoes={movimentacoesEstoque} />
+          </div>
+        );
       case "vendas-hoje":
         return (
           <StatsCard

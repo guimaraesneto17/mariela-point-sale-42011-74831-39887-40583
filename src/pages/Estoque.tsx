@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List } from "lucide-react";
+import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { StockExitDialog } from "@/components/StockExitDialog";
 import { PromotionDialog } from "@/components/PromotionDialog";
 import { NovidadeDialog } from "@/components/NovidadeDialog";
 import { MovimentacaoDialog } from "@/components/MovimentacaoDialog";
+import { PromocaoHistoricoDialog } from "@/components/PromocaoHistoricoDialog";
 import { estoqueAPI } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
 
@@ -21,6 +22,7 @@ const Estoque = () => {
   const [showPromotionDialog, setShowPromotionDialog] = useState(false);
   const [showNovidadeDialog, setShowNovidadeDialog] = useState(false);
   const [showMovimentacaoDialog, setShowMovimentacaoDialog] = useState(false);
+  const [showPromocaoHistoricoDialog, setShowPromocaoHistoricoDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [inventory, setInventory] = useState<any[]>([]);
@@ -105,6 +107,11 @@ const Estoque = () => {
   const openMovimentacaoDialog = (item: any) => {
     setSelectedItem(item);
     setShowMovimentacaoDialog(true);
+  };
+
+  const openPromocaoHistoricoDialog = (item: any) => {
+    setSelectedItem(item);
+    setShowPromocaoHistoricoDialog(true);
   };
 
   const handleEntrySuccess = () => {
@@ -401,6 +408,17 @@ const Estoque = () => {
                       <List className="h-4 w-4" />
                       Ver Movimentações
                     </Button>
+                    {item.logPromocao && item.logPromocao.length > 0 && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openPromocaoHistoricoDialog(item)}
+                        className="gap-2 border-purple-500/50 text-purple-600 hover:bg-purple-500/10"
+                      >
+                        <History className="h-4 w-4" />
+                        Histórico de Promoções
+                      </Button>
+                    )}
                   </div>
 
                   {/* Últimas Movimentações */}
@@ -498,6 +516,15 @@ const Estoque = () => {
             codigoProduto={selectedItem.codigoProduto}
             nomeProduto={selectedItem.nomeProduto}
             logMovimentacao={selectedItem.logMovimentacao || []}
+          />
+
+          <PromocaoHistoricoDialog
+            open={showPromocaoHistoricoDialog}
+            onOpenChange={setShowPromocaoHistoricoDialog}
+            codigoProduto={selectedItem.codigoProduto}
+            nomeProduto={selectedItem.nomeProduto}
+            logPromocao={selectedItem.logPromocao || []}
+            precoOriginal={selectedItem.precoVenda}
           />
         </>
       )}
