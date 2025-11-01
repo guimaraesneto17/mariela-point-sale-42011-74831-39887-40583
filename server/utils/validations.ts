@@ -169,6 +169,18 @@ const Validations = {
     if (data.dataAtualizacao && !regex.dataISO.test(data.dataAtualizacao))
       erros.push('dataAtualizacao deve estar em formato ISO.');
 
+    // Validar logMovimentacao se existir
+    if (data.logMovimentacao && Array.isArray(data.logMovimentacao)) {
+      data.logMovimentacao.forEach((log: any, idx: number) => {
+        if (!['entrada', 'saida'].includes(log.tipo))
+          erros.push(`logMovimentacao[${idx}]: tipo deve ser 'entrada' ou 'saida'.`);
+        if (!log.data || !regex.dataISO.test(log.data))
+          erros.push(`logMovimentacao[${idx}]: data é obrigatória e deve estar em formato ISO.`);
+        if (log.quantidade === undefined || log.quantidade < 1)
+          erros.push(`logMovimentacao[${idx}]: quantidade deve ser >= 1.`);
+      });
+    }
+
     return erros;
   },
 
@@ -176,30 +188,34 @@ const Validations = {
   estoque: (data: any): string[] => {
     const erros: string[] = [];
 
-    ['codigoProduto', 'cor', 'tamanho', 'quantidade', 'emPromocao', 'isNovidade', 'logMovimentacao'].forEach((c) => {
-      if (data[c] === undefined || data[c] === null)
-        erros.push(`${c} é obrigatório.`);
-    });
+    if (!data.codigoProduto || !regex.codigoProduto.test(data.codigoProduto))
+      erros.push('codigoProduto é obrigatório e deve seguir o formato P001.');
 
-    if (data.codigoProduto && !regex.codigoProduto.test(data.codigoProduto))
-      erros.push('codigoProduto deve seguir o formato P001.');
+    if (data.quantidade === undefined || data.quantidade === null || data.quantidade < 0)
+      erros.push('quantidade é obrigatória e deve ser >= 0.');
 
-    // Validar cor como array
-    if (data.cor && (!Array.isArray(data.cor) || data.cor.length === 0))
-      erros.push('cor deve ser um array com pelo menos um item.');
+    if (data.emPromocao === undefined || data.emPromocao === null)
+      erros.push('emPromocao é obrigatório.');
 
-    // Validar tamanho como array (sem enum fixo)
-    if (data.tamanho && (!Array.isArray(data.tamanho) || data.tamanho.length === 0))
-      erros.push('tamanho deve ser um array com pelo menos um item.');
-
-    if (typeof data.quantidade !== 'number' || data.quantidade < 0)
-      erros.push('quantidade deve ser >= 0.');
+    if (data.isNovidade === undefined || data.isNovidade === null)
+      erros.push('isNovidade é obrigatório.');
 
     if (data.precoPromocional !== null && data.precoPromocional !== undefined && data.precoPromocional < 0)
       erros.push('precoPromocional deve ser >= 0.');
 
-    if (!Array.isArray(data.logMovimentacao) || data.logMovimentacao.length < 1)
-      erros.push('logMovimentacao deve ter pelo menos 1 item.');
+    // Validar logPromocao se existir
+    if (data.logPromocao && Array.isArray(data.logPromocao)) {
+      data.logPromocao.forEach((log: any, idx: number) => {
+        if (!log.dataInicio || !regex.dataISO.test(log.dataInicio))
+          erros.push(`logPromocao[${idx}]: dataInicio é obrigatória e deve estar em formato ISO.`);
+        if (log.precoPromocional === undefined || log.precoPromocional < 0)
+          erros.push(`logPromocao[${idx}]: precoPromocional é obrigatório e deve ser >= 0.`);
+        if (log.ativo === undefined || log.ativo === null)
+          erros.push(`logPromocao[${idx}]: ativo é obrigatório.`);
+        if (log.tipoDeDesconto && !['valorDireto', 'porcentagem'].includes(log.tipoDeDesconto))
+          erros.push(`logPromocao[${idx}]: tipoDeDesconto deve ser 'valorDireto' ou 'porcentagem'.`);
+      });
+    }
 
     if (!data.dataCadastro || !regex.dataISO.test(data.dataCadastro))
       erros.push('dataCadastro é obrigatória e deve estar em formato ISO.');

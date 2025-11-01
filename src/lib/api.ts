@@ -46,6 +46,14 @@ export const produtosAPI = {
     body: JSON.stringify(data),
   }),
   delete: (codigo: string) => fetchAPI(`/produtos/${codigo}`, { method: 'DELETE' }),
+  registrarEntrada: (codigo: string, data: any) => fetchAPI(`/produtos/${codigo}/entrada`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  registrarSaida: (codigo: string, data: any) => fetchAPI(`/produtos/${codigo}/saida`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
 };
 
 // ============= VENDAS =============

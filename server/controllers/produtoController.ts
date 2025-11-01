@@ -212,3 +212,119 @@ export const deleteProduto = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Erro ao remover produto' });
   }
 };
+
+// Registrar entrada no log de movimentação
+export const registrarEntrada = async (req: Request, res: Response) => {
+  try {
+    const { codigo } = req.params;
+    const { cor, tamanho, quantidade, origem, fornecedor, observacao } = req.body;
+
+    if (!quantidade || quantidade < 1) {
+      return res.status(400).json({ 
+        error: 'Dados inválidos',
+        message: 'Quantidade deve ser maior que zero'
+      });
+    }
+
+    if (!origem || !['venda', 'compra', 'entrada', 'baixa no estoque'].includes(origem)) {
+      return res.status(400).json({ 
+        error: 'Dados inválidos',
+        message: 'Origem é obrigatória e deve ser um valor válido'
+      });
+    }
+
+    const produto = await Produto.findOne({ codigoProduto: codigo });
+    
+    if (!produto) {
+      return res.status(404).json({ error: 'Produto não encontrado' });
+    }
+
+    // Criar log de movimentação
+    const isoSeconds = (date?: string | Date) => {
+      const d = date ? new Date(date) : new Date();
+      return d.toISOString().split('.')[0] + 'Z';
+    };
+
+    const logEntry: any = {
+      tipo: 'entrada',
+      data: isoSeconds(),
+      quantidade: parseInt(quantidade, 10),
+      origem,
+      cor: cor || null,
+      tamanho: tamanho || null,
+      fornecedor: fornecedor || null,
+      observacao: observacao || null
+    };
+
+    // Inicializar logMovimentacao se não existir
+    if (!produto.logMovimentacao) {
+      produto.logMovimentacao = [];
+    }
+
+    produto.logMovimentacao.push(logEntry);
+    await produto.save();
+
+    res.json({
+      message: 'Entrada registrada com sucesso',
+      produto
+    });
+  } catch (error: any) {
+    console.error('Erro ao registrar entrada:', error);
+    res.status(500).json({ error: 'Erro ao registrar entrada' });
+  }
+};
+
+// Registrar saída no log de movimentação
+export const registrarSaida = async (req: Request, res: Response) => {
+  try {
+    const { codigo } = req.params;
+    const { cor, tamanho, quantidade, origem, motivo, codigoVenda, observacao } = req.body;
+
+    if (!quantidade || quantidade < 1) {
+      return res.status(400).json({ 
+        error: 'Dados inválidos',
+        message: 'Quantidade deve ser maior que zero'
+      });
+    }
+
+    const produto = await Produto.findOne({ codigoProduto: codigo });
+    
+    if (!produto) {
+      return res.status(404).json({ error: 'Produto não encontrado' });
+    }
+
+    // Criar log de movimentação
+    const isoSeconds = (date?: string | Date) => {
+      const d = date ? new Date(date) : new Date();
+      return d.toISOString().split('.')[0] + 'Z';
+    };
+
+    const logEntry: any = {
+      tipo: 'saida',
+      data: isoSeconds(),
+      quantidade: parseInt(quantidade, 10),
+      origem: origem || 'baixa no estoque',
+      cor: cor || null,
+      tamanho: tamanho || null,
+      motivo: motivo || null,
+      codigoVenda: codigoVenda || null,
+      observacao: observacao || null
+    };
+
+    // Inicializar logMovimentacao se não existir
+    if (!produto.logMovimentacao) {
+      produto.logMovimentacao = [];
+    }
+
+    produto.logMovimentacao.push(logEntry);
+    await produto.save();
+
+    res.json({
+      message: 'Saída registrada com sucesso',
+      produto
+    });
+  } catch (error: any) {
+    console.error('Erro ao registrar saída:', error);
+    res.status(500).json({ error: 'Erro ao registrar saída' });
+  }
+};

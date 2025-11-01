@@ -55,7 +55,7 @@ const aggregateEstoqueByCodigo = (docs: any[]) => {
     emPromocao: false,
     isNovidade: false,
     precoPromocional: null as number | null,
-    logMovimentacao: [] as any[],
+    logPromocao: [] as any[],
     dataCadastro: docs[0].dataCadastro,
     dataAtualizacao: docs[0].dataAtualizacao,
     _id: docs[0]._id,
@@ -86,7 +86,7 @@ const aggregateEstoqueByCodigo = (docs: any[]) => {
       else acc.variantes.push({ cor: v.cor, tamanho: v.tamanho, quantidade: Number(v.quantidade) || 0 });
     });
 
-    if (Array.isArray(doc.logMovimentacao)) acc.logMovimentacao.push(...doc.logMovimentacao);
+    if (Array.isArray(doc.logPromocao)) acc.logPromocao.push(...doc.logPromocao);
   });
 
   return acc;
@@ -286,17 +286,6 @@ export const createEstoque = async (req: Request, res: Response) => {
       // Atualizar quantidade total
       estoque.quantidade = estoque.variantes.reduce((total: number, v: any) => total + (Number(v.quantidade) || 0), 0);
       
-      // Adicionar log de movimentação
-      if (req.body.logMovimentacao && Array.isArray(req.body.logMovimentacao)) {
-        estoque.logMovimentacao.push(...req.body.logMovimentacao.map((m: any) => ({
-          ...m,
-          cor,
-          tamanho,
-          quantidade: Number.isInteger(Number(m.quantidade)) ? parseInt(m.quantidade, 10) : 1,
-          data: isoSeconds(m.data)
-        })));
-      }
-      
       await estoque.save();
       return res.status(201).json(estoque);
     }
@@ -313,16 +302,6 @@ export const createEstoque = async (req: Request, res: Response) => {
 
     if (req.body.precoPromocional !== undefined && req.body.precoPromocional !== null) {
       cleanData.precoPromocional = req.body.precoPromocional;
-    }
-    
-    if (req.body.logMovimentacao && Array.isArray(req.body.logMovimentacao)) {
-      cleanData.logMovimentacao = req.body.logMovimentacao.map((m: any) => ({
-        ...m,
-        cor,
-        tamanho,
-        quantidade: Number.isInteger(Number(m.quantidade)) ? parseInt(m.quantidade, 10) : 1,
-        data: isoSeconds(m.data)
-      }));
     }
 
     const issues = validateEstoquePayload(cleanData);
@@ -391,8 +370,8 @@ export const updateEstoque = async (req: Request, res: Response) => {
     if (req.body.precoPromocional !== undefined && req.body.precoPromocional !== null) {
       cleanData.precoPromocional = req.body.precoPromocional;
     }
-    if (req.body.logMovimentacao && Array.isArray(req.body.logMovimentacao)) {
-      cleanData.logMovimentacao = req.body.logMovimentacao;
+    if (req.body.logPromocao && Array.isArray(req.body.logPromocao)) {
+      cleanData.logPromocao = req.body.logPromocao;
     }
 
     const estoque = await Estoque.findByIdAndUpdate(
@@ -454,12 +433,12 @@ export const deleteEstoque = async (req: Request, res: Response) => {
 // Registrar entrada de estoque
 export const registrarEntrada = async (req: Request, res: Response) => {
   try {
-    const { codigoProduto, cor, tamanho, quantidade, origem, fornecedor, observacao } = req.body;
+    const { codigoProduto, cor, tamanho, quantidade } = req.body;
 
-    if (!codigoProduto || !cor || !tamanho || !quantidade || !origem) {
+    if (!codigoProduto || !cor || !tamanho || !quantidade) {
       return res.status(400).json({ 
         error: 'Dados incompletos',
-        message: 'codigoProduto, cor, tamanho, quantidade e origem são obrigatórios'
+        message: 'codigoProduto, cor, tamanho e quantidade são obrigatórios'
       });
     }
 
@@ -482,18 +461,6 @@ export const registrarEntrada = async (req: Request, res: Response) => {
     // Recalcular quantidade total
     estoque.quantidade = estoque.variantes.reduce((total: number, v: any) => total + (v.quantidade || 0), 0);
 
-    // Adicionar log de movimentação
-    estoque.logMovimentacao.push({
-      tipo: 'entrada',
-      cor,
-      tamanho,
-      quantidade,
-      data: isoSeconds(),
-      origem,
-      fornecedor: fornecedor || undefined,
-      observacao: observacao || undefined
-    } as any);
-
     await estoque.save();
     
     res.json({
@@ -509,7 +476,7 @@ export const registrarEntrada = async (req: Request, res: Response) => {
 // Registrar saída de estoque
 export const registrarSaida = async (req: Request, res: Response) => {
   try {
-    const { codigoProduto, cor, tamanho, quantidade, origem, motivo, codigoVenda, observacao } = req.body;
+    const { codigoProduto, cor, tamanho, quantidade } = req.body;
 
     if (!codigoProduto || !cor || !tamanho || !quantidade) {
       return res.status(400).json({ 
@@ -542,19 +509,6 @@ export const registrarSaida = async (req: Request, res: Response) => {
     // Atualizar quantidade
     variante.quantidade -= quantidade;
     
-    // Adicionar log de movimentação
-    estoque.logMovimentacao.push({
-      tipo: 'saida',
-      cor,
-      tamanho,
-      quantidade,
-      data: isoSeconds(),
-      origem: origem || 'baixa no estoque',
-      motivo: motivo || undefined,
-      codigoVenda: codigoVenda || undefined,
-      observacao: observacao || undefined
-    } as any);
-
     // Se a variante ficou com quantidade 0, remove ela do array
     if (variante.quantidade === 0) {
       estoque.variantes = estoque.variantes.filter(
@@ -616,7 +570,7 @@ export const toggleNovidade = async (req: Request, res: Response) => {
 export const togglePromocao = async (req: Request, res: Response) => {
   try {
     const { codigo } = req.params;
-    const { emPromocao, precoPromocional } = req.body;
+    const { emPromocao, precoPromocional, tipoDeDesconto, valorDesconto, observacao } = req.body;
 
     // Buscar todos os itens de estoque com esse código de produto
     const itensEstoque = await Estoque.find({ codigoProduto: codigo });
@@ -641,10 +595,42 @@ export const togglePromocao = async (req: Request, res: Response) => {
       precoPromocional: emPromocao ? precoPromocional : null
     };
 
-    await Estoque.updateMany(
-      { codigoProduto: codigo },
-      { $set: updateData }
-    );
+    // Se está ativando a promoção, adicionar log
+    if (emPromocao) {
+      const logEntry = {
+        dataInicio: isoSeconds(),
+        precoPromocional,
+        ativo: true,
+        observacao: observacao || null,
+        tipoDeDesconto: tipoDeDesconto || null,
+        valorDesconto: valorDesconto || null
+      };
+
+      await Estoque.updateMany(
+        { codigoProduto: codigo },
+        { 
+          $set: updateData,
+          $push: { logPromocao: logEntry }
+        }
+      );
+    } else {
+      // Se está desativando, marcar a última promoção como inativa
+      await Estoque.updateMany(
+        { codigoProduto: codigo },
+        { $set: updateData }
+      );
+
+      // Atualizar o último logPromocao para inativo e adicionar dataFim
+      const estoques = await Estoque.find({ codigoProduto: codigo });
+      for (const estoque of estoques) {
+        if (estoque.logPromocao && Array.isArray(estoque.logPromocao) && estoque.logPromocao.length > 0) {
+          const lastIndex = estoque.logPromocao.length - 1;
+          estoque.logPromocao[lastIndex].ativo = false;
+          estoque.logPromocao[lastIndex].dataFim = isoSeconds();
+          await estoque.save();
+        }
+      }
+    }
 
     // Buscar os itens atualizados
     const estoqueAtualizado = await Estoque.find({ codigoProduto: codigo });

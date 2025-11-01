@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { estoqueAPI } from "@/lib/api";
+import { produtosAPI } from "@/lib/api";
 
 interface StockEntryDialogProps {
   open: boolean;
@@ -52,7 +52,7 @@ export function StockEntryDialog({ open, onOpenChange, codigoProduto, nomeProdut
         entradaData.fornecedor = fornecedor;
       }
 
-      await estoqueAPI.registrarEntrada(entradaData);
+      await produtosAPI.registrarEntrada(codigoProduto, entradaData);
 
       toast.success(`Entrada de ${quantidade} unidade(s) registrada com sucesso!`, {
         description: `${cor} - ${tamanho}`

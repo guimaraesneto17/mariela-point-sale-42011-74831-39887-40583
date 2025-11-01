@@ -29,6 +29,40 @@ const EstoqueSchema = new mongoose.Schema({
     min: 0,
     default: null
   },
+  logPromocao: [{
+    dataInicio: {
+      type: String,
+      required: true
+    },
+    dataFim: {
+      type: String,
+      default: null
+    },
+    precoPromocional: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+    ativo: {
+      type: Boolean,
+      required: true,
+      default: true
+    },
+    observacao: {
+      type: String,
+      maxlength: 200
+    },
+    tipoDeDesconto: {
+      type: String,
+      enum: ['valorDireto', 'porcentagem', null],
+      default: null
+    },
+    valorDesconto: {
+      type: Number,
+      min: 0,
+      default: null
+    }
+  }],
   variantes: [{
     cor: {
       type: String,
@@ -45,55 +79,6 @@ const EstoqueSchema = new mongoose.Schema({
       required: true,
       min: 0,
       default: 0
-    }
-  }],
-  logMovimentacao: [{
-    tipo: {
-      type: String,
-      required: true,
-      enum: ['entrada', 'saida'],
-      trim: true
-    },
-    cor: {
-      type: String,
-      trim: true
-    },
-    tamanho: {
-      type: String,
-      trim: true
-    },
-    quantidade: {
-      type: Number,
-      required: true,
-      min: 1
-    },
-    data: {
-      type: String,
-      required: true
-    },
-    origem: {
-      type: String,
-      enum: ['venda', 'compra', 'entrada', 'baixa no estoque'],
-      trim: true
-    },
-    fornecedor: {
-      type: String,
-      trim: true,
-      match: /^F\d{3}$/
-    },
-    motivo: {
-      type: String,
-      trim: true
-    },
-    codigoVenda: {
-      type: String,
-      trim: true,
-      match: /^VENDA\d{8}-\d{3}$/
-    },
-    observacao: {
-      type: String,
-      trim: true,
-      maxLength: 300
     }
   }]
 }, {

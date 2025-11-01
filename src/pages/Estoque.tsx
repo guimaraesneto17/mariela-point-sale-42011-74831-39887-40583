@@ -11,7 +11,7 @@ import { StockExitDialog } from "@/components/StockExitDialog";
 import { PromotionDialog } from "@/components/PromotionDialog";
 import { NovidadeDialog } from "@/components/NovidadeDialog";
 import { MovimentacaoDialog } from "@/components/MovimentacaoDialog";
-import { estoqueAPI } from "@/lib/api";
+import { estoqueAPI, produtosAPI } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
 
 const Estoque = () => {
@@ -102,9 +102,14 @@ const Estoque = () => {
     setShowNovidadeDialog(true);
   };
 
-  const openMovimentacaoDialog = (item: any) => {
-    setSelectedItem(item);
-    setShowMovimentacaoDialog(true);
+  const openMovimentacaoDialog = async (item: any) => {
+    try {
+      const produto = await produtosAPI.getByCodigo(item.codigoProduto);
+      setSelectedItem({ ...item, logMovimentacao: produto.logMovimentacao || [] });
+      setShowMovimentacaoDialog(true);
+    } catch (error) {
+      toast.error('Erro ao carregar movimentações');
+    }
   };
 
   const handleEntrySuccess = () => {
