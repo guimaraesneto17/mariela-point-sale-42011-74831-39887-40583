@@ -165,15 +165,15 @@ export const getAllEstoque = async (req: Request, res: Response) => {
     const docs = await Estoque.find().sort({ dataCadastro: -1 });
 
     // Agrupar por código do produto e agregar variantes/quantidades
-    const groups = docs.reduce((map: Map<string, any[]>, doc: any) => {
-      const key = doc.codigoProduto;
+    const groups = docs.reduce((map, doc: any) => {
+      const key = doc.codigoProduto as string;
       const list = map.get(key) || [];
       list.push(doc);
       map.set(key, list);
       return map;
-    }, new Map());
+    }, new Map<string, any[]>());
 
-    const aggregated = Array.from(groups.values()).map((docs: any[]) => aggregateEstoqueByCodigo(docs));
+    const aggregated = Array.from(groups.values()).map((docsArr) => aggregateEstoqueByCodigo(docsArr));
 
     // Enriquecer com dados do produto e filtrar sem estoque
     const Produto = require('../models/Produto').default;
