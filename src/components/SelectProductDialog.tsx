@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Package, Tag, ArrowLeft } from "lucide-react";
+import { Search, Package, ArrowLeft } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,27 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 
-interface ItemEstoque {
+interface Variante {
+  cor: string;
+  tamanho: string;
+  quantidade: number;
+}
+
+interface ProdutoEstoque {
+  codigoProduto: string;
+  nomeProduto: string;
+  categoria?: string;
+  precoVenda: number;
+  precoCusto: number;
+  margemDeLucro: number;
+  variantes: Variante[];
+  quantidadeTotal: number;
+  emPromocao: boolean;
+  isNovidade: boolean;
+  precoPromocional?: number;
+}
+
+interface ItemSelecionado {
   codigoProduto: string;
   nomeProduto: string;
   precoVenda: number;
@@ -22,51 +42,19 @@ interface ItemEstoque {
 interface SelectProductDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  estoque: ItemEstoque[];
-  onSelect: (item: ItemEstoque) => void;
-}
-
-interface ProdutoAgrupado {
-  codigoProduto: string;
-  nomeProduto: string;
-  categoria?: string;
-  variantes: ItemEstoque[];
-  quantidadeTotal: number;
-  emPromocao: boolean;
-  isNovidade: boolean;
+  estoque: ProdutoEstoque[];
+  onSelect: (item: ItemSelecionado) => void;
 }
 
 export function SelectProductDialog({ open, onOpenChange, estoque, onSelect }: SelectProductDialogProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [produtoSelecionado, setProdutoSelecionado] = useState<ProdutoAgrupado | null>(null);
+  const [produtoSelecionado, setProdutoSelecionado] = useState<ProdutoEstoque | null>(null);
   const [corSelecionada, setCorSelecionada] = useState("");
   const [tamanhoSelecionado, setTamanhoSelecionado] = useState("");
 
-  // Agrupar estoque por produto
-  const produtosAgrupados: ProdutoAgrupado[] = [];
-  estoque.forEach(item => {
-    let produto = produtosAgrupados.find(p => p.codigoProduto === item.codigoProduto);
-    if (!produto) {
-      produto = {
-        codigoProduto: item.codigoProduto,
-        nomeProduto: item.nomeProduto,
-        categoria: item.categoria,
-        variantes: [],
-        quantidadeTotal: 0,
-        emPromocao: false,
-        isNovidade: false
-      };
-      produtosAgrupados.push(produto);
-    }
-    produto.variantes.push(item);
-    produto.quantidadeTotal += item.quantidade;
-    if (item.emPromocao) produto.emPromocao = true;
-    if (item.isNovidade) produto.isNovidade = true;
-  });
-
-  const filteredProdutos = produtosAgrupados.filter(produto => 
-    produto.nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    produto.codigoProduto.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredProdutos = estoque.filter(produto => 
+    produto.nomeProduto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    produto.codigoProduto?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Cores disponíveis do produto selecionado
@@ -81,7 +69,7 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect }: S
         .map(v => ({ tamanho: v.tamanho, quantidade: v.quantidade }))
     : [];
 
-  const handleSelecionarProduto = (produto: ProdutoAgrupado) => {
+  const handleSelecionarProduto = (produto: ProdutoEstoque) => {
     setProdutoSelecionado(produto);
     setCorSelecionada("");
     setTamanhoSelecionado("");
@@ -101,7 +89,19 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect }: S
     );
     
     if (varianteSelecionada) {
-      onSelect(varianteSelecionada);
+      const itemSelecionado: ItemSelecionado = {
+        codigoProduto: produtoSelecionado.codigoProduto,
+        nomeProduto: produtoSelecionado.nomeProduto,
+        precoVenda: produtoSelecionado.precoVenda,
+        cor: varianteSelecionada.cor,
+        tamanho: varianteSelecionada.tamanho,
+        quantidade: varianteSelecionada.quantidade,
+        categoria: produtoSelecionado.categoria,
+        emPromocao: produtoSelecionado.emPromocao,
+        isNovidade: produtoSelecionado.isNovidade,
+      };
+      
+      onSelect(itemSelecionado);
       onOpenChange(false);
       setProdutoSelecionado(null);
       setCorSelecionada("");
@@ -177,13 +177,13 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect }: S
                         </p>
                         <p className="text-xs">
                           <span className={produto.quantidadeTotal <= 5 ? 'text-orange-600 font-bold' : 'text-green-600'}>
-                            {produto.variantes.length} variante(s) • Total: <strong>{produto.quantidadeTotal} un.</strong>
+                            {produto.variantes?.length || 0} variante(s) • Total: <strong>{produto.quantidadeTotal || 0} un.</strong>
                           </span>
                         </p>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1 ml-3">
-                      <span className="font-bold text-lg">R$ {produto.variantes[0].precoVenda.toFixed(2)}</span>
+                      <span className="font-bold text-lg">R$ {produto.precoVenda?.toFixed(2) || '0.00'}</span>
                       {produto.quantidadeTotal <= 0 && (
                         <Badge variant="destructive" className="text-xs">
                           Esgotado
@@ -211,7 +211,7 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect }: S
               <Label className="text-base font-medium">Selecione a Cor *</Label>
               <RadioGroup value={corSelecionada} onValueChange={setCorSelecionada}>
                 <div className="grid grid-cols-2 gap-2">
-                  {coresDisponiveis.map((cor) => {
+                  {coresDisponiveis.map((cor: string) => {
                     const qtdTotal = produtoSelecionado.variantes
                       .filter(v => v.cor === cor)
                       .reduce((sum, v) => sum + v.quantidade, 0);
