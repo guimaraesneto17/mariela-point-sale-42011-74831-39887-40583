@@ -51,17 +51,22 @@ const validateEstoquePayload = (payload: any): FieldIssue[] => {
   if (!CODIGO_PRODUTO_RE.test(payload?.codigoProduto || '')) {
     issues.push({ field: 'codigoProduto', message: 'Deve seguir o padrão P###', value: payload?.codigoProduto });
   }
-  // Validar cor como array
-  if (!payload?.cor || !Array.isArray(payload.cor) || payload.cor.length === 0) {
-    issues.push({ field: 'cor', message: 'Cor é obrigatória e deve ser um array não vazio', value: payload?.cor });
-  }
-  // Validar tamanho como array (sem enum fixo)
-  if (!payload?.tamanho || !Array.isArray(payload.tamanho) || payload.tamanho.length === 0) {
-    issues.push({ field: 'tamanho', message: 'Tamanho é obrigatório e deve ser um array não vazio', value: payload?.tamanho });
-  }
-  const q = Number(payload?.quantidade);
-  if (!Number.isInteger(q) || q < 0) {
-    issues.push({ field: 'quantidade', message: 'Deve ser inteiro >= 0', value: payload?.quantidade });
+  // Validar variantes
+  if (!payload?.variantes || !Array.isArray(payload.variantes) || payload.variantes.length === 0) {
+    issues.push({ field: 'variantes', message: 'Deve ter pelo menos uma variante', value: payload?.variantes });
+  } else {
+    payload.variantes.forEach((v: any, idx: number) => {
+      if (!v.cor || typeof v.cor !== 'string') {
+        issues.push({ field: `variantes[${idx}].cor`, message: 'Cor é obrigatória', value: v.cor });
+      }
+      if (!v.tamanho || typeof v.tamanho !== 'string') {
+        issues.push({ field: `variantes[${idx}].tamanho`, message: 'Tamanho é obrigatório', value: v.tamanho });
+      }
+      const q = Number(v.quantidade);
+      if (!Number.isInteger(q) || q < 0) {
+        issues.push({ field: `variantes[${idx}].quantidade`, message: 'Deve ser inteiro >= 0', value: v.quantidade });
+      }
+    });
   }
   if (payload?.precoPromocional !== undefined && payload?.precoPromocional !== null) {
     const p = Number(payload.precoPromocional);
@@ -118,8 +123,18 @@ export const getAllEstoque = async (req: Request, res: Response) => {
     const estoqueComProdutos = await Promise.all(
       estoque.map(async (item) => {
         const produto = await Produto.findOne({ codigoProduto: item.codigoProduto });
+        
+        // Calcular quantidade total
+        const quantidadeTotal = item.variantes.reduce((sum: number, v: any) => sum + v.quantidade, 0);
+        
+        // Filtrar apenas produtos com estoque disponível
+        if (quantidadeTotal === 0) {
+          return null;
+        }
+        
         return {
           ...item.toObject(),
+          quantidadeTotal,
           nomeProduto: produto?.nome || 'Produto não encontrado',
           categoria: produto?.categoria || '',
           descricao: produto?.descricao || '',
@@ -132,7 +147,10 @@ export const getAllEstoque = async (req: Request, res: Response) => {
       })
     );
     
-    res.json(estoqueComProdutos);
+    // Remover itens nulos (sem estoque)
+    const estoqueDisponivel = estoqueComProdutos.filter(item => item !== null);
+    
+    res.json(estoqueDisponivel);
   } catch (error) {
     console.error('Erro ao buscar estoque:', error);
     res.status(500).json({ error: 'Erro ao buscar estoque' });
@@ -169,49 +187,65 @@ export const createEstoque = async (req: Request, res: Response) => {
   try {
     console.log('Dados recebidos para criar estoque:', JSON.stringify(req.body, null, 2));
     
-    // Verificar se já existe estoque com a mesma combinação produto+cor+tamanho
-    const estoqueExistente = await Estoque.findOne({
-      codigoProduto: req.body.codigoProduto,
-      cor: req.body.cor,
-      tamanho: req.body.tamanho
-    });
+    const { codigoProduto, cor, tamanho, quantidade = 1 } = req.body;
+    
+    // Verificar se já existe estoque para este produto
+    let estoque = await Estoque.findOne({ codigoProduto });
 
-    if (estoqueExistente) {
-      return res.status(400).json({
-        error: 'Estoque duplicado',
-        message: 'Já existe estoque para essa cor e tamanho deste produto',
-        details: {
-          codigoProduto: req.body.codigoProduto,
-          cor: req.body.cor,
-          tamanho: req.body.tamanho
-        }
-      });
+    if (estoque) {
+      // Verificar se já existe essa variante
+      const varianteExistente = estoque.variantes.find(
+        (v: any) => v.cor === cor && v.tamanho === tamanho
+      );
+      
+      if (varianteExistente) {
+        return res.status(400).json({
+          error: 'Estoque duplicado',
+          message: 'Já existe estoque para essa cor e tamanho deste produto'
+        });
+      }
+      
+      // Adicionar nova variante
+      estoque.variantes.push({ cor, tamanho, quantidade });
+      
+      // Adicionar log de movimentação
+      if (req.body.logMovimentacao && Array.isArray(req.body.logMovimentacao)) {
+        estoque.logMovimentacao.push(...req.body.logMovimentacao.map((m: any) => ({
+          ...m,
+          cor,
+          tamanho,
+          quantidade: Number.isInteger(Number(m.quantidade)) ? parseInt(m.quantidade, 10) : 1,
+          data: isoSeconds(m.data)
+        })));
+      }
+      
+      await estoque.save();
+      return res.status(201).json(estoque);
     }
     
-    // Limpa campos vazios - mantém mesma lógica
+    // Criar novo registro de estoque
     const cleanData: any = {
-      codigoProduto: req.body.codigoProduto,
-      cor: req.body.cor,
-      tamanho: req.body.tamanho,
-      quantidade: Number.isInteger(Number(req.body.quantidade)) ? parseInt(req.body.quantidade, 10) : 1,
+      codigoProduto,
+      variantes: [{ cor, tamanho, quantidade }],
       emPromocao: req.body.emPromocao || false,
       isNovidade: req.body.isNovidade || false,
       dataCadastro: isoSeconds()
     };
 
-    // Adiciona campos opcionais apenas se tiverem valor
     if (req.body.precoPromocional !== undefined && req.body.precoPromocional !== null) {
       cleanData.precoPromocional = req.body.precoPromocional;
     }
+    
     if (req.body.logMovimentacao && Array.isArray(req.body.logMovimentacao)) {
       cleanData.logMovimentacao = req.body.logMovimentacao.map((m: any) => ({
         ...m,
+        cor,
+        tamanho,
         quantidade: Number.isInteger(Number(m.quantidade)) ? parseInt(m.quantidade, 10) : 1,
         data: isoSeconds(m.data)
       }));
     }
 
-    // Pré-validação para logs claros antes do MongoDB
     const issues = validateEstoquePayload(cleanData);
     if (issues.length) {
       console.warn('Falha na validação pré-save do Estoque:', issues);
@@ -224,7 +258,7 @@ export const createEstoque = async (req: Request, res: Response) => {
 
     console.log('Dados limpos para salvar:', JSON.stringify(cleanData, null, 2));
 
-    const estoque = new Estoque(cleanData);
+    estoque = new Estoque(cleanData);
     await estoque.save();
     res.status(201).json(estoque);
   } catch (error: any) {
@@ -232,16 +266,14 @@ export const createEstoque = async (req: Request, res: Response) => {
       name: error.name,
       message: error.message,
       code: error.code,
-      errors: error.errors,
-      stack: error.stack
+      errors: error.errors
     }, null, 2));
     
     if (error.name === 'ValidationError') {
       const errors = Object.keys(error.errors).map(key => ({
         field: key,
         message: error.errors[key].message,
-        value: error.errors[key].value,
-        kind: error.errors[key].kind
+        value: error.errors[key].value
       }));
       return res.status(400).json({
         error: 'Erro de validação',
@@ -251,29 +283,15 @@ export const createEstoque = async (req: Request, res: Response) => {
     }
     
     if (error.code === 11000) {
-      const field = Object.keys(error.keyPattern)[0];
       return res.status(400).json({
         error: 'Erro de duplicação',
-        message: `O campo ${field} já existe no sistema`,
-        fields: [{ field, message: 'Valor duplicado', value: error.keyValue[field] }]
-      });
-    }
-
-    // Validação do MongoDB (schema da coleção)
-    if (error?.message?.includes('Document failed validation') || error?.code === 121) {
-      const mongoDetails = (error as any)?.errInfo?.details || (error as any)?.errorResponse?.errInfo?.details;
-      console.error('Detalhes da validação do MongoDB:', JSON.stringify(mongoDetails, null, 2));
-      return res.status(400).json({
-        error: 'Erro de validação no MongoDB',
-        message: 'Documento não passou na validação do schema',
-        fields: mongoDetails?.schemaRulesNotSatisfied || mongoDetails || error?.errmsg || error?.message
+        message: 'Produto já existe no estoque'
       });
     }
     
     res.status(400).json({
       error: 'Erro ao processar requisição',
-      message: error.message || 'Erro desconhecido',
-      details: error.toString()
+      message: error.message || 'Erro desconhecido'
     });
   }
 };
@@ -357,12 +375,12 @@ export const deleteEstoque = async (req: Request, res: Response) => {
 // Registrar entrada de estoque
 export const registrarEntrada = async (req: Request, res: Response) => {
   try {
-    const { codigoProduto, quantidade, origem, fornecedor, observacao } = req.body;
+    const { codigoProduto, cor, tamanho, quantidade, origem, fornecedor, observacao } = req.body;
 
-    if (!codigoProduto || !quantidade || !origem) {
+    if (!codigoProduto || !cor || !tamanho || !quantidade || !origem) {
       return res.status(400).json({ 
         error: 'Dados incompletos',
-        message: 'codigoProduto, quantidade e origem são obrigatórios'
+        message: 'codigoProduto, cor, tamanho, quantidade e origem são obrigatórios'
       });
     }
 
@@ -372,12 +390,21 @@ export const registrarEntrada = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Produto não encontrado no estoque' });
     }
 
+    // Encontrar a variante
+    const variante = estoque.variantes.find((v: any) => v.cor === cor && v.tamanho === tamanho);
+    
+    if (!variante) {
+      return res.status(404).json({ error: 'Variante não encontrada no estoque' });
+    }
+
     // Atualizar quantidade
-    estoque.quantidade += quantidade;
+    variante.quantidade += quantidade;
 
     // Adicionar log de movimentação
     estoque.logMovimentacao.push({
       tipo: 'entrada',
+      cor,
+      tamanho,
       quantidade,
       data: isoSeconds(),
       origem,
@@ -400,12 +427,12 @@ export const registrarEntrada = async (req: Request, res: Response) => {
 // Registrar saída de estoque
 export const registrarSaida = async (req: Request, res: Response) => {
   try {
-    const { codigoProduto, quantidade, origem, motivo, codigoVenda, observacao } = req.body;
+    const { codigoProduto, cor, tamanho, quantidade, origem, motivo, codigoVenda, observacao } = req.body;
 
-    if (!codigoProduto || !quantidade) {
+    if (!codigoProduto || !cor || !tamanho || !quantidade) {
       return res.status(400).json({ 
         error: 'Dados incompletos',
-        message: 'codigoProduto e quantidade são obrigatórios'
+        message: 'codigoProduto, cor, tamanho e quantidade são obrigatórios'
       });
     }
 
@@ -415,20 +442,29 @@ export const registrarSaida = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Produto não encontrado no estoque' });
     }
 
+    // Encontrar a variante
+    const variante = estoque.variantes.find((v: any) => v.cor === cor && v.tamanho === tamanho);
+    
+    if (!variante) {
+      return res.status(404).json({ error: 'Variante não encontrada no estoque' });
+    }
+
     // Verificar se há quantidade suficiente
-    if (estoque.quantidade < quantidade) {
+    if (variante.quantidade < quantidade) {
       return res.status(400).json({ 
         error: 'Quantidade insuficiente',
-        message: `Há apenas ${estoque.quantidade} unidades disponíveis`
+        message: `Há apenas ${variante.quantidade} unidades disponíveis para ${cor} - ${tamanho}`
       });
     }
 
     // Atualizar quantidade
-    estoque.quantidade -= quantidade;
+    variante.quantidade -= quantidade;
 
     // Adicionar log de movimentação
     estoque.logMovimentacao.push({
       tipo: 'saida',
+      cor,
+      tamanho,
       quantidade,
       data: isoSeconds(),
       origem: origem || 'baixa no estoque',

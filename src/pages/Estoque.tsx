@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Package, TrendingUp, TrendingDown, Search, Plus, Minus, Tag, List, Sparkles, Filter } from "lucide-react";
+import { Package, Search, Plus, Minus, Tag, List, Sparkles, Filter } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,14 +22,15 @@ const Estoque = () => {
   const [showNovidadeDialog, setShowNovidadeDialog] = useState(false);
   const [showMovimentacaoDialog, setShowMovimentacaoDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [inventory, setInventory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterPromocao, setFilterPromocao] = useState<boolean | null>(null);
   const [filterNovidade, setFilterNovidade] = useState<boolean | null>(null);
-  const [filterCor, setFilterCor] = useState<string>("");
-  const [filterTamanho, setFilterTamanho] = useState<string>("");
-  const [coresDisponiveis, setCoresDisponiveis] = useState<string[]>([]);
-  const [tamanhosDisponiveis, setTamanhosDisponiveis] = useState<string[]>([]);
+  
+  // State para selecionar cor/tamanho por item
+  const [selectedColorByItem, setSelectedColorByItem] = useState<{[key: string]: string}>({});
+  const [selectedSizeByItem, setSelectedSizeByItem] = useState<{[key: string]: string}>({});
 
   useEffect(() => {
     loadEstoque();
@@ -41,26 +42,19 @@ const Estoque = () => {
       const data = await estoqueAPI.getAll();
       setInventory(data);
       
-      // Extrair cores e tamanhos únicos
-      const cores = new Set<string>();
-      const tamanhos = new Set<string>();
+      // Inicializar seleção de cor e tamanho para cada item
+      const initialColors: {[key: string]: string} = {};
+      const initialSizes: {[key: string]: string} = {};
       
       data.forEach((item: any) => {
-        if (Array.isArray(item.cor)) {
-          item.cor.forEach((c: string) => { if (c && String(c).trim()) cores.add(String(c).trim()); });
-        } else if (item.cor && String(item.cor).trim()) {
-          cores.add(String(item.cor).trim());
-        }
-        
-        if (Array.isArray(item.tamanho)) {
-          item.tamanho.forEach((t: string) => { if (t && String(t).trim()) tamanhos.add(String(t).trim()); });
-        } else if (item.tamanho && String(item.tamanho).trim()) {
-          tamanhos.add(String(item.tamanho).trim());
+        if (item.variantes && item.variantes.length > 0) {
+          initialColors[item.codigoProduto] = item.variantes[0].cor;
+          initialSizes[item.codigoProduto] = item.variantes[0].tamanho;
         }
       });
       
-      setCoresDisponiveis(Array.from(cores).sort());
-      setTamanhosDisponiveis(Array.from(tamanhos).sort());
+      setSelectedColorByItem(initialColors);
+      setSelectedSizeByItem(initialSizes);
     } catch (error) {
       console.error('Erro ao carregar estoque:', error);
       toast.error('Erro ao carregar estoque');
@@ -72,13 +66,10 @@ const Estoque = () => {
   const filteredInventory = inventory.filter(item => {
     const nomeProduto = item.nomeProduto || '';
     const codigoProduto = item.codigoProduto || '';
-    const cores = Array.isArray(item.cor) ? item.cor : [item.cor || ''];
-    const tamanhos = Array.isArray(item.tamanho) ? item.tamanho : [item.tamanho || ''];
     
     // Filtro de texto
     const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      codigoProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cores.some((c: string) => c.toLowerCase().includes(searchTerm.toLowerCase()));
+      codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
     
     // Filtro de promoção
     const matchesPromocao = filterPromocao === null || item.emPromocao === filterPromocao;
@@ -86,22 +77,18 @@ const Estoque = () => {
     // Filtro de novidade
     const matchesNovidade = filterNovidade === null || item.isNovidade === filterNovidade;
     
-    // Filtro de cor
-    const matchesCor = !filterCor || cores.includes(filterCor);
-    
-    // Filtro de tamanho
-    const matchesTamanho = !filterTamanho || tamanhos.includes(filterTamanho);
-    
-    return matchesSearch && matchesPromocao && matchesNovidade && matchesCor && matchesTamanho;
+    return matchesSearch && matchesPromocao && matchesNovidade;
   });
 
-  const openEntryDialog = (item: any) => {
+  const openEntryDialog = (item: any, variante: any) => {
     setSelectedItem(item);
+    setSelectedVariant(variante);
     setShowEntryDialog(true);
   };
 
-  const openExitDialog = (item: any) => {
+  const openExitDialog = (item: any, variante: any) => {
     setSelectedItem(item);
+    setSelectedVariant(variante);
     setShowExitDialog(true);
   };
 
@@ -126,6 +113,56 @@ const Estoque = () => {
 
   const handleExitSuccess = () => {
     loadEstoque();
+  };
+
+  // Obter cores únicas para um item
+  const getCoresDisponiveis = (item: any) => {
+    if (!item.variantes) return [];
+    return [...new Set(item.variantes.map((v: any) => v.cor))];
+  };
+
+  // Obter tamanhos disponíveis para uma cor específica
+  const getTamanhosDisponiveis = (item: any, cor: string) => {
+    if (!item.variantes) return [];
+    return item.variantes
+      .filter((v: any) => v.cor === cor)
+      .map((v: any) => v.tamanho);
+  };
+
+  // Obter variante atual selecionada
+  const getSelectedVariant = (item: any) => {
+    const cor = selectedColorByItem[item.codigoProduto];
+    const tamanho = selectedSizeByItem[item.codigoProduto];
+    
+    if (!item.variantes || !cor || !tamanho) return null;
+    
+    return item.variantes.find((v: any) => v.cor === cor && v.tamanho === tamanho);
+  };
+
+  // Atualizar cor selecionada
+  const handleColorChange = (codigoProduto: string, cor: string, item: any) => {
+    setSelectedColorByItem(prev => ({ ...prev, [codigoProduto]: cor }));
+    
+    // Ajustar tamanho para o primeiro disponível nesta cor
+    const tamanhosDisponiveis = getTamanhosDisponiveis(item, cor);
+    if (tamanhosDisponiveis.length > 0) {
+      setSelectedSizeByItem(prev => ({ ...prev, [codigoProduto]: tamanhosDisponiveis[0] }));
+    }
+  };
+
+  // Atualizar tamanho selecionado
+  const handleSizeChange = (codigoProduto: string, tamanho: string) => {
+    setSelectedSizeByItem(prev => ({ ...prev, [codigoProduto]: tamanho }));
+  };
+
+  // Filtrar movimentações da variante selecionada
+  const getVariantMovimentos = (item: any, cor: string, tamanho: string) => {
+    if (!item.logMovimentacao) return [];
+    
+    return item.logMovimentacao
+      .filter((m: any) => m.cor === cor && m.tamanho === tamanho)
+      .slice(-3)
+      .reverse();
   };
 
   return (
@@ -169,43 +206,14 @@ const Estoque = () => {
               <Sparkles className="h-4 w-4 mr-2" />
               Novidades
             </Button>
-
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <Select value={filterCor} onValueChange={(v) => setFilterCor(v === "all" ? "" : v)}>
-                <SelectTrigger className="w-[140px] h-8">
-                  <SelectValue placeholder="Todas as cores" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as cores</SelectItem>
-                  {coresDisponiveis.map((cor) => (
-                    <SelectItem key={cor} value={cor}>{cor}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={filterTamanho} onValueChange={(v) => setFilterTamanho(v === "all" ? "" : v)}>
-                <SelectTrigger className="w-[140px] h-8">
-                  <SelectValue placeholder="Todos os tamanhos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os tamanhos</SelectItem>
-                  {tamanhosDisponiveis.map((tamanho) => (
-                    <SelectItem key={tamanho} value={tamanho}>{tamanho}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
             
-            {(filterPromocao !== null || filterNovidade !== null || filterCor || filterTamanho) && (
+            {(filterPromocao !== null || filterNovidade !== null) && (
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => {
                   setFilterPromocao(null);
                   setFilterNovidade(null);
-                  setFilterCor("");
-                  setFilterTamanho("");
                 }}
               >
                 Limpar Filtros
@@ -215,195 +223,250 @@ const Estoque = () => {
         </div>
       </Card>
 
-      <div className="space-y-6">
-        {filteredInventory.map((item, index) => (
-          <Card
-            key={item._id}
-            className="p-6 hover:shadow-elegant transition-all duration-300 animate-slide-in"
-            style={{ animationDelay: `${index * 100}ms` }}
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Package className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-foreground">{item.nomeProduto}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {item.codigoProduto} • {item.categoria || 'Sem categoria'}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {item.emPromocao && (
-                  <Badge className="bg-accent text-accent-foreground">
-                    Promoção
-                  </Badge>
-                )}
-                {item.isNovidade && (
-                  <Badge className="bg-green-600 text-white">
-                    Novidade
-                  </Badge>
-                )}
-              </div>
-            </div>
+      {loading ? (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">Carregando estoque...</p>
+        </div>
+      ) : filteredInventory.length === 0 ? (
+        <Card className="p-12 text-center shadow-card">
+          <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-xl font-semibold mb-2">Nenhum produto no estoque</h3>
+          <p className="text-muted-foreground">
+            Adicione produtos ao estoque através da página de Produtos
+          </p>
+        </Card>
+      ) : (
+        <div className="space-y-6">
+          {filteredInventory.map((item) => {
+            const coresDisponiveis = getCoresDisponiveis(item);
+            const selectedCor = selectedColorByItem[item.codigoProduto] || '';
+            const selectedTamanho = selectedSizeByItem[item.codigoProduto] || '';
+            const tamanhosDisponiveis = getTamanhosDisponiveis(item, selectedCor);
+            const varianteSelecionada = getSelectedVariant(item);
+            const movimentosVariante = selectedCor && selectedTamanho ? getVariantMovimentos(item, selectedCor, selectedTamanho) : [];
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-              <div className="p-4 rounded-lg bg-background/50 border border-border">
-                <p className="text-sm text-muted-foreground mb-1">Quantidade Disponível</p>
-                <p className="text-2xl font-bold text-primary">
-                  {item.quantidade || item.quantidadeDisponivel || 0} un.
-                </p>
-              </div>
-              <div className="p-4 rounded-lg bg-background/50 border border-border">
-                <p className="text-sm text-muted-foreground mb-1">Tamanhos</p>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {(Array.isArray(item.tamanho) ? item.tamanho : [item.tamanho]).map((tam: string, idx: number) => (
-                    <Badge key={idx} variant="outline" className="text-sm">
-                      {tam}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              <div className="p-4 rounded-lg bg-background/50 border border-border">
-                <p className="text-sm text-muted-foreground mb-1">Cores</p>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {(Array.isArray(item.cor) ? item.cor : [item.cor]).map((c: string, idx: number) => (
-                    <Badge key={idx} variant="secondary" className="text-sm">
-                      {c}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              <div className="p-4 rounded-lg bg-background/50 border border-border">
-                <p className="text-sm text-muted-foreground mb-1">Preço de Venda</p>
-                <p className="text-2xl font-bold text-foreground">
-                  R$ {(item.precoVenda || 0).toFixed(2)}
-                </p>
-              </div>
-              {item.emPromocao && (
-                <div className="p-4 rounded-lg bg-accent/10 border border-accent">
-                  <p className="text-sm text-muted-foreground mb-1">Valor Promocional</p>
-                  <p className="text-2xl font-bold text-accent">
-                    R$ {(item.precoPromocional || 0).toFixed(2)}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-wrap gap-2 mb-4">
-              <Button size="sm" className="gap-2" onClick={() => openEntryDialog(item)}>
-                <Plus className="h-4 w-4" />
-                Entrada
-              </Button>
-              <Button size="sm" variant="outline" className="gap-2" onClick={() => openExitDialog(item)}>
-                <Minus className="h-4 w-4" />
-                Saída
-              </Button>
-              <Button 
-                size="sm" 
-                variant={item.emPromocao ? "default" : "outline"}
-                className={`gap-2 ${item.emPromocao ? 'bg-accent text-accent-foreground' : ''}`}
-                onClick={() => openPromotionDialog(item)}
-              >
-                <Tag className="h-4 w-4" />
-                {item.emPromocao ? "Em Promoção" : "Colocar em Promoção"}
-              </Button>
-              <Button 
-                size="sm" 
-                variant={item.isNovidade ? "default" : "outline"}
-                className={`gap-2 ${item.isNovidade ? 'bg-green-600 text-white hover:bg-green-700' : ''}`}
-                onClick={() => openNovidadeDialog(item)}
-              >
-                <Sparkles className="h-4 w-4" />
-                {item.isNovidade ? "É Novidade" : "Colocar como Novidade"}
-              </Button>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="gap-2 ml-auto"
-                onClick={() => openMovimentacaoDialog(item)}
-              >
-                <List className="h-4 w-4" />
-                Ver Movimentações
-              </Button>
-            </div>
-
-            <div className="border-t border-border pt-4">
-              <p className="text-sm font-medium text-muted-foreground mb-3">Últimas Movimentações:</p>
-              <div className="space-y-2">
-                {item.logMovimentacao.slice(-3).reverse().map((log, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 rounded bg-background/50">
-                    <div className="flex items-center gap-3">
-                      {log.tipo === "entrada" ? (
-                        <TrendingUp className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <TrendingDown className="h-4 w-4 text-red-600" />
-                      )}
-                      <div>
-                        <p className="text-sm font-medium">
-                          {log.tipo === "entrada" ? "Entrada" : "Saída"}: {log.quantidade} un.
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDateTime(log.data)}
-                          {log.fornecedor && ` • ${log.fornecedor}`}
-                          {log.codigoVenda && ` • ${log.codigoVenda}`}
-                        </p>
+            return (
+              <Card key={item.codigoProduto} className="p-6 shadow-card hover:shadow-lg transition-all">
+                <div className="flex flex-col gap-6">
+                  {/* Header com imagem, nome e badges */}
+                  <div className="flex items-start gap-4">
+                    {item.imagens && item.imagens.length > 0 && (
+                      <img
+                        src={item.imagens[0]}
+                        alt={item.nomeProduto}
+                        className="w-16 h-16 object-cover rounded-lg"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <h3 className="text-xl font-bold text-foreground">{item.nomeProduto}</h3>
+                          <p className="text-sm text-muted-foreground">{item.codigoProduto} • {item.categoria}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          {item.emPromocao && (
+                            <Badge variant="secondary" className="bg-accent text-accent-foreground">
+                              <Tag className="h-3 w-3 mr-1" />
+                              Em Promoção
+                            </Badge>
+                          )}
+                          {item.isNovidade && (
+                            <Badge className="bg-green-600 text-white">
+                              <Sparkles className="h-3 w-3 mr-1" />
+                              Novidade
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
+
+                  {/* Seletores de Cor e Tamanho */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                      <label className="text-sm font-semibold text-muted-foreground mb-2 block">
+                        Quantidade Disponível
+                      </label>
+                      <div className="text-3xl font-bold text-primary">
+                        {varianteSelecionada ? varianteSelecionada.quantidade : 0} un.
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-semibold text-muted-foreground mb-2 block">Cores</label>
+                      <div className="flex flex-wrap gap-2">
+                        {coresDisponiveis.map((cor: string) => (
+                          <Badge
+                            key={cor}
+                            variant={selectedCor === cor ? "default" : "outline"}
+                            className="cursor-pointer hover:bg-primary/90"
+                            onClick={() => handleColorChange(item.codigoProduto, cor, item)}
+                          >
+                            {cor}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-semibold text-muted-foreground mb-2 block">Tamanhos</label>
+                      <div className="flex flex-wrap gap-2">
+                        {tamanhosDisponiveis.map((tamanho: string) => (
+                          <Badge
+                            key={tamanho}
+                            variant={selectedTamanho === tamanho ? "default" : "outline"}
+                            className="cursor-pointer hover:bg-primary/90"
+                            onClick={() => handleSizeChange(item.codigoProduto, tamanho)}
+                          >
+                            {tamanho}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-semibold text-muted-foreground mb-2 block">Preço de Venda</label>
+                      <div className="text-2xl font-bold text-foreground">
+                        R$ {item.emPromocao && item.precoPromocional ? item.precoPromocional.toFixed(2) : item.precoVenda?.toFixed(2) || '0.00'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Ações */}
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={() => openEntryDialog(item, varianteSelecionada)}
+                      className="gap-2"
+                      disabled={!varianteSelecionada}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Entrada
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openExitDialog(item, varianteSelecionada)}
+                      className="gap-2"
+                      disabled={!varianteSelecionada || varianteSelecionada.quantidade === 0}
+                    >
+                      <Minus className="h-4 w-4" />
+                      Saída
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openPromotionDialog(item)}
+                      className="gap-2"
+                    >
+                      <Tag className="h-4 w-4" />
+                      {item.emPromocao ? 'Remover' : 'Colocar'} em Promoção
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openNovidadeDialog(item)}
+                      className="gap-2"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      {item.isNovidade ? 'Remover' : 'Marcar'} como Novidade
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openMovimentacaoDialog(item)}
+                      className="gap-2"
+                    >
+                      <List className="h-4 w-4" />
+                      Ver Movimentações
+                    </Button>
+                  </div>
+
+                  {/* Últimas movimentações da variante selecionada */}
+                  {movimentosVariante.length > 0 && (
+                    <div className="border-t pt-4">
+                      <h4 className="text-sm font-semibold text-muted-foreground mb-3">
+                        Últimas Movimentações ({selectedCor} - {selectedTamanho}):
+                      </h4>
+                      <div className="space-y-2">
+                        {movimentosVariante.map((mov: any, index: number) => (
+                          <div key={index} className="flex items-center justify-between text-sm bg-muted/50 p-2 rounded">
+                            <div className="flex items-center gap-2">
+                              {mov.tipo === 'entrada' ? (
+                                <Plus className="h-4 w-4 text-green-600" />
+                              ) : (
+                                <Minus className="h-4 w-4 text-red-600" />
+                              )}
+                              <span className="font-medium capitalize">{mov.tipo}: {mov.quantidade} un.</span>
+                            </div>
+                            <span className="text-muted-foreground">{formatDateTime(mov.data)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       {/* Dialogs */}
-      {selectedItem && (
+      {selectedItem && selectedVariant && (
         <>
-          <StockEntryDialog 
+          <StockEntryDialog
             open={showEntryDialog}
             onOpenChange={setShowEntryDialog}
             codigoProduto={selectedItem.codigoProduto}
             nomeProduto={selectedItem.nomeProduto}
-            onSuccess={loadEstoque}
+            cor={selectedVariant.cor}
+            tamanho={selectedVariant.tamanho}
+            onSuccess={handleEntrySuccess}
           />
           
-          <StockExitDialog 
+          <StockExitDialog
             open={showExitDialog}
             onOpenChange={setShowExitDialog}
             codigoProduto={selectedItem.codigoProduto}
             nomeProduto={selectedItem.nomeProduto}
-            onSuccess={loadEstoque}
+            cor={selectedVariant.cor}
+            tamanho={selectedVariant.tamanho}
+            quantidadeDisponivel={selectedVariant.quantidade}
+            onSuccess={handleExitSuccess}
           />
+        </>
+      )}
 
-          <PromotionDialog 
+      {selectedItem && (
+        <>
+          <PromotionDialog
             open={showPromotionDialog}
             onOpenChange={setShowPromotionDialog}
             codigoProduto={selectedItem.codigoProduto}
             nomeProduto={selectedItem.nomeProduto}
-            precoOriginal={selectedItem.precoVenda || 0}
-            emPromocao={selectedItem.emPromocao || false}
+            precoOriginal={selectedItem.precoVenda}
+            emPromocao={selectedItem.emPromocao}
             precoPromocionalAtual={selectedItem.precoPromocional}
             onSuccess={loadEstoque}
           />
 
-          <NovidadeDialog 
+          <NovidadeDialog
             open={showNovidadeDialog}
             onOpenChange={setShowNovidadeDialog}
             codigoProduto={selectedItem.codigoProduto}
             nomeProduto={selectedItem.nomeProduto}
-            isNovidade={selectedItem.isNovidade || false}
+            isNovidade={selectedItem.isNovidade}
             onSuccess={loadEstoque}
           />
 
-          <MovimentacaoDialog 
+          <MovimentacaoDialog
             open={showMovimentacaoDialog}
             onOpenChange={setShowMovimentacaoDialog}
             codigoProduto={selectedItem.codigoProduto}
             nomeProduto={selectedItem.nomeProduto}
-            logMovimentacao={selectedItem.logMovimentacao}
+            logMovimentacao={selectedItem.logMovimentacao || []}
           />
         </>
       )}
@@ -412,4 +475,3 @@ const Estoque = () => {
 };
 
 export default Estoque;
- 

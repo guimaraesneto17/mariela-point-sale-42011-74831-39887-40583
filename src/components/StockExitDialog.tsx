@@ -13,41 +13,16 @@ interface StockExitDialogProps {
   onOpenChange: (open: boolean) => void;
   codigoProduto: string;
   nomeProduto: string;
+  cor: string;
+  tamanho: string;
+  quantidadeDisponivel: number;
   onSuccess?: () => void;
 }
 
-export function StockExitDialog({ open, onOpenChange, codigoProduto, nomeProduto, onSuccess }: StockExitDialogProps) {
+export function StockExitDialog({ open, onOpenChange, codigoProduto, nomeProduto, cor, tamanho, quantidadeDisponivel, onSuccess }: StockExitDialogProps) {
   const [quantidade, setQuantidade] = useState(1);
   const [motivo, setMotivo] = useState("");
   const [observacao, setObservacao] = useState("");
-  const [cor, setCor] = useState("");
-  const [tamanho, setTamanho] = useState("");
-  const [coresDisponiveis, setCoresDisponiveis] = useState<string[]>([]);
-  const [tamanhosDisponiveis, setTamanhosDisponiveis] = useState<string[]>([]);
-
-  // Carregar as cores e tamanhos disponíveis para este produto
-  useEffect(() => {
-    if (open && codigoProduto) {
-      loadEstoqueInfo();
-    }
-  }, [open, codigoProduto]);
-
-  const loadEstoqueInfo = async () => {
-    try {
-      const data = await estoqueAPI.getByCodigo(codigoProduto);
-      if (data) {
-        const cores = Array.isArray(data.cor) ? data.cor.filter(c => c) : [data.cor].filter(c => c);
-        const tamanhos = Array.isArray(data.tamanho) ? data.tamanho.filter(t => t) : [data.tamanho].filter(t => t);
-        setCoresDisponiveis(cores);
-        setTamanhosDisponiveis(tamanhos);
-        // Selecionar primeiro automaticamente
-        if (cores.length > 0) setCor(cores[0]);
-        if (tamanhos.length > 0) setTamanho(tamanhos[0]);
-      }
-    } catch (error) {
-      console.error('Erro ao carregar informações do estoque:', error);
-    }
-  };
 
   const handleSubmit = async () => {
     if (quantidade <= 0) {
@@ -60,13 +35,8 @@ export function StockExitDialog({ open, onOpenChange, codigoProduto, nomeProduto
       return;
     }
 
-    if (!cor) {
-      toast.error("Selecione uma cor");
-      return;
-    }
-
-    if (!tamanho) {
-      toast.error("Selecione um tamanho");
+    if (quantidade > quantidadeDisponivel) {
+      toast.error(`Quantidade insuficiente. Disponível: ${quantidadeDisponivel}`);
       return;
     }
 
@@ -89,8 +59,6 @@ export function StockExitDialog({ open, onOpenChange, codigoProduto, nomeProduto
       setQuantidade(1);
       setMotivo("");
       setObservacao("");
-      setCor("");
-      setTamanho("");
       // Reload data
       onSuccess?.();
     } catch (error: any) {
@@ -106,40 +74,11 @@ export function StockExitDialog({ open, onOpenChange, codigoProduto, nomeProduto
         <DialogHeader>
           <DialogTitle>Saída de Estoque</DialogTitle>
           <p className="text-sm text-muted-foreground">{nomeProduto} ({codigoProduto})</p>
-          <p className="text-xs text-muted-foreground">Origem: Baixa no estoque</p>
+          <p className="text-sm font-semibold">{cor} - {tamanho}</p>
+          <p className="text-xs text-muted-foreground">Disponível: {quantidadeDisponivel} un. | Origem: Baixa no estoque</p>
         </DialogHeader>
         
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Cor *</Label>
-              <Select value={cor} onValueChange={setCor}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a cor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {coresDisponiveis.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Tamanho *</Label>
-              <Select value={tamanho} onValueChange={setTamanho}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tamanho" />
-                </SelectTrigger>
-                <SelectContent>
-                  {tamanhosDisponiveis.map((t) => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
           <div>
             <Label>Quantidade *</Label>
             <Input

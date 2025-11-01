@@ -79,13 +79,15 @@ export function AddToStockDialog({
       setLoading(true);
       const estoqueData = {
         codigoProduto: produto.codigoProduto,
-        cor: [cor],
+        cor: cor,
+        tamanho: tamanho,
         quantidade: 1,
-        tamanho: [tamanho],
         emPromocao: false,
         isNovidade: false,
         logMovimentacao: [{
           tipo: 'entrada',
+          cor: cor,
+          tamanho: tamanho,
           quantidade: 1,
           data: new Date().toISOString().split('.')[0] + 'Z',
           origem: 'entrada',

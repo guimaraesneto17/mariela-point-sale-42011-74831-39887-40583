@@ -4,22 +4,27 @@ const EstoqueSchema = new mongoose.Schema({
   codigoProduto: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
+    unique: true
   },
-  cor: {
-    type: [String],
-    required: true
-  },
-  quantidade: {
-    type: Number,
-    required: true,
-    min: 0,
-    default: 1
-  },
-  tamanho: {
-    type: [String],
-    required: true
-  },
+  variantes: [{
+    cor: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    tamanho: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    quantidade: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0
+    }
+  }],
   emPromocao: {
     type: Boolean,
     required: true,
@@ -89,7 +94,7 @@ const EstoqueSchema = new mongoose.Schema({
 });
 
 // Índices para melhor performance
-EstoqueSchema.index({ quantidade: 1 });
+EstoqueSchema.index({ codigoProduto: 1 }, { unique: true });
 EstoqueSchema.index({ emPromocao: 1 });
 EstoqueSchema.index({ isNovidade: 1 });
 

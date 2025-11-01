@@ -14,18 +14,16 @@ interface StockEntryDialogProps {
   onOpenChange: (open: boolean) => void;
   codigoProduto: string;
   nomeProduto: string;
+  cor: string;
+  tamanho: string;
   onSuccess?: () => void;
 }
 
-export function StockEntryDialog({ open, onOpenChange, codigoProduto, nomeProduto, onSuccess }: StockEntryDialogProps) {
+export function StockEntryDialog({ open, onOpenChange, codigoProduto, nomeProduto, cor, tamanho, onSuccess }: StockEntryDialogProps) {
   const [origem, setOrigem] = useState<"entrada" | "compra">("entrada");
   const [quantidade, setQuantidade] = useState(1);
   const [fornecedor, setFornecedor] = useState("");
   const [observacao, setObservacao] = useState("");
-  const [cor, setCor] = useState("");
-  const [tamanho, setTamanho] = useState("");
-  const [coresDisponiveis, setCoresDisponiveis] = useState<string[]>([]);
-  const [tamanhosDisponiveis, setTamanhosDisponiveis] = useState<string[]>([]);
 
   const fornecedores = [
     "Elegance Fashion",
@@ -34,43 +32,9 @@ export function StockEntryDialog({ open, onOpenChange, codigoProduto, nomeProdut
     "Outros"
   ];
 
-  // Carregar as cores e tamanhos disponíveis para este produto
-  useEffect(() => {
-    if (open && codigoProduto) {
-      loadEstoqueInfo();
-    }
-  }, [open, codigoProduto]);
-
-  const loadEstoqueInfo = async () => {
-    try {
-      const data = await estoqueAPI.getByCodigo(codigoProduto);
-      if (data) {
-        const cores = Array.isArray(data.cor) ? data.cor.filter(c => c) : [data.cor].filter(c => c);
-        const tamanhos = Array.isArray(data.tamanho) ? data.tamanho.filter(t => t) : [data.tamanho].filter(t => t);
-        setCoresDisponiveis(cores);
-        setTamanhosDisponiveis(tamanhos);
-        // Selecionar primeiro automaticamente
-        if (cores.length > 0) setCor(cores[0]);
-        if (tamanhos.length > 0) setTamanho(tamanhos[0]);
-      }
-    } catch (error) {
-      console.error('Erro ao carregar informações do estoque:', error);
-    }
-  };
-
   const handleSubmit = async () => {
     if (quantidade <= 0) {
       toast.error("Quantidade deve ser maior que zero");
-      return;
-    }
-
-    if (!cor) {
-      toast.error("Selecione uma cor");
-      return;
-    }
-
-    if (!tamanho) {
-      toast.error("Selecione um tamanho");
       return;
     }
 
@@ -99,8 +63,6 @@ export function StockEntryDialog({ open, onOpenChange, codigoProduto, nomeProdut
       setQuantidade(1);
       setFornecedor("");
       setObservacao("");
-      setCor("");
-      setTamanho("");
       // Reload data
       onSuccess?.();
     } catch (error: any) {
@@ -116,39 +78,10 @@ export function StockEntryDialog({ open, onOpenChange, codigoProduto, nomeProdut
         <DialogHeader>
           <DialogTitle>Entrada de Estoque</DialogTitle>
           <p className="text-sm text-muted-foreground">{nomeProduto} ({codigoProduto})</p>
+          <p className="text-sm font-semibold">{cor} - {tamanho}</p>
         </DialogHeader>
         
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Cor *</Label>
-              <Select value={cor} onValueChange={setCor}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a cor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {coresDisponiveis.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Tamanho *</Label>
-              <Select value={tamanho} onValueChange={setTamanho}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tamanho" />
-                </SelectTrigger>
-                <SelectContent>
-                  {tamanhosDisponiveis.map((t) => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
           <div>
             <Label>Origem *</Label>
             <RadioGroup value={origem} onValueChange={(value: "entrada" | "compra") => setOrigem(value)}>
