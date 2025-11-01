@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Package, Search, Plus, Minus, Tag, List, Sparkles, Filter } from "lucide-react";
+import { Package, Search, Plus, Minus, Tag, Sparkles, Filter } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,7 @@ import { StockEntryDialog } from "@/components/StockEntryDialog";
 import { StockExitDialog } from "@/components/StockExitDialog";
 import { PromotionDialog } from "@/components/PromotionDialog";
 import { NovidadeDialog } from "@/components/NovidadeDialog";
-import { MovimentacaoDialog } from "@/components/MovimentacaoDialog";
-import { estoqueAPI, produtosAPI } from "@/lib/api";
+import { estoqueAPI } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
 
 const Estoque = () => {
@@ -20,7 +19,6 @@ const Estoque = () => {
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [showPromotionDialog, setShowPromotionDialog] = useState(false);
   const [showNovidadeDialog, setShowNovidadeDialog] = useState(false);
-  const [showMovimentacaoDialog, setShowMovimentacaoDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [inventory, setInventory] = useState<any[]>([]);
@@ -102,16 +100,6 @@ const Estoque = () => {
     setShowNovidadeDialog(true);
   };
 
-  const openMovimentacaoDialog = async (item: any) => {
-    try {
-      const produto = await produtosAPI.getByCodigo(item.codigoProduto);
-      setSelectedItem({ ...item, logMovimentacao: produto.logMovimentacao || [] });
-      setShowMovimentacaoDialog(true);
-    } catch (error) {
-      toast.error('Erro ao carregar movimentações');
-    }
-  };
-
   const handleEntrySuccess = () => {
     loadEstoque();
   };
@@ -161,16 +149,6 @@ const Estoque = () => {
   // Atualizar tamanho selecionado
   const handleSizeChange = (codigoProduto: string, tamanho: string) => {
     setSelectedSizeByItem(prev => ({ ...prev, [codigoProduto]: tamanho }));
-  };
-
-  // Filtrar movimentações da variante selecionada
-  const getVariantMovimentos = (item: any, cor: string, tamanho: string) => {
-    if (!item.logMovimentacao) return [];
-    
-    return item.logMovimentacao
-      .filter((m: any) => m.cor === cor && m.tamanho === tamanho)
-      .slice(-3)
-      .reverse();
   };
 
   return (
@@ -251,7 +229,6 @@ const Estoque = () => {
             const selectedTamanho = selectedSizeByItem[item.codigoProduto] || '';
             const tamanhosDisponiveis = getTamanhosDisponiveis(item, selectedCor);
             const varianteSelecionada = getSelectedVariant(item);
-            const movimentosVariante = selectedCor && selectedTamanho ? getVariantMovimentos(item, selectedCor, selectedTamanho) : [];
 
             return (
               <Card key={item.codigoProduto} className="p-6 shadow-card hover:shadow-lg transition-all">
@@ -408,40 +385,7 @@ const Estoque = () => {
                       <Sparkles className="h-4 w-4" />
                       {item.isNovidade ? 'Remover' : 'Marcar'} como Novidade
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => openMovimentacaoDialog(item)}
-                      className="gap-2"
-                    >
-                      <List className="h-4 w-4" />
-                      Ver Movimentações
-                    </Button>
                   </div>
-
-                  {/* Últimas movimentações da variante selecionada */}
-                  {movimentosVariante.length > 0 && (
-                    <div className="border-t pt-4">
-                      <h4 className="text-sm font-semibold text-muted-foreground mb-3">
-                        Últimas Movimentações ({selectedCor} - {selectedTamanho}):
-                      </h4>
-                      <div className="space-y-2">
-                        {movimentosVariante.map((mov: any, index: number) => (
-                          <div key={index} className="flex items-center justify-between text-sm bg-muted/50 p-2 rounded">
-                            <div className="flex items-center gap-2">
-                              {mov.tipo === 'entrada' ? (
-                                <Plus className="h-4 w-4 text-green-600" />
-                              ) : (
-                                <Minus className="h-4 w-4 text-red-600" />
-                              )}
-                              <span className="font-medium capitalize">{mov.tipo}: {mov.quantidade} un.</span>
-                            </div>
-                            <span className="text-muted-foreground">{formatDateTime(mov.data)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </Card>
             );
@@ -495,14 +439,6 @@ const Estoque = () => {
             nomeProduto={selectedItem.nomeProduto}
             isNovidade={selectedItem.isNovidade}
             onSuccess={loadEstoque}
-          />
-
-          <MovimentacaoDialog
-            open={showMovimentacaoDialog}
-            onOpenChange={setShowMovimentacaoDialog}
-            codigoProduto={selectedItem.codigoProduto}
-            nomeProduto={selectedItem.nomeProduto}
-            logMovimentacao={selectedItem.logMovimentacao || []}
           />
         </>
       )}

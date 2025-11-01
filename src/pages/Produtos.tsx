@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Plus, CheckCircle2, AlertCircle, Package, Edit, Trash2, X, Upload, PackagePlus } from "lucide-react";
+import { Search, Plus, CheckCircle2, AlertCircle, Package, Edit, Trash2, X, Upload, PackagePlus, List, TrendingUp, TrendingDown } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import { z } from "zod";
 import { produtosAPI } from "@/lib/api";
 import { AddToStockDialog } from "@/components/AddToStockDialog";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
+import { MovimentacaoDialog } from "@/components/MovimentacaoDialog";
 
 type ProdutoFormData = z.infer<typeof produtoSchema>;
 
@@ -32,6 +33,8 @@ const Produtos = () => {
   const [selectedProductForStock, setSelectedProductForStock] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [showMovimentacaoDialog, setShowMovimentacaoDialog] = useState(false);
 
   const form = useForm<ProdutoFormData>({
     resolver: zodResolver(produtoSchema),
@@ -662,18 +665,63 @@ const Produtos = () => {
                   </span>
                 </div>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full mt-4 gap-2"
-                onClick={() => {
-                  setSelectedProductForStock(produto);
-                  setShowAddToStockDialog(true);
-                }}
-              >
-                <PackagePlus className="h-4 w-4" />
-                Adicionar ao Estoque
-              </Button>
+
+              {/* Últimas 3 Movimentações */}
+              {produto.logMovimentacao && produto.logMovimentacao.length > 0 && (
+                <div className="mt-4 pt-4 border-t">
+                  <h4 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
+                    <List className="h-4 w-4" />
+                    Últimas Movimentações:
+                  </h4>
+                  <div className="space-y-2">
+                    {produto.logMovimentacao.slice(-3).reverse().map((log: any, idx: number) => (
+                      <div key={idx} className="text-xs bg-muted/50 p-2 rounded flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {log.tipo === 'entrada' ? (
+                            <TrendingUp className="h-3 w-3 text-green-600" />
+                          ) : (
+                            <TrendingDown className="h-3 w-3 text-red-600" />
+                          )}
+                          <span className={log.tipo === 'entrada' ? 'text-green-600' : 'text-red-600'}>
+                            {log.tipo === 'entrada' ? 'Entrada' : 'Saída'}
+                          </span>
+                        </div>
+                        <span className="text-muted-foreground">
+                          {log.quantidade} un. {log.cor && log.tamanho && `• ${log.cor}-${log.tamanho}`}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2 mt-4">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  onClick={() => {
+                    setSelectedProductForStock(produto);
+                    setShowAddToStockDialog(true);
+                  }}
+                >
+                  <PackagePlus className="h-4 w-4" />
+                  Adicionar ao Estoque
+                </Button>
+                {produto.logMovimentacao && produto.logMovimentacao.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="gap-2"
+                    onClick={async () => {
+                      setSelectedItem(produto);
+                      setShowMovimentacaoDialog(true);
+                    }}
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -695,6 +743,16 @@ const Produtos = () => {
         title="Confirmar exclusão de produto"
         description="Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita e removerá também todos os registros de estoque associados."
       />
+
+      {selectedItem && (
+        <MovimentacaoDialog
+          open={showMovimentacaoDialog}
+          onOpenChange={setShowMovimentacaoDialog}
+          codigoProduto={selectedItem.codigoProduto}
+          nomeProduto={selectedItem.nome}
+          logMovimentacao={selectedItem.logMovimentacao || []}
+        />
+      )}
     </div>
   );
 };

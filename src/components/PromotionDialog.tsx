@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
@@ -31,6 +32,7 @@ export function PromotionDialog({
 }: PromotionDialogProps) {
   const [tipoDesconto, setTipoDesconto] = useState<"valor" | "porcentagem">("valor");
   const [valor, setValor] = useState(0);
+  const [observacao, setObservacao] = useState("");
   const [loading, setLoading] = useState(false);
 
   const calcularPrecoPromocional = () => {
@@ -62,10 +64,24 @@ export function PromotionDialog({
 
     try {
       setLoading(true);
-      await estoqueAPI.togglePromocao(codigoProduto, true, precoPromocional);
+      
+      // Enviar dados para registrar no logPromocao
+      const body: any = {
+        emPromocao: true,
+        precoPromocional,
+        tipoDeDesconto: tipoDesconto === "valor" ? "valorDireto" : "porcentagem",
+        valorDesconto: valor
+      };
+      
+      if (observacao.trim()) {
+        body.observacao = observacao.trim();
+      }
+      
+      await estoqueAPI.togglePromocao(codigoProduto, true, precoPromocional, body);
       toast.success(`Promoção aplicada! Novo preço: R$ ${precoPromocional.toFixed(2)}`);
       onOpenChange(false);
       setValor(0);
+      setObservacao("");
       setTipoDesconto("valor");
       onSuccess?.();
     } catch (error: any) {
@@ -172,6 +188,20 @@ export function PromotionDialog({
               onChange={(e) => setValor(parseFloat(e.target.value) || 0)}
               placeholder={tipoDesconto === "valor" ? "0.00" : "0"}
             />
+          </div>
+
+          <div>
+            <Label>Observação (opcional)</Label>
+            <Textarea
+              value={observacao}
+              onChange={(e) => setObservacao(e.target.value)}
+              placeholder="Ex: Black Friday, Queima de estoque, etc."
+              rows={2}
+              maxLength={200}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              {observacao.length}/200 caracteres
+            </p>
           </div>
 
           <div className="p-3 bg-primary/10 rounded-lg border-2 border-primary">

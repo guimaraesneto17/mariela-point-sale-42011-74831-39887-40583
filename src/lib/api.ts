@@ -95,10 +95,16 @@ export const estoqueAPI = {
     method: 'PATCH',
     body: JSON.stringify({ isNovidade }),
   }),
-  togglePromocao: (codigo: string, emPromocao: boolean, precoPromocional?: number) => fetchAPI(`/estoque/promocao/${codigo}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ emPromocao, precoPromocional }),
-  }),
+  togglePromocao: (codigo: string, emPromocao: boolean, precoPromocional?: number, extraData?: any) => {
+    const body: any = { emPromocao, precoPromocional };
+    if (extraData) {
+      Object.assign(body, extraData);
+    }
+    return fetchAPI(`/estoque/promocao/${codigo}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    });
+  },
   delete: (codigo: string) => fetchAPI(`/estoque/${codigo}`, { method: 'DELETE' }),
 };
 
