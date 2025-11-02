@@ -98,16 +98,16 @@ db.runCommand({
           description: 'Lista de produtos incluídos na venda',
           items: {
             bsonType: 'object',
-            required: [
-              'codigoProduto',
-              'nomeProduto',
-              'cor',
-              'tamanho',
-              'quantidade',
-              'precoUnitario',
-              'precoFinalUnitario',
-              'descontoAplicado'
-            ],
+          required: [
+            'codigoProduto',
+            'nomeProduto',
+            'cor',
+            'tamanho',
+            'quantidade',
+            'precoUnitario',
+            'precoFinalUnitario',
+            'descontoAplicado'
+          ],
             properties: {
               codigoProduto: {
                 bsonType: 'string',
