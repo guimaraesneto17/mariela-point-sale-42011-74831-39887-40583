@@ -32,6 +32,8 @@ const Produtos = () => {
   const [selectedProductForStock, setSelectedProductForStock] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [imageGalleryOpen, setImageGalleryOpen] = useState(false);
+  const [selectedProductImages, setSelectedProductImages] = useState<{nome: string, imagens: string[]}>({nome: '', imagens: []});
 
   const form = useForm<ProdutoFormData>({
     resolver: zodResolver(produtoSchema),
@@ -691,7 +693,13 @@ const Produtos = () => {
                       className="w-full h-full object-cover"
                     />
                     {produto.imagens.length > 1 && (
-                      <Badge className="absolute top-2 right-2 bg-background/90 text-foreground border border-border">
+                      <Badge 
+                        className="absolute top-2 right-2 bg-background/90 text-foreground border border-border cursor-pointer hover:bg-primary/10 transition-colors"
+                        onClick={() => {
+                          setSelectedProductImages({nome: produto.nome, imagens: produto.imagens});
+                          setImageGalleryOpen(true);
+                        }}
+                      >
                         +{produto.imagens.length - 1} foto{produto.imagens.length > 2 ? 's' : ''}
                       </Badge>
                     )}
@@ -766,6 +774,34 @@ const Produtos = () => {
         title="Confirmar exclusão de produto"
         description="Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita e removerá também todos os registros de estoque associados."
       />
+
+      {/* Dialog de Galeria de Imagens */}
+      <Dialog open={imageGalleryOpen} onOpenChange={setImageGalleryOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">
+              Imagens - {selectedProductImages.nome}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedProductImages.imagens.length} {selectedProductImages.imagens.length === 1 ? 'imagem' : 'imagens'} cadastrada{selectedProductImages.imagens.length === 1 ? '' : 's'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            {selectedProductImages.imagens.map((img, index) => (
+              <div key={index} className="relative aspect-video rounded-lg overflow-hidden border-2 border-border group">
+                <img 
+                  src={img} 
+                  alt={`${selectedProductImages.nome} - ${index + 1}`}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute bottom-2 left-2 bg-background/90 px-2 py-1 rounded text-xs font-medium">
+                  Imagem {index + 1}
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
