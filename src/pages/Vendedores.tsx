@@ -68,7 +68,7 @@ const Vendedores = () => {
   const filteredVendedores = vendedores.filter(vendedor =>
     vendedor.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     vendedor.codigoVendedor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    vendedor.telefone.includes(searchTerm)
+    vendedor.telefone?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const generateNextCode = () => {
