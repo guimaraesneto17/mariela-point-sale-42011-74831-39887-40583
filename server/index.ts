@@ -14,6 +14,7 @@ import fornecedoresRouter from './routes/fornecedores';
 import vendedoresRouter from './routes/vendedores';
 import vitrineVirtualRouter from './routes/vitrineVirtual';
 import recalculoRouter from './routes/recalculo';
+import caixaRouter from './routes/caixa';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -110,6 +111,7 @@ app.use('/api/fornecedores', fornecedoresRouter);
 app.use('/api/vendedores', vendedoresRouter);
 app.use('/api/vitrine', vitrineVirtualRouter);
 app.use('/api/recalculo', recalculoRouter);
+app.use('/api/caixa', caixaRouter);
 
 // Rota 404
 app.use(/.*/, (req, res) => {

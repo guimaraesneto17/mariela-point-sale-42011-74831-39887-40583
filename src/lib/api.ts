@@ -151,3 +151,21 @@ export const vitrineVirtualAPI = {
 export const recalculoAPI = {
   recalcularTotais: () => fetchAPI('/recalculo/totais', { method: 'POST' }),
 };
+
+// ============= CAIXA =============
+export const caixaAPI = {
+  getAll: () => fetchAPI('/caixa'),
+  getCaixaAberto: () => fetchAPI('/caixa/aberto'),
+  getByCodigo: (codigo: string) => fetchAPI(`/caixa/${codigo}`),
+  abrirCaixa: (valorInicial: number) => fetchAPI('/caixa/abrir', {
+    method: 'POST',
+    body: JSON.stringify({ valorInicial }),
+  }),
+  adicionarMovimento: (tipo: 'entrada' | 'saida', valor: number, observacao?: string) => fetchAPI('/caixa/movimento', {
+    method: 'POST',
+    body: JSON.stringify({ tipo, valor, observacao }),
+  }),
+  sincronizarVendas: () => fetchAPI('/caixa/sincronizar-vendas', { method: 'POST' }),
+  fecharCaixa: () => fetchAPI('/caixa/fechar', { method: 'POST' }),
+  delete: (codigo: string) => fetchAPI(`/caixa/${codigo}`, { method: 'DELETE' }),
+};

@@ -9,7 +9,8 @@ import {
   Plus,
   UserCheck,
   FileText,
-  LogOut
+  LogOut,
+  Wallet
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,6 +40,7 @@ const Layout = () => {
     { to: "/vendedores", icon: UserCheck, label: "Vendedores" },
     { to: "/estoque", icon: Warehouse, label: "Estoque" },
     { to: "/vendas", icon: ShoppingCart, label: "Vendas" },
+    { to: "/caixa", icon: Wallet, label: "Caixa" },
   ];
 
   return (

@@ -15,6 +15,7 @@ import Fornecedores from "./pages/Fornecedores";
 import Vendedores from "./pages/Vendedores";
 import Relatorios from "./pages/Relatorios";
 import VitrineVirtual from "./pages/VitrineVirtual";
+import Caixa from "./pages/Caixa";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/vendedores" element={<ProtectedRoute><Vendedores /></ProtectedRoute>} />
             <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
             <Route path="/vitrine-virtual" element={<ProtectedRoute><VitrineVirtual /></ProtectedRoute>} />
+            <Route path="/caixa" element={<ProtectedRoute><Caixa /></ProtectedRoute>} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
