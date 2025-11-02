@@ -64,7 +64,7 @@ const Clientes = () => {
 
   const filteredClientes = clientes.filter(cliente =>
     cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cliente.telefone.includes(searchTerm)
+    cliente.telefone?.includes(searchTerm)
   );
 
   // Gera código automático incremental
