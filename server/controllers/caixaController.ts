@@ -132,12 +132,12 @@ const caixaController = {
 
       // Recalcular totais
       caixaAberto.entrada = caixaAberto.movimentos
-        .filter(m => m.tipo === 'entrada')
-        .reduce((sum, m) => sum + m.valor, 0);
+        .filter((m: any) => m.tipo === 'entrada')
+        .reduce((sum: number, m: any) => sum + m.valor, 0);
 
       caixaAberto.saida = caixaAberto.movimentos
-        .filter(m => m.tipo === 'saida')
-        .reduce((sum, m) => sum + m.valor, 0);
+        .filter((m: any) => m.tipo === 'saida')
+        .reduce((sum: number, m: any) => sum + m.valor, 0);
 
       caixaAberto.performance = caixaAberto.entrada - caixaAberto.saida;
 
@@ -167,8 +167,8 @@ const caixaController = {
       // Verificar quais vendas já estão registradas
       const vendasRegistradas = new Set(
         caixaAberto.movimentos
-          .filter(m => m.codigoVenda)
-          .map(m => m.codigoVenda)
+          .filter((m: any) => m.codigoVenda)
+          .map((m: any) => m.codigoVenda)
       );
 
       // Adicionar novas vendas
@@ -189,12 +189,12 @@ const caixaController = {
 
       // Recalcular totais
       caixaAberto.entrada = caixaAberto.movimentos
-        .filter(m => m.tipo === 'entrada')
-        .reduce((sum, m) => sum + m.valor, 0);
+        .filter((m: any) => m.tipo === 'entrada')
+        .reduce((sum: number, m: any) => sum + m.valor, 0);
 
       caixaAberto.saida = caixaAberto.movimentos
-        .filter(m => m.tipo === 'saida')
-        .reduce((sum, m) => sum + m.valor, 0);
+        .filter((m: any) => m.tipo === 'saida')
+        .reduce((sum: number, m: any) => sum + m.valor, 0);
 
       caixaAberto.performance = caixaAberto.entrada - caixaAberto.saida;
 
@@ -220,12 +220,12 @@ const caixaController = {
 
       // Recalcular totais antes de fechar
       caixaAberto.entrada = caixaAberto.movimentos
-        .filter(m => m.tipo === 'entrada')
-        .reduce((sum, m) => sum + m.valor, 0);
+        .filter((m: any) => m.tipo === 'entrada')
+        .reduce((sum: number, m: any) => sum + m.valor, 0);
 
       caixaAberto.saida = caixaAberto.movimentos
-        .filter(m => m.tipo === 'saida')
-        .reduce((sum, m) => sum + m.valor, 0);
+        .filter((m: any) => m.tipo === 'saida')
+        .reduce((sum: number, m: any) => sum + m.valor, 0);
 
       caixaAberto.performance = caixaAberto.entrada - caixaAberto.saida;
 
