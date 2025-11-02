@@ -198,6 +198,15 @@ const Produtos = () => {
       margemDeLucro: product.margemDeLucro,
       fornecedor: product.fornecedor || null,
     });
+    
+    // Carregar imagens existentes
+    if (product.imagens && Array.isArray(product.imagens)) {
+      setImagemBase64(product.imagens);
+    } else {
+      setImagemBase64([]);
+    }
+    setImagemURL("");
+    
     setManualCode(true);
     setIsDialogOpen(true);
   };
@@ -699,12 +708,42 @@ const Produtos = () => {
               </div>
             </CardHeader>
             <CardContent>
+              {/* Galeria de Imagens */}
+              {produto.imagens && produto.imagens.length > 0 && (
+                <div className="mb-4">
+                  <div className="grid grid-cols-3 gap-2">
+                    {produto.imagens.slice(0, 3).map((img: string, idx: number) => (
+                      <div key={idx} className="relative aspect-square">
+                        <img 
+                          src={img} 
+                          alt={`${produto.nome} - ${idx + 1}`}
+                          className="w-full h-full object-cover rounded-lg border-2 border-border"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  {produto.imagens.length > 3 && (
+                    <p className="text-xs text-muted-foreground mt-1 text-center">
+                      +{produto.imagens.length - 3} imagem(ns)
+                    </p>
+                  )}
+                </div>
+              )}
+
               <p className="text-muted-foreground mb-4 text-sm">{produto.descricao}</p>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Código:</span>
                   <span className="font-medium">{produto.codigoProduto}</span>
                 </div>
+                {produto.fornecedor && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Fornecedor:</span>
+                    <span className="font-medium text-primary">
+                      {produto.fornecedor.nome} ({produto.fornecedor.codigoFornecedor})
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Preço de Custo:</span>
                   <span className="font-medium">R$ {Number(produto.precoCusto ?? 0).toFixed(2)}</span>
