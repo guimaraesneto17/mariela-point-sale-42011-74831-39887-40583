@@ -75,7 +75,7 @@ const NovaVenda = () => {
       // Mapear vendedores para ter o campo 'codigo'
       const vendedoresMapeados = vendedoresData.map((v: any) => ({
         ...v,
-        codigo: v.id || v.codigo
+        codigo: v.codigoVendedor || v.codigo
       }));
       
       setClientes(clientesMapeados);
