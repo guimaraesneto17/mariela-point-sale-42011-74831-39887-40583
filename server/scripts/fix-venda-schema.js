@@ -50,7 +50,7 @@ db.runCommand({
             'string',
             'null'
           ],
-          description: 'Quantidade e valor do parcelamento. (Só aplicavel Quando formaPagamento: Cartão de Crédito)'
+          description: 'Quantidade e valor do parcelamento (Quando formaPagamento: Cartão de Crédito)'
         },
         cliente: {
           bsonType: 'object',
@@ -79,7 +79,7 @@ db.runCommand({
             'nome'
           ],
           properties: {
-            codigoVendedor: {  // CORRIGIDO: era 'id', agora é 'codigoVendedor'
+            codigoVendedor: {
               bsonType: 'string',
               pattern: '^V\\d{3}$',
               description: 'Código do vendedor (formato: V + 3 dígitos)'
@@ -98,16 +98,15 @@ db.runCommand({
           description: 'Lista de produtos incluídos na venda',
           items: {
             bsonType: 'object',
-          required: [
-            'codigoProduto',
-            'nomeProduto',
-            'cor',
-            'tamanho',
-            'quantidade',
-            'precoUnitario',
-            'precoFinalUnitario',
-            'descontoAplicado'
-          ],
+            required: [
+              'codigoProduto',
+              'nomeProduto',
+              'cor',
+              'tamanho',
+              'quantidade',
+              'precoUnitario',
+              'precoFinalUnitario'
+            ],
             properties: {
               codigoProduto: {
                 bsonType: 'string',
@@ -127,7 +126,10 @@ db.runCommand({
                 description: 'Tamanho do produto vendido (ex: P, M, G, U)'
               },
               quantidade: {
-                bsonType: 'int',
+                bsonType: [
+                  'int',
+                  'double'
+                ],
                 minimum: 1,
                 description: 'Quantidade vendida do item'
               },
@@ -142,8 +144,7 @@ db.runCommand({
               descontoAplicado: {
                 bsonType: [
                   'double',
-                  'int',
-                  'null'
+                  'int'
                 ],
                 minimum: 0,
                 maximum: 100,
@@ -156,6 +157,14 @@ db.runCommand({
                 ],
                 minimum: 0,
                 description: 'Preço final unitário após desconto'
+              },
+              subtotal: {
+                bsonType: [
+                  'double',
+                  'int'
+                ],
+                minimum: 0,
+                description: 'Subtotal do item (quantidade x precoFinalUnitario)'
               }
             }
           }
@@ -170,15 +179,14 @@ db.runCommand({
           maximum: 100,
           description: 'Percentual de desconto aplicado no final da venda'
         },
-        descontoMaquineta: {
+        taxaMaquininha: {
           bsonType: [
             'double',
-            'int',
-            'null'
+            'int'
           ],
           minimum: 0,
           maximum: 100,
-          description: 'Percentual de desconto da maquina de cartão'
+          description: 'Taxa da maquininha em percentual'
         },
         total: {
           bsonType: [
@@ -189,18 +197,12 @@ db.runCommand({
           description: 'Valor total da venda'
         },
         parcelas: {
-          bsonType: 'int',
+          bsonType: [
+            'int',
+            'double'
+          ],
           minimum: 1,
           description: 'Número de parcelas'
-        },
-        taxaMaquininha: {
-          bsonType: [
-            'double',
-            'int'
-          ],
-          minimum: 0,
-          maximum: 100,
-          description: 'Taxa da maquininha em percentual'
         },
         valorTaxa: {
           bsonType: [
