@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import Venda from '../models/Venda';
 import Estoque from '../models/Estoque';
+import Cliente from '../models/Cliente';
+import Vendedor from '../models/Vendedor';
 import Validations from '../utils/validations';
 
 // Helper para formatar erros de validação do Mongoose
@@ -128,6 +130,38 @@ export const createVenda = async (req: Request, res: Response) => {
     }
     
     await venda.save();
+    
+    // Atualizar dados do cliente
+    try {
+      await Cliente.findOneAndUpdate(
+        { codigoCliente: venda.cliente.codigoCliente },
+        {
+          $inc: { 
+            quantidadeCompras: 1,
+            valorTotalComprado: venda.total 
+          },
+          $set: { dataUltimaCompra: new Date() }
+        }
+      );
+    } catch (clienteError) {
+      console.error('Erro ao atualizar dados do cliente:', clienteError);
+    }
+    
+    // Atualizar dados do vendedor
+    try {
+      await Vendedor.findOneAndUpdate(
+        { codigoVendedor: venda.vendedor.codigoVendedor },
+        {
+          $inc: { 
+            vendasRealizadas: 1,
+            totalVendido: venda.total 
+          }
+        }
+      );
+    } catch (vendedorError) {
+      console.error('Erro ao atualizar dados do vendedor:', vendedorError);
+    }
+    
     res.status(201).json(venda);
   } catch (error) {
     console.error('Erro ao criar venda:', error);
