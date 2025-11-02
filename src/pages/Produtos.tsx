@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { produtoSchema } from "@/lib/validationSchemas";
 import { z } from "zod";
-import { produtosAPI } from "@/lib/api";
+import { produtosAPI, fornecedoresAPI } from "@/lib/api";
 import { AddToStockDialog } from "@/components/AddToStockDialog";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 
@@ -43,14 +43,17 @@ const Produtos = () => {
       precoCusto: undefined,
       precoVenda: undefined,
       margemDeLucro: undefined,
+      fornecedor: null,
     },
   });
 
   const [produtos, setProdutos] = useState<any[]>([]);
+  const [fornecedores, setFornecedores] = useState<any[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
   useEffect(() => {
     loadProdutos();
+    loadFornecedores();
   }, []);
 
   const loadProdutos = async () => {
@@ -64,6 +67,15 @@ const Produtos = () => {
       });
     } finally {
       setIsLoadingData(false);
+    }
+  };
+
+  const loadFornecedores = async () => {
+    try {
+      const data = await fornecedoresAPI.getAll();
+      setFornecedores(data);
+    } catch (error) {
+      console.error("Erro ao carregar fornecedores", error);
     }
   };
 
@@ -142,6 +154,7 @@ const Produtos = () => {
         precoVenda: data.precoVenda,
         margemDeLucro: data.margemDeLucro,
         imagens: imagens,
+        fornecedor: data.fornecedor || null,
       };
 
       if (editingProduct) {
@@ -183,6 +196,7 @@ const Produtos = () => {
       precoCusto: product.precoCusto,
       precoVenda: product.precoVenda,
       margemDeLucro: product.margemDeLucro,
+      fornecedor: product.fornecedor || null,
     });
     setManualCode(true);
     setIsDialogOpen(true);
@@ -223,6 +237,7 @@ const Produtos = () => {
       precoCusto: undefined,
       precoVenda: undefined,
       margemDeLucro: undefined,
+      fornecedor: null,
     });
     setManualCode(false);
     setImagemURL("");
@@ -373,6 +388,51 @@ const Produtos = () => {
                             </Select>
                             <FormMessage className="text-xs flex items-center gap-1">
                               {form.formState.errors.categoria && (
+                                <AlertCircle className="h-3 w-3" />
+                              )}
+                            </FormMessage>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="fornecedor"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-semibold text-foreground">Fornecedor (Opcional)</FormLabel>
+                            <Select 
+                              onValueChange={(value) => {
+                                if (value === "none") {
+                                  field.onChange(null);
+                                } else {
+                                  const fornecedor = fornecedores.find(f => f.codigoFornecedor === value);
+                                  if (fornecedor) {
+                                    field.onChange({
+                                      codigoFornecedor: fornecedor.codigoFornecedor,
+                                      nome: fornecedor.nome,
+                                    });
+                                  }
+                                }
+                              }}
+                              value={field.value?.codigoFornecedor || "none"}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/30">
+                                  <SelectValue placeholder="Selecione um fornecedor" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="none">Sem fornecedor</SelectItem>
+                                {fornecedores.map((fornecedor) => (
+                                  <SelectItem key={fornecedor.codigoFornecedor} value={fornecedor.codigoFornecedor}>
+                                    {fornecedor.nome} ({fornecedor.codigoFornecedor})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage className="text-xs flex items-center gap-1">
+                              {form.formState.errors.fornecedor && (
                                 <AlertCircle className="h-3 w-3" />
                               )}
                             </FormMessage>

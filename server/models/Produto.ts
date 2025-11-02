@@ -43,7 +43,17 @@ const ProdutoSchema = new mongoose.Schema({
   imagens: [{
     type: String,
     trim: true
-  }]
+  }],
+  fornecedor: {
+    codigoFornecedor: {
+      type: String,
+      trim: true
+    },
+    nome: {
+      type: String,
+      trim: true
+    }
+  }
 }, {
   timestamps: { createdAt: 'dataCadastro', updatedAt: 'dataAtualizacao' },
   collection: 'produto',

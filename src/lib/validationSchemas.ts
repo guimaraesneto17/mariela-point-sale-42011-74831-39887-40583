@@ -130,6 +130,13 @@ export const produtoSchema = z.object({
       invalid_type_error: "Margem de lucro deve ser um número" 
     })
     .min(0, "Margem de lucro deve ser maior ou igual a 0"),
+  fornecedor: z.object({
+    codigoFornecedor: z.string()
+      .regex(regex.codigoFornecedor, "Código deve seguir o formato F001, F002, etc."),
+    nome: z.string()
+      .min(3, "Nome deve ter no mínimo 3 caracteres")
+      .max(100, "Nome deve ter no máximo 100 caracteres"),
+  }).nullable().optional(),
   });
 
 // ESTOQUE
