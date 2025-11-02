@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Plus, CheckCircle2, AlertCircle, Package, Edit, Trash2, X, Upload, PackagePlus } from "lucide-react";
+import { Search, Plus, CheckCircle2, AlertCircle, Package, Edit, Trash2, X, PackagePlus } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
@@ -81,7 +81,9 @@ const Produtos = () => {
 
   const filteredProdutos = produtos.filter(produto =>
     produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    produto.codigoProduto.toLowerCase().includes(searchTerm.toLowerCase())
+    produto.codigoProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (produto.fornecedor?.nome && produto.fornecedor.nome.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (produto.fornecedor?.codigoFornecedor && produto.fornecedor.codigoFornecedor.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const generateNextCode = () => {
@@ -119,18 +121,11 @@ const Produtos = () => {
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setImagemBase64(prev => [...prev, base64String]);
-      };
-      reader.readAsDataURL(file);
-    });
+  const addImagemURL = () => {
+    if (imagemURL.trim()) {
+      setImagemBase64(prev => [...prev, imagemURL.trim()]);
+      setImagemURL("");
+    }
   };
 
   const removeImage = (index: number) => {
@@ -140,11 +135,6 @@ const Produtos = () => {
   const onSubmit = async (data: ProdutoFormData) => {
     setIsLoading(true);
     try {
-      const imagens = [...imagemBase64];
-      if (imagemURL.trim()) {
-        imagens.push(imagemURL);
-      }
-
       const produtoData = {
         codigoProduto: data.codigoProduto,
         nome: data.nome,
@@ -153,7 +143,7 @@ const Produtos = () => {
         precoCusto: data.precoCusto,
         precoVenda: data.precoVenda,
         margemDeLucro: data.margemDeLucro,
-        imagens: imagens,
+        imagens: imagemBase64,
         fornecedor: data.fornecedor || null,
       };
 
@@ -546,40 +536,23 @@ const Produtos = () => {
                       <div>
                         <Label className="text-sm font-semibold text-foreground">Imagens do Produto</Label>
                         
-                        {/* Upload de Arquivo */}
-                        <div className="mt-2">
-                          <Label 
-                            htmlFor="file-upload"
-                            className="flex items-center justify-center gap-2 w-full h-32 border-2 border-dashed border-border rounded-lg hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-all"
-                          >
-                            <Upload className="h-6 w-6 text-muted-foreground" />
-                            <div className="text-center">
-                              <p className="text-sm font-medium text-foreground">
-                                Clique para fazer upload
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                ou arraste e solte a imagem aqui
-                              </p>
-                            </div>
-                          </Label>
-                          <Input 
-                            id="file-upload"
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleImageUpload}
-                            className="hidden"
-                          />
-                        </div>
-
-                        {/* URL da Imagem */}
-                        <div className="mt-3">
-                          <Input 
-                            value={imagemURL}
-                            onChange={(e) => setImagemURL(e.target.value)}
-                            placeholder="Ou cole a URL da imagem (ex: https://exemplo.com/imagem.jpg)"
-                            className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                          />
+                        <div className="space-y-2 mt-2">
+                          <div className="flex gap-2">
+                            <Input 
+                              value={imagemURL}
+                              onChange={(e) => setImagemURL(e.target.value)}
+                              placeholder="Cole a URL da imagem (ex: https://fastimg.org/imagem.jpg)"
+                              className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                            />
+                            <Button
+                              type="button"
+                              onClick={addImagemURL}
+                              variant="outline"
+                              className="shrink-0"
+                            >
+                              Adicionar
+                            </Button>
+                          </div>
                         </div>
 
                         {/* Preview das Imagens */}
@@ -605,9 +578,9 @@ const Produtos = () => {
                             ))}
                           </div>
                         )}
-
+                        
                         <p className="text-xs text-muted-foreground mt-2">
-                          Você pode fazer upload de várias imagens ou usar URLs diretas
+                          Use o <a href="https://www.fastimg.org/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">fastimg.org</a> para hospedar suas imagens
                         </p>
                       </div>
                     </div>
@@ -653,7 +626,7 @@ const Produtos = () => {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
           <Input
-            placeholder="Buscar por código ou nome..."
+            placeholder="Buscar por código, nome ou fornecedor..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -710,23 +683,19 @@ const Produtos = () => {
             <CardContent>
               {/* Galeria de Imagens */}
               {produto.imagens && produto.imagens.length > 0 && (
-                <div className="mb-4">
-                  <div className="grid grid-cols-3 gap-2">
-                    {produto.imagens.slice(0, 3).map((img: string, idx: number) => (
-                      <div key={idx} className="relative aspect-square">
-                        <img 
-                          src={img} 
-                          alt={`${produto.nome} - ${idx + 1}`}
-                          className="w-full h-full object-cover rounded-lg border-2 border-border"
-                        />
-                      </div>
-                    ))}
+                <div className="mb-4 relative">
+                  <div className="relative aspect-video rounded-lg overflow-hidden border-2 border-border">
+                    <img 
+                      src={produto.imagens[0]} 
+                      alt={produto.nome}
+                      className="w-full h-full object-cover"
+                    />
+                    {produto.imagens.length > 1 && (
+                      <Badge className="absolute top-2 right-2 bg-background/90 text-foreground border border-border">
+                        +{produto.imagens.length - 1} foto{produto.imagens.length > 2 ? 's' : ''}
+                      </Badge>
+                    )}
                   </div>
-                  {produto.imagens.length > 3 && (
-                    <p className="text-xs text-muted-foreground mt-1 text-center">
-                      +{produto.imagens.length - 3} imagem(ns)
-                    </p>
-                  )}
                 </div>
               )}
 
