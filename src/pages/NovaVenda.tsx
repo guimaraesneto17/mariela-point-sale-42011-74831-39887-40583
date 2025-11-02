@@ -72,6 +72,30 @@ const NovaVenda = () => {
     }
   };
 
+  const generateCodigoVenda = async (): Promise<string> => {
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    const dia = String(hoje.getDate()).padStart(2, '0');
+    const dataFormatada = `${ano}${mes}${dia}`;
+    
+    try {
+      // Buscar todas as vendas para verificar o próximo número sequencial
+      const vendas = await vendasAPI.getAll();
+      const vendasHoje = vendas.filter((venda: any) => {
+        const codigoVenda = venda.codigoVenda || '';
+        return codigoVenda.startsWith(`VENDA${dataFormatada}`);
+      });
+      
+      const proximoNumero = vendasHoje.length + 1;
+      return `VENDA${dataFormatada}-${String(proximoNumero).padStart(3, '0')}`;
+    } catch (error) {
+      console.error('Erro ao gerar código de venda:', error);
+      // Fallback: usar 001 se não conseguir buscar vendas
+      return `VENDA${dataFormatada}-001`;
+    }
+  };
+
   // Mock data - substituir por dados da API
   const mockClientes = [
     { codigo: "C001", nome: "Ana Souza" },
@@ -221,8 +245,10 @@ const NovaVenda = () => {
     }
 
     try {
+      const codigoVenda = await generateCodigoVenda();
+      
       const vendaData = {
-        codigoVenda: `VENDA${Date.now()}`,
+        codigoVenda,
         data: new Date(),
         vendedor: {
           id: vendedorSelecionado.codigo,
