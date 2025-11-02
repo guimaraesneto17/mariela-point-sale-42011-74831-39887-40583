@@ -212,9 +212,9 @@ const options: swaggerJsdoc.Options = {
             },
             vendedor: {
               type: 'object',
-              required: ['id', 'nome'],
+              required: ['codigoVendedor', 'nome'],
               properties: {
-                id: {
+                codigoVendedor: {
                   type: 'string',
                   example: 'V001',
                   description: 'Código do vendedor'

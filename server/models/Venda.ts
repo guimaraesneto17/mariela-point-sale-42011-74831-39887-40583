@@ -12,7 +12,7 @@ const VendaSchema = new mongoose.Schema({
     default: Date.now
   },
   vendedor: {
-    id: {
+    codigoVendedor: {
       type: String,
       required: true,
       trim: true
