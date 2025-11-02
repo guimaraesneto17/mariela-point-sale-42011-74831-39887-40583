@@ -46,6 +46,11 @@ const VendaSchema = new mongoose.Schema({
       required: true,
       trim: true
     },
+    cor: {
+      type: String,
+      required: true,
+      trim: true
+    },
     tamanho: {
       type: String,
       required: true,

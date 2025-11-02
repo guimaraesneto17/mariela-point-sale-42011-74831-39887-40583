@@ -229,7 +229,7 @@ const options: swaggerJsdoc.Options = {
               type: 'array',
               items: {
                 type: 'object',
-                required: ['codigoProduto', 'nomeProduto', 'tamanho', 'quantidade', 'precoUnitario', 'subtotal'],
+                required: ['codigoProduto', 'nomeProduto', 'cor', 'tamanho', 'quantidade', 'precoUnitario', 'subtotal'],
                 properties: {
                   codigoProduto: {
                     type: 'string',
@@ -237,6 +237,10 @@ const options: swaggerJsdoc.Options = {
                   },
                   nomeProduto: {
                     type: 'string'
+                  },
+                  cor: {
+                    type: 'string',
+                    example: 'Vermelho'
                   },
                   tamanho: {
                     type: 'string'
