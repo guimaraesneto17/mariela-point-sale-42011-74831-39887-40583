@@ -27,6 +27,8 @@ const Relatorios = () => {
     emEstoque: 0,
     novidades: 0,
     emPromocao: 0,
+    valorEstoqueCusto: 0,
+    valorEstoqueVenda: 0,
     produtosMaisVendidos: [],
     estoqueMinimo: [],
   });
@@ -85,11 +87,26 @@ const Relatorios = () => {
       const novidades = produtos.filter((p: any) => p.novidade || p.isNovidade).length;
       const emPromocao = produtos.filter((p: any) => p.emPromocao || p.isOnSale).length;
 
+      // Calcular valor total do estoque pelo custo e venda
+      let valorEstoqueCusto = 0;
+      let valorEstoqueVenda = 0;
+      
+      estoque.forEach((item: any) => {
+        const quantidade = item.quantidadeDisponivel || 0;
+        const precoCusto = item.precoCusto || 0;
+        const precoVenda = item.precoVenda || item.precoPromocional || 0;
+        
+        valorEstoqueCusto += quantidade * precoCusto;
+        valorEstoqueVenda += quantidade * precoVenda;
+      });
+
       setRelatorioProdutos({
         totalProdutos,
         emEstoque,
         novidades,
         emPromocao,
+        valorEstoqueCusto,
+        valorEstoqueVenda,
         produtosMaisVendidos: [
           { produto: "Vestido Floral Curto", vendas: 45, estoque: 15, valor: 6745.50 },
           { produto: "Blusa Manga Longa", vendas: 38, estoque: 8, valor: 3416.20 },
@@ -417,7 +434,7 @@ const Relatorios = () => {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="bg-gradient-to-br from-card via-card to-primary/5">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -477,6 +494,38 @@ const Relatorios = () => {
                   <Tag className="h-8 w-8 text-red-600" />
                   <p className="text-3xl font-bold text-foreground">
                     {relatorioProdutos.emPromocao}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-card via-card to-purple-500/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Valor em Estoque (Custo)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <DollarSign className="h-8 w-8 text-purple-600" />
+                  <p className="text-2xl font-bold text-foreground">
+                    R$ {relatorioProdutos.valorEstoqueCusto.toFixed(2)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-card via-card to-orange-500/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Valor em Estoque (Venda)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <DollarSign className="h-8 w-8 text-orange-600" />
+                  <p className="text-2xl font-bold text-foreground">
+                    R$ {relatorioProdutos.valorEstoqueVenda.toFixed(2)}
                   </p>
                 </div>
               </CardContent>

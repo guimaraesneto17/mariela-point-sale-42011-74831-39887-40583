@@ -81,6 +81,20 @@ const defaultCards: DashboardCardConfig[] = [
     category: "stats",
   },
   {
+    id: "valor-estoque-custo",
+    title: "Valor em Estoque (Custo)",
+    description: "Valor total do estoque pelo preço de custo",
+    visible: true,
+    category: "stats",
+  },
+  {
+    id: "valor-estoque-venda",
+    title: "Valor em Estoque (Venda)",
+    description: "Valor total do estoque pelo preço de venda",
+    visible: true,
+    category: "stats",
+  },
+  {
     id: "fluxo-diario",
     title: "Fluxo de Caixa Diário",
     description: "Entradas e saídas do dia",
@@ -169,6 +183,8 @@ const Dashboard = () => {
     ticketMedio: 0,
     margemLucro: 0,
     crescimentoMensal: 0,
+    valorEstoqueCusto: 0,
+    valorEstoqueVenda: 0,
   });
   const [topProducts, setTopProducts] = useState<any[]>([]);
   const [topClientes, setTopClientes] = useState<any[]>([]);
@@ -240,6 +256,19 @@ const Dashboard = () => {
       const totalClientes = clientes.length;
       const produtosEstoque = estoque.reduce((acc: number, item: any) => acc + (item.quantidadeDisponivel || 0), 0);
       
+      // Calcular valor total do estoque pelo custo e venda
+      let valorEstoqueCusto = 0;
+      let valorEstoqueVenda = 0;
+      
+      estoque.forEach((item: any) => {
+        const quantidade = item.quantidadeDisponivel || 0;
+        const precoCusto = item.precoCusto || 0;
+        const precoVenda = item.precoVenda || item.precoPromocional || 0;
+        
+        valorEstoqueCusto += quantidade * precoCusto;
+        valorEstoqueVenda += quantidade * precoVenda;
+      });
+      
       setStats({
         vendasHoje: vendasHoje.length,
         faturamentoDiario,
@@ -253,6 +282,8 @@ const Dashboard = () => {
         ticketMedio: vendas.length > 0 ? vendas.reduce((acc: number, v: any) => acc + (v.total || 0), 0) / vendas.length : 0,
         margemLucro: 38.5,
         crescimentoMensal: 15.3,
+        valorEstoqueCusto,
+        valorEstoqueVenda,
       });
 
       // Top produtos (simplificado - usar dados mock)
@@ -351,6 +382,24 @@ const Dashboard = () => {
             title="Produtos em Estoque"
             value={stats.produtosEstoque}
             icon={Package}
+          />
+        );
+      case "valor-estoque-custo":
+        return (
+          <StatsCard
+            title="Valor em Estoque (Custo)"
+            value={`R$ ${stats.valorEstoqueCusto.toFixed(2)}`}
+            icon={Package}
+            gradient
+          />
+        );
+      case "valor-estoque-venda":
+        return (
+          <StatsCard
+            title="Valor em Estoque (Venda)"
+            value={`R$ ${stats.valorEstoqueVenda.toFixed(2)}`}
+            icon={DollarSign}
+            gradient
           />
         );
       case "ticket-medio":
