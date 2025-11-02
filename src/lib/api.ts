@@ -146,3 +146,8 @@ export const vitrineVirtualAPI = {
   }),
   delete: (codigo: string) => fetchAPI(`/vitrine/${codigo}`, { method: 'DELETE' }),
 };
+
+// ============= RECÁLCULO =============
+export const recalculoAPI = {
+  recalcularTotais: () => fetchAPI('/recalculo/totais', { method: 'POST' }),
+};

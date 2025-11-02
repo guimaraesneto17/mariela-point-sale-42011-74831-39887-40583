@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Plus, User, CheckCircle2, AlertCircle, Edit, Trash2, X, ShoppingCart, DollarSign, Calendar } from "lucide-react";
+import { Search, Plus, User, CheckCircle2, AlertCircle, Edit, Trash2, X, ShoppingCart, DollarSign, Calendar, RefreshCw } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { clienteSchema } from "@/lib/validationSchemas";
 import { maskPhone } from "@/lib/masks";
 import { z } from "zod";
-import { clientesAPI } from "@/lib/api";
+import { clientesAPI, recalculoAPI } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 
@@ -172,6 +172,26 @@ const Clientes = () => {
     setIsDialogOpen(true);
   };
 
+  const handleRecalcularTotais = async () => {
+    try {
+      setIsLoadingData(true);
+      toast.loading("Recalculando totais...");
+      const result = await recalculoAPI.recalcularTotais();
+      toast.dismiss();
+      toast.success("Totais recalculados com sucesso!", {
+        description: `${result.clientesAtualizados} clientes atualizados`,
+      });
+      loadClientes();
+    } catch (error: any) {
+      toast.dismiss();
+      toast.error("Erro ao recalcular totais", {
+        description: error.message || "Tente novamente",
+      });
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -181,14 +201,24 @@ const Clientes = () => {
             Gerenciamento de clientes
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2" onClick={handleOpenDialog}>
-              <Plus className="h-4 w-4" />
-              Novo Cliente
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-background via-background to-primary/5">
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            className="gap-2" 
+            onClick={handleRecalcularTotais}
+            disabled={isLoadingData}
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoadingData ? 'animate-spin' : ''}`} />
+            Recalcular Totais
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2" onClick={handleOpenDialog}>
+                <Plus className="h-4 w-4" />
+                Novo Cliente
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-background via-background to-primary/5">
             <DialogHeader className="pb-4 border-b border-border/50">
               <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
                 {editingCliente ? "Editar Cliente" : "Cadastrar Novo Cliente"}
@@ -447,6 +477,7 @@ const Clientes = () => {
             </Form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Card className="p-6 shadow-card">
