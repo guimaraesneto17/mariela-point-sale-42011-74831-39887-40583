@@ -80,6 +80,14 @@ const VendaSchema = new mongoose.Schema({
       type: Number,
       required: true,
       min: 0
+    },
+    emPromocao: {
+      type: Boolean,
+      default: false
+    },
+    novidade: {
+      type: Boolean,
+      default: false
     }
   }],
   total: {

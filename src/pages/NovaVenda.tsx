@@ -25,6 +25,8 @@ interface ItemVenda {
   precoUnitario: number;
   descontoAplicado: number;
   subtotal: number;
+  emPromocao?: boolean;
+  novidade?: boolean;
 }
 
 const NovaVenda = () => {
@@ -198,7 +200,9 @@ const NovaVenda = () => {
       quantidade: quantidadeProduto,
       precoUnitario: precoBase,
       descontoAplicado: descontoProduto,
-      subtotal: subtotal
+      subtotal: subtotal,
+      emPromocao: produtoSelecionado.emPromocao || false,
+      novidade: produtoSelecionado.novidade || false
     };
 
     if (itemEmEdicao !== null) {
