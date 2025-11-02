@@ -10,10 +10,18 @@ import { toast } from "sonner";
 import { vendasAPI, produtosAPI, clientesAPI, vendedoresAPI, estoqueAPI } from "@/lib/api";
 
 const Relatorios = () => {
-  const [dataInicio, setDataInicio] = useState("");
-  const [dataFim, setDataFim] = useState("");
-  const [categoria, setCategoria] = useState("todas");
-  const [vendedor, setVendedor] = useState("todos");
+  // Filtros para vendas
+  const [dataInicioVendas, setDataInicioVendas] = useState("");
+  const [dataFimVendas, setDataFimVendas] = useState("");
+  const [vendedorFiltro, setVendedorFiltro] = useState("todos");
+  
+  // Filtros para produtos
+  const [categoriaFiltro, setCategoriaFiltro] = useState("todas");
+  const [estoqueMinimo, setEstoqueMinimo] = useState("");
+  
+  // Filtros para clientes
+  const [statusCliente, setStatusCliente] = useState("todos");
+  
   const [loading, setLoading] = useState(true);
   const [relatorioVendas, setRelatorioVendas] = useState<any>({
     totalVendas: 0,
@@ -232,72 +240,6 @@ const Relatorios = () => {
         <FileText className="h-12 w-12 text-primary" />
       </div>
 
-      {/* Filtros */}
-      <Card className="p-6 shadow-card">
-        <div className="flex items-center gap-2 mb-4">
-          <Filter className="h-5 w-5 text-primary" />
-          <h3 className="text-lg font-bold text-foreground">Filtros</h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="text-sm font-medium text-muted-foreground mb-2 block">
-              Data Início
-            </label>
-            <Input
-              type="date"
-              value={dataInicio}
-              onChange={(e) => setDataInicio(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-muted-foreground mb-2 block">
-              Data Fim
-            </label>
-            <Input
-              type="date"
-              value={dataFim}
-              onChange={(e) => setDataFim(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-muted-foreground mb-2 block">
-              Categoria
-            </label>
-            <Select value={categoria} onValueChange={setCategoria}>
-              <SelectTrigger>
-                <SelectValue placeholder="Todas" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas</SelectItem>
-                <SelectItem value="vestido">Vestido</SelectItem>
-                <SelectItem value="blusa">Blusa</SelectItem>
-                <SelectItem value="calca">Calça</SelectItem>
-                <SelectItem value="saia">Saia</SelectItem>
-                <SelectItem value="bolsa">Bolsa</SelectItem>
-                <SelectItem value="acessorio">Acessório</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-muted-foreground mb-2 block">
-              Vendedor
-            </label>
-            <Select value={vendedor} onValueChange={setVendedor}>
-              <SelectTrigger>
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="ana">Ana Carolina</SelectItem>
-                <SelectItem value="joao">João Pedro</SelectItem>
-                <SelectItem value="carla">Carla Santos</SelectItem>
-                <SelectItem value="juliana">Juliana Lima</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </Card>
-
       <Tabs defaultValue="vendas" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="vendas">Vendas</TabsTrigger>
@@ -308,6 +250,53 @@ const Relatorios = () => {
 
         {/* Relatório de Vendas */}
         <TabsContent value="vendas" className="space-y-6">
+          {/* Filtros específicos para Vendas */}
+          <Card className="p-6 shadow-card">
+            <div className="flex items-center gap-2 mb-4">
+              <Filter className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-bold text-foreground">Filtros de Vendas</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Data Início
+                </label>
+                <Input
+                  type="date"
+                  value={dataInicioVendas}
+                  onChange={(e) => setDataInicioVendas(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Data Fim
+                </label>
+                <Input
+                  type="date"
+                  value={dataFimVendas}
+                  onChange={(e) => setDataFimVendas(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Vendedor
+                </label>
+                <Select value={vendedorFiltro} onValueChange={setVendedorFiltro}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="ana">Ana Carolina</SelectItem>
+                    <SelectItem value="joao">João Pedro</SelectItem>
+                    <SelectItem value="carla">Carla Santos</SelectItem>
+                    <SelectItem value="juliana">Juliana Lima</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </Card>
+
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-foreground">Relatório de Vendas</h2>
             <Button onClick={() => handleExportarRelatorio("Vendas")} className="gap-2">
@@ -426,6 +415,46 @@ const Relatorios = () => {
 
         {/* Relatório de Produtos */}
         <TabsContent value="produtos" className="space-y-6">
+          {/* Filtros específicos para Produtos */}
+          <Card className="p-6 shadow-card">
+            <div className="flex items-center gap-2 mb-4">
+              <Filter className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-bold text-foreground">Filtros de Produtos</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Categoria
+                </label>
+                <Select value={categoriaFiltro} onValueChange={setCategoriaFiltro}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas</SelectItem>
+                    <SelectItem value="vestido">Vestido</SelectItem>
+                    <SelectItem value="blusa">Blusa</SelectItem>
+                    <SelectItem value="calca">Calça</SelectItem>
+                    <SelectItem value="saia">Saia</SelectItem>
+                    <SelectItem value="bolsa">Bolsa</SelectItem>
+                    <SelectItem value="acessorio">Acessório</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Estoque Mínimo
+                </label>
+                <Input
+                  type="number"
+                  placeholder="Ex: 10"
+                  value={estoqueMinimo}
+                  onChange={(e) => setEstoqueMinimo(e.target.value)}
+                />
+              </div>
+            </div>
+          </Card>
+
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-foreground">Relatório de Produtos</h2>
             <Button onClick={() => handleExportarRelatorio("Produtos")} className="gap-2">
@@ -591,6 +620,32 @@ const Relatorios = () => {
 
         {/* Relatório de Clientes */}
         <TabsContent value="clientes" className="space-y-6">
+          {/* Filtros específicos para Clientes */}
+          <Card className="p-6 shadow-card">
+            <div className="flex items-center gap-2 mb-4">
+              <Filter className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-bold text-foreground">Filtros de Clientes</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Status
+                </label>
+                <Select value={statusCliente} onValueChange={setStatusCliente}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="ativos">Ativos</SelectItem>
+                    <SelectItem value="inativos">Inativos</SelectItem>
+                    <SelectItem value="novos">Novos (Este mês)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </Card>
+
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-foreground">Relatório de Clientes</h2>
             <Button onClick={() => handleExportarRelatorio("Clientes")} className="gap-2">

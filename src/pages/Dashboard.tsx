@@ -752,7 +752,7 @@ const Dashboard = () => {
   };
 
   const statsCards = sortedCards.filter((c) =>
-    ["vendas-hoje", "faturamento-diario", "total-clientes", "produtos-estoque", "ticket-medio", "margem-lucro", "crescimento-mensal"].includes(
+    ["vendas-hoje", "faturamento-diario", "total-clientes", "produtos-estoque", "valor-estoque-custo", "valor-estoque-venda", "ticket-medio", "margem-lucro", "crescimento-mensal"].includes(
       c.id
     )
   );
@@ -764,6 +764,8 @@ const Dashboard = () => {
         "faturamento-diario",
         "total-clientes",
         "produtos-estoque",
+        "valor-estoque-custo",
+        "valor-estoque-venda",
         "ticket-medio",
         "margem-lucro",
         "crescimento-mensal",
