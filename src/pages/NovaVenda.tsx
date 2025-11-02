@@ -183,7 +183,10 @@ const NovaVenda = () => {
       return;
     }
 
-    const precoBase = Number(produtoSelecionado.precoVenda ?? 0);
+    // Usar preço promocional se o produto estiver em promoção, senão usar preço normal
+    const precoBase = produtoSelecionado.emPromocao && produtoSelecionado.precoPromocional 
+      ? Number(produtoSelecionado.precoPromocional) 
+      : Number(produtoSelecionado.precoVenda ?? 0);
     const precoComDesconto = precoBase * (1 - descontoProduto / 100);
     const subtotal = precoComDesconto * quantidadeProduto;
 
@@ -523,11 +526,27 @@ const NovaVenda = () => {
                   <>
                     <div>
                       <Label>Valor Atual do Produto</Label>
-                      <Input
-                        value={`R$ ${Number(produtoSelecionado.precoVenda ?? 0).toFixed(2)}`}
-                        disabled
-                        className="bg-muted"
-                      />
+                      {produtoSelecionado.emPromocao && produtoSelecionado.precoPromocional ? (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={`R$ ${Number(produtoSelecionado.precoPromocional).toFixed(2)}`}
+                              disabled
+                              className="bg-muted font-bold text-accent"
+                            />
+                            <Badge className="bg-accent text-accent-foreground">Promoção</Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground line-through">
+                            Preço normal: R$ {Number(produtoSelecionado.precoVenda ?? 0).toFixed(2)}
+                          </p>
+                        </div>
+                      ) : (
+                        <Input
+                          value={`R$ ${Number(produtoSelecionado.precoVenda ?? 0).toFixed(2)}`}
+                          disabled
+                          className="bg-muted"
+                        />
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

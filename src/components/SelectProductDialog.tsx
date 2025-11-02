@@ -31,6 +31,7 @@ interface ItemSelecionado {
   codigoProduto: string;
   nomeProduto: string;
   precoVenda: number;
+  precoPromocional?: number;
   cor: string;
   tamanho: string;
   quantidade: number;
@@ -93,6 +94,7 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect }: S
         codigoProduto: produtoSelecionado.codigoProduto,
         nomeProduto: produtoSelecionado.nomeProduto,
         precoVenda: produtoSelecionado.precoVenda,
+        precoPromocional: produtoSelecionado.emPromocao ? produtoSelecionado.precoPromocional : undefined,
         cor: varianteSelecionada.cor,
         tamanho: varianteSelecionada.tamanho,
         quantidade: varianteSelecionada.quantidade,
