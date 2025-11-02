@@ -46,6 +46,10 @@ const options: swaggerJsdoc.Options = {
       {
         name: 'Vitrine Virtual',
         description: 'Produtos disponíveis na vitrine virtual'
+      },
+      {
+        name: 'Caixa',
+        description: 'Gerenciamento de caixa (abertura, movimentações, fechamento)'
       }
     ],
     components: {
@@ -392,6 +396,93 @@ const options: swaggerJsdoc.Options = {
               type: 'string',
               maxLength: 500,
               description: 'Observações sobre o fornecedor'
+            }
+          }
+        },
+        Caixa: {
+          type: 'object',
+          required: ['codigoCaixa', 'dataAbertura', 'status', 'valorInicial', 'entrada', 'saida', 'performance', 'movimentos'],
+          properties: {
+            codigoCaixa: {
+              type: 'string',
+              pattern: '^CAIXA\\d{8}-\\d{3}$',
+              example: 'CAIXA20250102-001',
+              description: 'Identificador único do caixa (formato: CAIXA + data + sequencial)'
+            },
+            dataAbertura: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Data e hora de abertura do caixa'
+            },
+            dataFechamento: {
+              type: 'string',
+              format: 'date-time',
+              nullable: true,
+              description: 'Data e hora de fechamento do caixa (null enquanto aberto)'
+            },
+            status: {
+              type: 'string',
+              enum: ['aberto', 'fechado'],
+              description: 'Status atual do caixa'
+            },
+            valorInicial: {
+              type: 'number',
+              minimum: 0,
+              description: 'Valor inicial inserido no caixa ao abrir'
+            },
+            entrada: {
+              type: 'number',
+              minimum: 0,
+              description: 'Total de entradas (vendas + injeções)'
+            },
+            saida: {
+              type: 'number',
+              minimum: 0,
+              description: 'Total de saídas (sangrias)'
+            },
+            performance: {
+              type: 'number',
+              description: 'Resultado final: entrada - saída'
+            },
+            movimentos: {
+              type: 'array',
+              items: {
+                type: 'object',
+                required: ['tipo', 'valor', 'data'],
+                properties: {
+                  tipo: {
+                    type: 'string',
+                    enum: ['entrada', 'saida'],
+                    description: 'Tipo da movimentação'
+                  },
+                  valor: {
+                    type: 'number',
+                    minimum: 0,
+                    description: 'Valor da movimentação'
+                  },
+                  data: {
+                    type: 'string',
+                    format: 'date-time',
+                    description: 'Data e hora da movimentação'
+                  },
+                  codigoVenda: {
+                    type: 'string',
+                    nullable: true,
+                    description: 'Código da venda associada (se aplicável)'
+                  },
+                  formaPagamento: {
+                    type: 'string',
+                    enum: ['Dinheiro', 'Pix', 'Cartão de Crédito', 'Cartão de Débito', null],
+                    nullable: true,
+                    description: 'Forma de pagamento (para vendas)'
+                  },
+                  observacao: {
+                    type: 'string',
+                    nullable: true,
+                    description: 'Observação sobre a movimentação'
+                  }
+                }
+              }
             }
           }
         }

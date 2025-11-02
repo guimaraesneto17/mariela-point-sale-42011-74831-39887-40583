@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Wallet, Plus, Minus, DollarSign, TrendingUp, TrendingDown, RefreshCw, XCircle } from "lucide-react";
+import { Wallet, Plus, Minus, DollarSign, TrendingUp, TrendingDown, RefreshCw, XCircle, History, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,9 @@ interface Caixa {
 const Caixa = () => {
   const [caixaAberto, setCaixaAberto] = useState<Caixa | null>(null);
   const [loading, setLoading] = useState(true);
+  const [historicoOpen, setHistoricoOpen] = useState(false);
+  const [historicoCaixas, setHistoricoCaixas] = useState<Caixa[]>([]);
+  const [filtroData, setFiltroData] = useState("");
   
   // Dialogs
   const [abrirCaixaDialog, setAbrirCaixaDialog] = useState(false);
@@ -149,6 +152,31 @@ const Caixa = () => {
     return format(new Date(data), "dd/MM/yyyy HH:mm", { locale: ptBR });
   };
 
+  const formatarDataCurta = (data: string) => {
+    return format(new Date(data), "dd/MM/yyyy", { locale: ptBR });
+  };
+
+  const carregarHistorico = async () => {
+    try {
+      const caixas = await caixaAPI.getAll();
+      setHistoricoCaixas(caixas);
+    } catch (error: any) {
+      toast.error("Erro ao carregar histórico de caixas");
+    }
+  };
+
+  const handleAbrirHistorico = async () => {
+    setHistoricoOpen(true);
+    await carregarHistorico();
+  };
+
+  const historicoFiltrado = filtroData
+    ? historicoCaixas.filter((caixa) => {
+        const dataCaixa = format(new Date(caixa.dataAbertura), "yyyy-MM-dd");
+        return dataCaixa === filtroData;
+      })
+    : historicoCaixas;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -174,12 +202,18 @@ const Caixa = () => {
           </p>
         </div>
         
-        {!caixaAberto && (
-          <Button onClick={() => setAbrirCaixaDialog(true)} size="lg">
-            <Plus className="h-5 w-5 mr-2" />
-            Abrir Caixa
+        <div className="flex gap-2">
+          <Button onClick={handleAbrirHistorico} variant="outline" size="lg">
+            <History className="h-5 w-5 mr-2" />
+            Histórico de Caixas
           </Button>
-        )}
+          {!caixaAberto && (
+            <Button onClick={() => setAbrirCaixaDialog(true)} size="lg">
+              <Plus className="h-5 w-5 mr-2" />
+              Abrir Caixa
+            </Button>
+          )}
+        </div>
       </div>
 
       {!caixaAberto ? (
@@ -447,6 +481,101 @@ const Caixa = () => {
               {tipoMovimento === 'entrada' ? 'Adicionar Entrada' : 'Registrar Sangria'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog - Histórico de Caixas */}
+      <Dialog open={historicoOpen} onOpenChange={setHistoricoOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Histórico de Caixas
+            </DialogTitle>
+            <DialogDescription>
+              Visualize todos os registros de caixas anteriores
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Filtro por data */}
+            <div className="flex items-center gap-2">
+              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+              <Label htmlFor="filtroData">Filtrar por data:</Label>
+              <Input
+                id="filtroData"
+                type="date"
+                value={filtroData}
+                onChange={(e) => setFiltroData(e.target.value)}
+                className="max-w-xs"
+              />
+              {filtroData && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setFiltroData("")}
+                >
+                  Limpar
+                </Button>
+              )}
+            </div>
+
+            {/* Tabela de histórico */}
+            <div className="border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Código</TableHead>
+                    <TableHead>Abertura</TableHead>
+                    <TableHead>Fechamento</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Valor Inicial</TableHead>
+                    <TableHead className="text-right">Entradas</TableHead>
+                    <TableHead className="text-right">Saídas</TableHead>
+                    <TableHead className="text-right">Performance</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {historicoFiltrado.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                        Nenhum registro encontrado
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    historicoFiltrado
+                      .sort((a, b) => new Date(b.dataAbertura).getTime() - new Date(a.dataAbertura).getTime())
+                      .map((caixa) => (
+                        <TableRow key={caixa.codigoCaixa}>
+                          <TableCell className="font-medium">{caixa.codigoCaixa}</TableCell>
+                          <TableCell>{formatarDataCurta(caixa.dataAbertura)}</TableCell>
+                          <TableCell>
+                            {caixa.dataFechamento ? formatarDataCurta(caixa.dataFechamento) : '-'}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={caixa.status === 'aberto' ? 'default' : 'secondary'}>
+                              {caixa.status === 'aberto' ? 'Aberto' : 'Fechado'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">{formatarMoeda(caixa.valorInicial)}</TableCell>
+                          <TableCell className="text-right text-green-600">
+                            {formatarMoeda(caixa.entrada)}
+                          </TableCell>
+                          <TableCell className="text-right text-red-600">
+                            {formatarMoeda(caixa.saida)}
+                          </TableCell>
+                          <TableCell className={`text-right font-semibold ${
+                            caixa.performance >= 0 ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {formatarMoeda(caixa.performance)}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

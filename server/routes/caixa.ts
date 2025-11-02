@@ -11,7 +11,13 @@ const router = express.Router();
  *     tags: [Caixa]
  *     responses:
  *       200:
- *         description: Lista de caixas
+ *         description: Lista de caixas retornada com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Caixa'
  */
 router.get('/', caixaController.getAll);
 
@@ -23,7 +29,11 @@ router.get('/', caixaController.getAll);
  *     tags: [Caixa]
  *     responses:
  *       200:
- *         description: Caixa aberto encontrado
+ *         description: Caixa aberto retornado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Caixa'
  */
 router.get('/aberto', caixaController.getCaixaAberto);
 
@@ -59,12 +69,22 @@ router.get('/:codigo', caixaController.getByCodigo);
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - valorInicial
  *             properties:
  *               valorInicial:
  *                 type: number
+ *                 minimum: 0
+ *                 description: Valor inicial em dinheiro no caixa
  *     responses:
  *       201:
  *         description: Caixa aberto com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Caixa'
+ *       400:
+ *         description: Já existe caixa aberto ou valor inválido
  */
 router.post('/abrir', caixaController.abrirCaixa);
 
@@ -72,7 +92,7 @@ router.post('/abrir', caixaController.abrirCaixa);
  * @swagger
  * /api/caixa/movimento:
  *   post:
- *     summary: Adicionar movimentação (entrada/saída)
+ *     summary: Adicionar movimentação ao caixa (entrada/saída)
  *     tags: [Caixa]
  *     requestBody:
  *       required: true
@@ -80,17 +100,30 @@ router.post('/abrir', caixaController.abrirCaixa);
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - tipo
+ *               - valor
  *             properties:
  *               tipo:
  *                 type: string
  *                 enum: [entrada, saida]
+ *                 description: Tipo da movimentação (entrada para injeção, saida para sangria)
  *               valor:
  *                 type: number
+ *                 minimum: 0
+ *                 description: Valor da movimentação
  *               observacao:
  *                 type: string
+ *                 description: Observação opcional sobre a movimentação
  *     responses:
  *       200:
- *         description: Movimentação adicionada
+ *         description: Movimentação adicionada com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Caixa'
+ *       400:
+ *         description: Não há caixa aberto ou dados inválidos
  */
 router.post('/movimento', caixaController.adicionarMovimento);
 
@@ -98,11 +131,23 @@ router.post('/movimento', caixaController.adicionarMovimento);
  * @swagger
  * /api/caixa/sincronizar-vendas:
  *   post:
- *     summary: Sincronizar vendas em dinheiro
+ *     summary: Sincronizar vendas em dinheiro com o caixa
  *     tags: [Caixa]
+ *     description: Busca todas as vendas em dinheiro desde a abertura do caixa e as adiciona como movimentações
  *     responses:
  *       200:
- *         description: Vendas sincronizadas
+ *         description: Vendas sincronizadas com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 caixa:
+ *                   $ref: '#/components/schemas/Caixa'
+ *       400:
+ *         description: Não há caixa aberto
  */
 router.post('/sincronizar-vendas', caixaController.sincronizarVendas);
 
@@ -110,11 +155,18 @@ router.post('/sincronizar-vendas', caixaController.sincronizarVendas);
  * @swagger
  * /api/caixa/fechar:
  *   post:
- *     summary: Fechar caixa aberto
+ *     summary: Fechar o caixa aberto
  *     tags: [Caixa]
+ *     description: Recalcula totais e fecha o caixa atual
  *     responses:
  *       200:
  *         description: Caixa fechado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Caixa'
+ *       400:
+ *         description: Não há caixa aberto para fechar
  */
 router.post('/fechar', caixaController.fecharCaixa);
 
@@ -122,7 +174,7 @@ router.post('/fechar', caixaController.fecharCaixa);
  * @swagger
  * /api/caixa/{codigo}:
  *   delete:
- *     summary: Deletar caixa
+ *     summary: Deletar um caixa
  *     tags: [Caixa]
  *     parameters:
  *       - in: path
@@ -130,9 +182,12 @@ router.post('/fechar', caixaController.fecharCaixa);
  *         required: true
  *         schema:
  *           type: string
+ *         description: Código do caixa a ser deletado
  *     responses:
  *       200:
- *         description: Caixa deletado
+ *         description: Caixa deletado com sucesso
+ *       404:
+ *         description: Caixa não encontrado
  */
 router.delete('/:codigo', caixaController.delete);
 

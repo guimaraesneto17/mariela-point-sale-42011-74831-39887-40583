@@ -23,6 +23,7 @@ const Relatorios = () => {
   const [statusCliente, setStatusCliente] = useState("todos");
   
   const [loading, setLoading] = useState(true);
+  const [vendedores, setVendedores] = useState<any[]>([]);
   const [relatorioVendas, setRelatorioVendas] = useState<any>({
     totalVendas: 0,
     faturamentoTotal: 0,
@@ -58,7 +59,7 @@ const Relatorios = () => {
   const loadRelatorios = async () => {
     try {
       setLoading(true);
-      const [vendas, produtos, clientes, vendedores, estoque] = await Promise.all([
+      const [vendas, produtos, clientes, vendedoresList, estoque] = await Promise.all([
         vendasAPI.getAll(),
         produtosAPI.getAll(),
         clientesAPI.getAll(),
@@ -66,7 +67,34 @@ const Relatorios = () => {
         estoqueAPI.getAll(),
       ]);
 
-      // Relatório de Vendas
+      setVendedores(vendedoresList);
+
+      // Relatório de Vendas - calcular vendas por categoria real
+      const vendasPorCategoria: any = {};
+      vendas.forEach((venda: any) => {
+        venda.itens?.forEach((item: any) => {
+          const produto = produtos.find((p: any) => p.codigoProduto === item.codigoProduto);
+          const categoria = produto?.categoria || 'Outro';
+          if (!vendasPorCategoria[categoria]) {
+            vendasPorCategoria[categoria] = { categoria, vendas: 0, valor: 0 };
+          }
+          vendasPorCategoria[categoria].vendas += item.quantidade;
+          vendasPorCategoria[categoria].valor += item.subtotal;
+        });
+      });
+
+      // Calcular vendas por mês
+      const vendasPorMes: any = {};
+      vendas.forEach((venda: any) => {
+        const data = new Date(venda.data || venda.dataVenda);
+        const mesAno = `${data.toLocaleString('pt-BR', { month: 'long' })} ${data.getFullYear()}`;
+        if (!vendasPorMes[mesAno]) {
+          vendasPorMes[mesAno] = { mes: mesAno, vendas: 0, valor: 0 };
+        }
+        vendasPorMes[mesAno].vendas += 1;
+        vendasPorMes[mesAno].valor += venda.total || 0;
+      });
+
       const totalVendas = vendas.length;
       const faturamentoTotal = vendas.reduce((acc: number, v: any) => acc + (v.total || 0), 0);
       const ticketMedio = totalVendas > 0 ? faturamentoTotal / totalVendas : 0;
@@ -75,18 +103,8 @@ const Relatorios = () => {
         totalVendas,
         faturamentoTotal,
         ticketMedio,
-        vendasPorCategoria: [
-          { categoria: "Vestido", vendas: 87, valor: 13950.30 },
-          { categoria: "Blusa", vendas: 76, valor: 6832.40 },
-          { categoria: "Calça", vendas: 54, valor: 10780.80 },
-          { categoria: "Saia", vendas: 45, valor: 7890.50 },
-          { categoria: "Bolsa", vendas: 25, valor: 6226.90 },
-        ],
-        vendasPorMes: [
-          { mes: "Janeiro", vendas: 95, valor: 15220.30 },
-          { mes: "Fevereiro", vendas: 102, valor: 16350.80 },
-          { mes: "Março", vendas: 90, valor: 14109.80 },
-        ],
+        vendasPorCategoria: Object.values(vendasPorCategoria),
+        vendasPorMes: Object.values(vendasPorMes).slice(-3),
       });
 
       // Relatório de Produtos
@@ -108,6 +126,33 @@ const Relatorios = () => {
         valorEstoqueVenda += quantidade * precoVenda;
       });
 
+      // Calcular produtos mais vendidos
+      const produtosVendidos: any = {};
+      vendas.forEach((venda: any) => {
+        venda.itens?.forEach((item: any) => {
+          if (!produtosVendidos[item.codigoProduto]) {
+            produtosVendidos[item.codigoProduto] = {
+              produto: item.nomeProduto,
+              vendas: 0,
+              valor: 0,
+              estoque: 0
+            };
+          }
+          produtosVendidos[item.codigoProduto].vendas += item.quantidade;
+          produtosVendidos[item.codigoProduto].valor += item.subtotal;
+        });
+      });
+
+      // Adicionar estoque aos produtos vendidos
+      Object.keys(produtosVendidos).forEach(codigo => {
+        const itemEstoque = estoque.find((e: any) => e.codigoProduto === codigo);
+        produtosVendidos[codigo].estoque = itemEstoque?.quantidadeDisponivel || 0;
+      });
+
+      const topProdutos = Object.values(produtosVendidos)
+        .sort((a: any, b: any) => b.vendas - a.vendas)
+        .slice(0, 5);
+
       setRelatorioProdutos({
         totalProdutos,
         emEstoque,
@@ -115,43 +160,82 @@ const Relatorios = () => {
         emPromocao,
         valorEstoqueCusto,
         valorEstoqueVenda,
-        produtosMaisVendidos: [
-          { produto: "Vestido Floral Curto", vendas: 45, estoque: 15, valor: 6745.50 },
-          { produto: "Blusa Manga Longa", vendas: 38, estoque: 8, valor: 3416.20 },
-          { produto: "Calça Jeans Skinny", vendas: 32, estoque: 12, valor: 6396.80 },
-          { produto: "Saia Plissada Midi", vendas: 28, estoque: 22, valor: 3637.20 },
-          { produto: "Vestido Longo Estampado", vendas: 25, estoque: 7, valor: 4987.50 },
-        ],
-        estoqueMinimo: estoque.filter((item: any) => (item.quantidadeDisponivel || 0) < 10).slice(0, 5),
+        produtosMaisVendidos: topProdutos,
+        estoqueMinimo: estoque
+          .filter((item: any) => (item.quantidadeDisponivel || 0) < 10)
+          .map((item: any) => ({
+            produto: item.nomeProduto || item.nome,
+            estoque: item.quantidadeDisponivel || 0,
+            minimo: 10
+          }))
+          .slice(0, 5),
       });
 
-      // Relatório de Clientes
+      // Relatório de Clientes - calcular compras reais
       const totalClientes = clientes.length;
+      const clientesCompras: any = {};
+      
+      vendas.forEach((venda: any) => {
+        const codigoCliente = venda.cliente?.codigoCliente;
+        if (!clientesCompras[codigoCliente]) {
+          clientesCompras[codigoCliente] = {
+            nome: venda.cliente?.nome,
+            compras: 0,
+            valorTotal: 0
+          };
+        }
+        clientesCompras[codigoCliente].compras += 1;
+        clientesCompras[codigoCliente].valorTotal += venda.total || 0;
+      });
+
+      const topClientesArray = Object.values(clientesCompras)
+        .map((c: any) => ({
+          ...c,
+          ticketMedio: c.compras > 0 ? c.valorTotal / c.compras : 0
+        }))
+        .sort((a: any, b: any) => b.valorTotal - a.valorTotal)
+        .slice(0, 5);
+
+      const mesAtual = new Date().getMonth();
+      const clientesNovos = clientes.filter((c: any) => {
+        const dataCadastro = new Date(c.dataCadastro);
+        return dataCadastro.getMonth() === mesAtual;
+      }).length;
 
       setRelatorioClientes({
         totalClientes,
-        clientesAtivos: Math.floor(totalClientes * 0.75),
-        clientesNovos: Math.floor(totalClientes * 0.15),
-        topClientes: [
-          { nome: "Maria Silva", compras: 28, valorTotal: 4580.50, ticketMedio: 163.59 },
-          { nome: "Ana Paula Costa", compras: 22, valorTotal: 3890.00, ticketMedio: 176.82 },
-          { nome: "Juliana Santos", compras: 19, valorTotal: 3245.90, ticketMedio: 170.84 },
-          { nome: "Fernanda Lima", compras: 15, valorTotal: 2678.30, ticketMedio: 178.55 },
-          { nome: "Carolina Souza", compras: 14, valorTotal: 2456.80, ticketMedio: 175.49 },
-        ],
+        clientesAtivos: Object.keys(clientesCompras).length,
+        clientesNovos,
+        topClientes: topClientesArray,
       });
 
-      // Relatório de Vendedores
-      const totalVendedores = vendedores.length;
+      // Relatório de Vendedores - calcular vendas reais
+      const vendedoresVendas: any = {};
+      
+      vendas.forEach((venda: any) => {
+        const codigoVendedor = venda.vendedor?.codigoVendedor;
+        if (!vendedoresVendas[codigoVendedor]) {
+          vendedoresVendas[codigoVendedor] = {
+            nome: venda.vendedor?.nome,
+            vendas: 0,
+            valorTotal: 0
+          };
+        }
+        vendedoresVendas[codigoVendedor].vendas += 1;
+        vendedoresVendas[codigoVendedor].valorTotal += venda.total || 0;
+      });
+
+      const topVendedoresArray = Object.values(vendedoresVendas)
+        .map((v: any) => ({
+          ...v,
+          comissao: v.valorTotal * 0.10
+        }))
+        .sort((a: any, b: any) => b.valorTotal - a.valorTotal)
+        .slice(0, 4);
 
       setRelatorioVendedores({
-        totalVendedores,
-        topVendedores: vendedores.slice(0, 4).map((v: any) => ({
-          nome: v.nome || v.nomeCompleto,
-          vendas: 0,
-          valorTotal: 0,
-          comissao: 0,
-        })),
+        totalVendedores: vendedoresList.length,
+        topVendedores: topVendedoresArray,
       });
 
     } catch (error) {
@@ -162,70 +246,32 @@ const Relatorios = () => {
     }
   };
 
-  // Mock data - será substituído por dados reais da API
-  const mockRelatorioVendas = {
-    totalVendas: 287,
-    faturamentoTotal: 45680.90,
-    ticketMedio: 159.10,
-    vendasPorCategoria: [
-      { categoria: "Vestido", vendas: 87, valor: 13950.30 },
-      { categoria: "Blusa", vendas: 76, valor: 6832.40 },
-      { categoria: "Calça", vendas: 54, valor: 10780.80 },
-      { categoria: "Saia", vendas: 45, valor: 7890.50 },
-      { categoria: "Bolsa", vendas: 25, valor: 6226.90 },
-    ],
-    vendasPorMes: [
-      { mes: "Janeiro", vendas: 95, valor: 15220.30 },
-      { mes: "Fevereiro", vendas: 102, valor: 16350.80 },
-      { mes: "Março", vendas: 90, valor: 14109.80 },
-    ],
+  const limparFiltros = () => {
+    setDataInicioVendas("");
+    setDataFimVendas("");
+    setVendedorFiltro("todos");
+    setCategoriaFiltro("todas");
+    setEstoqueMinimo("");
+    setStatusCliente("todos");
+    toast.info("Filtros limpos");
   };
 
-  const mockRelatorioProdutos = {
-    totalProdutos: 156,
-    emEstoque: 1234,
-    novidades: 23,
-    emPromocao: 18,
-    produtosMaisVendidos: [
-      { produto: "Vestido Floral Curto", vendas: 45, estoque: 15, valor: 6745.50 },
-      { produto: "Blusa Manga Longa", vendas: 38, estoque: 8, valor: 3416.20 },
-      { produto: "Calça Jeans Skinny", vendas: 32, estoque: 12, valor: 6396.80 },
-      { produto: "Saia Plissada Midi", vendas: 28, estoque: 22, valor: 3637.20 },
-      { produto: "Vestido Longo Estampado", vendas: 25, estoque: 7, valor: 4987.50 },
-    ],
-    estoqueMinimo: [
-      { produto: "Blusa Manga Longa", estoque: 8, minimo: 10 },
-      { produto: "Vestido Longo Estampado", estoque: 7, minimo: 10 },
-    ],
+  // Aplicar filtros aos relatórios
+  const relatorioVendasFiltrado = {
+    ...relatorioVendas,
+    vendasPorCategoria: categoriaFiltro !== "todas" 
+      ? relatorioVendas.vendasPorCategoria.filter((c: any) => 
+          c.categoria.toLowerCase() === categoriaFiltro.toLowerCase()
+        )
+      : relatorioVendas.vendasPorCategoria,
   };
 
-  const mockRelatorioClientes = {
-    totalClientes: 89,
-    clientesAtivos: 67,
-    clientesNovos: 12,
-    topClientes: [
-      { nome: "Maria Silva", compras: 28, valorTotal: 4580.50, ticketMedio: 163.59 },
-      { nome: "Ana Paula Costa", compras: 22, valorTotal: 3890.00, ticketMedio: 176.82 },
-      { nome: "Juliana Santos", compras: 19, valorTotal: 3245.90, ticketMedio: 170.84 },
-      { nome: "Fernanda Lima", compras: 15, valorTotal: 2678.30, ticketMedio: 178.55 },
-      { nome: "Carolina Souza", compras: 14, valorTotal: 2456.80, ticketMedio: 175.49 },
-    ],
-  };
-
-  const mockRelatorioVendedores = {
-    totalVendedores: 4,
-    topVendedores: [
-      { nome: "Ana Carolina", vendas: 87, valorTotal: 15680.50, comissao: 1568.05 },
-      { nome: "João Pedro", vendas: 76, valorTotal: 13245.80, comissao: 1324.58 },
-      { nome: "Carla Santos", vendas: 65, valorTotal: 11890.30, comissao: 1189.03 },
-      { nome: "Juliana Lima", vendas: 54, valorTotal: 9456.90, comissao: 945.69 },
-    ],
-  };
-
-  const handleExportarRelatorio = (tipo: string) => {
-    toast.success(`Relatório de ${tipo} exportado com sucesso!`, {
-      description: "O arquivo será baixado em instantes.",
-    });
+  const relatorioProdutosFiltrado = {
+    ...relatorioProdutos,
+    produtosMaisVendidos: relatorioProdutos.produtosMaisVendidos,
+    estoqueMinimo: estoqueMinimo 
+      ? relatorioProdutos.estoqueMinimo.filter((p: any) => p.estoque <= parseInt(estoqueMinimo))
+      : relatorioProdutos.estoqueMinimo,
   };
 
   return (
@@ -256,54 +302,55 @@ const Relatorios = () => {
               <Filter className="h-5 w-5 text-primary" />
               <h3 className="text-lg font-bold text-foreground">Filtros de Vendas</h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Data Início
-                </label>
-                <Input
-                  type="date"
-                  value={dataInicioVendas}
-                  onChange={(e) => setDataInicioVendas(e.target.value)}
-                />
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                    Data Início
+                  </label>
+                  <Input
+                    type="date"
+                    value={dataInicioVendas}
+                    onChange={(e) => setDataInicioVendas(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                    Data Fim
+                  </label>
+                  <Input
+                    type="date"
+                    value={dataFimVendas}
+                    onChange={(e) => setDataFimVendas(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                    Vendedor
+                  </label>
+                  <Select value={vendedorFiltro} onValueChange={setVendedorFiltro}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      {vendedores.map((v: any) => (
+                        <SelectItem key={v.codigoVendedor} value={v.codigoVendedor}>
+                          {v.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Data Fim
-                </label>
-                <Input
-                  type="date"
-                  value={dataFimVendas}
-                  onChange={(e) => setDataFimVendas(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Vendedor
-                </label>
-                <Select value={vendedorFiltro} onValueChange={setVendedorFiltro}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    <SelectItem value="ana">Ana Carolina</SelectItem>
-                    <SelectItem value="joao">João Pedro</SelectItem>
-                    <SelectItem value="carla">Carla Santos</SelectItem>
-                    <SelectItem value="juliana">Juliana Lima</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <Button onClick={limparFiltros} variant="outline" size="sm">
+                <Filter className="h-4 w-4 mr-2" />
+                Limpar Filtros
+              </Button>
             </div>
           </Card>
 
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-foreground">Relatório de Vendas</h2>
-            <Button onClick={() => handleExportarRelatorio("Vendas")} className="gap-2">
-              <Download className="h-4 w-4" />
-              Exportar PDF
-            </Button>
-          </div>
+          <h2 className="text-2xl font-bold text-foreground">Relatório de Vendas</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="bg-gradient-to-br from-card via-card to-primary/5">
@@ -315,12 +362,9 @@ const Relatorios = () => {
               <CardContent>
                 <div className="flex items-center gap-3">
                   <ShoppingBag className="h-8 w-8 text-primary" />
-                  <div>
-                    <p className="text-3xl font-bold text-foreground">
-                      {relatorioVendas.totalVendas}
-                    </p>
-                    <p className="text-sm text-green-600">+12% este mês</p>
-                  </div>
+                  <p className="text-3xl font-bold text-foreground">
+                    {relatorioVendas.totalVendas}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -334,12 +378,9 @@ const Relatorios = () => {
               <CardContent>
                 <div className="flex items-center gap-3">
                   <DollarSign className="h-8 w-8 text-green-600" />
-                  <div>
-                    <p className="text-3xl font-bold text-foreground">
-                      R$ {relatorioVendas.faturamentoTotal.toFixed(2)}
-                    </p>
-                    <p className="text-sm text-green-600">+18% este mês</p>
-                  </div>
+                  <p className="text-3xl font-bold text-foreground">
+                    R$ {relatorioVendas.faturamentoTotal.toFixed(2)}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -353,12 +394,9 @@ const Relatorios = () => {
               <CardContent>
                 <div className="flex items-center gap-3">
                   <TrendingUp className="h-8 w-8 text-blue-600" />
-                  <div>
-                    <p className="text-3xl font-bold text-foreground">
-                      R$ {relatorioVendas.ticketMedio.toFixed(2)}
-                    </p>
-                    <p className="text-sm text-blue-600">+5% este mês</p>
-                  </div>
+                  <p className="text-3xl font-bold text-foreground">
+                    R$ {relatorioVendas.ticketMedio.toFixed(2)}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -368,7 +406,7 @@ const Relatorios = () => {
             <Card className="p-6 shadow-card">
               <h3 className="text-lg font-bold text-foreground mb-4">Vendas por Categoria</h3>
               <div className="space-y-3">
-                {relatorioVendas.vendasPorCategoria.map((cat, index) => (
+                {relatorioVendasFiltrado.vendasPorCategoria.map((cat: any, index: number) => (
                   <div
                     key={index}
                     className="flex items-center justify-between p-4 rounded-lg bg-gradient-card hover:shadow-md transition-all"
@@ -421,47 +459,48 @@ const Relatorios = () => {
               <Filter className="h-5 w-5 text-primary" />
               <h3 className="text-lg font-bold text-foreground">Filtros de Produtos</h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Categoria
-                </label>
-                <Select value={categoriaFiltro} onValueChange={setCategoriaFiltro}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todas" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todas">Todas</SelectItem>
-                    <SelectItem value="vestido">Vestido</SelectItem>
-                    <SelectItem value="blusa">Blusa</SelectItem>
-                    <SelectItem value="calca">Calça</SelectItem>
-                    <SelectItem value="saia">Saia</SelectItem>
-                    <SelectItem value="bolsa">Bolsa</SelectItem>
-                    <SelectItem value="acessorio">Acessório</SelectItem>
-                  </SelectContent>
-                </Select>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                    Categoria
+                  </label>
+                  <Select value={categoriaFiltro} onValueChange={setCategoriaFiltro}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todas">Todas</SelectItem>
+                      <SelectItem value="Calça">Calça</SelectItem>
+                      <SelectItem value="Saia">Saia</SelectItem>
+                      <SelectItem value="Vestido">Vestido</SelectItem>
+                      <SelectItem value="Blusa">Blusa</SelectItem>
+                      <SelectItem value="Bolsa">Bolsa</SelectItem>
+                      <SelectItem value="Acessório">Acessório</SelectItem>
+                      <SelectItem value="Outro">Outro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                    Estoque Mínimo
+                  </label>
+                  <Input
+                    type="number"
+                    placeholder="Ex: 10"
+                    value={estoqueMinimo}
+                    onChange={(e) => setEstoqueMinimo(e.target.value)}
+                  />
+                </div>
               </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Estoque Mínimo
-                </label>
-                <Input
-                  type="number"
-                  placeholder="Ex: 10"
-                  value={estoqueMinimo}
-                  onChange={(e) => setEstoqueMinimo(e.target.value)}
-                />
-              </div>
+              <Button onClick={limparFiltros} variant="outline" size="sm">
+                <Filter className="h-4 w-4 mr-2" />
+                Limpar Filtros
+              </Button>
             </div>
           </Card>
 
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-foreground">Relatório de Produtos</h2>
-            <Button onClick={() => handleExportarRelatorio("Produtos")} className="gap-2">
-              <Download className="h-4 w-4" />
-              Exportar PDF
-            </Button>
-          </div>
+          <h2 className="text-2xl font-bold text-foreground">Relatório de Produtos</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="bg-gradient-to-br from-card via-card to-primary/5">
@@ -565,7 +604,7 @@ const Relatorios = () => {
             <Card className="p-6 shadow-card">
               <h3 className="text-lg font-bold text-foreground mb-4">Produtos Mais Vendidos</h3>
               <div className="space-y-3">
-                {relatorioProdutos.produtosMaisVendidos.map((produto, index) => (
+                {relatorioProdutosFiltrado.produtosMaisVendidos.map((produto: any, index: number) => (
                   <div
                     key={index}
                     className="p-4 rounded-lg bg-gradient-card hover:shadow-md transition-all"
@@ -597,7 +636,7 @@ const Relatorios = () => {
                 ⚠️ Alerta: Estoque Mínimo
               </h3>
               <div className="space-y-3">
-                {relatorioProdutos.estoqueMinimo.map((produto, index) => (
+                {relatorioProdutosFiltrado.estoqueMinimo.map((produto: any, index: number) => (
                   <div
                     key={index}
                     className="p-4 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800"
@@ -626,33 +665,32 @@ const Relatorios = () => {
               <Filter className="h-5 w-5 text-primary" />
               <h3 className="text-lg font-bold text-foreground">Filtros de Clientes</h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Status
-                </label>
-                <Select value={statusCliente} onValueChange={setStatusCliente}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    <SelectItem value="ativos">Ativos</SelectItem>
-                    <SelectItem value="inativos">Inativos</SelectItem>
-                    <SelectItem value="novos">Novos (Este mês)</SelectItem>
-                  </SelectContent>
-                </Select>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                    Status
+                  </label>
+                  <Select value={statusCliente} onValueChange={setStatusCliente}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="ativos">Ativos (Com compras)</SelectItem>
+                      <SelectItem value="novos">Novos (Este mês)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+              <Button onClick={limparFiltros} variant="outline" size="sm">
+                <Filter className="h-4 w-4 mr-2" />
+                Limpar Filtros
+              </Button>
             </div>
           </Card>
 
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-foreground">Relatório de Clientes</h2>
-            <Button onClick={() => handleExportarRelatorio("Clientes")} className="gap-2">
-              <Download className="h-4 w-4" />
-              Exportar PDF
-            </Button>
-          </div>
+          <h2 className="text-2xl font-bold text-foreground">Relatório de Clientes</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="bg-gradient-to-br from-card via-card to-primary/5">
@@ -756,13 +794,7 @@ const Relatorios = () => {
 
         {/* Relatório de Vendedores */}
         <TabsContent value="vendedores" className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-foreground">Relatório de Vendedores</h2>
-            <Button onClick={() => handleExportarRelatorio("Vendedores")} className="gap-2">
-              <Download className="h-4 w-4" />
-              Exportar PDF
-            </Button>
-          </div>
+          <h2 className="text-2xl font-bold text-foreground">Relatório de Vendedores</h2>
 
           <Card className="p-6 shadow-card bg-gradient-to-br from-card via-card to-green-500/5">
             <div className="flex items-center gap-3 mb-4">
