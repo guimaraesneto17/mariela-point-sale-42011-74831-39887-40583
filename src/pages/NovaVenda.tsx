@@ -268,11 +268,15 @@ const NovaVenda = () => {
     try {
       const codigoVenda = await generateCodigoVenda();
       
+      // Formatar data no formato ISO sem milissegundos (YYYY-MM-DDTHH:MM:SSZ)
+      const now = new Date();
+      const dataISO = now.toISOString().split('.')[0] + 'Z';
+      
       const vendaData = {
         codigoVenda,
-        data: new Date(),
+        data: dataISO,
         vendedor: {
-          id: vendedorSelecionado.codigo,
+          codigoVendedor: vendedorSelecionado.codigo,
           nome: vendedorSelecionado.nome
         },
         cliente: {
