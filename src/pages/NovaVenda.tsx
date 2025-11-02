@@ -65,8 +65,21 @@ const NovaVenda = () => {
         vendedoresAPI.getAll(),
         estoqueAPI.getAll(),
       ]);
-      setClientes(clientesData);
-      setVendedores(vendedoresData);
+      
+      // Mapear clientes para ter o campo 'codigo'
+      const clientesMapeados = clientesData.map((c: any) => ({
+        ...c,
+        codigo: c.codigoCliente || c.codigo
+      }));
+      
+      // Mapear vendedores para ter o campo 'codigo'
+      const vendedoresMapeados = vendedoresData.map((v: any) => ({
+        ...v,
+        codigo: v.id || v.codigo
+      }));
+      
+      setClientes(clientesMapeados);
+      setVendedores(vendedoresMapeados);
       setEstoque(estoqueData);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
