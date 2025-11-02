@@ -13,6 +13,8 @@ import { SelectProductDialog } from "@/components/SelectProductDialog";
 import { SelectClientDialog } from "@/components/SelectClientDialog";
 import { SelectVendedorDialog } from "@/components/SelectVendedorDialog";
 import { clientesAPI, vendedoresAPI, estoqueAPI, vendasAPI } from "@/lib/api";
+import { formatInTimeZone } from "date-fns-tz";
+import { startOfDay, endOfDay } from "date-fns";
 
 interface ItemVenda {
   codigoProduto: string;
@@ -73,20 +75,23 @@ const NovaVenda = () => {
   };
 
   const generateCodigoVenda = async (): Promise<string> => {
+    const TIMEZONE_BRASIL = 'America/Sao_Paulo';
+    
+    // Obter data atual no fuso horário do Brasil
     const hoje = new Date();
-    const ano = hoje.getFullYear();
-    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-    const dia = String(hoje.getDate()).padStart(2, '0');
-    const dataFormatada = `${ano}${mes}${dia}`;
+    const dataFormatada = formatInTimeZone(hoje, TIMEZONE_BRASIL, 'yyyyMMdd');
     
     try {
-      // Buscar todas as vendas para verificar o próximo número sequencial
+      // Buscar todas as vendas para verificar quantas foram feitas hoje
       const vendas = await vendasAPI.getAll();
+      
+      // Filtrar vendas que começam com o código do dia atual
       const vendasHoje = vendas.filter((venda: any) => {
         const codigoVenda = venda.codigoVenda || '';
         return codigoVenda.startsWith(`VENDA${dataFormatada}`);
       });
       
+      // Próximo número sequencial
       const proximoNumero = vendasHoje.length + 1;
       return `VENDA${dataFormatada}-${String(proximoNumero).padStart(3, '0')}`;
     } catch (error) {
