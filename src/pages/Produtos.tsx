@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Plus, CheckCircle2, AlertCircle, Package, Edit, Trash2, X, PackagePlus } from "lucide-react";
+import { Search, Plus, CheckCircle2, AlertCircle, Package, Edit, Trash2, X, PackagePlus, Building } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
@@ -714,11 +714,17 @@ const Produtos = () => {
                   <span className="font-medium">{produto.codigoProduto}</span>
                 </div>
                 {produto.fornecedor && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Fornecedor:</span>
-                    <span className="font-medium text-primary">
-                      {produto.fornecedor.nome} ({produto.fornecedor.codigoFornecedor})
-                    </span>
+                  <div className="flex items-center gap-2 p-2 rounded-md bg-primary/5 border border-primary/20">
+                    <Building className="h-4 w-4 text-primary flex-shrink-0" />
+                    <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                      <span className="text-xs text-muted-foreground">Fornecedor</span>
+                      <span className="font-medium text-sm text-foreground truncate">
+                        {produto.fornecedor.nome}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {produto.fornecedor.codigoFornecedor}
+                      </span>
+                    </div>
                   </div>
                 )}
                 <div className="flex justify-between text-sm">
