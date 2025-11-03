@@ -713,20 +713,6 @@ const Produtos = () => {
                   <span className="text-muted-foreground">Código:</span>
                   <span className="font-medium">{produto.codigoProduto}</span>
                 </div>
-                {produto.fornecedor && (
-                  <div className="flex items-center gap-2 p-2 rounded-md bg-primary/5 border border-primary/20">
-                    <Building className="h-4 w-4 text-primary flex-shrink-0" />
-                    <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                      <span className="text-xs text-muted-foreground">Fornecedor</span>
-                      <span className="font-medium text-sm text-foreground truncate">
-                        {produto.fornecedor.nome}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {produto.fornecedor.codigoFornecedor}
-                      </span>
-                    </div>
-                  </div>
-                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Preço de Custo:</span>
                   <span className="font-medium">R$ {Number(produto.precoCusto ?? 0).toFixed(2)}</span>
@@ -744,6 +730,21 @@ const Produtos = () => {
                   </span>
                 </div>
               </div>
+
+              {produto.fornecedor && (
+                <div className="flex items-center gap-2 p-2 rounded-md bg-primary/5 border border-primary/20 mt-3">
+                  <Building className="h-4 w-4 text-primary flex-shrink-0" />
+                  <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                    <span className="text-xs text-muted-foreground">Fornecedor</span>
+                    <span className="font-medium text-sm text-foreground truncate">
+                      {produto.fornecedor.nome}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {produto.fornecedor.codigoFornecedor}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-2 mt-4">
                 <Button
