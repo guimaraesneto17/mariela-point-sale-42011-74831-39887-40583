@@ -80,6 +80,12 @@ export const createProduto = async (req: Request, res: Response) => {
     if (req.body.imagens && Array.isArray(req.body.imagens) && req.body.imagens.length > 0) {
       cleanData.imagens = req.body.imagens;
     }
+    if (req.body.fornecedor && req.body.fornecedor.codigoFornecedor) {
+      cleanData.fornecedor = {
+        codigoFornecedor: req.body.fornecedor.codigoFornecedor,
+        nome: req.body.fornecedor.nome
+      };
+    }
 
     console.log('Dados limpos para salvar:', JSON.stringify(cleanData, null, 2));
 
@@ -146,6 +152,15 @@ export const updateProduto = async (req: Request, res: Response) => {
     }
     if (req.body.imagens && Array.isArray(req.body.imagens) && req.body.imagens.length > 0) {
       cleanData.imagens = req.body.imagens;
+    }
+    // Permite definir fornecedor ou remover (null)
+    if (req.body.fornecedor && req.body.fornecedor.codigoFornecedor) {
+      cleanData.fornecedor = {
+        codigoFornecedor: req.body.fornecedor.codigoFornecedor,
+        nome: req.body.fornecedor.nome
+      };
+    } else if (req.body.fornecedor === null) {
+      cleanData.fornecedor = null;
     }
     
     const produto = await Produto.findOneAndUpdate(
