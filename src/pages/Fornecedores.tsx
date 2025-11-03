@@ -601,6 +601,12 @@ const Fornecedores = () => {
               <div className="text-sm">
                 <span className="text-muted-foreground">Instagram:</span> {fornecedor.instagram}
               </div>
+              {fornecedor.observacao && (
+                <div className="text-sm pt-2 border-t">
+                  <span className="text-muted-foreground font-semibold">Observação:</span>
+                  <p className="mt-1 text-foreground">{fornecedor.observacao}</p>
+                </div>
+              )}
               {fornecedor.endereco && (
                 <div className="text-sm text-muted-foreground pt-2 border-t">
                   {[
