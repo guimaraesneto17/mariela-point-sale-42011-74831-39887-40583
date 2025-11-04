@@ -149,7 +149,7 @@ const caixaController = {
     }
   },
 
-  // Sincronizar vendas em dinheiro
+  // Sincronizar todas as vendas
   async sincronizarVendas(req: Request, res: Response) {
     try {
       // Buscar caixa aberto
@@ -158,11 +158,12 @@ const caixaController = {
         return res.status(400).json({ error: 'Não há caixa aberto' });
       }
 
-      // Buscar vendas em dinheiro desde a abertura do caixa
-      const vendasDinheiro = await Venda.find({
-        formaPagamento: 'Dinheiro',
+      // Buscar TODAS as vendas desde a abertura do caixa
+      const vendas = await Venda.find({
         data: { $gte: new Date(caixaAberto.dataAbertura) }
       });
+
+      console.log(`📦 Total de vendas coletadas: ${vendas.length}`);
 
       // Verificar quais vendas já estão registradas
       const vendasRegistradas = new Set(
@@ -173,15 +174,18 @@ const caixaController = {
 
       // Adicionar novas vendas
       let novasVendas = 0;
-      for (const venda of vendasDinheiro) {
+      for (const venda of vendas) {
         if (!vendasRegistradas.has(venda.codigoVenda)) {
+          // Usar valorRecebido (que já desconta as taxas) em vez do total
+          const valorEntrada = venda.valorRecebido || venda.total;
+          
           caixaAberto.movimentos.push({
             tipo: 'entrada',
-            valor: venda.total,
+            valor: valorEntrada,
             data: venda.data.toISOString(),
             codigoVenda: venda.codigoVenda,
-            formaPagamento: 'Dinheiro',
-            observacao: `Venda ${venda.codigoVenda} - ${venda.cliente.nome}`
+            formaPagamento: venda.formaPagamento,
+            observacao: `Venda ${venda.codigoVenda} - ${venda.cliente.nome} (${venda.formaPagamento})`
           });
           novasVendas++;
         }
