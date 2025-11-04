@@ -40,6 +40,9 @@ const Caixa = () => {
   const [historicoOpen, setHistoricoOpen] = useState(false);
   const [historicoCaixas, setHistoricoCaixas] = useState<Caixa[]>([]);
   const [filtroData, setFiltroData] = useState("");
+  const [reabrirCaixaDialog, setReabrirCaixaDialog] = useState(false);
+  const [caixaParaReabrir, setCaixaParaReabrir] = useState<string | null>(null);
+  const [senhaReabrir, setSenhaReabrir] = useState("");
   
   // Dialogs
   const [abrirCaixaDialog, setAbrirCaixaDialog] = useState(false);
@@ -52,9 +55,9 @@ const Caixa = () => {
   const [valorMovimento, setValorMovimento] = useState("");
   const [observacaoMovimento, setObservacaoMovimento] = useState("");
   
-  // Estados para exclusão de venda
-  const [vendaParaExcluir, setVendaParaExcluir] = useState<string | null>(null);
-  const [dialogExcluirVenda, setDialogExcluirVenda] = useState(false);
+  // Estados para exclusão de movimentação
+  const [movimentoParaExcluir, setMovimentoParaExcluir] = useState<number | null>(null);
+  const [dialogExcluirMovimento, setDialogExcluirMovimento] = useState(false);
 
   useEffect(() => {
     carregarCaixaAberto();
@@ -184,26 +187,61 @@ const Caixa = () => {
       })
     : historicoCaixas;
 
-  const abrirDialogExcluirVenda = (codigoVenda: string) => {
-    setVendaParaExcluir(codigoVenda);
-    setDialogExcluirVenda(true);
+  const abrirDialogReabrirCaixa = (codigoCaixa: string) => {
+    setCaixaParaReabrir(codigoCaixa);
+    setReabrirCaixaDialog(true);
+    setSenhaReabrir("");
   };
 
-  const handleExcluirVenda = async () => {
-    if (!vendaParaExcluir) return;
+  const handleReabrirCaixa = async () => {
+    if (senhaReabrir !== "abrecaixamariela") {
+      toast.error("Senha incorreta!");
+      return;
+    }
+
+    if (!caixaParaReabrir) return;
+
+    try {
+      await caixaAPI.reabrirCaixa(caixaParaReabrir);
+      await carregarCaixaAberto();
+      await carregarHistorico();
+      setReabrirCaixaDialog(false);
+      setCaixaParaReabrir(null);
+      setSenhaReabrir("");
+      setHistoricoOpen(false);
+      toast.success("Caixa reaberto com sucesso!");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao reabrir caixa");
+    }
+  };
+
+  const abrirDialogExcluirMovimento = (index: number) => {
+    setMovimentoParaExcluir(index);
+    setDialogExcluirMovimento(true);
+  };
+
+  const handleExcluirMovimento = async () => {
+    if (movimentoParaExcluir === null || !caixaAberto) return;
     
     try {
-      // Excluir a venda
-      await vendasAPI.delete(vendaParaExcluir);
+      const movimento = caixaAberto.movimentos[movimentoParaExcluir];
+      
+      // Se for uma venda, excluir a venda também
+      if (movimento.codigoVenda) {
+        await vendasAPI.delete(movimento.codigoVenda);
+      }
+      
+      // Excluir movimento do caixa
+      await caixaAPI.excluirMovimento(movimentoParaExcluir);
       
       // Recarregar o caixa para atualizar os movimentos
       await carregarCaixaAberto();
       
-      setDialogExcluirVenda(false);
-      setVendaParaExcluir(null);
-      toast.success("Venda excluída com sucesso!");
+      setDialogExcluirMovimento(false);
+      setMovimentoParaExcluir(null);
+      toast.success("Movimentação excluída com sucesso!");
     } catch (error: any) {
-      toast.error(error.message || "Erro ao excluir venda");
+      toast.error(error.message || "Erro ao excluir movimentação");
     }
   };
 
@@ -420,16 +458,15 @@ const Caixa = () => {
                                 {movimento.tipo === 'entrada' ? '+' : '-'} {formatarMoeda(movimento.valor)}
                               </TableCell>
                               <TableCell>
-                                {movimento.codigoVenda && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => abrirDialogExcluirVenda(movimento.codigoVenda!)}
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                )}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => abrirDialogExcluirMovimento(index)}
+                                  className="h-8 w-8 p-0"
+                                  title="Excluir movimentação"
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
                               </TableCell>
                             </TableRow>
                           ))
@@ -581,7 +618,7 @@ const Caixa = () => {
                 <TableBody>
                   {historicoFiltrado.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                         Nenhum registro encontrado
                       </TableCell>
                     </TableRow>
@@ -612,6 +649,18 @@ const Caixa = () => {
                           }`}>
                             {formatarMoeda(caixa.performance)}
                           </TableCell>
+                          <TableCell>
+                            {caixa.status === 'fechado' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => abrirDialogReabrirCaixa(caixa.codigoCaixa)}
+                                className="text-xs"
+                              >
+                                Reabrir
+                              </Button>
+                            )}
+                          </TableCell>
                         </TableRow>
                       ))
                   )}
@@ -631,14 +680,46 @@ const Caixa = () => {
         description="Tem certeza que deseja fechar o caixa? Esta ação não pode ser desfeita. Certifique-se de que todas as movimentações foram registradas corretamente."
       />
 
-      {/* Alert Dialog - Confirmar Exclusão de Venda */}
+      {/* Alert Dialog - Confirmar Exclusão de Movimentação */}
       <AlertDeleteDialog
-        open={dialogExcluirVenda}
-        onOpenChange={setDialogExcluirVenda}
-        onConfirm={handleExcluirVenda}
-        title="Confirmar Exclusão de Venda"
-        description={`Tem certeza que deseja excluir a venda ${vendaParaExcluir}? Esta ação não pode ser desfeita e removerá a venda do sistema e do caixa.`}
+        open={dialogExcluirMovimento}
+        onOpenChange={setDialogExcluirMovimento}
+        onConfirm={handleExcluirMovimento}
+        title="Confirmar Exclusão de Movimentação"
+        description="Tem certeza que deseja excluir esta movimentação? Esta ação não pode ser desfeita. Se for uma venda, ela também será excluída do sistema."
       />
+
+      {/* Dialog - Reabrir Caixa */}
+      <Dialog open={reabrirCaixaDialog} onOpenChange={setReabrirCaixaDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reabrir Caixa</DialogTitle>
+            <DialogDescription>
+              Digite a senha para reabrir o caixa {caixaParaReabrir}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="senhaReabrir">Senha *</Label>
+              <Input
+                id="senhaReabrir"
+                type="password"
+                placeholder="Digite a senha"
+                value={senhaReabrir}
+                onChange={(e) => setSenhaReabrir(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReabrirCaixaDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleReabrirCaixa}>
+              Reabrir Caixa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

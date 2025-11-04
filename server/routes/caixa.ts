@@ -153,6 +153,60 @@ router.post('/sincronizar-vendas', caixaController.sincronizarVendas);
 
 /**
  * @swagger
+ * /api/caixa/movimento/excluir:
+ *   delete:
+ *     summary: Excluir movimentação do caixa aberto
+ *     tags: [Caixa]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - index
+ *             properties:
+ *               index:
+ *                 type: number
+ *                 description: Índice da movimentação a ser excluída
+ *     responses:
+ *       200:
+ *         description: Movimentação excluída com sucesso
+ *       400:
+ *         description: Não há caixa aberto ou índice inválido
+ */
+router.delete('/movimento/excluir', caixaController.excluirMovimento);
+
+/**
+ * @swagger
+ * /api/caixa/reabrir:
+ *   post:
+ *     summary: Reabrir um caixa fechado
+ *     tags: [Caixa]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - codigoCaixa
+ *             properties:
+ *               codigoCaixa:
+ *                 type: string
+ *                 description: Código do caixa a ser reaberto
+ *     responses:
+ *       200:
+ *         description: Caixa reaberto com sucesso
+ *       400:
+ *         description: Já existe caixa aberto ou caixa já está aberto
+ *       404:
+ *         description: Caixa não encontrado
+ */
+router.post('/reabrir', caixaController.reabrirCaixa);
+
+/**
+ * @swagger
  * /api/caixa/fechar:
  *   post:
  *     summary: Fechar o caixa aberto

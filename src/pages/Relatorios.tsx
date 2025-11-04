@@ -17,7 +17,6 @@ const Relatorios = () => {
   
   // Filtros para produtos
   const [categoriaFiltro, setCategoriaFiltro] = useState("todas");
-  const [estoqueMinimo, setEstoqueMinimo] = useState("");
   
   // Filtros para clientes
   const [statusCliente, setStatusCliente] = useState("todos");
@@ -63,6 +62,7 @@ const Relatorios = () => {
     performanceTotal: 0,
     ultimosCaixas: [],
   });
+  const [estoque, setEstoque] = useState<any[]>([]);
 
   useEffect(() => {
     loadRelatorios();
@@ -71,7 +71,7 @@ const Relatorios = () => {
   const loadRelatorios = async () => {
     try {
       setLoading(true);
-      const [vendas, produtos, clientes, vendedoresList, estoque, caixas] = await Promise.all([
+      const [vendas, produtos, clientes, vendedoresList, estoqueData, caixas] = await Promise.all([
         vendasAPI.getAll(),
         produtosAPI.getAll(),
         clientesAPI.getAll(),
@@ -81,6 +81,7 @@ const Relatorios = () => {
       ]);
 
       setVendedores(vendedoresList);
+      setEstoque(estoqueData);
 
       // Relatório de Vendas - calcular vendas por categoria real
       const vendasPorCategoria: any = {};
@@ -122,7 +123,7 @@ const Relatorios = () => {
 
       // Relatório de Produtos
       const totalProdutos = produtos.length;
-      const emEstoque = estoque.reduce((acc: number, item: any) => acc + (item.quantidadeDisponivel || 0), 0);
+      const emEstoque = estoqueData.reduce((acc: number, item: any) => acc + (item.quantidadeDisponivel || 0), 0);
       const novidades = produtos.filter((p: any) => p.novidade || p.isNovidade).length;
       const emPromocao = produtos.filter((p: any) => p.emPromocao || p.isOnSale).length;
 
@@ -130,7 +131,7 @@ const Relatorios = () => {
       let valorEstoqueCusto = 0;
       let valorEstoqueVenda = 0;
       
-      estoque.forEach((item: any) => {
+      estoqueData.forEach((item: any) => {
         const quantidade = item.quantidadeDisponivel || 0;
         const precoCusto = item.precoCusto || 0;
         const precoVenda = item.precoVenda || item.precoPromocional || 0;
@@ -158,7 +159,7 @@ const Relatorios = () => {
 
       // Adicionar estoque aos produtos vendidos
       Object.keys(produtosVendidos).forEach(codigo => {
-        const itemEstoque = estoque.find((e: any) => e.codigoProduto === codigo);
+        const itemEstoque = estoqueData.find((e: any) => e.codigoProduto === codigo);
         produtosVendidos[codigo].estoque = itemEstoque?.quantidadeDisponivel || 0;
       });
 
@@ -174,7 +175,7 @@ const Relatorios = () => {
         valorEstoqueCusto,
         valorEstoqueVenda,
         produtosMaisVendidos: topProdutos,
-        estoqueMinimo: estoque
+        estoqueMinimo: estoqueData
           .filter((item: any) => (item.quantidadeDisponivel || 0) < 10)
           .map((item: any) => ({
             produto: item.nomeProduto || item.nome,
@@ -292,7 +293,6 @@ const Relatorios = () => {
     setDataFimVendas("");
     setVendedorFiltro("todos");
     setCategoriaFiltro("todas");
-    setEstoqueMinimo("");
     setStatusCliente("todos");
     setPeriodoCaixa("mensal");
     toast.info("Filtros limpos");
@@ -311,9 +311,6 @@ const Relatorios = () => {
   const relatorioProdutosFiltrado = {
     ...relatorioProdutos,
     produtosMaisVendidos: relatorioProdutos.produtosMaisVendidos,
-    estoqueMinimo: estoqueMinimo 
-      ? relatorioProdutos.estoqueMinimo.filter((p: any) => p.estoque <= parseInt(estoqueMinimo))
-      : relatorioProdutos.estoqueMinimo,
   };
 
   // Filtrar relatório de caixa por período
@@ -560,17 +557,6 @@ const Relatorios = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                    Estoque Mínimo
-                  </label>
-                  <Input
-                    type="number"
-                    placeholder="Ex: 10"
-                    value={estoqueMinimo}
-                    onChange={(e) => setEstoqueMinimo(e.target.value)}
-                  />
-                </div>
               </div>
               <Button onClick={limparFiltros} variant="outline" size="sm">
                 <Filter className="h-4 w-4 mr-2" />
@@ -710,24 +696,42 @@ const Relatorios = () => {
               </div>
             </Card>
 
-            <Card className="p-6 shadow-card bg-gradient-to-br from-card via-card to-red-500/5">
+            <Card className="p-6 shadow-card">
               <h3 className="text-lg font-bold text-foreground mb-4">
-                ⚠️ Alerta: Estoque Mínimo
+                📊 Detalhamento de Estoque
               </h3>
               <div className="space-y-3">
-                {relatorioProdutosFiltrado.estoqueMinimo.map((produto: any, index: number) => (
+                {estoque.slice(0, 10).map((item: any, index: number) => (
                   <div
                     key={index}
-                    className="p-4 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800"
+                    className="p-4 rounded-lg bg-gradient-card hover:shadow-md transition-all"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-2">
                       <div>
-                        <p className="font-medium text-foreground">{produto.produto}</p>
+                        <p className="font-medium text-foreground">{item.nomeProduto || item.nome}</p>
                         <p className="text-sm text-muted-foreground">
-                          Estoque atual: {produto.estoque} | Mínimo: {produto.minimo}
+                          {item.categoria} • {item.codigoProduto}
                         </p>
                       </div>
-                      <Badge variant="destructive">Baixo</Badge>
+                      <Badge variant={item.quantidadeDisponivel === 0 ? "destructive" : item.quantidadeDisponivel < 5 ? "secondary" : "default"}>
+                        {item.quantidadeDisponivel} un.
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Custo: </span>
+                        <span className="font-semibold">R$ {item.precoCusto?.toFixed(2)}</span>
+                      </div>
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Venda: </span>
+                        <span className="font-semibold text-primary">R$ {item.precoVenda?.toFixed(2)}</span>
+                      </div>
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Margem: </span>
+                        <span className="font-semibold text-green-600">
+                          {item.precoCusto > 0 ? ((item.precoVenda - item.precoCusto) / item.precoCusto * 100).toFixed(0) : 0}%
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))}

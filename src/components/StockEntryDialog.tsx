@@ -22,15 +22,7 @@ interface StockEntryDialogProps {
 export function StockEntryDialog({ open, onOpenChange, codigoProduto, nomeProduto, cor, tamanho, onSuccess }: StockEntryDialogProps) {
   const [origem, setOrigem] = useState<"entrada" | "compra">("entrada");
   const [quantidade, setQuantidade] = useState(1);
-  const [fornecedor, setFornecedor] = useState("");
   const [observacao, setObservacao] = useState("");
-
-  const fornecedores = [
-    "Elegance Fashion",
-    "Moda Style",
-    "Denim Co.",
-    "Outros"
-  ];
 
   const handleSubmit = async () => {
     if (quantidade <= 0) {
@@ -48,10 +40,6 @@ export function StockEntryDialog({ open, onOpenChange, codigoProduto, nomeProdut
         observacao: observacao || undefined
       };
 
-      if (origem === "compra" && fornecedor) {
-        entradaData.fornecedor = fornecedor;
-      }
-
       await estoqueAPI.registrarEntrada(entradaData);
 
       toast.success(`Entrada de ${quantidade} unidade(s) registrada com sucesso!`, {
@@ -61,7 +49,6 @@ export function StockEntryDialog({ open, onOpenChange, codigoProduto, nomeProdut
       // Reset form
       setOrigem("entrada");
       setQuantidade(1);
-      setFornecedor("");
       setObservacao("");
       // Reload data
       onSuccess?.();
@@ -95,22 +82,6 @@ export function StockEntryDialog({ open, onOpenChange, codigoProduto, nomeProdut
               </div>
             </RadioGroup>
           </div>
-
-          {origem === "compra" && (
-            <div>
-              <Label>Fornecedor (Opcional)</Label>
-              <Select value={fornecedor} onValueChange={setFornecedor}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o fornecedor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {fornecedores.map((f) => (
-                    <SelectItem key={f} value={f}>{f}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
 
           <div>
             <Label>Quantidade *</Label>

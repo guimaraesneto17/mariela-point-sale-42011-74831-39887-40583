@@ -213,6 +213,87 @@ const caixaController = {
     }
   },
 
+  // Excluir movimento do caixa
+  async excluirMovimento(req: Request, res: Response) {
+    try {
+      const { index } = req.body;
+
+      if (index === undefined || index < 0) {
+        return res.status(400).json({ error: 'Índice de movimento inválido' });
+      }
+
+      // Buscar caixa aberto
+      const caixaAberto = await Caixa.findOne({ status: 'aberto' });
+      if (!caixaAberto) {
+        return res.status(400).json({ error: 'Não há caixa aberto' });
+      }
+
+      if (index >= caixaAberto.movimentos.length) {
+        return res.status(400).json({ error: 'Movimento não encontrado' });
+      }
+
+      // Remover movimento
+      caixaAberto.movimentos.splice(index, 1);
+
+      // Recalcular totais
+      caixaAberto.entrada = caixaAberto.movimentos
+        .filter((m: any) => m.tipo === 'entrada')
+        .reduce((sum: number, m: any) => sum + m.valor, 0);
+
+      caixaAberto.saida = caixaAberto.movimentos
+        .filter((m: any) => m.tipo === 'saida')
+        .reduce((sum: number, m: any) => sum + m.valor, 0);
+
+      caixaAberto.performance = caixaAberto.entrada - caixaAberto.saida;
+
+      await caixaAberto.save();
+      res.json(caixaAberto);
+    } catch (error: any) {
+      console.error('Erro ao excluir movimento:', error);
+      res.status(500).json({ error: error.message || 'Erro ao excluir movimento' });
+    }
+  },
+
+  // Reabrir caixa fechado
+  async reabrirCaixa(req: Request, res: Response) {
+    try {
+      const { codigoCaixa } = req.body;
+
+      if (!codigoCaixa) {
+        return res.status(400).json({ error: 'Código do caixa não informado' });
+      }
+
+      // Verificar se já existe caixa aberto
+      const caixaAberto = await Caixa.findOne({ status: 'aberto' });
+      if (caixaAberto) {
+        return res.status(400).json({ 
+          error: 'Já existe um caixa aberto. Feche-o antes de reabrir outro.',
+          caixaAberto 
+        });
+      }
+
+      // Buscar caixa a ser reaberto
+      const caixa = await Caixa.findOne({ codigoCaixa });
+      if (!caixa) {
+        return res.status(404).json({ error: 'Caixa não encontrado' });
+      }
+
+      if (caixa.status === 'aberto') {
+        return res.status(400).json({ error: 'Este caixa já está aberto' });
+      }
+
+      // Reabrir caixa
+      caixa.status = 'aberto';
+      caixa.dataFechamento = null;
+
+      await caixa.save();
+      res.json(caixa);
+    } catch (error: any) {
+      console.error('Erro ao reabrir caixa:', error);
+      res.status(500).json({ error: error.message || 'Erro ao reabrir caixa' });
+    }
+  },
+
   // Fechar caixa
   async fecharCaixa(req: Request, res: Response) {
     try {

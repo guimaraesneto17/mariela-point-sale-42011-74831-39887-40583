@@ -167,5 +167,13 @@ export const caixaAPI = {
   }),
   sincronizarVendas: () => fetchAPI('/caixa/sincronizar-vendas', { method: 'POST' }),
   fecharCaixa: () => fetchAPI('/caixa/fechar', { method: 'POST' }),
+  excluirMovimento: (index: number) => fetchAPI('/caixa/movimento/excluir', {
+    method: 'DELETE',
+    body: JSON.stringify({ index }),
+  }),
+  reabrirCaixa: (codigo: string) => fetchAPI('/caixa/reabrir', {
+    method: 'POST',
+    body: JSON.stringify({ codigoCaixa: codigo }),
+  }),
   delete: (codigo: string) => fetchAPI(`/caixa/${codigo}`, { method: 'DELETE' }),
 };
