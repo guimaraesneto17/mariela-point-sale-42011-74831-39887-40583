@@ -225,12 +225,25 @@ const NovaVenda = () => {
   const editarProduto = (index: number) => {
     const item = itensVenda[index];
     const allEstoque = estoque.length > 0 ? estoque : mockEstoque;
+    
+    // Buscar o produto completo no estoque com todas as informações
     const itemEstoque = allEstoque.find(e => 
       e.codigoProduto === item.codigoProduto && 
       e.cor === item.cor && 
       e.tamanho === item.tamanho
     );
-    setProdutoSelecionado(itemEstoque);
+    
+    // Se encontrou no estoque, usar o objeto completo com todas as informações
+    if (itemEstoque) {
+      setProdutoSelecionado({
+        ...itemEstoque,
+        // Garantir que as informações de promoção estão incluídas
+        emPromocao: itemEstoque.emPromocao || false,
+        precoPromocional: itemEstoque.precoPromocional || null,
+        novidade: itemEstoque.novidade || false
+      });
+    }
+    
     setQuantidadeProduto(item.quantidade);
     setDescontoProduto(item.descontoAplicado);
     setItemEmEdicao(index);
@@ -626,11 +639,16 @@ const NovaVenda = () => {
                       }`}
                     >
                       <div className="flex-1">
-                        <p className="font-medium">{item.nomeProduto}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{item.nomeProduto}</p>
+                          {item.emPromocao && (
+                            <Badge className="bg-accent text-accent-foreground">Promoção</Badge>
+                          )}
+                        </div>
                         <p className="text-sm text-muted-foreground">
                           {item.codigoProduto} • {item.cor} • Tam: {item.tamanho} • {item.quantidade}x R$ {item.precoUnitario.toFixed(2)}
                           {item.descontoAplicado > 0 && (
-                            <Badge className="ml-2 bg-accent">-{item.descontoAplicado}%</Badge>
+                            <Badge className="ml-2 bg-secondary">-{item.descontoAplicado}%</Badge>
                           )}
                         </p>
                       </div>

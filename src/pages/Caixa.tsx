@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Wallet, Plus, Minus, DollarSign, TrendingUp, TrendingDown, RefreshCw, XCircle, History, Calendar as CalendarIcon } from "lucide-react";
+import { Wallet, Plus, Minus, DollarSign, TrendingUp, TrendingDown, RefreshCw, XCircle, History, Calendar as CalendarIcon, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { caixaAPI } from "@/lib/api";
+import { caixaAPI, vendasAPI } from "@/lib/api";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
@@ -51,6 +51,10 @@ const Caixa = () => {
   const [valorInicial, setValorInicial] = useState("");
   const [valorMovimento, setValorMovimento] = useState("");
   const [observacaoMovimento, setObservacaoMovimento] = useState("");
+  
+  // Estados para exclusão de venda
+  const [vendaParaExcluir, setVendaParaExcluir] = useState<string | null>(null);
+  const [dialogExcluirVenda, setDialogExcluirVenda] = useState(false);
 
   useEffect(() => {
     carregarCaixaAberto();
@@ -179,6 +183,29 @@ const Caixa = () => {
         return dataCaixa === filtroData;
       })
     : historicoCaixas;
+
+  const abrirDialogExcluirVenda = (codigoVenda: string) => {
+    setVendaParaExcluir(codigoVenda);
+    setDialogExcluirVenda(true);
+  };
+
+  const handleExcluirVenda = async () => {
+    if (!vendaParaExcluir) return;
+    
+    try {
+      // Excluir a venda
+      await vendasAPI.delete(vendaParaExcluir);
+      
+      // Recarregar o caixa para atualizar os movimentos
+      await carregarCaixaAberto();
+      
+      setDialogExcluirVenda(false);
+      setVendaParaExcluir(null);
+      toast.success("Venda excluída com sucesso!");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao excluir venda");
+    }
+  };
 
   if (loading) {
     return (
@@ -353,12 +380,13 @@ const Caixa = () => {
                         <TableHead>Tipo</TableHead>
                         <TableHead>Descrição</TableHead>
                         <TableHead className="text-right">Valor</TableHead>
+                        <TableHead className="w-[50px]"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {caixaAberto.movimentos.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                             Nenhuma movimentação registrada
                           </TableCell>
                         </TableRow>
@@ -390,6 +418,18 @@ const Caixa = () => {
                                 movimento.tipo === 'entrada' ? 'text-green-600' : 'text-red-600'
                               }`}>
                                 {movimento.tipo === 'entrada' ? '+' : '-'} {formatarMoeda(movimento.valor)}
+                              </TableCell>
+                              <TableCell>
+                                {movimento.codigoVenda && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => abrirDialogExcluirVenda(movimento.codigoVenda!)}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                )}
                               </TableCell>
                             </TableRow>
                           ))
@@ -589,6 +629,15 @@ const Caixa = () => {
         onConfirm={handleFecharCaixa}
         title="Confirmar Fechamento de Caixa"
         description="Tem certeza que deseja fechar o caixa? Esta ação não pode ser desfeita. Certifique-se de que todas as movimentações foram registradas corretamente."
+      />
+
+      {/* Alert Dialog - Confirmar Exclusão de Venda */}
+      <AlertDeleteDialog
+        open={dialogExcluirVenda}
+        onOpenChange={setDialogExcluirVenda}
+        onConfirm={handleExcluirVenda}
+        title="Confirmar Exclusão de Venda"
+        description={`Tem certeza que deseja excluir a venda ${vendaParaExcluir}? Esta ação não pode ser desfeita e removerá a venda do sistema e do caixa.`}
       />
     </div>
   );
