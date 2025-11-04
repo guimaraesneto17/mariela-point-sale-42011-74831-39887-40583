@@ -123,7 +123,7 @@ const Relatorios = () => {
 
       // Relatório de Produtos
       const totalProdutos = produtos.length;
-      const emEstoque = estoqueData.reduce((acc: number, item: any) => acc + (item.quantidadeDisponivel || 0), 0);
+      const emEstoque = estoqueData.reduce((acc: number, item: any) => acc + (item.quantidadeDisponivel || item.quantidade || 0), 0);
       const novidades = produtos.filter((p: any) => p.novidade || p.isNovidade).length;
       const emPromocao = produtos.filter((p: any) => p.emPromocao || p.isOnSale).length;
 
@@ -132,7 +132,7 @@ const Relatorios = () => {
       let valorEstoqueVenda = 0;
       
       estoqueData.forEach((item: any) => {
-        const quantidade = item.quantidadeDisponivel || 0;
+        const quantidade = item.quantidadeDisponivel || item.quantidade || 0;
         const precoCusto = item.precoCusto || 0;
         const precoVenda = item.precoVenda || item.precoPromocional || 0;
         
@@ -160,7 +160,7 @@ const Relatorios = () => {
       // Adicionar estoque aos produtos vendidos
       Object.keys(produtosVendidos).forEach(codigo => {
         const itemEstoque = estoqueData.find((e: any) => e.codigoProduto === codigo);
-        produtosVendidos[codigo].estoque = itemEstoque?.quantidadeDisponivel || 0;
+        produtosVendidos[codigo].estoque = itemEstoque?.quantidadeDisponivel || itemEstoque?.quantidade || 0;
       });
 
       const topProdutos = Object.values(produtosVendidos)
@@ -176,10 +176,10 @@ const Relatorios = () => {
         valorEstoqueVenda,
         produtosMaisVendidos: topProdutos,
         estoqueMinimo: estoqueData
-          .filter((item: any) => (item.quantidadeDisponivel || 0) < 10)
+          .filter((item: any) => (item.quantidadeDisponivel || item.quantidade || 0) < 10)
           .map((item: any) => ({
             produto: item.nomeProduto || item.nome,
-            estoque: item.quantidadeDisponivel || 0,
+            estoque: item.quantidadeDisponivel || item.quantidade || 0,
             minimo: 10
           }))
           .slice(0, 5),
@@ -713,8 +713,8 @@ const Relatorios = () => {
                           {item.categoria} • {item.codigoProduto}
                         </p>
                       </div>
-                      <Badge variant={item.quantidadeDisponivel === 0 ? "destructive" : item.quantidadeDisponivel < 5 ? "secondary" : "default"}>
-                        {item.quantidadeDisponivel} un.
+                      <Badge variant={(item.quantidadeDisponivel || item.quantidade || 0) === 0 ? "destructive" : (item.quantidadeDisponivel || item.quantidade || 0) < 5 ? "secondary" : "default"}>
+                        {item.quantidadeDisponivel || item.quantidade || 0}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between">
