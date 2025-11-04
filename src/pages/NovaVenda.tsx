@@ -179,6 +179,40 @@ const NovaVenda = () => {
       return;
     }
 
+    // Verificar se o produto já está na lista de itens
+    const itemExistente = itensVenda.findIndex(
+      item => item.codigoProduto === produtoSelecionado.codigoProduto &&
+              item.cor === produtoSelecionado.cor &&
+              item.tamanho === produtoSelecionado.tamanho
+    );
+
+    // Se não estiver editando e o item já existe, incrementar quantidade
+    if (itemEmEdicao === null && itemExistente !== -1) {
+      const novaQuantidade = itensVenda[itemExistente].quantidade + quantidadeProduto;
+      
+      // Verificar quantidade disponível em estoque
+      if (novaQuantidade > (produtoSelecionado.quantidade || 0)) {
+        toast.error(`Quantidade indisponível! Estoque atual: ${produtoSelecionado.quantidade || 0} un.`);
+        return;
+      }
+
+      const novosItens = [...itensVenda];
+      const precoBase = produtoSelecionado.emPromocao && produtoSelecionado.precoPromocional 
+        ? Number(produtoSelecionado.precoPromocional) 
+        : Number(produtoSelecionado.precoVenda ?? 0);
+      const precoComDesconto = precoBase * (1 - itensVenda[itemExistente].descontoAplicado / 100);
+      
+      novosItens[itemExistente].quantidade = novaQuantidade;
+      novosItens[itemExistente].subtotal = precoComDesconto * novaQuantidade;
+      
+      setItensVenda(novosItens);
+      setProdutoSelecionado(null);
+      setQuantidadeProduto(1);
+      setDescontoProduto(0);
+      toast.success("Quantidade atualizada!");
+      return;
+    }
+
     // Verificar quantidade disponível em estoque
     if (quantidadeProduto > (produtoSelecionado.quantidade || 0)) {
       toast.error(`Quantidade indisponível! Estoque atual: ${produtoSelecionado.quantidade || 0} un.`);
@@ -257,11 +291,28 @@ const NovaVenda = () => {
   };
 
   const removerProduto = (index: number) => {
-    setItensVenda(itensVenda.filter((_, i) => i !== index));
-    if (itemEmEdicao === index) {
-      cancelarEdicao();
-    }
-    toast.info("Produto removido");
+    const item = itensVenda[index];
+    
+    // Criar uma Promise para a confirmação
+    const confirmarRemocao = () => {
+      return new Promise((resolve) => {
+        if (window.confirm(`Deseja remover ${item.nomeProduto} (${item.cor} - ${item.tamanho}) da venda?`)) {
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      });
+    };
+
+    confirmarRemocao().then((confirmado) => {
+      if (confirmado) {
+        setItensVenda(itensVenda.filter((_, i) => i !== index));
+        if (itemEmEdicao === index) {
+          cancelarEdicao();
+        }
+        toast.info("Produto removido");
+      }
+    });
   };
 
   const handleFinalizarVenda = async () => {
@@ -657,14 +708,8 @@ const NovaVenda = () => {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => editarProduto(index)}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
                           onClick={() => removerProduto(index)}
+                          className="hover:bg-destructive/10"
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>

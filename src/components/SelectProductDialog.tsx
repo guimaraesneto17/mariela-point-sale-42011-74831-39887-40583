@@ -153,7 +153,7 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect }: S
                   <Button
                     key={produto.codigoProduto}
                     variant="outline"
-                    className="w-full justify-between h-auto p-4 hover:bg-primary/5"
+                    className="w-full justify-between h-auto p-4 hover:bg-accent/10 transition-colors"
                     onClick={() => handleSelecionarProduto(produto)}
                     disabled={produto.quantidadeTotal <= 0}
                   >
@@ -161,7 +161,7 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect }: S
                       <Package className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
                       <div className="text-left flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <p className="font-medium">{produto.nomeProduto}</p>
+                          <p className="font-medium text-foreground">{produto.nomeProduto}</p>
                           {produto.emPromocao && (
                             <Badge variant="secondary" className="text-xs bg-accent text-accent-foreground">
                               Promoção
@@ -185,7 +185,7 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect }: S
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1 ml-3">
-                      <span className="font-bold text-lg">R$ {produto.precoVenda?.toFixed(2) || '0.00'}</span>
+                      <span className="font-bold text-lg text-foreground">R$ {produto.precoVenda?.toFixed(2) || '0.00'}</span>
                       {produto.quantidadeTotal <= 0 && (
                         <Badge variant="destructive" className="text-xs">
                           Esgotado

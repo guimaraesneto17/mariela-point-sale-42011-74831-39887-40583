@@ -21,25 +21,26 @@ const VitrineVirtualSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  cor: {
-    type: String,
-    required: true,
-    trim: true
-  },
   imagens: [{
     type: String,
     trim: true
   }],
-  tamanhos: [{
+  variantes: [{
+    cor: {
+      type: String,
+      required: true,
+      trim: true
+    },
     tamanho: {
       type: String,
       required: true,
-      enum: ['PP', 'P', 'M', 'G', 'GG', 'U']
+      trim: true
     },
-    quantidadeDisponivel: {
+    quantidade: {
       type: Number,
       required: true,
-      min: 0
+      min: 0,
+      default: 0
     }
   }],
   precoCusto: {
@@ -71,8 +72,8 @@ const VitrineVirtualSchema = new mongoose.Schema({
 });
 
 // Índices para melhor performance
-VitrineVirtualSchema.index({ category: 1 });
-VitrineVirtualSchema.index({ 'tags.isNew': 1 });
-VitrineVirtualSchema.index({ 'tags.isOnSale': 1 });
+VitrineVirtualSchema.index({ categoria: 1 });
+VitrineVirtualSchema.index({ emPromocao: 1 });
+VitrineVirtualSchema.index({ isNovidade: 1 });
 
 export default mongoose.models.VitrineVirtual || mongoose.model('VitrineVirtual', VitrineVirtualSchema);

@@ -8,40 +8,42 @@ const enrichVitrineItem = async (vitrineItem: any) => {
   const estoqueDocs = await Estoque.find({ codigoProduto: vitrineItem.codigoProduto });
   const produto = await Produto.findOne({ codigoProduto: vitrineItem.codigoProduto });
   
-  // Agregar variantes do estoque
-  const variantes: Array<{ cor: string; tamanho: string; quantidade: number }> = [];
-  let emPromocao = false;
-  let isNovidade = false;
-  let precoPromocional: number | null = null;
+  // Usar variantes da vitrine ou do estoque
+  let variantes: Array<{ cor: string; tamanho: string; quantidade: number }> = [];
+  let emPromocao = vitrineItem.emPromocao || false;
+  let isNovidade = vitrineItem.isNovidade || false;
+  let precoPromocional: number | null = vitrineItem.precoPromocional || null;
   
-  estoqueDocs.forEach((doc) => {
-    emPromocao = emPromocao || !!doc.emPromocao;
-    isNovidade = isNovidade || !!doc.isNovidade;
-    if (doc.precoPromocional) precoPromocional = doc.precoPromocional;
-    
-    if (doc.variantes && doc.variantes.length > 0) {
-      doc.variantes.forEach((v: any) => {
-        const existing = variantes.find(x => x.cor === v.cor && x.tamanho === v.tamanho);
-        if (existing) {
-          existing.quantidade += Number(v.quantidade) || 0;
-        } else {
-          variantes.push({
-            cor: v.cor,
-            tamanho: v.tamanho,
-            quantidade: Number(v.quantidade) || 0
-          });
-        }
-      });
-    }
-  });
-  
-  // Calcular disponibilidade por tamanho
-  const sizes = [...new Set(variantes.map(v => v.tamanho))].map(tamanho => ({
-    size: tamanho,
-    totalAvailable: variantes
-      .filter(v => v.tamanho === tamanho)
-      .reduce((sum, v) => sum + v.quantidade, 0)
-  }));
+  // Se a vitrine tem variantes, usar elas
+  if (vitrineItem.variantes && vitrineItem.variantes.length > 0) {
+    variantes = vitrineItem.variantes.map((v: any) => ({
+      cor: v.cor,
+      tamanho: v.tamanho,
+      quantidade: Number(v.quantidade) || 0
+    }));
+  } else {
+    // Caso contrário, buscar do estoque
+    estoqueDocs.forEach((doc) => {
+      emPromocao = emPromocao || !!doc.emPromocao;
+      isNovidade = isNovidade || !!doc.isNovidade;
+      if (doc.precoPromocional && !precoPromocional) precoPromocional = doc.precoPromocional;
+      
+      if (doc.variantes && doc.variantes.length > 0) {
+        doc.variantes.forEach((v: any) => {
+          const existing = variantes.find(x => x.cor === v.cor && x.tamanho === v.tamanho);
+          if (existing) {
+            existing.quantidade += Number(v.quantidade) || 0;
+          } else {
+            variantes.push({
+              cor: v.cor,
+              tamanho: v.tamanho,
+              quantidade: Number(v.quantidade) || 0
+            });
+          }
+        });
+      }
+    });
+  }
   
   const totalAvailable = variantes.reduce((sum, v) => sum + v.quantidade, 0);
   
@@ -58,19 +60,15 @@ const enrichVitrineItem = async (vitrineItem: any) => {
     code: vitrineItem.codigoProduto,
     title: produto?.nome || vitrineItem.nome,
     category: produto?.categoria || vitrineItem.categoria,
-    image: (produto?.imagens && produto.imagens[0]) || vitrineItem.imagens[0] || 'default.jpg',
+    image: (produto?.imagens && produto.imagens[0]) || vitrineItem.imagens?.[0] || 'default.jpg',
     price: emPromocao && precoPromocional ? `R$ ${precoPromocional}` : `R$ ${produto?.precoVenda || vitrineItem.precoVenda}`,
     priceValue: emPromocao && precoPromocional ? precoPromocional : (produto?.precoVenda || vitrineItem.precoVenda),
     originalPrice: emPromocao && precoPromocional ? `R$ ${produto?.precoVenda || vitrineItem.precoVenda}` : null,
     originalPriceValue: emPromocao && precoPromocional ? (produto?.precoVenda || vitrineItem.precoVenda) : null,
     isOnSale: emPromocao,
     isNew: isNovidade,
-    availability: {
-      colors: [...new Set(variantes.map(v => v.cor))],
-      sizes,
-      totalAvailable
-    },
-    sizes: [...new Set(variantes.map(v => v.tamanho))],
+    variantes: variantes,
+    totalAvailable,
     statusProduct,
     updatedAt: vitrineItem.dataAtualizacao || vitrineItem.dataCadastro
   };
