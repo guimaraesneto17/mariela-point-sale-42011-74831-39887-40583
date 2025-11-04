@@ -293,6 +293,31 @@ const Dashboard = () => {
         valorEstoqueVenda += quantidade * precoVenda;
       });
       
+      // Calcular margem de lucro real
+      const margemLucro = valorEstoqueVenda > 0 ? ((valorEstoqueVenda - valorEstoqueCusto) / valorEstoqueVenda) * 100 : 0;
+      
+      // Calcular crescimento mensal (comparar com mês anterior)
+      const mesAtual = new Date().getMonth();
+      const anoAtual = new Date().getFullYear();
+      const mesAnterior = mesAtual === 0 ? 11 : mesAtual - 1;
+      const anoMesAnterior = mesAtual === 0 ? anoAtual - 1 : anoAtual;
+      
+      const vendasMesAtual = vendas.filter((v: any) => {
+        const vendaData = safeDate(v.data || v.dataVenda);
+        return vendaData && vendaData.getMonth() === mesAtual && vendaData.getFullYear() === anoAtual;
+      });
+      
+      const vendasMesAnterior = vendas.filter((v: any) => {
+        const vendaData = safeDate(v.data || v.dataVenda);
+        return vendaData && vendaData.getMonth() === mesAnterior && vendaData.getFullYear() === anoMesAnterior;
+      });
+      
+      const faturamentoMesAtual = vendasMesAtual.reduce((acc: number, v: any) => acc + (v.total || 0), 0);
+      const faturamentoMesAnterior = vendasMesAnterior.reduce((acc: number, v: any) => acc + (v.total || 0), 0);
+      const crescimentoMensal = faturamentoMesAnterior > 0 
+        ? ((faturamentoMesAtual - faturamentoMesAnterior) / faturamentoMesAnterior) * 100 
+        : 0;
+
       setStats({
         vendasHoje: vendasHoje.length,
         faturamentoDiario,
@@ -304,19 +329,81 @@ const Dashboard = () => {
         totalClientes,
         produtosEstoque,
         ticketMedio: vendas.length > 0 ? vendas.reduce((acc: number, v: any) => acc + (v.total || 0), 0) / vendas.length : 0,
-        margemLucro: 38.5,
-        crescimentoMensal: 15.3,
+        margemLucro,
+        crescimentoMensal,
         valorEstoqueCusto,
         valorEstoqueVenda,
       });
 
-      // Top produtos (simplificado - usar dados mock)
-      setTopProducts([
-        { nome: "Vestido Floral Curto", vendas: 45, valor: 6745.5 },
-        { nome: "Blusa Manga Longa", vendas: 38, valor: 3416.2 },
-        { nome: "Calça Jeans Skinny", vendas: 32, valor: 6396.8 },
-        { nome: "Saia Plissada Midi", vendas: 28, valor: 3637.2 },
-      ]);
+      // Calcular top produtos baseado nas vendas reais
+      const produtosVendidos = new Map<string, { nome: string; vendas: number; valor: number }>();
+      vendas.forEach((venda: any) => {
+        if (venda.itens && Array.isArray(venda.itens)) {
+          venda.itens.forEach((item: any) => {
+            const codigo = item.codigoProduto || item.codigo;
+            const nome = item.nome || item.nomeProduto || codigo;
+            const existing = produtosVendidos.get(codigo) || { nome, vendas: 0, valor: 0 };
+            produtosVendidos.set(codigo, {
+              nome: existing.nome,
+              vendas: existing.vendas + (item.quantidade || 1),
+              valor: existing.valor + (item.precoVenda || item.preco || 0) * (item.quantidade || 1),
+            });
+          });
+        }
+      });
+      
+      const topProdutosArray = Array.from(produtosVendidos.values())
+        .sort((a, b) => b.valor - a.valor)
+        .slice(0, 4);
+      setTopProducts(topProdutosArray);
+
+      // Calcular top clientes baseado nas vendas reais
+      const clientesVendas = new Map<string, { nome: string; compras: number; valorTotal: number }>();
+      vendas.forEach((venda: any) => {
+        const clienteId = venda.cliente?._id || venda.cliente?.codigo || venda.clienteId;
+        const clienteNome = venda.cliente?.nome || 'Cliente';
+        const existing = clientesVendas.get(clienteId) || { nome: clienteNome, compras: 0, valorTotal: 0 };
+        clientesVendas.set(clienteId, {
+          nome: existing.nome,
+          compras: existing.compras + 1,
+          valorTotal: existing.valorTotal + (venda.total || 0),
+        });
+      });
+      
+      const topClientesArray = Array.from(clientesVendas.values())
+        .sort((a, b) => b.valorTotal - a.valorTotal)
+        .slice(0, 5);
+      setTopClientes(topClientesArray);
+
+      // Calcular top vendedores baseado nas vendas reais
+      const vendedoresVendas = new Map<string, { nome: string; vendas: number; valorTotal: number }>();
+      vendas.forEach((venda: any) => {
+        const vendedorId = venda.vendedor?._id || venda.vendedor?.codigo || venda.vendedorId;
+        const vendedorNome = venda.vendedor?.nome || 'Vendedor';
+        const existing = vendedoresVendas.get(vendedorId) || { nome: vendedorNome, vendas: 0, valorTotal: 0 };
+        vendedoresVendas.set(vendedorId, {
+          nome: existing.nome,
+          vendas: existing.vendas + 1,
+          valorTotal: existing.valorTotal + (venda.total || 0),
+        });
+      });
+      
+      const topVendedoresArray = Array.from(vendedoresVendas.values())
+        .sort((a, b) => b.valorTotal - a.valorTotal)
+        .slice(0, 5);
+      setTopVendedores(topVendedoresArray);
+
+      // Produtos em baixo estoque (quantidade <= 5)
+      const produtosBaixo = estoque
+        .filter((item: any) => (item.quantidadeDisponivel || 0) <= 5)
+        .map((item: any) => ({
+          codigo: item.codigoProduto || item.codigo,
+          nome: item.nomeProduto || item.nome,
+          quantidade: item.quantidadeDisponivel || 0,
+          precoVenda: item.precoVenda || 0,
+        }))
+        .slice(0, 5);
+      setProdutosBaixoEstoque(produtosBaixo);
 
       setRecentSales(vendas.slice(0, 3).map((v: any) => ({
         codigo: v.codigoVenda || v.codigo,
@@ -377,7 +464,6 @@ const Dashboard = () => {
             title="Vendas Hoje"
             value={stats.vendasHoje}
             icon={ShoppingCart}
-            trend={{ value: 12, isPositive: true }}
             gradient
           />
         );
@@ -387,7 +473,6 @@ const Dashboard = () => {
             title="Faturamento Diário"
             value={`R$ ${stats.faturamentoDiario.toFixed(2)}`}
             icon={DollarSign}
-            trend={{ value: 8, isPositive: true }}
             gradient
           />
         );
@@ -397,7 +482,6 @@ const Dashboard = () => {
             title="Total de Clientes"
             value={stats.totalClientes}
             icon={Users}
-            trend={{ value: 15, isPositive: true }}
           />
         );
       case "produtos-estoque":
@@ -432,7 +516,6 @@ const Dashboard = () => {
             title="Ticket Médio"
             value={`R$ ${stats.ticketMedio.toFixed(2)}`}
             icon={Wallet}
-            trend={{ value: 5, isPositive: true }}
           />
         );
       case "margem-lucro":
@@ -441,7 +524,6 @@ const Dashboard = () => {
             title="Margem de Lucro"
             value={`${stats.margemLucro.toFixed(1)}%`}
             icon={BarChart3}
-            trend={{ value: 3, isPositive: true }}
             gradient
           />
         );
@@ -451,7 +533,10 @@ const Dashboard = () => {
             title="Crescimento Mensal"
             value={`${stats.crescimentoMensal.toFixed(1)}%`}
             icon={ArrowUpDown}
-            trend={{ value: stats.crescimentoMensal, isPositive: true }}
+            trend={{ 
+              value: Math.abs(stats.crescimentoMensal), 
+              isPositive: stats.crescimentoMensal >= 0 
+            }}
             gradient
           />
         );

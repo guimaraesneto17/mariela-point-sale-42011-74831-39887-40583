@@ -31,42 +31,6 @@ const Vendas = () => {
     }
   };
 
-  const mockVendas = [
-    {
-      codigo: "VENDA001",
-      data: "12/10/2025",
-      cliente: { codigo: "C001", nome: "Ana Souza" },
-      vendedor: { codigo: "V001", nome: "Maria Silva" },
-      total: 149.90,
-      formaPagamento: "Cartão de Crédito",
-      status: "concluida",
-      taxaMaquininha: 2.5,
-      valorTaxa: 3.75,
-      valorRecebido: 146.15,
-      parcelas: 3,
-      itens: [
-        { nome: "Vestido Floral Curto", quantidade: 1, preco: 134.91 },
-      ]
-    },
-    {
-      codigo: "VENDA002",
-      data: "13/10/2025",
-      cliente: { codigo: "C002", nome: "Fernanda Ribeiro" },
-      vendedor: { codigo: "V002", nome: "Julia Santos" },
-      total: 289.80,
-      formaPagamento: "Pix",
-      status: "concluida",
-      taxaMaquininha: 0,
-      valorTaxa: 0,
-      valorRecebido: 289.80,
-      parcelas: 1,
-      itens: [
-        { nome: "Calça Jeans Skinny", quantidade: 1, preco: 169.90 },
-        { nome: "Saia Plissada Midi", quantidade: 1, preco: 109.90 },
-      ]
-    },
-  ];
-
   // Helper function para converter data de forma segura
   const getValidDateString = (dateValue: any): string => {
     if (!dateValue) return '';
@@ -104,8 +68,7 @@ const Vendas = () => {
     return isNaN(numValue) ? 'R$ 0,00' : `R$ ${numValue.toFixed(2).replace('.', ',')}`;
   };
 
-  const displayVendas = vendas.length > 0 ? vendas : mockVendas;
-  const filteredVendas = displayVendas.filter((venda: any) => {
+  const filteredVendas = vendas.filter((venda: any) => {
     // Busca inteligente: procura em vendedor, código vendedor, cliente, código cliente, código venda
     const codigoVenda = venda.codigoVenda || venda.codigo || '';
     const clienteNome = venda.cliente?.nome || '';
