@@ -168,7 +168,7 @@ const defaultCards: DashboardCardConfig[] = [
     id: "caixa-aberto",
     title: "Caixa Aberto",
     description: "Status do caixa atual",
-    visible: true,
+    visible: false,
     category: "finance",
   },
   {
@@ -176,7 +176,7 @@ const defaultCards: DashboardCardConfig[] = [
     title: "Performance de Caixa",
     description: "Resultado do caixa atual",
     visible: true,
-    category: "finance",
+    category: "stats",
   },
 ];
 
@@ -813,36 +813,16 @@ const Dashboard = () => {
         );
       case "performance-caixa":
         return (
-          <DashboardCard id={cardConfig.id}>
-            <h3 className="text-lg font-bold text-foreground mb-4">
-              Performance de Caixa
-            </h3>
-            {caixaAberto ? (
-              <div className="space-y-4">
-                <div className="p-4 rounded-lg bg-gradient-card">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">Performance Atual</span>
-                    <Badge variant={caixaAberto.performance >= 0 ? 'default' : 'destructive'}>
-                      {caixaAberto.performance >= 0 ? 'Positivo' : 'Negativo'}
-                    </Badge>
-                  </div>
-                  <p className={`text-3xl font-bold ${
-                    caixaAberto.performance >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    R$ {caixaAberto.performance?.toFixed(2) || '0.00'}
-                  </p>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  <p>Total de Movimentações: {caixaAberto.movimentos?.length || 0}</p>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                <p className="text-muted-foreground">Nenhum caixa aberto</p>
-              </div>
-            )}
-          </DashboardCard>
+          <StatsCard
+            title="Performance do Caixa"
+            value={caixaAberto ? `R$ ${caixaAberto.performance?.toFixed(2) || '0.00'}` : 'Caixa Fechado'}
+            icon={Wallet}
+            trend={caixaAberto && caixaAberto.performance ? { 
+              value: Math.abs(caixaAberto.performance), 
+              isPositive: caixaAberto.performance >= 0 
+            } : undefined}
+            gradient
+          />
         );
       default:
         return null;

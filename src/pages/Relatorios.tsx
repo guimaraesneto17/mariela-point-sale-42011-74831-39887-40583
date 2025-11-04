@@ -22,6 +22,9 @@ const Relatorios = () => {
   // Filtros para clientes
   const [statusCliente, setStatusCliente] = useState("todos");
   
+  // Filtros para caixa
+  const [periodoCaixa, setPeriodoCaixa] = useState("mensal"); // semanal ou mensal
+  
   const [loading, setLoading] = useState(true);
   const [vendedores, setVendedores] = useState<any[]>([]);
   const [relatorioVendas, setRelatorioVendas] = useState<any>({
@@ -291,6 +294,7 @@ const Relatorios = () => {
     setCategoriaFiltro("todas");
     setEstoqueMinimo("");
     setStatusCliente("todos");
+    setPeriodoCaixa("mensal");
     toast.info("Filtros limpos");
   };
 
@@ -311,6 +315,42 @@ const Relatorios = () => {
       ? relatorioProdutos.estoqueMinimo.filter((p: any) => p.estoque <= parseInt(estoqueMinimo))
       : relatorioProdutos.estoqueMinimo,
   };
+
+  // Filtrar relatório de caixa por período
+  const getDataLimite = () => {
+    const hoje = new Date();
+    if (periodoCaixa === "semanal") {
+      const semanaAtras = new Date(hoje);
+      semanaAtras.setDate(hoje.getDate() - 7);
+      return semanaAtras;
+    } else {
+      const mesAtras = new Date(hoje);
+      mesAtras.setMonth(hoje.getMonth() - 1);
+      return mesAtras;
+    }
+  };
+
+  const relatorioCaixaFiltrado = {
+    ...relatorioCaixa,
+    ultimosCaixas: relatorioCaixa.ultimosCaixas.filter((c: any) => {
+      const dataAbertura = new Date(c.dataAbertura.split('/').reverse().join('-'));
+      return dataAbertura >= getDataLimite();
+    }),
+  };
+
+  // Recalcular totais com base nos caixas filtrados
+  const totalEntradasFiltrado = relatorioCaixaFiltrado.ultimosCaixas.reduce((acc: number, c: any) => {
+    // Buscar o caixa original para pegar os valores corretos
+    return acc;
+  }, 0);
+
+  const totalSaidasFiltrado = relatorioCaixaFiltrado.ultimosCaixas.reduce((acc: number, c: any) => {
+    return acc;
+  }, 0);
+
+  const performanceTotalFiltrado = relatorioCaixaFiltrado.ultimosCaixas.reduce((acc: number, c: any) => {
+    return acc + c.performance;
+  }, 0);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -901,67 +941,104 @@ const Relatorios = () => {
 
         {/* Relatório de Caixa */}
         <TabsContent value="caixa" className="space-y-6">
-        <h2 className="text-2xl font-bold text-foreground">Relatório de Caixa</h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="bg-gradient-to-br from-card via-card to-primary/5">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total de Caixas
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-3">
-                <Wallet className="h-8 w-8 text-primary" />
-                <p className="text-3xl font-bold text-foreground">
-                  {relatorioCaixa.totalCaixas}
-                </p>
+          {/* Filtros específicos para Caixa */}
+          <Card className="p-6 shadow-card">
+            <div className="flex items-center gap-2 mb-4">
+              <Filter className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-bold text-foreground">Filtros de Caixa</h3>
+            </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                    Período
+                  </label>
+                  <Select value={periodoCaixa} onValueChange={setPeriodoCaixa}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o período" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="semanal">Última Semana</SelectItem>
+                      <SelectItem value="mensal">Último Mês</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </CardContent>
+              <Button onClick={limparFiltros} variant="outline" size="sm">
+                <Filter className="h-4 w-4 mr-2" />
+                Limpar Filtros
+              </Button>
+            </div>
           </Card>
 
-          <Card className="bg-gradient-to-br from-card via-card to-green-500/5">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total de Entradas
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-3">
-                <TrendingUp className="h-8 w-8 text-green-600" />
-                <p className="text-3xl font-bold text-green-600">
-                  R$ {relatorioCaixa.totalEntradas.toFixed(2)}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <h2 className="text-2xl font-bold text-foreground">
+            Relatório de Caixa - {periodoCaixa === "semanal" ? "Última Semana" : "Último Mês"}
+          </h2>
 
-          <Card className="bg-gradient-to-br from-card via-card to-blue-500/5">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Performance Total
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-3">
-                <DollarSign className="h-8 w-8 text-blue-600" />
-                <p className={`text-3xl font-bold ${
-                  relatorioCaixa.performanceTotal >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  R$ {relatorioCaixa.performanceTotal.toFixed(2)}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="bg-gradient-to-br from-card via-card to-primary/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Caixas no Período
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <Wallet className="h-8 w-8 text-primary" />
+                  <p className="text-3xl font-bold text-foreground">
+                    {relatorioCaixaFiltrado.ultimosCaixas.length}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-card via-card to-green-500/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Caixas Abertos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <TrendingUp className="h-8 w-8 text-green-600" />
+                  <p className="text-3xl font-bold text-green-600">
+                    {relatorioCaixa.caixasAbertos}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-card via-card to-blue-500/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Performance no Período
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <DollarSign className="h-8 w-8 text-blue-600" />
+                  <p className={`text-3xl font-bold ${
+                    performanceTotalFiltrado >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    R$ {performanceTotalFiltrado.toFixed(2)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
         </div>
 
-        <Card className="p-6 shadow-card">
-          <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-            <Wallet className="h-5 w-5 text-primary" />
-            Últimos Caixas
-          </h3>
-          <div className="space-y-3">
-            {relatorioCaixa.ultimosCaixas.map((caixa: any, index: number) => (
+          <Card className="p-6 shadow-card">
+            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-primary" />
+              Caixas do Período ({periodoCaixa === "semanal" ? "Última Semana" : "Último Mês"})
+            </h3>
+            <div className="space-y-3">
+              {relatorioCaixaFiltrado.ultimosCaixas.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhum caixa encontrado no período selecionado
+                </div>
+              ) : (
+                relatorioCaixaFiltrado.ultimosCaixas.map((caixa: any, index: number) => (
               <div
                 key={index}
                 className="flex items-center justify-between p-4 rounded-lg bg-gradient-card hover:shadow-md transition-all"
@@ -983,7 +1060,8 @@ const Relatorios = () => {
                   R$ {caixa.performance.toFixed(2)}
                 </span>
               </div>
-            ))}
+            ))
+              )}
           </div>
         </Card>
       </TabsContent>
