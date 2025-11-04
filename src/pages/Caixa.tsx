@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { caixaAPI } from "@/lib/api";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 
 interface Movimento {
   tipo: 'entrada' | 'saida';
@@ -44,6 +45,7 @@ const Caixa = () => {
   const [abrirCaixaDialog, setAbrirCaixaDialog] = useState(false);
   const [movimentoDialog, setMovimentoDialog] = useState(false);
   const [tipoMovimento, setTipoMovimento] = useState<'entrada' | 'saida'>('entrada');
+  const [fecharCaixaDialog, setFecharCaixaDialog] = useState(false);
   
   // Form states
   const [valorInicial, setValorInicial] = useState("");
@@ -130,6 +132,7 @@ const Caixa = () => {
     try {
       const caixaFechado = await caixaAPI.fecharCaixa();
       setCaixaAberto(null);
+      setFecharCaixaDialog(false);
       toast.success("Caixa fechado com sucesso!");
     } catch (error: any) {
       toast.error(error.message || "Erro ao fechar caixa");
@@ -331,7 +334,7 @@ const Caixa = () => {
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Sincronizar Vendas
                 </Button>
-                <Button onClick={handleFecharCaixa} variant="secondary">
+                <Button onClick={() => setFecharCaixaDialog(true)} variant="secondary">
                   <XCircle className="h-4 w-4 mr-2" />
                   Fechar Caixa
                 </Button>
@@ -578,6 +581,15 @@ const Caixa = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Alert Dialog - Confirmar Fechamento de Caixa */}
+      <AlertDeleteDialog
+        open={fecharCaixaDialog}
+        onOpenChange={setFecharCaixaDialog}
+        onConfirm={handleFecharCaixa}
+        title="Confirmar Fechamento de Caixa"
+        description="Tem certeza que deseja fechar o caixa? Esta ação não pode ser desfeita. Certifique-se de que todas as movimentações foram registradas corretamente."
+      />
     </div>
   );
 };

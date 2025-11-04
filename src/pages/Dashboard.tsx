@@ -38,7 +38,7 @@ import {
   sortableKeyboardCoordinates,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
-import { clientesAPI, vendasAPI, produtosAPI, estoqueAPI, vendedoresAPI } from "@/lib/api";
+import { clientesAPI, vendasAPI, produtosAPI, estoqueAPI, vendedoresAPI, caixaAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { formatDateTime, safeDate } from "@/lib/utils";
 
@@ -164,6 +164,20 @@ const defaultCards: DashboardCardConfig[] = [
     visible: false,
     category: "stats",
   },
+  {
+    id: "caixa-aberto",
+    title: "Caixa Aberto",
+    description: "Status do caixa atual",
+    visible: true,
+    category: "finance",
+  },
+  {
+    id: "performance-caixa",
+    title: "Performance de Caixa",
+    description: "Resultado do caixa atual",
+    visible: true,
+    category: "finance",
+  },
 ];
 
 const Dashboard = () => {
@@ -192,6 +206,7 @@ const Dashboard = () => {
   const [recentSales, setRecentSales] = useState<any[]>([]);
   const [produtosBaixoEstoque, setProdutosBaixoEstoque] = useState<any[]>([]);
   const [movimentacoesEstoque, setMovimentacoesEstoque] = useState<any[]>([]);
+  const [caixaAberto, setCaixaAberto] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const sensors = useSensors(
@@ -224,6 +239,15 @@ const Dashboard = () => {
         estoqueAPI.getAll(),
         vendedoresAPI.getAll(),
       ]);
+
+      // Tentar carregar caixa aberto
+      try {
+        const caixa = await caixaAPI.getCaixaAberto();
+        setCaixaAberto(caixa);
+      } catch (error) {
+        console.log('Nenhum caixa aberto encontrado');
+        setCaixaAberto(null);
+      }
 
       // Coletar todas as movimentações de todos os itens do estoque
       const todasMovimentacoes: any[] = [];
@@ -744,6 +768,80 @@ const Dashboard = () => {
                 </div>
               ))}
             </div>
+          </DashboardCard>
+        );
+      case "caixa-aberto":
+        return (
+          <DashboardCard id={cardConfig.id}>
+            <h3 className="text-lg font-bold text-foreground mb-4">
+              Caixa Aberto
+            </h3>
+            {caixaAberto ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Badge variant="default" className="bg-green-500">Aberto</Badge>
+                  <span className="text-sm text-muted-foreground">{caixaAberto.codigoCaixa}</span>
+                </div>
+                <div className="p-4 rounded-lg bg-gradient-card">
+                  <p className="text-sm text-muted-foreground mb-1">Valor Inicial</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    R$ {caixaAberto.valorInicial?.toFixed(2) || '0.00'}
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/20">
+                    <p className="text-xs text-muted-foreground mb-1">Entradas</p>
+                    <p className="text-lg font-bold text-green-600">
+                      R$ {caixaAberto.entrada?.toFixed(2) || '0.00'}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/20">
+                    <p className="text-xs text-muted-foreground mb-1">Saídas</p>
+                    <p className="text-lg font-bold text-red-600">
+                      R$ {caixaAberto.saida?.toFixed(2) || '0.00'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Wallet className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                <p className="text-muted-foreground">Nenhum caixa aberto</p>
+              </div>
+            )}
+          </DashboardCard>
+        );
+      case "performance-caixa":
+        return (
+          <DashboardCard id={cardConfig.id}>
+            <h3 className="text-lg font-bold text-foreground mb-4">
+              Performance de Caixa
+            </h3>
+            {caixaAberto ? (
+              <div className="space-y-4">
+                <div className="p-4 rounded-lg bg-gradient-card">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-muted-foreground">Performance Atual</span>
+                    <Badge variant={caixaAberto.performance >= 0 ? 'default' : 'destructive'}>
+                      {caixaAberto.performance >= 0 ? 'Positivo' : 'Negativo'}
+                    </Badge>
+                  </div>
+                  <p className={`text-3xl font-bold ${
+                    caixaAberto.performance >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    R$ {caixaAberto.performance?.toFixed(2) || '0.00'}
+                  </p>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  <p>Total de Movimentações: {caixaAberto.movimentos?.length || 0}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                <p className="text-muted-foreground">Nenhum caixa aberto</p>
+              </div>
+            )}
           </DashboardCard>
         );
       default:

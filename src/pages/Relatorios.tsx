@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FileText, Calendar, Filter, Download, TrendingUp, Package, Users, DollarSign, ShoppingBag, Sparkles, Tag, Crown, UserCheck } from "lucide-react";
+import { FileText, Calendar, Filter, Download, TrendingUp, Package, Users, DollarSign, ShoppingBag, Sparkles, Tag, Crown, UserCheck, Wallet } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { vendasAPI, produtosAPI, clientesAPI, vendedoresAPI, estoqueAPI } from "@/lib/api";
+import { vendasAPI, produtosAPI, clientesAPI, vendedoresAPI, estoqueAPI, caixaAPI } from "@/lib/api";
 
 const Relatorios = () => {
   // Filtros para vendas
@@ -51,6 +51,15 @@ const Relatorios = () => {
     totalVendedores: 0,
     topVendedores: [],
   });
+  const [relatorioCaixa, setRelatorioCaixa] = useState<any>({
+    totalCaixas: 0,
+    caixasAbertos: 0,
+    caixasFechados: 0,
+    totalEntradas: 0,
+    totalSaidas: 0,
+    performanceTotal: 0,
+    ultimosCaixas: [],
+  });
 
   useEffect(() => {
     loadRelatorios();
@@ -59,12 +68,13 @@ const Relatorios = () => {
   const loadRelatorios = async () => {
     try {
       setLoading(true);
-      const [vendas, produtos, clientes, vendedoresList, estoque] = await Promise.all([
+      const [vendas, produtos, clientes, vendedoresList, estoque, caixas] = await Promise.all([
         vendasAPI.getAll(),
         produtosAPI.getAll(),
         clientesAPI.getAll(),
         vendedoresAPI.getAll(),
         estoqueAPI.getAll(),
+        caixaAPI.getAll(),
       ]);
 
       setVendedores(vendedoresList);
@@ -238,6 +248,34 @@ const Relatorios = () => {
         topVendedores: topVendedoresArray,
       });
 
+      // Relatório de Caixa
+      const caixasAbertos = caixas.filter((c: any) => c.status === 'aberto').length;
+      const caixasFechados = caixas.filter((c: any) => c.status === 'fechado').length;
+      const totalEntradas = caixas.reduce((acc: number, c: any) => acc + (c.entrada || 0), 0);
+      const totalSaidas = caixas.reduce((acc: number, c: any) => acc + (c.saida || 0), 0);
+      const performanceTotal = caixas.reduce((acc: number, c: any) => acc + (c.performance || 0), 0);
+
+      const ultimosCaixas = caixas
+        .sort((a: any, b: any) => new Date(b.dataAbertura).getTime() - new Date(a.dataAbertura).getTime())
+        .slice(0, 5)
+        .map((c: any) => ({
+          codigo: c.codigoCaixa,
+          dataAbertura: new Date(c.dataAbertura).toLocaleDateString('pt-BR'),
+          dataFechamento: c.dataFechamento ? new Date(c.dataFechamento).toLocaleDateString('pt-BR') : '-',
+          status: c.status,
+          performance: c.performance || 0,
+        }));
+
+      setRelatorioCaixa({
+        totalCaixas: caixas.length,
+        caixasAbertos,
+        caixasFechados,
+        totalEntradas,
+        totalSaidas,
+        performanceTotal,
+        ultimosCaixas,
+      });
+
     } catch (error) {
       console.error('Erro ao carregar relatórios:', error);
       toast.error('Erro ao carregar relatórios');
@@ -287,11 +325,12 @@ const Relatorios = () => {
       </div>
 
       <Tabs defaultValue="vendas" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="vendas">Vendas</TabsTrigger>
           <TabsTrigger value="produtos">Produtos</TabsTrigger>
           <TabsTrigger value="clientes">Clientes</TabsTrigger>
           <TabsTrigger value="vendedores">Vendedores</TabsTrigger>
+          <TabsTrigger value="caixa">Caixa</TabsTrigger>
         </TabsList>
 
         {/* Relatório de Vendas */}
@@ -860,6 +899,95 @@ const Relatorios = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Relatório de Caixa */}
+      <TabsContent value="caixa" className="space-y-6">
+        <h2 className="text-2xl font-bold text-foreground">Relatório de Caixa</h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="bg-gradient-to-br from-card via-card to-primary/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total de Caixas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-3">
+                <Wallet className="h-8 w-8 text-primary" />
+                <p className="text-3xl font-bold text-foreground">
+                  {relatorioCaixa.totalCaixas}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-card via-card to-green-500/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total de Entradas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-3">
+                <TrendingUp className="h-8 w-8 text-green-600" />
+                <p className="text-3xl font-bold text-green-600">
+                  R$ {relatorioCaixa.totalEntradas.toFixed(2)}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-card via-card to-blue-500/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Performance Total
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-3">
+                <DollarSign className="h-8 w-8 text-blue-600" />
+                <p className={`text-3xl font-bold ${
+                  relatorioCaixa.performanceTotal >= 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  R$ {relatorioCaixa.performanceTotal.toFixed(2)}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="p-6 shadow-card">
+          <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+            <Wallet className="h-5 w-5 text-primary" />
+            Últimos Caixas
+          </h3>
+          <div className="space-y-3">
+            {relatorioCaixa.ultimosCaixas.map((caixa: any, index: number) => (
+              <div
+                key={index}
+                className="flex items-center justify-between p-4 rounded-lg bg-gradient-card hover:shadow-md transition-all"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-primary">{caixa.codigo}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {caixa.dataAbertura} - {caixa.dataFechamento}
+                    </span>
+                  </div>
+                  <Badge variant={caixa.status === 'aberto' ? 'default' : 'secondary'}>
+                    {caixa.status === 'aberto' ? 'Aberto' : 'Fechado'}
+                  </Badge>
+                </div>
+                <span className={`font-bold text-lg ${
+                  caixa.performance >= 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  R$ {caixa.performance.toFixed(2)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </TabsContent>
     </div>
   );
 };
