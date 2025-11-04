@@ -25,18 +25,18 @@ const VitrineVirtualSchema = new mongoose.Schema({
     type: String,
     trim: true
   }],
-  variantes: [{
-    cor: {
+  variants: [{
+    size: {
       type: String,
       required: true,
       trim: true
     },
-    tamanho: {
+    color: {
       type: String,
       required: true,
       trim: true
     },
-    quantidade: {
+    availability: {
       type: Number,
       required: true,
       min: 0,

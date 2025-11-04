@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { SelectProductDialog } from "@/components/SelectProductDialog";
 import { SelectClientDialog } from "@/components/SelectClientDialog";
 import { SelectVendedorDialog } from "@/components/SelectVendedorDialog";
+import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import { clientesAPI, vendedoresAPI, estoqueAPI, vendasAPI } from "@/lib/api";
 import { formatInTimeZone } from "date-fns-tz";
 import { startOfDay, endOfDay } from "date-fns";
@@ -290,29 +291,24 @@ const NovaVenda = () => {
     setItemEmEdicao(null);
   };
 
-  const removerProduto = (index: number) => {
-    const item = itensVenda[index];
-    
-    // Criar uma Promise para a confirmação
-    const confirmarRemocao = () => {
-      return new Promise((resolve) => {
-        if (window.confirm(`Deseja remover ${item.nomeProduto} (${item.cor} - ${item.tamanho}) da venda?`)) {
-          resolve(true);
-        } else {
-          resolve(false);
-        }
-      });
-    };
+  const [deleteItemDialogOpen, setDeleteItemDialogOpen] = useState(false);
+  const [itemToDeleteIndex, setItemToDeleteIndex] = useState<number | null>(null);
 
-    confirmarRemocao().then((confirmado) => {
-      if (confirmado) {
-        setItensVenda(itensVenda.filter((_, i) => i !== index));
-        if (itemEmEdicao === index) {
-          cancelarEdicao();
-        }
-        toast.info("Produto removido");
+  const removerProduto = (index: number) => {
+    setItemToDeleteIndex(index);
+    setDeleteItemDialogOpen(true);
+  };
+
+  const confirmDeleteItem = () => {
+    if (itemToDeleteIndex !== null) {
+      setItensVenda(itensVenda.filter((_, i) => i !== itemToDeleteIndex));
+      if (itemEmEdicao === itemToDeleteIndex) {
+        cancelarEdicao();
       }
-    });
+      toast.info("Produto removido");
+      setDeleteItemDialogOpen(false);
+      setItemToDeleteIndex(null);
+    }
   };
 
   const handleFinalizarVenda = async () => {
@@ -805,6 +801,15 @@ const NovaVenda = () => {
         onOpenChange={setShowProductDialog}
         estoque={estoque.length > 0 ? estoque : mockEstoque}
         onSelect={setProdutoSelecionado}
+      />
+
+      <AlertDeleteDialog
+        open={deleteItemDialogOpen}
+        onOpenChange={setDeleteItemDialogOpen}
+        onConfirm={confirmDeleteItem}
+        title="Remover item da venda?"
+        description="Este item será removido da venda. Esta ação não pode ser desfeita."
+        itemName={itemToDeleteIndex !== null ? `${itensVenda[itemToDeleteIndex]?.nomeProduto} (${itensVenda[itemToDeleteIndex]?.cor} - ${itensVenda[itemToDeleteIndex]?.tamanho})` : undefined}
       />
     </div>
   );

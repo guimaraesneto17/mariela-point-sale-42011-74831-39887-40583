@@ -8,44 +8,35 @@ const enrichVitrineItem = async (vitrineItem: any) => {
   const estoqueDocs = await Estoque.find({ codigoProduto: vitrineItem.codigoProduto });
   const produto = await Produto.findOne({ codigoProduto: vitrineItem.codigoProduto });
   
-  // Usar variantes da vitrine ou do estoque
-  let variantes: Array<{ cor: string; tamanho: string; quantidade: number }> = [];
+  // Buscar variantes do estoque
+  let variants: Array<{ size: string; color: string; availability: number }> = [];
   let emPromocao = vitrineItem.emPromocao || false;
   let isNovidade = vitrineItem.isNovidade || false;
   let precoPromocional: number | null = vitrineItem.precoPromocional || null;
   
-  // Se a vitrine tem variantes, usar elas
-  if (vitrineItem.variantes && vitrineItem.variantes.length > 0) {
-    variantes = vitrineItem.variantes.map((v: any) => ({
-      cor: v.cor,
-      tamanho: v.tamanho,
-      quantidade: Number(v.quantidade) || 0
-    }));
-  } else {
-    // Caso contrário, buscar do estoque
-    estoqueDocs.forEach((doc) => {
-      emPromocao = emPromocao || !!doc.emPromocao;
-      isNovidade = isNovidade || !!doc.isNovidade;
-      if (doc.precoPromocional && !precoPromocional) precoPromocional = doc.precoPromocional;
-      
-      if (doc.variantes && doc.variantes.length > 0) {
-        doc.variantes.forEach((v: any) => {
-          const existing = variantes.find(x => x.cor === v.cor && x.tamanho === v.tamanho);
-          if (existing) {
-            existing.quantidade += Number(v.quantidade) || 0;
-          } else {
-            variantes.push({
-              cor: v.cor,
-              tamanho: v.tamanho,
-              quantidade: Number(v.quantidade) || 0
-            });
-          }
-        });
-      }
-    });
-  }
+  // Agregar variantes do estoque
+  estoqueDocs.forEach((doc) => {
+    emPromocao = emPromocao || !!doc.emPromocao;
+    isNovidade = isNovidade || !!doc.isNovidade;
+    if (doc.precoPromocional && !precoPromocional) precoPromocional = doc.precoPromocional;
+    
+    if (doc.variantes && doc.variantes.length > 0) {
+      doc.variantes.forEach((v: any) => {
+        const existing = variants.find(x => x.color === v.cor && x.size === v.tamanho);
+        if (existing) {
+          existing.availability += Number(v.quantidade) || 0;
+        } else {
+          variants.push({
+            size: v.tamanho,
+            color: v.cor,
+            availability: Number(v.quantidade) || 0
+          });
+        }
+      });
+    }
+  });
   
-  const totalAvailable = variantes.reduce((sum, v) => sum + v.quantidade, 0);
+  const totalAvailable = variants.reduce((sum, v) => sum + v.availability, 0);
   
   // Determinar status do produto
   let statusProduct = 'Disponível';
@@ -67,7 +58,7 @@ const enrichVitrineItem = async (vitrineItem: any) => {
     originalPriceValue: emPromocao && precoPromocional ? (produto?.precoVenda || vitrineItem.precoVenda) : null,
     isOnSale: emPromocao,
     isNew: isNovidade,
-    variantes: variantes,
+    variants: variants,
     totalAvailable,
     statusProduct,
     updatedAt: vitrineItem.dataAtualizacao || vitrineItem.dataCadastro
