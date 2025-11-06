@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { vendasAPI, produtosAPI, clientesAPI, vendedoresAPI, estoqueAPI, caixaAPI } from "@/lib/api";
 
@@ -668,74 +669,132 @@ const Relatorios = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="p-6 shadow-card">
               <h3 className="text-lg font-bold text-foreground mb-4">Produtos Mais Vendidos</h3>
-              <div className="space-y-3">
-                {relatorioProdutosFiltrado.produtosMaisVendidos.map((produto: any, index: number) => (
-                  <div
-                    key={index}
-                    className="p-4 rounded-lg bg-gradient-card hover:shadow-md transition-all"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-sm font-bold text-primary">{index + 1}</span>
+              <TooltipProvider>
+                <div className="space-y-3">
+                  {relatorioProdutosFiltrado.produtosMaisVendidos.map((produto: any, index: number) => {
+                    const itemEstoque = estoque.find((e: any) => 
+                      e.nomeProduto === produto.produto || e.nome === produto.produto
+                    );
+                    
+                    return (
+                      <div
+                        key={index}
+                        className="p-4 rounded-lg bg-gradient-card hover:shadow-md transition-all"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              <span className="text-sm font-bold text-primary">{index + 1}</span>
+                            </div>
+                            <p className="font-medium text-foreground">{produto.produto}</p>
+                          </div>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge 
+                                variant={produto.estoque < 10 ? "destructive" : "secondary"}
+                                className="cursor-help"
+                              >
+                                Est: {produto.estoque}
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="max-w-xs">
+                              <div className="space-y-1">
+                                <p className="font-semibold text-sm mb-2">Variantes em estoque:</p>
+                                {itemEstoque?.variantes && itemEstoque.variantes.length > 0 ? (
+                                  itemEstoque.variantes.map((variante: any, idx: number) => (
+                                    <div key={idx} className="flex justify-between gap-4 text-xs">
+                                      <span className="font-medium">
+                                        {variante.cor} - {variante.tamanho}:
+                                      </span>
+                                      <span>{variante.quantidade} un.</span>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <p className="text-xs text-muted-foreground">Sem variantes cadastradas</p>
+                                )}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
                         </div>
-                        <p className="font-medium text-foreground">{produto.produto}</p>
+                        <div className="flex items-center justify-between ml-11">
+                          <p className="text-sm text-muted-foreground">{produto.vendas} vendas</p>
+                          <span className="font-bold text-primary">
+                            R$ {produto.valor.toFixed(2)}
+                          </span>
+                        </div>
                       </div>
-                      <Badge variant={produto.estoque < 10 ? "destructive" : "secondary"}>
-                        Est: {produto.estoque}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between ml-11">
-                      <p className="text-sm text-muted-foreground">{produto.vendas} vendas</p>
-                      <span className="font-bold text-primary">
-                        R$ {produto.valor.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    );
+                  })}
+                </div>
+              </TooltipProvider>
             </Card>
 
             <Card className="p-6 shadow-card">
               <h3 className="text-lg font-bold text-foreground mb-4">
                 📊 Detalhamento de Estoque
               </h3>
-              <div className="space-y-3">
-                {estoque.slice(0, 10).map((item: any, index: number) => (
-                  <div
-                    key={index}
-                    className="p-4 rounded-lg bg-gradient-card hover:shadow-md transition-all"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <p className="font-medium text-foreground">{item.nomeProduto || item.nome}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {item.categoria} • {item.codigoProduto}
-                        </p>
+              <TooltipProvider>
+                <div className="space-y-3">
+                  {estoque.slice(0, 10).map((item: any, index: number) => (
+                    <div
+                      key={index}
+                      className="p-4 rounded-lg bg-gradient-card hover:shadow-md transition-all"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="font-medium text-foreground">{item.nomeProduto || item.nome}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {item.categoria} • {item.codigoProduto}
+                          </p>
+                        </div>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge 
+                              variant={(item.quantidadeTotal || 0) === 0 ? "destructive" : (item.quantidadeTotal || 0) < 5 ? "secondary" : "default"}
+                              className="cursor-help"
+                            >
+                              {item.quantidadeTotal || 0}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent side="left" className="max-w-xs">
+                            <div className="space-y-1">
+                              <p className="font-semibold text-sm mb-2">Variantes em estoque:</p>
+                              {item.variantes && item.variantes.length > 0 ? (
+                                item.variantes.map((variante: any, idx: number) => (
+                                  <div key={idx} className="flex justify-between gap-4 text-xs">
+                                    <span className="font-medium">
+                                      {variante.cor} - {variante.tamanho}:
+                                    </span>
+                                    <span>{variante.quantidade} un.</span>
+                                  </div>
+                                ))
+                              ) : (
+                                <p className="text-xs text-muted-foreground">Sem variantes cadastradas</p>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
-                      <Badge variant={(item.quantidadeTotal || 0) === 0 ? "destructive" : (item.quantidadeTotal || 0) < 5 ? "secondary" : "default"}>
-                        {item.quantidadeTotal || 0}
-                      </Badge>
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">Custo: </span>
+                          <span className="font-semibold">R$ {item.precoCusto?.toFixed(2)}</span>
+                        </div>
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">Venda: </span>
+                          <span className="font-semibold text-primary">R$ {item.precoVenda?.toFixed(2)}</span>
+                        </div>
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">Margem: </span>
+                          <span className="font-semibold text-green-600">
+                            {item.precoCusto > 0 ? ((item.precoVenda - item.precoCusto) / item.precoCusto * 100).toFixed(0) : 0}%
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">Custo: </span>
-                        <span className="font-semibold">R$ {item.precoCusto?.toFixed(2)}</span>
-                      </div>
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">Venda: </span>
-                        <span className="font-semibold text-primary">R$ {item.precoVenda?.toFixed(2)}</span>
-                      </div>
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">Margem: </span>
-                        <span className="font-semibold text-green-600">
-                          {item.precoCusto > 0 ? ((item.precoVenda - item.precoCusto) / item.precoCusto * 100).toFixed(0) : 0}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </TooltipProvider>
             </Card>
           </div>
         </TabsContent>

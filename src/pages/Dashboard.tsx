@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import StatsCard from "@/components/StatsCard";
 import { DashboardCard } from "@/components/DashboardCard";
 import { DashboardMovimentacoes } from "@/components/DashboardMovimentacoes";
@@ -401,6 +402,7 @@ const Dashboard = () => {
           nome: item.nomeProduto || item.nome,
           quantidade: item.quantidadeTotal || 0,
           precoVenda: item.precoVenda || 0,
+          variantes: item.variantes || [],
         }))
         .slice(0, 5);
       setProdutosBaixoEstoque(produtosBaixo);
@@ -835,24 +837,47 @@ const Dashboard = () => {
             <h3 className="text-lg font-bold text-foreground mb-4">
               Produtos em Baixo Estoque
             </h3>
-            <div className="space-y-3">
-              {produtosBaixoEstoque.map((produto, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-4 rounded-lg bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800"
-                >
-                  <div>
-                    <p className="font-medium text-foreground">{produto.nome}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Mínimo: {(produto.minimo ?? 5)} unidades
-                    </p>
+            <TooltipProvider>
+              <div className="space-y-3">
+                {produtosBaixoEstoque.map((produto, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-4 rounded-lg bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800"
+                  >
+                    <div>
+                      <p className="font-medium text-foreground">{produto.nome}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Mínimo: {(produto.minimo ?? 5)} unidades
+                      </p>
+                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="destructive" className="cursor-help">
+                          {produto.quantidade} restantes
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-xs">
+                        <div className="space-y-1">
+                          <p className="font-semibold text-sm mb-2">Variantes em estoque:</p>
+                          {produto.variantes && produto.variantes.length > 0 ? (
+                            produto.variantes.map((variante: any, idx: number) => (
+                              <div key={idx} className="flex justify-between gap-4 text-xs">
+                                <span className="font-medium">
+                                  {variante.cor} - {variante.tamanho}:
+                                </span>
+                                <span>{variante.quantidade} un.</span>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-xs text-muted-foreground">Sem variantes cadastradas</p>
+                          )}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
-                  <Badge variant="destructive">
-                    {produto.quantidade} restantes
-                  </Badge>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </TooltipProvider>
           </DashboardCard>
         );
       case "caixa-aberto":
