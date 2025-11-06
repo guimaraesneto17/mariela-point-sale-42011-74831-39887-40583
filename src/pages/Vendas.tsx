@@ -159,12 +159,12 @@ const Vendas = () => {
                 >
                   <div className="flex items-center gap-2 flex-1">
                     <span className="font-medium">{item.nome || item.nomeProduto} (x{item.quantidade || 1})</span>
+                    {item.emPromocao && (
+                      <span className="text-xs font-bold text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded-full">
+                        🔥 Vendido em Promoção
+                      </span>
+                    )}
                     <div className="flex gap-1">
-                      {item.emPromocao && (
-                        <Badge variant="destructive" className="text-xs font-bold shadow-sm animate-pulse">
-                          🔥 PROMOÇÃO
-                        </Badge>
-                      )}
                       {item.novidade && (
                         <Badge variant="default" className="text-xs bg-accent font-bold">
                           ✨ Novidade
