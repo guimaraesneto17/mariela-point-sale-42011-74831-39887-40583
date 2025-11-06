@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { StockEntryDialog } from "@/components/StockEntryDialog";
@@ -29,6 +30,8 @@ const Estoque = () => {
   const [loading, setLoading] = useState(true);
   const [filterPromocao, setFilterPromocao] = useState<boolean | null>(null);
   const [filterNovidade, setFilterNovidade] = useState<boolean | null>(null);
+  const [filterCor, setFilterCor] = useState<string>("todas");
+  const [filterTamanho, setFilterTamanho] = useState<string>("todos");
   
   // State para selecionar cor/tamanho por item
   const [selectedColorByItem, setSelectedColorByItem] = useState<{[key: string]: string}>({});
@@ -84,7 +87,15 @@ const Estoque = () => {
     // Filtro de novidade
     const matchesNovidade = filterNovidade === null || item.isNovidade === filterNovidade;
     
-    return matchesSearch && matchesPromocao && matchesNovidade;
+    // Filtro de cor
+    const matchesCor = filterCor === "todas" || 
+      (item.variantes && item.variantes.some((v: any) => v.cor === filterCor && v.quantidade > 0));
+    
+    // Filtro de tamanho
+    const matchesTamanho = filterTamanho === "todos" || 
+      (item.variantes && item.variantes.some((v: any) => v.tamanho === filterTamanho && v.quantidade > 0));
+    
+    return matchesSearch && matchesPromocao && matchesNovidade && matchesCor && matchesTamanho;
   });
 
   const openEntryDialog = (item: any, variante: any) => {
@@ -172,6 +183,32 @@ const Estoque = () => {
     setSelectedSizeByItem(prev => ({ ...prev, [codigoProduto]: tamanho }));
   };
 
+  // Obter todas as cores únicas disponíveis no estoque
+  const getAllCores = () => {
+    const cores = new Set<string>();
+    inventory.forEach((item) => {
+      item.variantes?.forEach((v: any) => {
+        if (v.quantidade > 0) {
+          cores.add(v.cor);
+        }
+      });
+    });
+    return Array.from(cores).sort();
+  };
+
+  // Obter todos os tamanhos únicos disponíveis no estoque
+  const getAllTamanhos = () => {
+    const tamanhos = new Set<string>();
+    inventory.forEach((item) => {
+      item.variantes?.forEach((v: any) => {
+        if (v.quantidade > 0) {
+          tamanhos.add(v.tamanho);
+        }
+      });
+    });
+    return Array.from(tamanhos).sort();
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="text-center">
@@ -191,6 +228,38 @@ const Estoque = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground mb-2 block">Filtrar por Cor</Label>
+              <Select value={filterCor} onValueChange={setFilterCor}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas as cores" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as cores</SelectItem>
+                  {getAllCores().map((cor) => (
+                    <SelectItem key={cor} value={cor}>{cor}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground mb-2 block">Filtrar por Tamanho</Label>
+              <Select value={filterTamanho} onValueChange={setFilterTamanho}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os tamanhos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os tamanhos</SelectItem>
+                  {getAllTamanhos().map((tamanho) => (
+                    <SelectItem key={tamanho} value={tamanho}>{tamanho}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           
           <div className="flex gap-2 flex-wrap">
@@ -214,13 +283,15 @@ const Estoque = () => {
               Novidades
             </Button>
             
-            {(filterPromocao !== null || filterNovidade !== null) && (
+            {(filterPromocao !== null || filterNovidade !== null || filterCor !== "todas" || filterTamanho !== "todos") && (
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => {
                   setFilterPromocao(null);
                   setFilterNovidade(null);
+                  setFilterCor("todas");
+                  setFilterTamanho("todos");
                 }}
               >
                 Limpar Filtros

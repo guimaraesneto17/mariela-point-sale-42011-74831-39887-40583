@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FileText, Calendar, Filter, Download, TrendingUp, Package, Users, DollarSign, ShoppingBag, Sparkles, Tag, Crown, UserCheck, Wallet } from "lucide-react";
+import { FileText, Calendar, Filter, Download, TrendingUp, Package, Users, DollarSign, ShoppingBag, Sparkles, Tag, Crown, UserCheck, Wallet, BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -125,8 +125,10 @@ const Relatorios = () => {
       // Relatório de Produtos
       const totalProdutos = produtos.length;
       const emEstoque = estoqueData.reduce((acc: number, item: any) => acc + (item.quantidadeTotal || 0), 0);
-      const novidades = produtos.filter((p: any) => p.novidade || p.isNovidade).length;
-      const emPromocao = produtos.filter((p: any) => p.emPromocao || p.isOnSale).length;
+      
+      // Contar novidades e promoções do ESTOQUE, não dos produtos
+      const novidades = estoqueData.filter((item: any) => item.isNovidade === true).length;
+      const emPromocao = estoqueData.filter((item: any) => item.emPromocao === true).length;
 
       // Calcular valor total do estoque pelo custo e venda
       let valorEstoqueCusto = 0;
@@ -663,6 +665,104 @@ const Relatorios = () => {
                   </p>
                 </div>
               </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Gráfico de Distribuição por Categoria */}
+            <Card className="p-6 shadow-card">
+              <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                Distribuição de Estoque por Categoria
+              </h3>
+              <div className="space-y-3">
+                {(() => {
+                  const distribuicaoPorCategoria: { [key: string]: number } = {};
+                  estoque.forEach((item: any) => {
+                    const categoria = item.categoria || 'Outro';
+                    if (!distribuicaoPorCategoria[categoria]) {
+                      distribuicaoPorCategoria[categoria] = 0;
+                    }
+                    distribuicaoPorCategoria[categoria] += item.quantidadeTotal || 0;
+                  });
+                  
+                  const totalEstoque = Object.values(distribuicaoPorCategoria).reduce((a, b) => a + b, 0);
+                  
+                  return Object.entries(distribuicaoPorCategoria)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([categoria, quantidade], index) => {
+                      const porcentagem = totalEstoque > 0 ? (quantidade / totalEstoque) * 100 : 0;
+                      return (
+                        <div key={index} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-foreground">{categoria}</span>
+                            <span className="text-sm text-muted-foreground">
+                              {quantidade} un. ({porcentagem.toFixed(1)}%)
+                            </span>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-3">
+                            <div
+                              className="bg-gradient-to-r from-primary to-primary/60 h-3 rounded-full transition-all"
+                              style={{ width: `${porcentagem}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    });
+                })()}
+              </div>
+            </Card>
+
+            {/* Gráfico de Valor em Estoque */}
+            <Card className="p-6 shadow-card">
+              <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-green-600" />
+                Valor em Estoque por Categoria
+              </h3>
+              <div className="space-y-3">
+                {(() => {
+                  const valorPorCategoria: { [key: string]: { custo: number; venda: number } } = {};
+                  estoque.forEach((item: any) => {
+                    const categoria = item.categoria || 'Outro';
+                    if (!valorPorCategoria[categoria]) {
+                      valorPorCategoria[categoria] = { custo: 0, venda: 0 };
+                    }
+                    const quantidade = item.quantidadeTotal || 0;
+                    valorPorCategoria[categoria].custo += quantidade * (item.precoCusto || 0);
+                    valorPorCategoria[categoria].venda += quantidade * (item.precoVenda || item.precoPromocional || 0);
+                  });
+                  
+                  const totalVenda = Object.values(valorPorCategoria).reduce((a, b) => a + b.venda, 0);
+                  
+                  return Object.entries(valorPorCategoria)
+                    .sort((a, b) => b[1].venda - a[1].venda)
+                    .map(([categoria, valores], index) => {
+                      const porcentagem = totalVenda > 0 ? (valores.venda / totalVenda) * 100 : 0;
+                      const lucro = valores.venda - valores.custo;
+                      return (
+                        <div key={index} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-foreground">{categoria}</span>
+                            <div className="text-right">
+                              <div className="text-sm font-semibold text-green-600">
+                                R$ {valores.venda.toFixed(2)}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                Lucro: R$ {lucro.toFixed(2)}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-3">
+                            <div
+                              className="bg-gradient-to-r from-green-500 to-green-500/60 h-3 rounded-full transition-all"
+                              style={{ width: `${porcentagem}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    });
+                })()}
+              </div>
             </Card>
           </div>
 
