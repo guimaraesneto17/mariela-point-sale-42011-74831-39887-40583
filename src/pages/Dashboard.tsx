@@ -278,14 +278,14 @@ const Dashboard = () => {
 
       const faturamentoDiario = vendasHoje.reduce((acc: number, v: any) => acc + (v.total || 0), 0);
       const totalClientes = clientes.length;
-      const produtosEstoque = estoque.reduce((acc: number, item: any) => acc + (item.quantidadeDisponivel || item.quantidade || 0), 0);
+      const produtosEstoque = estoque.reduce((acc: number, item: any) => acc + (item.quantidadeTotal || 0), 0);
       
       // Calcular valor total do estoque pelo custo e venda
       let valorEstoqueCusto = 0;
       let valorEstoqueVenda = 0;
       
       estoque.forEach((item: any) => {
-        const quantidade = item.quantidadeDisponivel || item.quantidade || 0;
+        const quantidade = item.quantidadeTotal || 0;
         const precoCusto = item.precoCusto || 0;
         const precoVenda = item.precoVenda || item.precoPromocional || 0;
         
@@ -395,11 +395,11 @@ const Dashboard = () => {
 
       // Produtos em baixo estoque (quantidade <= 5)
       const produtosBaixo = estoque
-        .filter((item: any) => (item.quantidadeDisponivel || item.quantidade || 0) <= 5)
+        .filter((item: any) => (item.quantidadeTotal || 0) <= 5)
         .map((item: any) => ({
           codigo: item.codigoProduto || item.codigo,
           nome: item.nomeProduto || item.nome,
-          quantidade: item.quantidadeDisponivel || item.quantidade || 0,
+          quantidade: item.quantidadeTotal || 0,
           precoVenda: item.precoVenda || 0,
         }))
         .slice(0, 5);

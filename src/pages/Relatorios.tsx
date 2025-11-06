@@ -123,7 +123,7 @@ const Relatorios = () => {
 
       // Relatório de Produtos
       const totalProdutos = produtos.length;
-      const emEstoque = estoqueData.reduce((acc: number, item: any) => acc + (item.quantidadeDisponivel || item.quantidade || 0), 0);
+      const emEstoque = estoqueData.reduce((acc: number, item: any) => acc + (item.quantidadeTotal || 0), 0);
       const novidades = produtos.filter((p: any) => p.novidade || p.isNovidade).length;
       const emPromocao = produtos.filter((p: any) => p.emPromocao || p.isOnSale).length;
 
@@ -132,7 +132,7 @@ const Relatorios = () => {
       let valorEstoqueVenda = 0;
       
       estoqueData.forEach((item: any) => {
-        const quantidade = item.quantidadeDisponivel || item.quantidade || 0;
+        const quantidade = item.quantidadeTotal || 0;
         const precoCusto = item.precoCusto || 0;
         const precoVenda = item.precoVenda || item.precoPromocional || 0;
         
@@ -160,7 +160,7 @@ const Relatorios = () => {
       // Adicionar estoque aos produtos vendidos
       Object.keys(produtosVendidos).forEach(codigo => {
         const itemEstoque = estoqueData.find((e: any) => e.codigoProduto === codigo);
-        produtosVendidos[codigo].estoque = itemEstoque?.quantidadeDisponivel || itemEstoque?.quantidade || 0;
+        produtosVendidos[codigo].estoque = itemEstoque?.quantidadeTotal || 0;
       });
 
       const topProdutos = Object.values(produtosVendidos)
@@ -176,10 +176,10 @@ const Relatorios = () => {
         valorEstoqueVenda,
         produtosMaisVendidos: topProdutos,
         estoqueMinimo: estoqueData
-          .filter((item: any) => (item.quantidadeDisponivel || item.quantidade || 0) < 10)
+          .filter((item: any) => (item.quantidadeTotal || 0) < 10)
           .map((item: any) => ({
             produto: item.nomeProduto || item.nome,
-            estoque: item.quantidadeDisponivel || item.quantidade || 0,
+            estoque: item.quantidadeTotal || 0,
             minimo: 10
           }))
           .slice(0, 5),
