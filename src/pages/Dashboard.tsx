@@ -21,6 +21,7 @@ import StatsCard from "@/components/StatsCard";
 import { DashboardCard } from "@/components/DashboardCard";
 import { DashboardMovimentacoes } from "@/components/DashboardMovimentacoes";
 import { MargemLucroCard } from "@/components/MargemLucroCard";
+import { VendasPorCategoriaCard } from "@/components/VendasPorCategoriaCard";
 import {
   DashboardConfigDialog,
   DashboardCardConfig,
@@ -187,6 +188,13 @@ const defaultCards: DashboardCardConfig[] = [
     visible: true,
     category: "stats",
   },
+  {
+    id: "vendas-categoria",
+    title: "Vendas por Categoria",
+    description: "Gráfico de vendas agrupadas por categoria",
+    visible: true,
+    category: "sales",
+  },
 ];
 
 const Dashboard = () => {
@@ -210,6 +218,7 @@ const Dashboard = () => {
     valorEstoqueVenda: 0,
   });
   const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [produtos, setProdutos] = useState<any[]>([]);
   const [topClientes, setTopClientes] = useState<any[]>([]);
   const [topVendedores, setTopVendedores] = useState<any[]>([]);
   const [recentSales, setRecentSales] = useState<any[]>([]);
@@ -249,6 +258,8 @@ const Dashboard = () => {
         estoqueAPI.getAll(),
         vendedoresAPI.getAll(),
       ]);
+      
+      setProdutos(produtos);
 
       // Tentar carregar caixa aberto
       try {
@@ -494,6 +505,14 @@ const Dashboard = () => {
           <div key={cardConfig.id} className="col-span-full">
             <DashboardMovimentacoes movimentacoes={movimentacoesEstoque} />
           </div>
+        );
+      case "vendas-categoria":
+        return (
+          <VendasPorCategoriaCard
+            key={cardConfig.id}
+            vendas={recentSales}
+            produtos={produtos}
+          />
         );
       case "vendas-hoje":
         return (

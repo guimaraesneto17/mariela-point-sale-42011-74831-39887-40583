@@ -1,77 +1,86 @@
 import { Request, Response } from 'express';
-import VitrineVirtual from '../models/VitrineVirtual';
 import Estoque from '../models/Estoque';
 import Produto from '../models/Produto';
 
-// Helper para enriquecer dados da vitrine com informações de estoque e produto
-const enrichVitrineItem = async (vitrineItem: any) => {
-  const estoqueDocs = await Estoque.find({ codigoProduto: vitrineItem.codigoProduto });
-  const produto = await Produto.findOne({ codigoProduto: vitrineItem.codigoProduto });
-  
-  // Buscar variantes do estoque
-  let variants: Array<{ size: string; color: string; availability: number }> = [];
-  let emPromocao = vitrineItem.emPromocao || false;
-  let isNovidade = vitrineItem.isNovidade || false;
-  let precoPromocional: number | null = vitrineItem.precoPromocional || null;
-  
-  // Agregar variantes do estoque
-  estoqueDocs.forEach((doc) => {
-    emPromocao = emPromocao || !!doc.emPromocao;
-    isNovidade = isNovidade || !!doc.isNovidade;
-    if (doc.precoPromocional && !precoPromocional) precoPromocional = doc.precoPromocional;
+// Gerar view agregada da vitrine virtual (combina Estoque + Produto)
+const buildVitrineView = async () => {
+  try {
+    // Buscar todos os produtos e estoques
+    const produtos = await Produto.find();
+    const estoques = await Estoque.find();
     
-    if (doc.variantes && doc.variantes.length > 0) {
-      doc.variantes.forEach((v: any) => {
-        const existing = variants.find(x => x.color === v.cor && x.size === v.tamanho);
-        if (existing) {
-          existing.availability += Number(v.quantidade) || 0;
-        } else {
-          variants.push({
-            size: v.tamanho,
-            color: v.cor,
-            availability: Number(v.quantidade) || 0
+    const vitrineView: any[] = [];
+    let idCounter = 1;
+    
+    for (const produto of produtos) {
+      const estoquesProduto = estoques.filter(e => e.codigoProduto === produto.codigoProduto);
+      
+      if (estoquesProduto.length === 0) continue;
+      
+      // Agregar informações de promoção e novidade
+      let isOnSale = false;
+      let isNew = false;
+      let precoPromocional: number | null = null;
+      const variants: any[] = [];
+      
+      estoquesProduto.forEach((estoque: any) => {
+        isOnSale = isOnSale || !!estoque.emPromocao;
+        isNew = isNew || !!estoque.isNovidade;
+        if (estoque.precoPromocional && !precoPromocional) {
+          precoPromocional = estoque.precoPromocional;
+        }
+        
+        // Agregar variantes
+        if (estoque.variantes && estoque.variantes.length > 0) {
+          estoque.variantes.forEach((v: any) => {
+            variants.push({
+              color: v.cor,
+              size: v.tamanho,
+              available: Number(v.quantidade) || 0
+            });
           });
         }
       });
+      
+      const totalAvailable = variants.reduce((sum, v) => sum + v.available, 0);
+      
+      let statusProduct = 'Disponível';
+      if (totalAvailable === 0) {
+        statusProduct = 'Esgotado';
+      } else if (totalAvailable < 5) {
+        statusProduct = 'Últimas unidades';
+      }
+      
+      vitrineView.push({
+        id: idCounter++,
+        code: produto.codigoProduto,
+        image: produto.imagens && produto.imagens.length > 0 ? produto.imagens : ['default.jpg'],
+        title: produto.nome,
+        price: isOnSale && precoPromocional ? `R$ ${precoPromocional}` : `R$ ${produto.precoVenda.toFixed(2)}`,
+        priceValue: isOnSale && precoPromocional ? precoPromocional : produto.precoVenda,
+        originalPrice: isOnSale && precoPromocional ? `R$ ${produto.precoVenda.toFixed(2)}` : null,
+        originalPriceValue: isOnSale && precoPromocional ? produto.precoVenda : null,
+        category: produto.categoria,
+        isOnSale,
+        isNew,
+        variants,
+        totalAvailable,
+        statusProduct,
+        updatedAt: produto.dataAtualizacao || produto.dataCadastro
+      });
     }
-  });
-  
-  const totalAvailable = variants.reduce((sum, v) => sum + v.availability, 0);
-  
-  // Determinar status do produto
-  let statusProduct = 'Disponível';
-  if (totalAvailable === 0) {
-    statusProduct = 'Esgotado';
-  } else if (totalAvailable < 5) {
-    statusProduct = 'Últimas unidades';
+    
+    return vitrineView;
+  } catch (error) {
+    console.error('Erro ao construir view da vitrine:', error);
+    throw error;
   }
-  
-  return {
-    id: produto?._id || vitrineItem._id,
-    code: vitrineItem.codigoProduto,
-    title: produto?.nome || vitrineItem.nome,
-    category: produto?.categoria || vitrineItem.categoria,
-    image: (produto?.imagens && produto.imagens[0]) || vitrineItem.imagens?.[0] || 'default.jpg',
-    price: emPromocao && precoPromocional ? `R$ ${precoPromocional}` : `R$ ${produto?.precoVenda || vitrineItem.precoVenda}`,
-    priceValue: emPromocao && precoPromocional ? precoPromocional : (produto?.precoVenda || vitrineItem.precoVenda),
-    originalPrice: emPromocao && precoPromocional ? `R$ ${produto?.precoVenda || vitrineItem.precoVenda}` : null,
-    originalPriceValue: emPromocao && precoPromocional ? (produto?.precoVenda || vitrineItem.precoVenda) : null,
-    isOnSale: emPromocao,
-    isNew: isNovidade,
-    variants: variants,
-    totalAvailable,
-    statusProduct,
-    updatedAt: vitrineItem.dataAtualizacao || vitrineItem.dataCadastro
-  };
 };
 
 export const getAllVitrineVirtual = async (req: Request, res: Response) => {
   try {
-    const vitrineProdutos = await VitrineVirtual.find().sort({ dataCadastro: -1 });
-    const produtosEnriquecidos = await Promise.all(
-      vitrineProdutos.map(item => enrichVitrineItem(item))
-    );
-    res.json(produtosEnriquecidos);
+    const vitrineView = await buildVitrineView();
+    res.json(vitrineView);
   } catch (error) {
     console.error('Erro ao buscar vitrine virtual:', error);
     res.status(500).json({ error: 'Erro ao buscar vitrine virtual' });
@@ -80,12 +89,12 @@ export const getAllVitrineVirtual = async (req: Request, res: Response) => {
 
 export const getVitrineVirtualById = async (req: Request, res: Response) => {
   try {
-    const produto = await VitrineVirtual.findById(req.params.id);
+    const vitrineView = await buildVitrineView();
+    const produto = vitrineView.find(p => p.id === parseInt(req.params.id));
     if (!produto) {
       return res.status(404).json({ error: 'Produto da vitrine não encontrado' });
     }
-    const produtoEnriquecido = await enrichVitrineItem(produto);
-    res.json(produtoEnriquecido);
+    res.json(produto);
   } catch (error) {
     console.error('Erro ao buscar produto da vitrine:', error);
     res.status(500).json({ error: 'Erro ao buscar produto da vitrine' });
@@ -94,13 +103,8 @@ export const getVitrineVirtualById = async (req: Request, res: Response) => {
 
 export const getNovidades = async (req: Request, res: Response) => {
   try {
-    // Buscar produtos na vitrine que estão marcados como novidade no estoque
-    const vitrineProdutos = await VitrineVirtual.find().sort({ dataCadastro: -1 });
-    const produtosEnriquecidos = await Promise.all(
-      vitrineProdutos.map(item => enrichVitrineItem(item))
-    );
-    // Filtrar apenas as novidades
-    const novidades = produtosEnriquecidos.filter(p => p.isNew);
+    const vitrineView = await buildVitrineView();
+    const novidades = vitrineView.filter(p => p.isNew);
     res.json(novidades);
   } catch (error) {
     console.error('Erro ao buscar novidades:', error);
@@ -110,13 +114,8 @@ export const getNovidades = async (req: Request, res: Response) => {
 
 export const getPromocoes = async (req: Request, res: Response) => {
   try {
-    // Buscar produtos na vitrine que estão em promoção no estoque
-    const vitrineProdutos = await VitrineVirtual.find().sort({ dataCadastro: -1 });
-    const produtosEnriquecidos = await Promise.all(
-      vitrineProdutos.map(item => enrichVitrineItem(item))
-    );
-    // Filtrar apenas as promoções
-    const promocoes = produtosEnriquecidos.filter(p => p.isOnSale);
+    const vitrineView = await buildVitrineView();
+    const promocoes = vitrineView.filter(p => p.isOnSale);
     res.json(promocoes);
   } catch (error) {
     console.error('Erro ao buscar promoções:', error);
@@ -126,12 +125,12 @@ export const getPromocoes = async (req: Request, res: Response) => {
 
 export const getVitrineVirtualByCodigo = async (req: Request, res: Response) => {
   try {
-    const produto = await VitrineVirtual.findOne({ codigoProduto: req.params.codigo });
+    const vitrineView = await buildVitrineView();
+    const produto = vitrineView.find(p => p.code === req.params.codigo);
     if (!produto) {
       return res.status(404).json({ error: 'Produto da vitrine não encontrado' });
     }
-    const produtoEnriquecido = await enrichVitrineItem(produto);
-    res.json(produtoEnriquecido);
+    res.json(produto);
   } catch (error) {
     console.error('Erro ao buscar produto da vitrine:', error);
     res.status(500).json({ error: 'Erro ao buscar produto da vitrine' });
@@ -140,9 +139,7 @@ export const getVitrineVirtualByCodigo = async (req: Request, res: Response) => 
 
 export const createVitrineVirtual = async (req: Request, res: Response) => {
   try {
-    const produto = new VitrineVirtual(req.body);
-    await produto.save();
-    res.status(201).json(produto);
+    res.status(501).json({ error: 'Vitrine Virtual é somente leitura - use Estoque e Produto para modificar dados' });
   } catch (error) {
     console.error('Erro ao criar produto na vitrine:', error);
     res.status(400).json({ error: 'Erro ao criar produto na vitrine' });
@@ -151,15 +148,7 @@ export const createVitrineVirtual = async (req: Request, res: Response) => {
 
 export const updateVitrineVirtual = async (req: Request, res: Response) => {
   try {
-    const produto = await VitrineVirtual.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
-    if (!produto) {
-      return res.status(404).json({ error: 'Produto da vitrine não encontrado' });
-    }
-    res.json(produto);
+    res.status(501).json({ error: 'Vitrine Virtual é somente leitura - use Estoque e Produto para modificar dados' });
   } catch (error) {
     console.error('Erro ao atualizar produto na vitrine:', error);
     res.status(400).json({ error: 'Erro ao atualizar produto na vitrine' });
@@ -168,11 +157,7 @@ export const updateVitrineVirtual = async (req: Request, res: Response) => {
 
 export const deleteVitrineVirtual = async (req: Request, res: Response) => {
   try {
-    const produto = await VitrineVirtual.findByIdAndDelete(req.params.id);
-    if (!produto) {
-      return res.status(404).json({ error: 'Produto da vitrine não encontrado' });
-    }
-    res.json({ message: 'Produto da vitrine removido com sucesso' });
+    res.status(501).json({ error: 'Vitrine Virtual é somente leitura - use Estoque e Produto para modificar dados' });
   } catch (error) {
     console.error('Erro ao remover produto da vitrine:', error);
     res.status(500).json({ error: 'Erro ao remover produto da vitrine' });

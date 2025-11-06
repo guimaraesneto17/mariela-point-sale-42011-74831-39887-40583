@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { estoqueAPI } from "@/lib/api";
+import { vitrineVirtualAPI } from "@/lib/api";
 
 const VitrineVirtual = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -22,7 +22,7 @@ const VitrineVirtual = () => {
   const loadVitrine = async () => {
     try {
       setLoading(true);
-      const data = await estoqueAPI.getAll();
+      const data = await vitrineVirtualAPI.getAll();
       setVitrine(data);
     } catch (error) {
       console.error('Erro ao carregar vitrine:', error);
@@ -34,19 +34,19 @@ const VitrineVirtual = () => {
 
   const filteredVitrine = vitrine.filter((item: any) => {
     const matchSearch = !searchTerm || 
-      (item.nomeProduto || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.codigoProduto || '').toLowerCase().includes(searchTerm.toLowerCase());
+      (item.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.code || '').toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchCategoria = !filtroCategoria || item.categoria === filtroCategoria;
+    const matchCategoria = !filtroCategoria || item.category === filtroCategoria;
     
     const matchTipo = filtroTipo === "todos" ||
-      (filtroTipo === "promocao" && item.emPromocao) ||
-      (filtroTipo === "novidade" && item.isNovidade);
+      (filtroTipo === "promocao" && item.isOnSale) ||
+      (filtroTipo === "novidade" && item.isNew);
     
     return matchSearch && matchCategoria && matchTipo;
   });
 
-  const categorias = [...new Set(vitrine.map(item => item.categoria).filter(Boolean))];
+  const categorias = [...new Set(vitrine.map(item => item.category).filter(Boolean))];
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -97,15 +97,15 @@ const VitrineVirtual = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredVitrine.map((item, index) => (
           <Card
-            key={item._id || index}
+            key={item.id || index}
             className="overflow-hidden hover:shadow-elegant transition-all duration-300 animate-slide-in"
             style={{ animationDelay: `${index * 50}ms` }}
           >
             <div className="relative">
-              {item.imagens && item.imagens.length > 0 ? (
+              {item.image && item.image[0] !== 'default.jpg' ? (
                 <img 
-                  src={item.imagens[0]} 
-                  alt={item.nomeProduto}
+                  src={item.image[0]} 
+                  alt={item.title}
                   className="w-full h-48 object-cover"
                 />
               ) : (
@@ -115,13 +115,13 @@ const VitrineVirtual = () => {
               )}
               
               <div className="absolute top-2 right-2 flex gap-2">
-                {item.emPromocao && (
+                {item.isOnSale && (
                   <Badge className="bg-accent text-accent-foreground">
                     <Tag className="h-3 w-3 mr-1" />
                     Promoção
                   </Badge>
                 )}
-                {item.isNovidade && (
+                {item.isNew && (
                   <Badge className="bg-green-600 text-white">
                     <Sparkles className="h-3 w-3 mr-1" />
                     Novo
@@ -133,59 +133,76 @@ const VitrineVirtual = () => {
             <CardContent className="p-4 space-y-3">
               <div>
                 <h3 className="text-lg font-bold text-foreground line-clamp-1">
-                  {item.nomeProduto || 'Produto sem nome'}
+                  {item.title || 'Produto sem nome'}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {item.codigoProduto} • {item.categoria || 'Sem categoria'}
+                  {item.code} • {item.category || 'Sem categoria'}
                 </p>
               </div>
 
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Tamanho:</span>
-                <span className="font-medium">{item.tamanho}</span>
-              </div>
-
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Cor:</span>
-                <span className="font-medium">{item.cor}</span>
-              </div>
+              {item.variants && item.variants.length > 0 && (
+                <>
+                  <div className="flex items-start gap-2 text-sm">
+                    <span className="text-muted-foreground">Variantes:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {item.variants.slice(0, 3).map((v: any, i: number) => (
+                        <Badge key={i} variant="outline" className="text-xs">
+                          {v.color} / {v.size}
+                        </Badge>
+                      ))}
+                      {item.variants.length > 3 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{item.variants.length - 3}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Disponível:</span>
                 <span className="font-bold text-primary">
-                  {item.quantidade || 0} un.
+                  {item.totalAvailable || 0} un.
                 </span>
               </div>
 
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Status:</span>
+                <Badge variant={item.totalAvailable > 0 ? "default" : "secondary"}>
+                  {item.statusProduct}
+                </Badge>
+              </div>
+
               <div className="border-t pt-3">
-                {item.emPromocao && item.precoPromocional ? (
+                {item.isOnSale && item.originalPrice ? (
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground line-through">
-                        R$ {item.precoVenda?.toFixed(2)}
+                        {item.originalPrice}
                       </span>
                       <Badge variant="outline" className="text-xs">
-                        Economize R$ {(item.precoVenda - item.precoPromocional).toFixed(2)}
+                        Economize {item.originalPrice.replace(/[^\d,]/g, '')} - {item.price.replace(/[^\d,]/g, '')}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xl font-bold text-accent">
-                        R$ {item.precoPromocional?.toFixed(2)}
+                        {item.price}
                       </span>
                     </div>
                   </div>
                 ) : (
                   <div className="flex items-center justify-between">
                     <span className="text-xl font-bold text-foreground">
-                      R$ {item.precoVenda?.toFixed(2)}
+                      {item.price}
                     </span>
                   </div>
                 )}
               </div>
 
-              <Button className="w-full gap-2" disabled={!item.quantidade || item.quantidade <= 0}>
+              <Button className="w-full gap-2" disabled={!item.totalAvailable || item.totalAvailable <= 0}>
                 <ShoppingBag className="h-4 w-4" />
-                {item.quantidade > 0 ? 'Disponível' : 'Esgotado'}
+                {item.totalAvailable > 0 ? 'Disponível' : 'Esgotado'}
               </Button>
             </CardContent>
           </Card>
