@@ -844,7 +844,7 @@ const Dashboard = () => {
                   <div>
                     <p className="font-medium text-foreground">{produto.nome}</p>
                     <p className="text-sm text-muted-foreground">
-                      Mínimo: {produto.minimo} unidades
+                      Mínimo: {(produto.minimo ?? 5)} unidades
                     </p>
                   </div>
                   <Badge variant="destructive">

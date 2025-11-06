@@ -713,8 +713,8 @@ const Relatorios = () => {
                           {item.categoria} • {item.codigoProduto}
                         </p>
                       </div>
-                      <Badge variant={(item.quantidadeDisponivel || item.quantidade || 0) === 0 ? "destructive" : (item.quantidadeDisponivel || item.quantidade || 0) < 5 ? "secondary" : "default"}>
-                        {item.quantidadeDisponivel || item.quantidade || 0}
+                      <Badge variant={(item.quantidadeTotal || 0) === 0 ? "destructive" : (item.quantidadeTotal || 0) < 5 ? "secondary" : "default"}>
+                        {item.quantidadeTotal || 0}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between">
