@@ -20,6 +20,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import StatsCard from "@/components/StatsCard";
 import { DashboardCard } from "@/components/DashboardCard";
 import { DashboardMovimentacoes } from "@/components/DashboardMovimentacoes";
+import { MargemLucroCard } from "@/components/MargemLucroCard";
 import {
   DashboardConfigDialog,
   DashboardCardConfig,
@@ -46,6 +47,13 @@ import { formatDateTime, safeDate } from "@/lib/utils";
 const STORAGE_KEY = "mariela-dashboard-config";
 
 const defaultCards: DashboardCardConfig[] = [
+  {
+    id: "margem-lucro-real",
+    title: "Margem de Lucro Real",
+    description: "Diferença entre valor de venda e custo do estoque",
+    visible: true,
+    category: "finance",
+  },
   {
     id: "movimentacoes-estoque",
     title: "Movimentações de Estoque",
@@ -208,6 +216,7 @@ const Dashboard = () => {
   const [produtosBaixoEstoque, setProdutosBaixoEstoque] = useState<any[]>([]);
   const [movimentacoesEstoque, setMovimentacoesEstoque] = useState<any[]>([]);
   const [caixaAberto, setCaixaAberto] = useState<any>(null);
+  const [vendasPorMes, setVendasPorMes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const sensors = useSensors(
@@ -318,6 +327,23 @@ const Dashboard = () => {
       const crescimentoMensal = faturamentoMesAnterior > 0 
         ? ((faturamentoMesAtual - faturamentoMesAnterior) / faturamentoMesAnterior) * 100 
         : 0;
+
+      // Calcular vendas por mês para o gráfico de margem
+      const vendasPorMesMap: any = {};
+      vendas.forEach((v: any) => {
+        const vendaData = safeDate(v.data || v.dataVenda);
+        if (vendaData) {
+          const mesAno = `${vendaData.toLocaleString('pt-BR', { month: 'short' })} ${vendaData.getFullYear()}`;
+          if (!vendasPorMesMap[mesAno]) {
+            vendasPorMesMap[mesAno] = { mes: mesAno, valor: 0, vendas: 0 };
+          }
+          vendasPorMesMap[mesAno].valor += v.total || 0;
+          vendasPorMesMap[mesAno].vendas += 1;
+        }
+      });
+      
+      const vendasPorMesArray = Object.values(vendasPorMesMap).slice(-6); // últimos 6 meses
+      setVendasPorMes(vendasPorMesArray);
 
       setStats({
         vendasHoje: vendasHoje.length,
@@ -454,6 +480,15 @@ const Dashboard = () => {
 
   const renderCard = (cardConfig: DashboardCardConfig) => {
     switch (cardConfig.id) {
+      case "margem-lucro-real":
+        return (
+          <MargemLucroCard
+            key={cardConfig.id}
+            valorEstoqueCusto={stats.valorEstoqueCusto}
+            valorEstoqueVenda={stats.valorEstoqueVenda}
+            vendasPorMes={vendasPorMes}
+          />
+        );
       case "movimentacoes-estoque":
         return (
           <div key={cardConfig.id} className="col-span-full">

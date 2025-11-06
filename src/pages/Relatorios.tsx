@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { vendasAPI, produtosAPI, clientesAPI, vendedoresAPI, estoqueAPI, caixaAPI } from "@/lib/api";
+import { ComparacaoPeriodoDialog } from "@/components/ComparacaoPeriodoDialog";
 
 const Relatorios = () => {
   // Filtros para vendas
@@ -33,6 +34,7 @@ const Relatorios = () => {
     ticketMedio: 0,
     vendasPorCategoria: [],
     vendasPorMes: [],
+    vendasOriginais: [],
   });
   const [relatorioProdutos, setRelatorioProdutos] = useState<any>({
     totalProdutos: 0,
@@ -120,6 +122,7 @@ const Relatorios = () => {
         ticketMedio,
         vendasPorCategoria: Object.values(vendasPorCategoria),
         vendasPorMes: Object.values(vendasPorMes).slice(-3),
+        vendasOriginais: vendas,
       });
 
       // Relatório de Produtos
@@ -377,9 +380,12 @@ const Relatorios = () => {
         <TabsContent value="vendas" className="space-y-6">
           {/* Filtros específicos para Vendas */}
           <Card className="p-6 shadow-card">
-            <div className="flex items-center gap-2 mb-4">
-              <Filter className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-bold text-foreground">Filtros de Vendas</h3>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Filter className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-bold text-foreground">Filtros de Vendas</h3>
+              </div>
+              <ComparacaoPeriodoDialog vendas={relatorioVendas.vendasOriginais || []} />
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
