@@ -149,17 +149,37 @@ const Vendas = () => {
             <div className="border-t pt-4 space-y-2">
               <p className="font-medium text-sm mb-2">Itens:</p>
               {Array.isArray(venda.itens) && venda.itens.map((item: any, idx: number) => (
-                <div key={idx} className="flex justify-between items-center text-sm bg-background/50 p-2 rounded">
+                <div 
+                  key={idx} 
+                  className={`flex justify-between items-center text-sm p-3 rounded-lg transition-all ${
+                    item.emPromocao 
+                      ? 'bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 border-2 border-red-200 dark:border-red-800' 
+                      : 'bg-background/50'
+                  }`}
+                >
                   <div className="flex items-center gap-2 flex-1">
-                    <span>{item.nome || item.nomeProduto} (x{item.quantidade || 1})</span>
-                    {item.emPromocao && (
-                      <Badge variant="destructive" className="text-xs">Promoção</Badge>
-                    )}
-                    {item.novidade && (
-                      <Badge variant="default" className="text-xs bg-accent">Novidade</Badge>
+                    <span className="font-medium">{item.nome || item.nomeProduto} (x{item.quantidade || 1})</span>
+                    <div className="flex gap-1">
+                      {item.emPromocao && (
+                        <Badge variant="destructive" className="text-xs font-bold shadow-sm animate-pulse">
+                          🔥 PROMOÇÃO
+                        </Badge>
+                      )}
+                      {item.novidade && (
+                        <Badge variant="default" className="text-xs bg-accent font-bold">
+                          ✨ Novidade
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="font-bold text-base">{formatCurrency(item.preco || item.precoUnitario || item.precoFinalUnitario || 0)}</span>
+                    {item.emPromocao && item.precoOriginal && (
+                      <span className="text-xs text-muted-foreground line-through">
+                        {formatCurrency(item.precoOriginal)}
+                      </span>
                     )}
                   </div>
-                  <span className="font-medium">{formatCurrency(item.preco || item.precoUnitario || item.precoFinalUnitario || 0)}</span>
                 </div>
               ))}
             </div>

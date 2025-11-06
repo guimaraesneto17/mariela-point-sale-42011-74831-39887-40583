@@ -69,12 +69,12 @@ const VitrineVirtual = () => {
             />
           </div>
           
-          <Select value={filtroCategoria} onValueChange={setFiltroCategoria}>
+          <Select value={filtroCategoria || "todos"} onValueChange={(value) => setFiltroCategoria(value === "todos" ? "" : value)}>
             <SelectTrigger>
               <SelectValue placeholder="Todas as categorias" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas as categorias</SelectItem>
+              <SelectItem value="todos">Todas as categorias</SelectItem>
               {categorias.map(cat => (
                 <SelectItem key={cat} value={cat}>{cat}</SelectItem>
               ))}

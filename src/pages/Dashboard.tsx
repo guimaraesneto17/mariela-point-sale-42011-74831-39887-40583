@@ -13,10 +13,17 @@ import {
   BarChart3,
   Wallet,
   ArrowUpDown,
+  Calendar as CalendarIcon,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Card } from "@/components/ui/card";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import StatsCard from "@/components/StatsCard";
 import { DashboardCard } from "@/components/DashboardCard";
 import { DashboardMovimentacoes } from "@/components/DashboardMovimentacoes";
@@ -201,6 +208,8 @@ const Dashboard = () => {
   const [configOpen, setConfigOpen] = useState(false);
   const [cards, setCards] = useState<DashboardCardConfig[]>([]);
   const [cardOrder, setCardOrder] = useState<string[]>([]);
+  const [dataInicio, setDataInicio] = useState<Date | undefined>(undefined);
+  const [dataFim, setDataFim] = useState<Date | undefined>(undefined);
   const [stats, setStats] = useState<any>({
     vendasHoje: 0,
     faturamentoDiario: 0,
@@ -246,18 +255,44 @@ const Dashboard = () => {
       setCardOrder(defaultCards.map((c) => c.id));
     }
     loadDashboardData();
-  }, []);
+  }, [dataInicio, dataFim]);
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const [vendas, clientes, produtos, estoque, vendedores] = await Promise.all([
+      const [vendasAll, clientes, produtos, estoque, vendedores] = await Promise.all([
         vendasAPI.getAll(),
         clientesAPI.getAll(),
         produtosAPI.getAll(),
         estoqueAPI.getAll(),
         vendedoresAPI.getAll(),
       ]);
+
+      // Filtrar vendas por período se datas foram selecionadas
+      let vendas = vendasAll;
+      if (dataInicio || dataFim) {
+        vendas = vendasAll.filter((v: any) => {
+          const vendaData = safeDate(v.data || v.dataVenda);
+          if (!vendaData) return false;
+          
+          if (dataInicio && dataFim) {
+            const inicio = new Date(dataInicio);
+            const fim = new Date(dataFim);
+            inicio.setHours(0, 0, 0, 0);
+            fim.setHours(23, 59, 59, 999);
+            return vendaData >= inicio && vendaData <= fim;
+          } else if (dataInicio) {
+            const inicio = new Date(dataInicio);
+            inicio.setHours(0, 0, 0, 0);
+            return vendaData >= inicio;
+          } else if (dataFim) {
+            const fim = new Date(dataFim);
+            fim.setHours(23, 59, 59, 999);
+            return vendaData <= fim;
+          }
+          return true;
+        });
+      }
       
       setProdutos(produtos);
 
@@ -1014,6 +1049,11 @@ const Dashboard = () => {
       ].includes(c.id)
   );
 
+  const limparFiltros = () => {
+    setDataInicio(undefined);
+    setDataFim(undefined);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -1034,6 +1074,73 @@ const Dashboard = () => {
           Configurar Dashboard
         </Button>
       </div>
+
+      {/* Filtros de Data */}
+      <Card className="p-4 shadow-card">
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+            <span className="text-sm font-medium">Período de análise:</span>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="justify-start text-left font-normal">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dataInicio ? format(dataInicio, "dd/MM/yyyy", { locale: ptBR }) : "Data inicial"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dataInicio}
+                  onSelect={setDataInicio}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+
+            <span className="text-muted-foreground">até</span>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="justify-start text-left font-normal">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dataFim ? format(dataFim, "dd/MM/yyyy", { locale: ptBR }) : "Data final"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dataFim}
+                  onSelect={setDataFim}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {(dataInicio || dataFim) && (
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="gap-2">
+                Período ativo
+              </Badge>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={limparFiltros}
+                className="h-8 gap-1"
+              >
+                <X className="h-3 w-3" />
+                Limpar filtros
+              </Button>
+            </div>
+          )}
+        </div>
+      </Card>
 
       <DndContext
         sensors={sensors}
