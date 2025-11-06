@@ -51,7 +51,13 @@ const buildVitrineView = async () => {
         statusProduct = 'Últimas unidades';
       }
       
+      // Estrutura conforme especificação
       vitrineView.push({
+        isOnSale,
+        isNew,
+        variants,
+        totalAvailable,
+        statusProduct,
         id: idCounter++,
         code: produto.codigoProduto,
         image: produto.imagens && produto.imagens.length > 0 ? produto.imagens : ['default.jpg'],
@@ -61,11 +67,6 @@ const buildVitrineView = async () => {
         originalPrice: isOnSale && precoPromocional ? `R$ ${produto.precoVenda.toFixed(2)}` : null,
         originalPriceValue: isOnSale && precoPromocional ? produto.precoVenda : null,
         category: produto.categoria,
-        isOnSale,
-        isNew,
-        variants,
-        totalAvailable,
-        statusProduct,
         updatedAt: produto.dataAtualizacao || produto.dataCadastro
       });
     }

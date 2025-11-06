@@ -29,6 +29,7 @@ import { DashboardCard } from "@/components/DashboardCard";
 import { DashboardMovimentacoes } from "@/components/DashboardMovimentacoes";
 import { MargemLucroCard } from "@/components/MargemLucroCard";
 import { VendasPorCategoriaCard } from "@/components/VendasPorCategoriaCard";
+import { VendasEvolutionChart } from "@/components/VendasEvolutionChart";
 import {
   DashboardConfigDialog,
   DashboardCardConfig,
@@ -235,6 +236,7 @@ const Dashboard = () => {
   const [movimentacoesEstoque, setMovimentacoesEstoque] = useState<any[]>([]);
   const [caixaAberto, setCaixaAberto] = useState<any>(null);
   const [vendasPorMes, setVendasPorMes] = useState<any[]>([]);
+  const [vendasParaGrafico, setVendasParaGrafico] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const sensors = useSensors(
@@ -295,6 +297,7 @@ const Dashboard = () => {
       }
       
       setProdutos(produtos);
+      setVendasParaGrafico(vendas); // Armazenar vendas para o gráfico
 
       // Tentar carregar caixa aberto
       try {
@@ -1141,6 +1144,13 @@ const Dashboard = () => {
           )}
         </div>
       </Card>
+
+      {/* Gráfico de Evolução de Vendas */}
+      <VendasEvolutionChart 
+        vendas={vendasParaGrafico} 
+        dataInicio={dataInicio}
+        dataFim={dataFim}
+      />
 
       <DndContext
         sensors={sensors}

@@ -485,6 +485,117 @@ const options: swaggerJsdoc.Options = {
               }
             }
           }
+        },
+        VitrineVirtual: {
+          type: 'object',
+          description: 'View agregada de Produto + Estoque formatada para exibição na vitrine virtual',
+          properties: {
+            isOnSale: {
+              type: 'boolean',
+              description: 'Se o produto está em promoção (agregado de estoque.emPromocao)',
+              example: true
+            },
+            isNew: {
+              type: 'boolean',
+              description: 'Se o produto é novidade (agregado de estoque.isNovidade)',
+              example: false
+            },
+            variants: {
+              type: 'array',
+              description: 'Variantes do produto com cores, tamanhos e disponibilidade',
+              items: {
+                type: 'object',
+                required: ['color', 'size', 'available'],
+                properties: {
+                  color: {
+                    type: 'string',
+                    description: 'Cor da variante',
+                    example: 'Azul'
+                  },
+                  size: {
+                    type: 'string',
+                    description: 'Tamanho da variante',
+                    example: 'G'
+                  },
+                  available: {
+                    type: 'number',
+                    description: 'Quantidade disponível desta variante',
+                    example: 2
+                  }
+                }
+              }
+            },
+            totalAvailable: {
+              type: 'number',
+              description: 'Total disponível somando todas as variantes',
+              example: 5
+            },
+            statusProduct: {
+              type: 'string',
+              enum: ['Disponível', 'Últimas unidades', 'Esgotado'],
+              description: 'Status calculado baseado na disponibilidade',
+              example: 'Disponível'
+            },
+            id: {
+              type: 'integer',
+              description: 'ID sequencial gerado automaticamente para a view',
+              example: 1
+            },
+            code: {
+              type: 'string',
+              pattern: '^P\\d{3}$',
+              description: 'Código do produto (produto.codigoProduto)',
+              example: 'P002'
+            },
+            image: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              description: 'Array de URLs das imagens do produto',
+              example: ['default.jpg']
+            },
+            title: {
+              type: 'string',
+              description: 'Nome do produto (produto.nome)',
+              example: 'Vestido Floral'
+            },
+            price: {
+              type: 'string',
+              description: 'Preço formatado para exibição (R$ XX,XX)',
+              example: 'R$ 100,00'
+            },
+            priceValue: {
+              type: 'number',
+              format: 'float',
+              description: 'Valor numérico do preço (produto.precoVenda ou precoPromocional)',
+              example: 100.00
+            },
+            originalPrice: {
+              type: 'string',
+              nullable: true,
+              description: 'Preço original formatado quando em promoção',
+              example: 'R$ 150,00'
+            },
+            originalPriceValue: {
+              type: 'number',
+              format: 'float',
+              nullable: true,
+              description: 'Valor numérico do preço original quando em promoção',
+              example: 150.00
+            },
+            category: {
+              type: 'string',
+              description: 'Categoria do produto (produto.categoria)',
+              example: 'Vestido'
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Data da última atualização',
+              example: '2025-11-06T04:56:00.467Z'
+            }
+          }
         }
       }
     }
