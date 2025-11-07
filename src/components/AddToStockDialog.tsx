@@ -20,6 +20,8 @@ export function AddToStockDialog({
   const [tamanho, setTamanho] = useState<string>("");
   const [cor, setCor] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [imagemURL, setImagemURL] = useState("");
+  const [imagens, setImagens] = useState<string[]>([]);
   
   // Opções disponíveis (podem ser expandidas)
   const [tamanhosDisponiveis, setTamanhosDisponiveis] = useState<string[]>([
@@ -65,6 +67,18 @@ export function AddToStockDialog({
     setCoresDisponiveis(updated);
     localStorage.setItem('mariela-cores-options', JSON.stringify(updated));
   };
+
+  const addImagemURL = () => {
+    if (imagemURL.trim()) {
+      setImagens(prev => [...prev, imagemURL.trim()]);
+      setImagemURL("");
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setImagens(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async () => {
     if (!cor) {
       toast.error("Selecione uma cor");
@@ -82,6 +96,7 @@ export function AddToStockDialog({
         cor: cor,
         tamanho: tamanho,
         quantidade: 1,
+        imagens: imagens,
         emPromocao: false,
         isNovidade: false,
         logMovimentacao: [{
@@ -103,6 +118,8 @@ export function AddToStockDialog({
       // Reset
       setTamanho("");
       setCor("");
+      setImagens([]);
+      setImagemURL("");
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || "Tente novamente";
       if (errorMessage.includes("Já existe estoque")) {
@@ -160,7 +177,54 @@ export function AddToStockDialog({
             <p><strong>Margem de Lucro:</strong> {produto?.margemDeLucro?.toFixed(2)}%</p>
           </div>
 
-          
+          <div className="space-y-2">
+            <Label>Imagens da Variante (Opcional)</Label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={imagemURL}
+                onChange={(e) => setImagemURL(e.target.value)}
+                placeholder="Cole a URL da imagem (ex: https://fastimg.org/imagem.jpg)"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+              <Button
+                type="button"
+                onClick={addImagemURL}
+                variant="outline"
+                className="shrink-0"
+              >
+                Adicionar
+              </Button>
+            </div>
+
+            {/* Preview das Imagens */}
+            {imagens.length > 0 && (
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {imagens.map((img, index) => (
+                  <div key={index} className="relative group">
+                    <img 
+                      src={img} 
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-24 object-cover rounded-lg border-2 border-border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removeImage(index)}
+                    >
+                      ✕
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <p className="text-xs text-muted-foreground">
+              Use o <a href="https://www.fastimg.org/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">fastimg.org</a> para hospedar suas imagens
+            </p>
+          </div>
 
           <div className="flex gap-2 pt-2">
             <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>

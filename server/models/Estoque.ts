@@ -88,7 +88,11 @@ const EstoqueSchema = new mongoose.Schema({
       required: true,
       min: 0,
       default: 0
-    }
+    },
+    imagens: [{
+      type: String,
+      trim: true
+    }]
   }],
   logMovimentacao: [{
     tipo: {

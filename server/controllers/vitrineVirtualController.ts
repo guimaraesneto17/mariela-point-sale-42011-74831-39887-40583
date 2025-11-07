@@ -22,6 +22,7 @@ const buildVitrineView = async () => {
       let isNew = false;
       let precoPromocional: number | null = null;
       const variants: any[] = [];
+      const allImages: string[] = [];
       
       estoquesProduto.forEach((estoque: any) => {
         isOnSale = isOnSale || !!estoque.emPromocao;
@@ -30,7 +31,7 @@ const buildVitrineView = async () => {
           precoPromocional = estoque.precoPromocional;
         }
         
-        // Agregar variantes
+        // Agregar variantes e imagens
         if (estoque.variantes && estoque.variantes.length > 0) {
           estoque.variantes.forEach((v: any) => {
             variants.push({
@@ -38,6 +39,10 @@ const buildVitrineView = async () => {
               size: v.tamanho,
               available: Number(v.quantidade) || 0
             });
+            // Coletar imagens das variantes
+            if (v.imagens && v.imagens.length > 0) {
+              allImages.push(...v.imagens);
+            }
           });
         }
       });
@@ -60,7 +65,7 @@ const buildVitrineView = async () => {
         statusProduct,
         id: idCounter++,
         code: produto.codigoProduto,
-        image: produto.imagens && produto.imagens.length > 0 ? produto.imagens : ['default.jpg'],
+        image: allImages.length > 0 ? allImages : ['default.jpg'],
         title: produto.nome,
         price: isOnSale && precoPromocional ? `R$ ${precoPromocional}` : `R$ ${produto.precoVenda.toFixed(2)}`,
         priceValue: isOnSale && precoPromocional ? precoPromocional : produto.precoVenda,

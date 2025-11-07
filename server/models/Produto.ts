@@ -40,10 +40,6 @@ const ProdutoSchema = new mongoose.Schema({
     type: Number,
     min: 0
   },
-  imagens: [{
-    type: String,
-    trim: true
-  }],
   fornecedor: {
     codigoFornecedor: {
       type: String,

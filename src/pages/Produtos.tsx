@@ -26,14 +26,10 @@ const Produtos = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [manualCode, setManualCode] = useState(false);
-  const [imagemURL, setImagemURL] = useState("");
-  const [imagemBase64, setImagemBase64] = useState<string[]>([]);
   const [showAddToStockDialog, setShowAddToStockDialog] = useState(false);
   const [selectedProductForStock, setSelectedProductForStock] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
-  const [imageGalleryOpen, setImageGalleryOpen] = useState(false);
-  const [selectedProductImages, setSelectedProductImages] = useState<{nome: string, imagens: string[]}>({nome: '', imagens: []});
 
   const form = useForm<ProdutoFormData>({
     resolver: zodResolver(produtoSchema),
@@ -123,17 +119,6 @@ const Produtos = () => {
     }
   };
 
-  const addImagemURL = () => {
-    if (imagemURL.trim()) {
-      setImagemBase64(prev => [...prev, imagemURL.trim()]);
-      setImagemURL("");
-    }
-  };
-
-  const removeImage = (index: number) => {
-    setImagemBase64(prev => prev.filter((_, i) => i !== index));
-  };
-
   const onSubmit = async (data: ProdutoFormData) => {
     setIsLoading(true);
     try {
@@ -145,7 +130,6 @@ const Produtos = () => {
         precoCusto: data.precoCusto,
         precoVenda: data.precoVenda,
         margemDeLucro: data.margemDeLucro,
-        imagens: imagemBase64,
         fornecedor: data.fornecedor || null,
       };
 
@@ -165,8 +149,6 @@ const Produtos = () => {
       setEditingProduct(null);
       form.reset();
       setManualCode(false);
-      setImagemURL("");
-      setImagemBase64([]);
       loadProdutos();
     } catch (error: any) {
       toast.error("❌ Erro ao salvar produto", {
@@ -190,14 +172,6 @@ const Produtos = () => {
       margemDeLucro: product.margemDeLucro,
       fornecedor: product.fornecedor || null,
     });
-    
-    // Carregar imagens existentes
-    if (product.imagens && Array.isArray(product.imagens)) {
-      setImagemBase64(product.imagens);
-    } else {
-      setImagemBase64([]);
-    }
-    setImagemURL("");
     
     setManualCode(true);
     setIsDialogOpen(true);
@@ -241,8 +215,6 @@ const Produtos = () => {
       fornecedor: null,
     });
     setManualCode(false);
-    setImagemURL("");
-    setImagemBase64([]);
     setIsDialogOpen(true);
   };
 
@@ -533,59 +505,6 @@ const Produtos = () => {
                         )}
                       />
                     </div>
-
-                    <div className="space-y-4">
-                      <div>
-                        <Label className="text-sm font-semibold text-foreground">Imagens do Produto</Label>
-                        
-                        <div className="space-y-2 mt-2">
-                          <div className="flex gap-2">
-                            <Input 
-                              value={imagemURL}
-                              onChange={(e) => setImagemURL(e.target.value)}
-                              placeholder="Cole a URL da imagem (ex: https://fastimg.org/imagem.jpg)"
-                              className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                            />
-                            <Button
-                              type="button"
-                              onClick={addImagemURL}
-                              variant="outline"
-                              className="shrink-0"
-                            >
-                              Adicionar
-                            </Button>
-                          </div>
-                        </div>
-
-                        {/* Preview das Imagens */}
-                        {imagemBase64.length > 0 && (
-                          <div className="mt-3 grid grid-cols-3 gap-2">
-                            {imagemBase64.map((img, index) => (
-                              <div key={index} className="relative group">
-                                <img 
-                                  src={img} 
-                                  alt={`Preview ${index + 1}`}
-                                  className="w-full h-24 object-cover rounded-lg border-2 border-border"
-                                />
-                                <Button
-                                  type="button"
-                                  variant="destructive"
-                                  size="icon"
-                                  className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={() => removeImage(index)}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Use o <a href="https://www.fastimg.org/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">fastimg.org</a> para hospedar suas imagens
-                        </p>
-                      </div>
-                    </div>
                   </CardContent>
                 </Card>
 
@@ -683,30 +602,6 @@ const Produtos = () => {
               </div>
             </CardHeader>
             <CardContent>
-              {/* Galeria de Imagens */}
-              {produto.imagens && produto.imagens.length > 0 && (
-                <div className="mb-4 relative">
-                  <div className="relative aspect-video rounded-lg overflow-hidden border-2 border-border">
-                    <img 
-                      src={produto.imagens[0]} 
-                      alt={produto.nome}
-                      className="w-full h-full object-cover"
-                    />
-                    {produto.imagens.length > 1 && (
-                      <Badge 
-                        className="absolute top-2 right-2 bg-background/90 text-foreground border border-border cursor-pointer hover:bg-primary/10 transition-colors"
-                        onClick={() => {
-                          setSelectedProductImages({nome: produto.nome, imagens: produto.imagens});
-                          setImageGalleryOpen(true);
-                        }}
-                      >
-                        +{produto.imagens.length - 1} foto{produto.imagens.length > 2 ? 's' : ''}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              )}
-
               <p className="text-muted-foreground mb-4 text-sm">{produto.descricao}</p>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
@@ -781,34 +676,6 @@ const Produtos = () => {
         title="Confirmar exclusão de produto"
         description="Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita e removerá também todos os registros de estoque associados."
       />
-
-      {/* Dialog de Galeria de Imagens */}
-      <Dialog open={imageGalleryOpen} onOpenChange={setImageGalleryOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl">
-              Imagens - {selectedProductImages.nome}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedProductImages.imagens.length} {selectedProductImages.imagens.length === 1 ? 'imagem' : 'imagens'} cadastrada{selectedProductImages.imagens.length === 1 ? '' : 's'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            {selectedProductImages.imagens.map((img, index) => (
-              <div key={index} className="relative aspect-video rounded-lg overflow-hidden border-2 border-border group">
-                <img 
-                  src={img} 
-                  alt={`${selectedProductImages.nome} - ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-2 left-2 bg-background/90 px-2 py-1 rounded text-xs font-medium">
-                  Imagem {index + 1}
-                </div>
-              </div>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

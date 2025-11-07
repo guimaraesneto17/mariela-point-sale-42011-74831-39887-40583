@@ -135,6 +135,18 @@ const validateEstoquePayload = (payload: any): FieldIssue[] => {
       if (!Number.isInteger(q) || q < 0) {
         issues.push({ field: `variantes[${idx}].quantidade`, message: 'Deve ser inteiro >= 0', value: v.quantidade });
       }
+      // Validar imagens se fornecidas
+      if (v.imagens !== undefined) {
+        if (!Array.isArray(v.imagens)) {
+          issues.push({ field: `variantes[${idx}].imagens`, message: 'Deve ser um array', value: v.imagens });
+        } else {
+          v.imagens.forEach((img: any, imgIdx: number) => {
+            if (typeof img !== 'string') {
+              issues.push({ field: `variantes[${idx}].imagens[${imgIdx}]`, message: 'Deve ser uma string (URL)', value: img });
+            }
+          });
+        }
+      }
     });
   }
   if (payload?.precoPromocional !== undefined && payload?.precoPromocional !== null) {
@@ -219,7 +231,6 @@ export const getAllEstoque = async (req: Request, res: Response) => {
           nomeProduto: produto?.nome || 'Produto não encontrado',
           categoria: produto?.categoria || '',
           descricao: produto?.descricao || '',
-          imagens: produto?.imagens || [],
           precoCusto: produto?.precoCusto || 0,
           precoVenda: produto?.precoVenda || 0,
           margemDeLucro: produto?.margemDeLucro || 0,
@@ -269,7 +280,6 @@ export const getEstoqueByCodigo = async (req: Request, res: Response) => {
       nomeProduto: produto?.nome || 'Produto não encontrado',
       categoria: produto?.categoria || '',
       descricao: produto?.descricao || '',
-      imagens: produto?.imagens || [],
       precoCusto: produto?.precoCusto || 0,
       precoVenda: produto?.precoVenda || 0,
       margemDeLucro: produto?.margemDeLucro || 0
@@ -284,7 +294,7 @@ export const createEstoque = async (req: Request, res: Response) => {
   try {
     console.log('Dados recebidos para criar estoque:', JSON.stringify(req.body, null, 2));
     
-    const { codigoProduto, cor, tamanho, quantidade = 1 } = req.body;
+    const { codigoProduto, cor, tamanho, quantidade = 1, imagens = [] } = req.body;
     
     // Verificar se já existe estoque para este produto
     let estoque = await Estoque.findOne({ codigoProduto });
@@ -308,7 +318,7 @@ export const createEstoque = async (req: Request, res: Response) => {
       }
       
       // Adicionar nova variante
-      estoque.variantes.push({ cor, tamanho, quantidade });
+      estoque.variantes.push({ cor, tamanho, quantidade, imagens });
       
       // Atualizar quantidade total
       estoque.quantidade = estoque.variantes.reduce((total: number, v: any) => total + (Number(v.quantidade) || 0), 0);
@@ -321,7 +331,7 @@ export const createEstoque = async (req: Request, res: Response) => {
     const cleanData: any = {
       codigoProduto,
       quantidade: quantidade || 0,
-      variantes: [{ cor, tamanho, quantidade }],
+      variantes: [{ cor, tamanho, quantidade, imagens }],
       emPromocao: req.body.emPromocao || false,
       isNovidade: req.body.isNovidade || false,
       dataCadastro: isoSeconds()

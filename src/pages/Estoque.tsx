@@ -327,10 +327,10 @@ const Estoque = () => {
                 <div className="flex flex-col gap-6">
                   {/* Header com imagem, nome e badges */}
                   <div className="flex items-start gap-4">
-                    {item.imagens && item.imagens.length > 0 && (
+                    {varianteSelecionada && varianteSelecionada.imagens && varianteSelecionada.imagens.length > 0 && (
                       <img
-                        src={item.imagens[0]}
-                        alt={item.nomeProduto}
+                        src={varianteSelecionada.imagens[0]}
+                        alt={`${item.nomeProduto} - ${selectedCor} ${selectedTamanho}`}
                         className="w-16 h-16 object-cover rounded-lg"
                       />
                     )}

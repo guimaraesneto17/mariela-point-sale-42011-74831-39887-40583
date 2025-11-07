@@ -96,7 +96,7 @@ const options: swaggerJsdoc.Options = {
         },
         Produto: {
           type: 'object',
-          required: ['codigoProduto', 'nome', 'categoria', 'cor'],
+          required: ['codigoProduto', 'nome', 'categoria'],
           properties: {
             codigoProduto: {
               type: 'string',
@@ -119,26 +119,37 @@ const options: swaggerJsdoc.Options = {
               enum: ['Calça', 'Saia', 'Vestido', 'Blusa', 'Bolsa', 'Acessório', 'Outro'],
               description: 'Categoria do produto'
             },
-            cor: {
-              type: 'string',
-              description: 'Cor do produto'
+            precoCusto: {
+              type: 'number',
+              minimum: 0,
+              description: 'Preço de custo do produto'
             },
-            ativo: {
-              type: 'boolean',
-              description: 'Se o produto está ativo'
+            precoVenda: {
+              type: 'number',
+              minimum: 0,
+              description: 'Preço de venda do produto'
             },
-            imagens: {
-              type: 'array',
-              items: {
-                type: 'string'
-              },
-              description: 'URLs das imagens do produto'
+            margemDeLucro: {
+              type: 'number',
+              description: 'Margem de lucro percentual'
+            },
+            fornecedor: {
+              type: 'object',
+              properties: {
+                codigoFornecedor: {
+                  type: 'string',
+                  pattern: '^F\\d{3}$'
+                },
+                nome: {
+                  type: 'string'
+                }
+              }
             }
           }
         },
         Estoque: {
           type: 'object',
-          required: ['codigoProduto', 'tamanho', 'quantidade', 'precoCusto', 'precoVenda'],
+          required: ['codigoProduto', 'quantidade', 'variantes'],
           properties: {
             codigoProduto: {
               type: 'string',
@@ -146,29 +157,40 @@ const options: swaggerJsdoc.Options = {
               example: 'P101',
               description: 'Código do produto'
             },
-            tamanho: {
-              type: 'string',
-              enum: ['PP', 'P', 'M', 'G', 'GG', 'U'],
-              description: 'Tamanho do produto'
-            },
             quantidade: {
               type: 'number',
               minimum: 0,
-              description: 'Quantidade em estoque'
+              description: 'Quantidade total em estoque (soma de todas as variantes)'
             },
-            precoCusto: {
-              type: 'number',
-              minimum: 0,
-              description: 'Preço de custo'
-            },
-            precoVenda: {
-              type: 'number',
-              minimum: 0,
-              description: 'Preço de venda'
-            },
-            margemDeLucro: {
-              type: 'number',
-              description: 'Margem de lucro percentual'
+            variantes: {
+              type: 'array',
+              description: 'Lista de variantes do produto (cor, tamanho, quantidade, imagens)',
+              items: {
+                type: 'object',
+                required: ['cor', 'tamanho', 'quantidade'],
+                properties: {
+                  cor: {
+                    type: 'string',
+                    description: 'Cor da variante'
+                  },
+                  tamanho: {
+                    type: 'string',
+                    description: 'Tamanho da variante'
+                  },
+                  quantidade: {
+                    type: 'number',
+                    minimum: 0,
+                    description: 'Quantidade disponível dessa variante'
+                  },
+                  imagens: {
+                    type: 'array',
+                    description: 'URLs das imagens desta variante',
+                    items: {
+                      type: 'string'
+                    }
+                  }
+                }
+              }
             },
             emPromocao: {
               type: 'boolean',
@@ -178,9 +200,14 @@ const options: swaggerJsdoc.Options = {
               type: 'boolean',
               description: 'Se o produto é novidade'
             },
-            valorPromocional: {
+            precoPromocional: {
               type: 'number',
-              description: 'Valor promocional quando em promoção'
+              minimum: 0,
+              description: 'Preço promocional quando em promoção'
+            },
+            ativo: {
+              type: 'boolean',
+              description: 'Se o estoque está ativo'
             }
           }
         },
