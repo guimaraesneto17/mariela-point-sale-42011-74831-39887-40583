@@ -3,9 +3,26 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { X, Plus, Image as ImageIcon } from "lucide-react";
+import { X, Plus, Image as ImageIcon, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { estoqueAPI } from "@/lib/api";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface EditVariantImagesDialogProps {
   open: boolean;
@@ -13,6 +30,64 @@ interface EditVariantImagesDialogProps {
   produto: any;
   variante: any;
   onSuccess?: () => void;
+}
+
+// Componente para item arrastável
+function SortableImageItem({ 
+  id, 
+  img, 
+  index, 
+  onRemove 
+}: { 
+  id: string; 
+  img: string; 
+  index: number; 
+  onRemove: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative group">
+      <div className="absolute top-2 left-2 cursor-move z-10" {...attributes} {...listeners}>
+        <div className="bg-background/80 backdrop-blur-sm p-1 rounded-md border border-border shadow-sm">
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </div>
+      </div>
+      <img
+        src={img}
+        alt={`Imagem ${index + 1}`}
+        className="w-full h-32 object-cover rounded-lg border border-border"
+        onError={(e) => {
+          e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%23ddd' width='100' height='100'/%3E%3Ctext fill='%23999' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3EErro%3C/text%3E%3C/svg%3E";
+        }}
+      />
+      <Button
+        type="button"
+        size="icon"
+        variant="destructive"
+        className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+        onClick={onRemove}
+      >
+        <X className="h-4 w-4" />
+      </Button>
+      <div className="absolute bottom-2 left-2 bg-background/80 backdrop-blur-sm px-2 py-0.5 rounded-md border border-border text-xs font-medium">
+        #{index + 1}
+      </div>
+    </div>
+  );
 }
 
 export function EditVariantImagesDialog({
@@ -25,6 +100,13 @@ export function EditVariantImagesDialog({
   const [imagens, setImagens] = useState<string[]>(variante?.imagens || []);
   const [imagemURL, setImagemURL] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const addImagemURL = () => {
     if (!imagemURL.trim()) {
@@ -43,6 +125,19 @@ export function EditVariantImagesDialog({
 
   const removeImage = (index: number) => {
     setImagens(imagens.filter((_, i) => i !== index));
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setImagens((items) => {
+        const oldIndex = items.findIndex((_, i) => `image-${i}` === active.id);
+        const newIndex = items.findIndex((_, i) => `image-${i}` === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+      toast.success("Ordem atualizada! Não esqueça de salvar.");
+    }
   };
 
   const handleSubmit = async () => {
@@ -96,33 +191,35 @@ export function EditVariantImagesDialog({
             </p>
           </div>
 
-          {/* Grid de imagens */}
+          {/* Grid de imagens com drag & drop */}
           {imagens.length > 0 ? (
             <div className="space-y-2">
               <Label>Imagens Adicionadas ({imagens.length})</Label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {imagens.map((img, index) => (
-                  <div key={index} className="relative group">
-                    <img
-                      src={img}
-                      alt={`Imagem ${index + 1}`}
-                      className="w-full h-32 object-cover rounded-lg border border-border"
-                      onError={(e) => {
-                        e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%23ddd' width='100' height='100'/%3E%3Ctext fill='%23999' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3EErro%3C/text%3E%3C/svg%3E";
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="destructive"
-                      className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removeImage(index)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+              <p className="text-xs text-muted-foreground mb-2">
+                Arraste as imagens para reordená-las. A primeira será a imagem principal.
+              </p>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={imagens.map((_, i) => `image-${i}`)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {imagens.map((img, index) => (
+                      <SortableImageItem
+                        key={`image-${index}`}
+                        id={`image-${index}`}
+                        img={img}
+                        index={index}
+                        onRemove={() => removeImage(index)}
+                      />
+                    ))}
                   </div>
-                ))}
-              </div>
+                </SortableContext>
+              </DndContext>
             </div>
           ) : (
             <div className="text-center py-8 border border-dashed border-border rounded-lg">

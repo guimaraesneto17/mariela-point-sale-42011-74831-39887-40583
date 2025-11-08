@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FileText, Calendar, Filter, Download, TrendingUp, Package, Users, DollarSign, ShoppingBag, Sparkles, Tag, Crown, UserCheck, Wallet, BarChart3 } from "lucide-react";
+import { FileText, Calendar, Filter, Download, TrendingUp, Package, Users, DollarSign, ShoppingBag, Sparkles, Tag, Crown, UserCheck, Wallet, BarChart3, Boxes } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { toast } from "sonner";
 import { vendasAPI, produtosAPI, clientesAPI, vendedoresAPI, estoqueAPI, caixaAPI } from "@/lib/api";
 import { ComparacaoPeriodoDialog } from "@/components/ComparacaoPeriodoDialog";
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts";
 
 const Relatorios = () => {
   // Filtros para vendas
@@ -66,6 +67,13 @@ const Relatorios = () => {
     ultimosCaixas: [],
   });
   const [estoque, setEstoque] = useState<any[]>([]);
+  const [relatorioEstoque, setRelatorioEstoque] = useState<any>({
+    porCategoria: [],
+    porCor: [],
+    porTamanho: [],
+    totalItens: 0,
+    valorTotal: 0,
+  });
 
   useEffect(() => {
     loadRelatorios();
@@ -286,6 +294,62 @@ const Relatorios = () => {
         ultimosCaixas,
       });
 
+      // Relatório de Estoque - Análise por categoria, cor e tamanho
+      const estoquePorCategoria: any = {};
+      const estoquePorCor: any = {};
+      const estoquePorTamanho: any = {};
+      let totalItensEstoque = 0;
+      let valorTotalEstoque = 0;
+
+      estoqueData.forEach((item: any) => {
+        const produto = produtos.find((p: any) => p.codigoProduto === item.codigoProduto);
+        const categoria = produto?.categoria || 'Outro';
+        const quantidade = item.quantidadeTotal || 0;
+        const valor = quantidade * (item.precoVenda || 0);
+
+        // Por categoria
+        if (!estoquePorCategoria[categoria]) {
+          estoquePorCategoria[categoria] = { name: categoria, quantidade: 0, valor: 0 };
+        }
+        estoquePorCategoria[categoria].quantidade += quantidade;
+        estoquePorCategoria[categoria].valor += valor;
+
+        // Por cor (se houver variantes)
+        if (item.variantes && item.variantes.length > 0) {
+          item.variantes.forEach((v: any) => {
+            const cor = v.cor || 'Sem cor';
+            const qtdVariante = v.quantidade || 0;
+            if (!estoquePorCor[cor]) {
+              estoquePorCor[cor] = { name: cor, quantidade: 0 };
+            }
+            estoquePorCor[cor].quantidade += qtdVariante;
+          });
+        }
+
+        // Por tamanho (se houver variantes)
+        if (item.variantes && item.variantes.length > 0) {
+          item.variantes.forEach((v: any) => {
+            const tamanho = v.tamanho || 'Único';
+            const qtdVariante = v.quantidade || 0;
+            if (!estoquePorTamanho[tamanho]) {
+              estoquePorTamanho[tamanho] = { name: tamanho, quantidade: 0 };
+            }
+            estoquePorTamanho[tamanho].quantidade += qtdVariante;
+          });
+        }
+
+        totalItensEstoque += quantidade;
+        valorTotalEstoque += valor;
+      });
+
+      setRelatorioEstoque({
+        porCategoria: Object.values(estoquePorCategoria),
+        porCor: Object.values(estoquePorCor),
+        porTamanho: Object.values(estoquePorTamanho),
+        totalItens: totalItensEstoque,
+        valorTotal: valorTotalEstoque,
+      });
+
     } catch (error) {
       console.error('Erro ao carregar relatórios:', error);
       toast.error('Erro ao carregar relatórios');
@@ -368,9 +432,10 @@ const Relatorios = () => {
       </div>
 
       <Tabs defaultValue="vendas" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="vendas">Vendas</TabsTrigger>
           <TabsTrigger value="produtos">Produtos</TabsTrigger>
+          <TabsTrigger value="estoque">Estoque</TabsTrigger>
           <TabsTrigger value="clientes">Clientes</TabsTrigger>
           <TabsTrigger value="vendedores">Vendedores</TabsTrigger>
           <TabsTrigger value="caixa">Caixa</TabsTrigger>
@@ -903,6 +968,177 @@ const Relatorios = () => {
               </TooltipProvider>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Relatório de Estoque */}
+        <TabsContent value="estoque" className="space-y-6">
+          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <Boxes className="h-8 w-8 text-primary" />
+            Análise de Estoque
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="bg-gradient-to-br from-card via-card to-primary/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Total de Itens em Estoque
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <Package className="h-8 w-8 text-primary" />
+                  <p className="text-3xl font-bold text-foreground">
+                    {relatorioEstoque.totalItens}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-card via-card to-green-500/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Valor Total em Estoque
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <DollarSign className="h-8 w-8 text-green-600" />
+                  <p className="text-3xl font-bold text-foreground">
+                    R$ {relatorioEstoque.valorTotal.toFixed(2)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Gráficos de Distribuição */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Gráfico de Pizza - Distribuição por Categoria */}
+            <Card className="p-6 shadow-card">
+              <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                Distribuição por Categoria
+              </h3>
+              {relatorioEstoque.porCategoria.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={relatorioEstoque.porCategoria}
+                      dataKey="quantidade"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      label={(entry) => `${entry.name}: ${entry.quantidade}`}
+                    >
+                      {relatorioEstoque.porCategoria.map((entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={`hsl(${index * 45}, 70%, 60%)`} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                  Sem dados disponíveis
+                </div>
+              )}
+            </Card>
+
+            {/* Gráfico de Barras - Valor por Categoria */}
+            <Card className="p-6 shadow-card">
+              <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-green-600" />
+                Valor por Categoria
+              </h3>
+              {relatorioEstoque.porCategoria.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={relatorioEstoque.porCategoria}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <RechartsTooltip formatter={(value: number) => `R$ ${value.toFixed(2)}`} />
+                    <Legend />
+                    <Bar dataKey="valor" fill="hsl(var(--primary))" name="Valor em Estoque" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                  Sem dados disponíveis
+                </div>
+              )}
+            </Card>
+          </div>
+
+          {/* Gráficos de Variantes */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Distribuição por Cor */}
+            <Card className="p-6 shadow-card">
+              <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-purple-600" />
+                Distribuição por Cor
+              </h3>
+              {relatorioEstoque.porCor.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={relatorioEstoque.porCor.slice(0, 10)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
+                    <YAxis />
+                    <RechartsTooltip />
+                    <Legend />
+                    <Bar dataKey="quantidade" fill="hsl(270, 70%, 60%)" name="Quantidade" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                  Sem dados de variantes disponíveis
+                </div>
+              )}
+            </Card>
+
+            {/* Distribuição por Tamanho */}
+            <Card className="p-6 shadow-card">
+              <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-orange-600" />
+                Distribuição por Tamanho
+              </h3>
+              {relatorioEstoque.porTamanho.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={relatorioEstoque.porTamanho}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <RechartsTooltip />
+                    <Legend />
+                    <Bar dataKey="quantidade" fill="hsl(25, 70%, 60%)" name="Quantidade" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                  Sem dados de variantes disponíveis
+                </div>
+              )}
+            </Card>
+          </div>
+
+          {/* Tabela detalhada */}
+          <Card className="p-6 shadow-card">
+            <h3 className="text-lg font-bold text-foreground mb-4">Resumo Detalhado</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {relatorioEstoque.porCategoria.map((item: any, index: number) => (
+                <Card key={index} className="p-4 bg-gradient-card">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-bold text-foreground">{item.name}</h4>
+                    <Badge variant="secondary">{item.quantidade} un.</Badge>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    <p>Valor: <span className="font-semibold text-green-600">R$ {item.valor.toFixed(2)}</span></p>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </Card>
         </TabsContent>
 
         {/* Relatório de Clientes */}
