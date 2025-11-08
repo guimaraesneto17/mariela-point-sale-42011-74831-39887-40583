@@ -51,7 +51,7 @@ const aggregateEstoqueByCodigo = (docs: any[]) => {
   if (!docs || docs.length === 0) return null;
   const acc: any = {
     codigoProduto: docs[0].codigoProduto,
-    variantes: [] as Array<{ cor: string; tamanho: string; quantidade: number }>,
+    variantes: [] as Array<{ cor: string; tamanho: string; quantidade: number; imagens?: string[] }>,
     emPromocao: false,
     isNovidade: false,
     precoPromocional: null as number | null,
@@ -80,13 +80,30 @@ const aggregateEstoqueByCodigo = (docs: any[]) => {
           const c = cores[0];
           const t = tamanhos[0];
           const q = Number(doc.quantidade) || 0;
-          return c && t ? [{ cor: c, tamanho: t, quantidade: q }] : [];
+          return c && t ? [{ cor: c, tamanho: t, quantidade: q, imagens: [] }] : [];
         })();
 
     variantes.forEach((v: any) => {
       const existing = acc.variantes.find((x: any) => x.cor === v.cor && x.tamanho === v.tamanho);
-      if (existing) existing.quantidade += Number(v.quantidade) || 0;
-      else acc.variantes.push({ cor: v.cor, tamanho: v.tamanho, quantidade: Number(v.quantidade) || 0 });
+      if (existing) {
+        existing.quantidade += Number(v.quantidade) || 0;
+        // Mesclar imagens se houver
+        if (v.imagens && Array.isArray(v.imagens) && v.imagens.length > 0) {
+          existing.imagens = existing.imagens || [];
+          v.imagens.forEach((img: string) => {
+            if (!existing.imagens.includes(img)) {
+              existing.imagens.push(img);
+            }
+          });
+        }
+      } else {
+        acc.variantes.push({ 
+          cor: v.cor, 
+          tamanho: v.tamanho, 
+          quantidade: Number(v.quantidade) || 0,
+          imagens: v.imagens || []
+        });
+      }
     });
 
     // Agregar logs de promoção
@@ -737,5 +754,64 @@ export const togglePromocao = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Erro ao atualizar status de promoção:', error);
     res.status(500).json({ error: 'Erro ao atualizar status de promoção' });
+  }
+};
+
+// Atualizar imagens de uma variante específica
+export const updateVariantImages = async (req: Request, res: Response) => {
+  try {
+    const { codigo } = req.params;
+    const { cor, tamanho, imagens } = req.body;
+
+    // Validar campos obrigatórios
+    if (!cor || !tamanho) {
+      return res.status(400).json({
+        error: 'Campos obrigatórios faltando',
+        message: 'Os campos cor e tamanho são obrigatórios'
+      });
+    }
+
+    if (!Array.isArray(imagens)) {
+      return res.status(400).json({
+        error: 'Formato inválido',
+        message: 'O campo imagens deve ser um array'
+      });
+    }
+
+    // Buscar o produto no estoque
+    const estoque = await Estoque.findOne({ codigoProduto: codigo });
+
+    if (!estoque) {
+      return res.status(404).json({ error: 'Produto não encontrado no estoque' });
+    }
+
+    // Buscar a variante específica
+    const varianteIndex = estoque.variantes?.findIndex(
+      (v: any) => v.cor === cor && v.tamanho === tamanho
+    );
+
+    if (varianteIndex === -1 || varianteIndex === undefined) {
+      return res.status(404).json({ 
+        error: 'Variante não encontrada',
+        message: `Variante com cor "${cor}" e tamanho "${tamanho}" não foi encontrada`
+      });
+    }
+
+    // Atualizar as imagens da variante
+    if (estoque.variantes) {
+      estoque.variantes[varianteIndex].imagens = imagens;
+    }
+
+    // Salvar as alterações
+    await estoque.save();
+
+    res.json({
+      message: 'Imagens da variante atualizadas com sucesso',
+      estoque,
+      variante: estoque.variantes?.[varianteIndex]
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar imagens da variante:', error);
+    res.status(500).json({ error: 'Erro ao atualizar imagens da variante' });
   }
 };

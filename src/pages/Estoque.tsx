@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History } from "lucide-react";
+import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History, Image as ImageIcon, Eye } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import { PromotionDialog } from "@/components/PromotionDialog";
 import { NovidadeDialog } from "@/components/NovidadeDialog";
 import { MovimentacaoDialog } from "@/components/MovimentacaoDialog";
 import { PromocaoHistoricoDialog } from "@/components/PromocaoHistoricoDialog";
+import { EditVariantImagesDialog } from "@/components/EditVariantImagesDialog";
+import { ImageGalleryDialog } from "@/components/ImageGalleryDialog";
 import { estoqueAPI } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
 
@@ -24,6 +26,8 @@ const Estoque = () => {
   const [showNovidadeDialog, setShowNovidadeDialog] = useState(false);
   const [showMovimentacaoDialog, setShowMovimentacaoDialog] = useState(false);
   const [showPromocaoHistoricoDialog, setShowPromocaoHistoricoDialog] = useState(false);
+  const [showEditImagesDialog, setShowEditImagesDialog] = useState(false);
+  const [showGalleryDialog, setShowGalleryDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [inventory, setInventory] = useState<any[]>([]);
@@ -32,6 +36,7 @@ const Estoque = () => {
   const [filterNovidade, setFilterNovidade] = useState<boolean | null>(null);
   const [filterCor, setFilterCor] = useState<string>("todas");
   const [filterTamanho, setFilterTamanho] = useState<string>("todos");
+  const [filterCategoria, setFilterCategoria] = useState<string>("todas");
   
   // State para selecionar cor/tamanho por item
   const [selectedColorByItem, setSelectedColorByItem] = useState<{[key: string]: string}>({});
@@ -76,6 +81,7 @@ const Estoque = () => {
   const filteredInventory = inventory.filter(item => {
     const nomeProduto = item.nomeProduto || '';
     const codigoProduto = item.codigoProduto || '';
+    const categoria = item.categoria || '';
     
     // Filtro de texto
     const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -87,6 +93,9 @@ const Estoque = () => {
     // Filtro de novidade
     const matchesNovidade = filterNovidade === null || item.isNovidade === filterNovidade;
     
+    // Filtro de categoria
+    const matchesCategoria = filterCategoria === "todas" || categoria === filterCategoria;
+    
     // Filtro de cor
     const matchesCor = filterCor === "todas" || 
       (item.variantes && item.variantes.some((v: any) => v.cor === filterCor && v.quantidade > 0));
@@ -95,7 +104,7 @@ const Estoque = () => {
     const matchesTamanho = filterTamanho === "todos" || 
       (item.variantes && item.variantes.some((v: any) => v.tamanho === filterTamanho && v.quantidade > 0));
     
-    return matchesSearch && matchesPromocao && matchesNovidade && matchesCor && matchesTamanho;
+    return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria && matchesCor && matchesTamanho;
   });
 
   const openEntryDialog = (item: any, variante: any) => {
@@ -209,6 +218,33 @@ const Estoque = () => {
     return Array.from(tamanhos).sort();
   };
 
+  // Obter todas as categorias únicas disponíveis no estoque
+  const getAllCategorias = () => {
+    const categorias = new Set<string>();
+    inventory.forEach((item) => {
+      if (item.categoria) {
+        categorias.add(item.categoria);
+      }
+    });
+    return Array.from(categorias).sort();
+  };
+
+  const openEditImagesDialog = (item: any, variante: any) => {
+    setSelectedItem(item);
+    setSelectedVariant(variante);
+    setShowEditImagesDialog(true);
+  };
+
+  const openGalleryDialog = (item: any, variante: any) => {
+    setSelectedItem(item);
+    setSelectedVariant(variante);
+    setShowGalleryDialog(true);
+  };
+
+  const handleImagesSuccess = () => {
+    loadEstoque();
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="text-center">
@@ -231,6 +267,21 @@ const Estoque = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground mb-2 block">Filtrar por Categoria</Label>
+              <Select value={filterCategoria} onValueChange={setFilterCategoria}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas as categorias" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as categorias</SelectItem>
+                  {getAllCategorias().map((categoria) => (
+                    <SelectItem key={categoria} value={categoria}>{categoria}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div>
               <Label className="text-sm font-medium text-muted-foreground mb-2 block">Filtrar por Cor</Label>
               <Select value={filterCor} onValueChange={setFilterCor}>
@@ -283,13 +334,14 @@ const Estoque = () => {
               Novidades
             </Button>
             
-            {(filterPromocao !== null || filterNovidade !== null || filterCor !== "todas" || filterTamanho !== "todos") && (
+            {(filterPromocao !== null || filterNovidade !== null || filterCategoria !== "todas" || filterCor !== "todas" || filterTamanho !== "todos") && (
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => {
                   setFilterPromocao(null);
                   setFilterNovidade(null);
+                  setFilterCategoria("todas");
                   setFilterCor("todas");
                   setFilterTamanho("todos");
                 }}
@@ -480,6 +532,27 @@ const Estoque = () => {
                     <Button
                       size="sm"
                       variant="outline"
+                      onClick={() => openEditImagesDialog(item, varianteSelecionada)}
+                      className="gap-2"
+                      disabled={!varianteSelecionada}
+                    >
+                      <ImageIcon className="h-4 w-4" />
+                      Gerenciar Imagens
+                    </Button>
+                    {varianteSelecionada && varianteSelecionada.imagens && varianteSelecionada.imagens.length > 0 && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openGalleryDialog(item, varianteSelecionada)}
+                        className="gap-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                        Ver Galeria ({varianteSelecionada.imagens.length})
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={() => openMovimentacaoDialog(item)}
                       className="gap-2"
                     >
@@ -603,6 +676,25 @@ const Estoque = () => {
             nomeProduto={selectedItem.nomeProduto}
             logPromocao={selectedItem.logPromocao || []}
             precoOriginal={selectedItem.precoVenda}
+          />
+        </>
+      )}
+
+      {selectedItem && selectedVariant && (
+        <>
+          <EditVariantImagesDialog
+            open={showEditImagesDialog}
+            onOpenChange={setShowEditImagesDialog}
+            produto={selectedItem}
+            variante={selectedVariant}
+            onSuccess={handleImagesSuccess}
+          />
+
+          <ImageGalleryDialog
+            open={showGalleryDialog}
+            onOpenChange={setShowGalleryDialog}
+            images={selectedVariant.imagens || []}
+            title={`${selectedItem.nomeProduto} - ${selectedVariant.cor} / ${selectedVariant.tamanho}`}
           />
         </>
       )}

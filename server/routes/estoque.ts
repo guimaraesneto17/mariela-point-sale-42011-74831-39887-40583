@@ -279,6 +279,55 @@ router.patch('/promocao/:codigo', estoqueController.togglePromocao);
 
 /**
  * @swagger
+ * /api/estoque/variante/imagens/{codigo}:
+ *   patch:
+ *     summary: Atualiza as imagens de uma variante específica
+ *     tags: [Estoque]
+ *     parameters:
+ *       - in: path
+ *         name: codigo
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: P101
+ *         description: Código do produto
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - cor
+ *               - tamanho
+ *               - imagens
+ *             properties:
+ *               cor:
+ *                 type: string
+ *                 example: Vermelho
+ *                 description: Cor da variante
+ *               tamanho:
+ *                 type: string
+ *                 example: M
+ *                 description: Tamanho da variante
+ *               imagens:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["https://example.com/image1.jpg", "https://example.com/image2.jpg"]
+ *                 description: Array de URLs das imagens
+ *     responses:
+ *       200:
+ *         description: Imagens da variante atualizadas com sucesso
+ *       404:
+ *         description: Produto ou variante não encontrada
+ *       400:
+ *         description: Erro ao atualizar imagens ou campos obrigatórios faltando
+ */
+router.patch('/variante/imagens/:codigo', estoqueController.updateVariantImages);
+
+/**
+ * @swagger
  * /api/estoque/{id}:
  *   put:
  *     summary: Atualiza um item de estoque
