@@ -26,6 +26,27 @@ router.get('/', vitrineVirtualController.getAllVitrineVirtual);
 
 /**
  * @swagger
+ * /api/vitrine/json:
+ *   get:
+ *     summary: JSON público da vitrine virtual (sem autenticação)
+ *     description: Endpoint público que retorna todos os produtos da vitrine em formato JSON, acessível sem autenticação
+ *     tags: [Vitrine Virtual]
+ *     responses:
+ *       200:
+ *         description: JSON da vitrine retornado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/VitrineVirtual'
+ *       500:
+ *         description: Erro ao gerar JSON da vitrine
+ */
+router.get('/json', vitrineVirtualController.getAllVitrineVirtual);
+
+/**
+ * @swagger
  * /api/vitrine/novidades:
  *   get:
  *     summary: Lista as novidades da vitrine virtual

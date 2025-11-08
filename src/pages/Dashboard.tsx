@@ -548,7 +548,7 @@ const Dashboard = () => {
         return (
           <VendasPorCategoriaCard
             key={cardConfig.id}
-            vendas={recentSales}
+            vendas={vendasParaGrafico}
             produtos={produtos}
           />
         );
