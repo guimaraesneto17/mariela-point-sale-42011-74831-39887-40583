@@ -182,3 +182,45 @@ export const caixaAPI = {
   }),
   delete: (codigo: string) => fetchAPI(`/caixa/${codigo}`, { method: 'DELETE' }),
 };
+
+// ============= CONTAS A PAGAR =============
+export const contasPagarAPI = {
+  getAll: () => fetchAPI('/contas-pagar'),
+  getByNumero: (numero: string) => fetchAPI(`/contas-pagar/${numero}`),
+  getResumo: () => fetchAPI('/contas-pagar/resumo'),
+  create: (data: any) => fetchAPI('/contas-pagar', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  update: (numero: string, data: any) => fetchAPI(`/contas-pagar/${numero}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+  pagar: (numero: string, data: { valorPago: number; dataPagamento?: string; formaPagamento: string }) => 
+    fetchAPI(`/contas-pagar/${numero}/pagar`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  delete: (numero: string) => fetchAPI(`/contas-pagar/${numero}`, { method: 'DELETE' }),
+};
+
+// ============= CONTAS A RECEBER =============
+export const contasReceberAPI = {
+  getAll: () => fetchAPI('/contas-receber'),
+  getByNumero: (numero: string) => fetchAPI(`/contas-receber/${numero}`),
+  getResumo: () => fetchAPI('/contas-receber/resumo'),
+  create: (data: any) => fetchAPI('/contas-receber', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  update: (numero: string, data: any) => fetchAPI(`/contas-receber/${numero}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+  receber: (numero: string, data: { valorRecebido: number; dataRecebimento?: string; formaPagamento: string }) => 
+    fetchAPI(`/contas-receber/${numero}/receber`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  delete: (numero: string) => fetchAPI(`/contas-receber/${numero}`, { method: 'DELETE' }),
+};

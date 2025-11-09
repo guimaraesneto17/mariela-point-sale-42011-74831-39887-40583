@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, ShoppingBag, Tag, Sparkles, Package, TrendingUp } from "lucide-react";
+import { Search, ShoppingBag, Tag, Sparkles, Package, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { vitrineVirtualAPI } from "@/lib/api";
 import { getDefaultImageByCategory } from "@/lib/defaultImages";
+import ProductDetailDialog from "@/components/ProductDetailDialog";
 
 const VitrineVirtual = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -15,6 +16,8 @@ const VitrineVirtual = () => {
   const [filtroTipo, setFiltroTipo] = useState("todos");
   const [vitrine, setVitrine] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
   useEffect(() => {
     loadVitrine();
@@ -214,9 +217,16 @@ const VitrineVirtual = () => {
                 )}
               </div>
 
-              <Button className="w-full gap-2" disabled={!item.totalAvailable || item.totalAvailable <= 0}>
-                <ShoppingBag className="h-4 w-4" />
-                {item.totalAvailable > 0 ? 'Disponível' : 'Esgotado'}
+              <Button 
+                className="w-full gap-2" 
+                variant="outline"
+                onClick={() => {
+                  setSelectedProduct(item);
+                  setDetailDialogOpen(true);
+                }}
+              >
+                <Eye className="h-4 w-4" />
+                Ver Detalhes
               </Button>
             </CardContent>
           </Card>
@@ -236,6 +246,12 @@ const VitrineVirtual = () => {
           </div>
         </Card>
       )}
+
+      <ProductDetailDialog
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        product={selectedProduct}
+      />
     </div>
   );
 };

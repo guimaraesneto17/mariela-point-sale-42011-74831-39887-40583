@@ -9,27 +9,14 @@ import {
   Plus,
   UserCheck,
   FileText,
-  LogOut,
-  Wallet
+  Wallet,
+  TrendingUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import logo from "@/logo.png";
 
 const Layout = () => {
   const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      toast.success("Logout realizado com sucesso!");
-      navigate("/auth");
-    } catch (error) {
-      console.error("Erro ao fazer logout:", error);
-      toast.error("Erro ao fazer logout");
-    }
-  };
 
   const navItems = [
     { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -41,6 +28,7 @@ const Layout = () => {
     { to: "/estoque", icon: Warehouse, label: "Estoque" },
     { to: "/vendas", icon: ShoppingCart, label: "Vendas" },
     { to: "/caixa", icon: Wallet, label: "Caixa" },
+    { to: "/financeiro", icon: TrendingUp, label: "Financeiro" },
   ];
 
   return (
@@ -86,16 +74,8 @@ const Layout = () => {
           </Button>
         </nav>
 
-        {/* Copyright e Logout */}
-        <div className="p-4 border-t border-white/20 space-y-2">
-          <Button 
-            variant="ghost" 
-            className="w-full text-white hover:bg-white/10 justify-start"
-            onClick={handleLogout}
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Sair
-          </Button>
+        {/* Copyright */}
+        <div className="p-4 border-t border-white/20">
           <p className="text-white/70 text-xs text-center">© 2025 Mariela Moda Feminina</p>
         </div>
       </aside>
