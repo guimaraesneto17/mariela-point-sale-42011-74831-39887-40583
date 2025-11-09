@@ -5,4 +5,4 @@ export const getDefaultImageByCategory = (categoria?: string): string => {
 };
 
 // Imagem genérica de produto como fallback
-export const MARIELA_LOGO = '/produto-generico.png';
+export const MARIELA_PRODUTO_GENERICO = '/produto-generico.png';
