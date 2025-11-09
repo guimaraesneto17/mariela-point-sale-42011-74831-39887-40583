@@ -12,6 +12,7 @@ import { ContaPagarDialog } from "@/components/ContaPagarDialog";
 import { ContaReceberDialog } from "@/components/ContaReceberDialog";
 import { FluxoCaixaReport } from "@/components/FluxoCaixaReport";
 import { ParcelamentoDialog } from "@/components/ParcelamentoDialog";
+import { FinanceNotifications } from "@/components/FinanceNotifications";
 
 const Financeiro = () => {
   const [loading, setLoading] = useState(true);
@@ -80,6 +81,9 @@ const Financeiro = () => {
           Gestão completa de contas a pagar e receber
         </p>
       </div>
+
+      {/* Notificações de Vencimento */}
+      <FinanceNotifications />
 
       {/* Cards de Resumo */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

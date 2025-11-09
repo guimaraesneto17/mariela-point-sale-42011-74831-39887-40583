@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History, Image as ImageIcon, Eye } from "lucide-react";
+import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History, Image as ImageIcon, Eye, ChevronDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { StockEntryDialog } from "@/components/StockEntryDialog";
 import { StockExitDialog } from "@/components/StockExitDialog";
@@ -42,6 +43,10 @@ const Estoque = () => {
   // State para selecionar cor/tamanho por item
   const [selectedColorByItem, setSelectedColorByItem] = useState<{[key: string]: string}>({});
   const [selectedSizeByItem, setSelectedSizeByItem] = useState<{[key: string]: string}>({});
+  
+  // State para controlar seções colapsáveis por item
+  const [movimentacoesOpen, setMovimentacoesOpen] = useState<{[key: string]: boolean}>({});
+  const [promocoesOpen, setPromocoesOpen] = useState<{[key: string]: boolean}>({});
 
   useEffect(() => {
     loadEstoque();
@@ -572,52 +577,115 @@ const Estoque = () => {
                       <List className="h-4 w-4" />
                       Ver Movimentações
                     </Button>
-                    {item.logPromocao && item.logPromocao.length > 0 && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openPromocaoHistoricoDialog(item)}
-                        className="gap-2 border-purple-500/50 text-purple-600 hover:bg-purple-500/10"
-                      >
-                        <History className="h-4 w-4" />
-                        Histórico de Promoções
-                      </Button>
-                    )}
                   </div>
 
-                  {/* Últimas Movimentações */}
-                  {item.logMovimentacao && item.logMovimentacao.length > 0 && (
-                    <div className="pt-4 border-t border-border/50">
-                      <h4 className="text-sm font-semibold text-muted-foreground mb-3">
-                        Últimas Movimentações
-                      </h4>
-                      <div className="space-y-2">
-                        {item.logMovimentacao.slice(-3).reverse().map((log: any, idx: number) => (
-                          <div key={idx} className="flex items-center gap-3 text-sm p-2 bg-muted/30 rounded">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                              log.tipo === 'entrada' 
-                                ? 'bg-green-500/10 text-green-600' 
-                                : 'bg-red-500/10 text-red-600'
-                            }`}>
-                              {log.tipo === 'entrada' ? '↑' : '↓'}
-                            </div>
-                            <div className="flex-1">
-                              <div className="font-medium">
-                                {log.tipo === 'entrada' ? 'Entrada' : 'Saída'} de {log.quantidade} un.
-                              </div>
-                              {log.cor && log.tamanho && (
-                                <div className="text-xs text-muted-foreground">
-                                  {log.cor} - {log.tamanho}
-                                </div>
-                              )}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {new Date(log.data).toLocaleDateString('pt-BR')}
-                            </div>
+                  {/* Histórico de Promoções - Colapsável */}
+                  {item.logPromocao && item.logPromocao.length > 0 && (
+                    <Collapsible 
+                      open={promocoesOpen[item.codigoProduto] ?? false}
+                      onOpenChange={(open) => setPromocoesOpen(prev => ({ ...prev, [item.codigoProduto]: open }))}
+                      className="pt-4 border-t border-border/50"
+                    >
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="w-full flex items-center justify-between p-2 h-auto hover:bg-muted/50">
+                          <div className="flex items-center gap-2">
+                            <History className="h-4 w-4 text-purple-600" />
+                            <span className="text-sm font-semibold text-muted-foreground">
+                              Histórico de Promoções ({item.logPromocao.length})
+                            </span>
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${promocoesOpen[item.codigoProduto] ? 'rotate-180' : ''}`} />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="pt-3">
+                        <div className="space-y-2">
+                          {item.logPromocao.slice(-3).reverse().map((promo: any, idx: number) => (
+                            <div key={idx} className="flex items-center gap-3 text-sm p-3 bg-purple-500/5 rounded border border-purple-500/20">
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-purple-500/10 text-purple-600">
+                                <Tag className="h-4 w-4" />
+                              </div>
+                              <div className="flex-1">
+                                <div className="font-medium">
+                                  R$ {promo.precoPromocional.toFixed(2)}
+                                  {promo.ativo && <Badge className="ml-2 bg-purple-600 text-white text-xs">Ativa</Badge>}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {new Date(promo.dataInicio).toLocaleDateString('pt-BR')}
+                                  {promo.dataFim && ` - ${new Date(promo.dataFim).toLocaleDateString('pt-BR')}`}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openPromocaoHistoricoDialog(item)}
+                            className="w-full gap-2 border-purple-500/50 text-purple-600 hover:bg-purple-500/10"
+                          >
+                            <History className="h-4 w-4" />
+                            Ver Histórico Completo
+                          </Button>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )}
+
+                  {/* Últimas Movimentações - Colapsável */}
+                  {item.logMovimentacao && item.logMovimentacao.length > 0 && (
+                    <Collapsible 
+                      open={movimentacoesOpen[item.codigoProduto] ?? false}
+                      onOpenChange={(open) => setMovimentacoesOpen(prev => ({ ...prev, [item.codigoProduto]: open }))}
+                      className="pt-4 border-t border-border/50"
+                    >
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="w-full flex items-center justify-between p-2 h-auto hover:bg-muted/50">
+                          <div className="flex items-center gap-2">
+                            <List className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm font-semibold text-muted-foreground">
+                              Últimas Movimentações ({item.logMovimentacao.length})
+                            </span>
+                          </div>
+                          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${movimentacoesOpen[item.codigoProduto] ? 'rotate-180' : ''}`} />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="pt-3">
+                        <div className="space-y-2">
+                          {item.logMovimentacao.slice(-3).reverse().map((log: any, idx: number) => (
+                            <div key={idx} className="flex items-center gap-3 text-sm p-2 bg-muted/30 rounded">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                log.tipo === 'entrada' 
+                                  ? 'bg-green-500/10 text-green-600' 
+                                  : 'bg-red-500/10 text-red-600'
+                              }`}>
+                                {log.tipo === 'entrada' ? '↑' : '↓'}
+                              </div>
+                              <div className="flex-1">
+                                <div className="font-medium">
+                                  {log.tipo === 'entrada' ? 'Entrada' : 'Saída'} de {log.quantidade} un.
+                                </div>
+                                {log.cor && log.tamanho && (
+                                  <div className="text-xs text-muted-foreground">
+                                    {log.cor} - {log.tamanho}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {new Date(log.data).toLocaleDateString('pt-BR')}
+                              </div>
+                            </div>
+                          ))}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openMovimentacaoDialog(item)}
+                            className="w-full gap-2"
+                          >
+                            <List className="h-4 w-4" />
+                            Ver Todas as Movimentações
+                          </Button>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
                   )}
                 </div>
               </Card>
