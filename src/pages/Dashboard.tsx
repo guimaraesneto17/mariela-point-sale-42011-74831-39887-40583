@@ -772,53 +772,63 @@ const Dashboard = () => {
       case "caixa-unificado":
         return (
           <DashboardCard id={cardConfig.id}>
-            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-              <Wallet className="h-5 w-5 text-primary" />
-              Caixa Atual
-            </h3>
             {caixaAberto ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Badge variant="default" className="bg-green-500">Aberto</Badge>
-                  <span className="text-sm text-muted-foreground">{caixaAberto.codigoCaixa}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md">
+                      <Wallet className="h-5 w-5 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-foreground">Caixa Atual</h3>
+                      <p className="text-xs text-muted-foreground">{caixaAberto.codigoCaixa}</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-green-500 hover:bg-green-600 shadow-sm">Aberto</Badge>
                 </div>
-                <div className="p-4 rounded-lg bg-gradient-to-br from-primary/10 to-accent/5 border border-primary/20">
-                  <p className="text-sm text-muted-foreground mb-1">Performance do Caixa</p>
-                  <p className={`text-3xl font-bold ${
+                
+                <div className="p-5 rounded-xl bg-gradient-to-br from-card via-card to-primary/5 border-2 border-primary/20 shadow-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-muted-foreground">Performance do Caixa</p>
+                    {caixaAberto.performance >= 0 ? (
+                      <TrendingUp className="h-5 w-5 text-green-600" />
+                    ) : (
+                      <TrendingDown className="h-5 w-5 text-red-600" />
+                    )}
+                  </div>
+                  <p className={`text-4xl font-bold mb-1 ${
                     caixaAberto.performance >= 0 ? 'text-green-600' : 'text-red-600'
                   }`}>
                     R$ {caixaAberto.performance?.toFixed(2) || '0.00'}
                   </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    {caixaAberto.performance >= 0 ? (
-                      <TrendingUp className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <TrendingDown className="h-4 w-4 text-red-600" />
-                    )}
-                    <span className="text-xs text-muted-foreground">
-                      Valor Inicial: R$ {caixaAberto.valorInicial?.toFixed(2) || '0.00'}
-                    </span>
-                  </div>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <ArrowUpDown className="h-3 w-3" />
+                    Valor Inicial: R$ {caixaAberto.valorInicial?.toFixed(2) || '0.00'}
+                  </p>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="p-2 rounded-lg bg-green-50 dark:bg-green-950/20">
-                    <p className="text-xs text-muted-foreground">Entradas</p>
-                    <p className="text-sm font-bold text-green-600">
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-4 rounded-lg bg-gradient-card border border-border hover:shadow-md transition-all">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Entradas</p>
+                    <p className="text-xl font-bold text-green-600">
                       R$ {caixaAberto.entrada?.toFixed(2) || '0.00'}
                     </p>
                   </div>
-                  <div className="p-2 rounded-lg bg-red-50 dark:bg-red-950/20">
-                    <p className="text-xs text-muted-foreground">Saídas</p>
-                    <p className="text-sm font-bold text-red-600">
+                  <div className="p-4 rounded-lg bg-gradient-card border border-border hover:shadow-md transition-all">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Saídas</p>
+                    <p className="text-xl font-bold text-red-600">
                       R$ {caixaAberto.saida?.toFixed(2) || '0.00'}
                     </p>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="text-center py-8">
-                <Wallet className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                <p className="text-muted-foreground text-sm">Nenhum caixa aberto</p>
+              <div className="text-center py-12">
+                <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
+                  <Wallet className="h-8 w-8 text-muted-foreground/50" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground mb-1">Caixa Atual</h3>
+                <p className="text-muted-foreground text-sm">Nenhum caixa aberto no momento</p>
               </div>
             )}
           </DashboardCard>

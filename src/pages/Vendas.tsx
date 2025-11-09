@@ -148,40 +148,63 @@ const Vendas = () => {
 
             <div className="border-t pt-4 space-y-2">
               <p className="font-medium text-sm mb-2">Itens:</p>
-              {Array.isArray(venda.itens) && venda.itens.map((item: any, idx: number) => (
-                <div 
-                  key={idx} 
-                  className={`flex justify-between items-center text-sm p-3 rounded-lg transition-all ${
-                    item.emPromocao 
-                      ? 'bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 border-2 border-red-200 dark:border-red-800' 
-                      : 'bg-background/50'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 flex-1">
-                    <span className="font-medium">{item.nome || item.nomeProduto} (x{item.quantidade || 1})</span>
-                    {item.emPromocao && (
-                      <span className="text-xs font-bold text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded-full">
-                        🔥 Vendido em Promoção
-                      </span>
-                    )}
-                    <div className="flex gap-1">
-                      {item.novidade && (
-                        <Badge variant="default" className="text-xs bg-accent font-bold">
-                          ✨ Novidade
-                        </Badge>
+              {Array.isArray(venda.itens) && venda.itens.map((item: any, idx: number) => {
+                // Determinar se tem promoção ou desconto
+                const precoFinal = item.precoFinalUnitario || item.preco || item.precoUnitario || 0;
+                const precoOriginal = item.precoUnitario || item.preco || 0;
+                const temPromocao = item.emPromocao || false;
+                const descontoAplicado = item.descontoAplicado || 0;
+                
+                // Se tem desconto aplicado, o preço original é diferente do final
+                const temDesconto = descontoAplicado > 0 && !temPromocao;
+                const mostrarPrecoOriginal = temPromocao || temDesconto;
+                
+                return (
+                  <div 
+                    key={idx} 
+                    className={`flex justify-between items-center text-sm p-3 rounded-lg transition-all ${
+                      temPromocao 
+                        ? 'bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 border-2 border-red-200 dark:border-red-800' 
+                        : temDesconto
+                        ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border border-green-200 dark:border-green-800'
+                        : 'bg-background/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 flex-1">
+                      <span className="font-medium">{item.nome || item.nomeProduto} (x{item.quantidade || 1})</span>
+                      {temPromocao && (
+                        <span className="text-xs font-bold text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded-full">
+                          🔥 Promoção
+                        </span>
                       )}
+                      {temDesconto && (
+                        <span className="text-xs font-bold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full">
+                          💰 Desconto: {descontoAplicado.toFixed(0)}%
+                        </span>
+                      )}
+                      <div className="flex gap-1">
+                        {item.novidade && (
+                          <Badge variant="default" className="text-xs bg-accent font-bold">
+                            ✨ Novidade
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      {mostrarPrecoOriginal && (
+                        <span className="text-xs text-muted-foreground line-through mb-0.5">
+                          {formatCurrency(precoOriginal)}
+                        </span>
+                      )}
+                      <span className={`font-bold text-base ${
+                        temPromocao ? 'text-red-600 dark:text-red-400' : temDesconto ? 'text-green-600 dark:text-green-400' : ''
+                      }`}>
+                        {formatCurrency(precoFinal)}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end">
-                    <span className="font-bold text-base">{formatCurrency(item.preco || item.precoUnitario || item.precoFinalUnitario || 0)}</span>
-                    {item.emPromocao && item.precoOriginal && (
-                      <span className="text-xs text-muted-foreground line-through">
-                        {formatCurrency(item.precoOriginal)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="mt-4 pt-4 border-t space-y-2">
