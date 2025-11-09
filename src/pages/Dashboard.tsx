@@ -26,10 +26,6 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import StatsCard from "@/components/StatsCard";
 import { DashboardCard } from "@/components/DashboardCard";
-import { DashboardMovimentacoes } from "@/components/DashboardMovimentacoes";
-import { MargemLucroCard } from "@/components/MargemLucroCard";
-import { VendasPorCategoriaCard } from "@/components/VendasPorCategoriaCard";
-import { VendasEvolutionChart } from "@/components/VendasEvolutionChart";
 import {
   DashboardConfigDialog,
   DashboardCardConfig,
@@ -56,20 +52,6 @@ import { formatDateTime, safeDate } from "@/lib/utils";
 const STORAGE_KEY = "mariela-dashboard-config";
 
 const defaultCards: DashboardCardConfig[] = [
-  {
-    id: "margem-lucro-real",
-    title: "Margem de Lucro Real",
-    description: "Diferença entre valor de venda e custo do estoque",
-    visible: true,
-    category: "finance",
-  },
-  {
-    id: "movimentacoes-estoque",
-    title: "Movimentações de Estoque",
-    description: "Últimas movimentações de entrada e saída",
-    visible: true,
-    category: "sales",
-  },
   {
     id: "vendas-hoje",
     title: "Vendas Hoje",
@@ -99,32 +81,18 @@ const defaultCards: DashboardCardConfig[] = [
     category: "stats",
   },
   {
-    id: "valor-estoque-custo",
-    title: "Valor em Estoque (Custo)",
-    description: "Valor total do estoque pelo preço de custo",
+    id: "performance-caixa",
+    title: "Performance de Caixa",
+    description: "Resultado do caixa atual",
     visible: true,
     category: "stats",
   },
   {
-    id: "valor-estoque-venda",
-    title: "Valor em Estoque (Venda)",
-    description: "Valor total do estoque pelo preço de venda",
+    id: "ticket-medio",
+    title: "Ticket Médio",
+    description: "Valor médio por venda",
     visible: true,
     category: "stats",
-  },
-  {
-    id: "fluxo-diario",
-    title: "Fluxo de Caixa Diário",
-    description: "Entradas e saídas do dia",
-    visible: true,
-    category: "finance",
-  },
-  {
-    id: "fluxo-mensal",
-    title: "Fluxo de Caixa Mensal",
-    description: "Entradas e saídas do mês",
-    visible: true,
-    category: "finance",
   },
   {
     id: "produtos-vendidos",
@@ -153,55 +121,6 @@ const defaultCards: DashboardCardConfig[] = [
     description: "Vendedores com melhor desempenho",
     visible: true,
     category: "ranking",
-  },
-  {
-    id: "ticket-medio",
-    title: "Ticket Médio",
-    description: "Valor médio por venda",
-    visible: false,
-    category: "stats",
-  },
-  {
-    id: "margem-lucro",
-    title: "Margem de Lucro",
-    description: "Percentual de lucro sobre vendas",
-    visible: false,
-    category: "finance",
-  },
-  {
-    id: "produtos-baixo-estoque",
-    title: "Produtos em Baixo Estoque",
-    description: "Produtos que precisam de reposição",
-    visible: false,
-    category: "sales",
-  },
-  {
-    id: "crescimento-mensal",
-    title: "Crescimento Mensal",
-    description: "Comparativo com mês anterior",
-    visible: false,
-    category: "stats",
-  },
-  {
-    id: "caixa-aberto",
-    title: "Caixa Aberto",
-    description: "Status do caixa atual",
-    visible: false,
-    category: "finance",
-  },
-  {
-    id: "performance-caixa",
-    title: "Performance de Caixa",
-    description: "Resultado do caixa atual",
-    visible: true,
-    category: "stats",
-  },
-  {
-    id: "vendas-categoria",
-    title: "Vendas por Categoria",
-    description: "Gráfico de vendas agrupadas por categoria",
-    visible: true,
-    category: "sales",
   },
 ];
 
@@ -529,29 +448,6 @@ const Dashboard = () => {
 
   const renderCard = (cardConfig: DashboardCardConfig) => {
     switch (cardConfig.id) {
-      case "margem-lucro-real":
-        return (
-          <MargemLucroCard
-            key={cardConfig.id}
-            valorEstoqueCusto={stats.valorEstoqueCusto}
-            valorEstoqueVenda={stats.valorEstoqueVenda}
-            vendasPorMes={vendasPorMes}
-          />
-        );
-      case "movimentacoes-estoque":
-        return (
-          <div key={cardConfig.id} className="col-span-full">
-            <DashboardMovimentacoes movimentacoes={movimentacoesEstoque} />
-          </div>
-        );
-      case "vendas-categoria":
-        return (
-          <VendasPorCategoriaCard
-            key={cardConfig.id}
-            vendas={vendasParaGrafico}
-            produtos={produtos}
-          />
-        );
       case "vendas-hoje":
         return (
           <StatsCard
@@ -1144,13 +1040,6 @@ const Dashboard = () => {
           )}
         </div>
       </Card>
-
-      {/* Gráfico de Evolução de Vendas */}
-      <VendasEvolutionChart 
-        vendas={vendasParaGrafico} 
-        dataInicio={dataInicio}
-        dataFim={dataFim}
-      />
 
       <DndContext
         sensors={sensors}

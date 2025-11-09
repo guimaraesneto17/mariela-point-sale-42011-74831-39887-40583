@@ -10,6 +10,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { toast } from "sonner";
 import { vendasAPI, produtosAPI, clientesAPI, vendedoresAPI, estoqueAPI, caixaAPI } from "@/lib/api";
 import { ComparacaoPeriodoDialog } from "@/components/ComparacaoPeriodoDialog";
+import { VendasPorCategoriaCard } from "@/components/VendasPorCategoriaCard";
+import { VendasEvolutionChart } from "@/components/VendasEvolutionChart";
+import { MargemLucroCard } from "@/components/MargemLucroCard";
+import { DashboardMovimentacoes } from "@/components/DashboardMovimentacoes";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts";
 
 const Relatorios = () => {
@@ -552,52 +556,17 @@ const Relatorios = () => {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="p-6 shadow-card">
-              <h3 className="text-lg font-bold text-foreground mb-4">Vendas por Categoria</h3>
-              <div className="space-y-3">
-                {relatorioVendasFiltrado.vendasPorCategoria.map((cat: any, index: number) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-4 rounded-lg bg-gradient-card hover:shadow-md transition-all"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Package className="h-5 w-5 text-primary" />
-                      <div>
-                        <p className="font-medium text-foreground">{cat.categoria}</p>
-                        <p className="text-sm text-muted-foreground">{cat.vendas} vendas</p>
-                      </div>
-                    </div>
-                    <span className="font-bold text-primary">
-                      R$ {cat.valor.toFixed(2)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            <Card className="p-6 shadow-card">
-              <h3 className="text-lg font-bold text-foreground mb-4">Vendas por Mês</h3>
-              <div className="space-y-3">
-                {relatorioVendas.vendasPorMes.map((mes, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-4 rounded-lg bg-gradient-card hover:shadow-md transition-all"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Calendar className="h-5 w-5 text-primary" />
-                      <div>
-                        <p className="font-medium text-foreground">{mes.mes}</p>
-                        <p className="text-sm text-muted-foreground">{mes.vendas} vendas</p>
-                      </div>
-                    </div>
-                    <span className="font-bold text-primary">
-                      R$ {mes.valor.toFixed(2)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </Card>
+          <div className="grid grid-cols-1 gap-6">
+            <VendasPorCategoriaCard 
+              vendas={relatorioVendas.vendasOriginais || []}
+              produtos={[]}
+            />
+            
+            <VendasEvolutionChart 
+              vendas={relatorioVendas.vendasOriginais || []}
+              dataInicio={dataInicioVendas ? new Date(dataInicioVendas) : undefined}
+              dataFim={dataFimVendas ? new Date(dataFimVendas) : undefined}
+            />
           </div>
         </TabsContent>
 
@@ -1009,6 +978,25 @@ const Relatorios = () => {
                 </div>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Gráficos de Distribuição */}
+          <div className="grid grid-cols-1 gap-6 mb-6">
+            <MargemLucroCard 
+              valorEstoqueCusto={relatorioProdutos.valorEstoqueCusto}
+              valorEstoqueVenda={relatorioProdutos.valorEstoqueVenda}
+              vendasPorMes={[]}
+            />
+            
+            <DashboardMovimentacoes 
+              movimentacoes={estoque.flatMap((item: any) => 
+                (item.logMovimentacao || []).map((mov: any) => ({
+                  ...mov,
+                  codigoProduto: item.codigoProduto,
+                  nomeProduto: item.nomeProduto || item.nome || item.codigoProduto,
+                }))
+              )}
+            />
           </div>
 
           {/* Gráficos de Distribuição */}
