@@ -67,6 +67,7 @@ const buildVitrineView = async () => {
         code: produto.codigoProduto,
         image: allImages.length > 0 ? allImages : ['default.jpg'],
         title: produto.nome,
+        description: produto.descricao || '',
         price: isOnSale && precoPromocional ? `R$ ${precoPromocional}` : `R$ ${produto.precoVenda.toFixed(2)}`,
         priceValue: isOnSale && precoPromocional ? precoPromocional : produto.precoVenda,
         originalPrice: isOnSale && precoPromocional ? `R$ ${produto.precoVenda.toFixed(2)}` : null,

@@ -147,6 +147,11 @@ const VitrineVirtual = () => {
                 <p className="text-sm text-muted-foreground">
                   {item.code} • {item.category || 'Sem categoria'}
                 </p>
+                {item.description && (
+                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                    {item.description}
+                  </p>
+                )}
               </div>
 
               {item.variants && item.variants.length > 0 && (

@@ -18,7 +18,70 @@ const router = express.Router();
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/VitrineVirtual'
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     description: ID sequencial gerado pela view
+ *                   code:
+ *                     type: string
+ *                     description: Código do produto
+ *                   title:
+ *                     type: string
+ *                     description: Nome do produto
+ *                   description:
+ *                     type: string
+ *                     description: Descrição detalhada do produto
+ *                   category:
+ *                     type: string
+ *                     description: Categoria do produto
+ *                   image:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                     description: URLs das imagens do produto
+ *                   price:
+ *                     type: string
+ *                     description: Preço formatado (com ou sem promoção)
+ *                   priceValue:
+ *                     type: number
+ *                     description: Valor numérico do preço
+ *                   originalPrice:
+ *                     type: string
+ *                     nullable: true
+ *                     description: Preço original formatado (apenas em promoção)
+ *                   originalPriceValue:
+ *                     type: number
+ *                     nullable: true
+ *                     description: Valor numérico do preço original
+ *                   isOnSale:
+ *                     type: boolean
+ *                     description: Indica se está em promoção
+ *                   isNew:
+ *                     type: boolean
+ *                     description: Indica se é novidade
+ *                   variants:
+ *                     type: array
+ *                     description: Variantes disponíveis (cor, tamanho, quantidade)
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         color:
+ *                           type: string
+ *                         size:
+ *                           type: string
+ *                         available:
+ *                           type: number
+ *                   totalAvailable:
+ *                     type: number
+ *                     description: Total de unidades disponíveis
+ *                   statusProduct:
+ *                     type: string
+ *                     description: Status do produto (Disponível, Esgotado, Últimas unidades)
+ *                   updatedAt:
+ *                     type: string
+ *                     format: date-time
+ *                     description: Data da última atualização
  *       500:
  *         description: Erro ao buscar produtos
  */
@@ -29,7 +92,7 @@ router.get('/', vitrineVirtualController.getAllVitrineVirtual);
  * /api/vitrine/json:
  *   get:
  *     summary: JSON público da vitrine virtual (sem autenticação)
- *     description: Endpoint público que retorna todos os produtos da vitrine em formato JSON, acessível sem autenticação
+ *     description: Endpoint público que retorna todos os produtos da vitrine em formato JSON, acessível sem autenticação, incluindo descrição detalhada
  *     tags: [Vitrine Virtual]
  *     responses:
  *       200:
@@ -39,7 +102,47 @@ router.get('/', vitrineVirtualController.getAllVitrineVirtual);
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/VitrineVirtual'
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   code:
+ *                     type: string
+ *                   title:
+ *                     type: string
+ *                   description:
+ *                     type: string
+ *                   category:
+ *                     type: string
+ *                   image:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                   price:
+ *                     type: string
+ *                   priceValue:
+ *                     type: number
+ *                   originalPrice:
+ *                     type: string
+ *                     nullable: true
+ *                   originalPriceValue:
+ *                     type: number
+ *                     nullable: true
+ *                   isOnSale:
+ *                     type: boolean
+ *                   isNew:
+ *                     type: boolean
+ *                   variants:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                   totalAvailable:
+ *                     type: number
+ *                   statusProduct:
+ *                     type: string
+ *                   updatedAt:
+ *                     type: string
+ *                     format: date-time
  *       500:
  *         description: Erro ao gerar JSON da vitrine
  */
@@ -50,7 +153,7 @@ router.get('/json', vitrineVirtualController.getAllVitrineVirtual);
  * /api/vitrine/novidades:
  *   get:
  *     summary: Lista as novidades da vitrine virtual
- *     description: Retorna apenas produtos marcados como novidade (isNew = true)
+ *     description: Retorna apenas produtos marcados como novidade (isNew = true) com descrição detalhada
  *     tags: [Vitrine Virtual]
  *     responses:
  *       200:
@@ -60,7 +163,21 @@ router.get('/json', vitrineVirtualController.getAllVitrineVirtual);
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/VitrineVirtual'
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   code:
+ *                     type: string
+ *                   title:
+ *                     type: string
+ *                   description:
+ *                     type: string
+ *                   category:
+ *                     type: string
+ *                   isNew:
+ *                     type: boolean
+ *                     example: true
  *       500:
  *         description: Erro ao buscar novidades
  */
@@ -71,7 +188,7 @@ router.get('/novidades', vitrineVirtualController.getNovidades);
  * /api/vitrine/promocoes:
  *   get:
  *     summary: Lista as promoções da vitrine virtual
- *     description: Retorna apenas produtos em promoção (isOnSale = true) com preço promocional
+ *     description: Retorna apenas produtos em promoção (isOnSale = true) com preço promocional e descrição detalhada
  *     tags: [Vitrine Virtual]
  *     responses:
  *       200:
@@ -81,7 +198,25 @@ router.get('/novidades', vitrineVirtualController.getNovidades);
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/VitrineVirtual'
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   code:
+ *                     type: string
+ *                   title:
+ *                     type: string
+ *                   description:
+ *                     type: string
+ *                   category:
+ *                     type: string
+ *                   isOnSale:
+ *                     type: boolean
+ *                     example: true
+ *                   price:
+ *                     type: string
+ *                   originalPrice:
+ *                     type: string
  *       500:
  *         description: Erro ao buscar promoções
  */
@@ -92,7 +227,7 @@ router.get('/promocoes', vitrineVirtualController.getPromocoes);
  * /api/vitrine/codigo/{codigo}:
  *   get:
  *     summary: Busca um produto da vitrine por código do produto
- *     description: Retorna os detalhes completos de um produto específico da vitrine usando seu código
+ *     description: Retorna os detalhes completos de um produto específico da vitrine usando seu código, incluindo descrição
  *     tags: [Vitrine Virtual]
  *     parameters:
  *       - in: path
@@ -109,7 +244,34 @@ router.get('/promocoes', vitrineVirtualController.getPromocoes);
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/VitrineVirtual'
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 code:
+ *                   type: string
+ *                 title:
+ *                   type: string
+ *                 description:
+ *                   type: string
+ *                 category:
+ *                   type: string
+ *                 image:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 price:
+ *                   type: string
+ *                 priceValue:
+ *                   type: number
+ *                 variants:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 totalAvailable:
+ *                   type: number
+ *                 statusProduct:
+ *                   type: string
  *       404:
  *         description: Produto não encontrado
  */
@@ -120,7 +282,7 @@ router.get('/codigo/:codigo', vitrineVirtualController.getVitrineVirtualByCodigo
  * /api/vitrine/{id}:
  *   get:
  *     summary: Busca um produto da vitrine por ID sequencial
- *     description: Retorna os detalhes de um produto usando o ID gerado sequencialmente pela view
+ *     description: Retorna os detalhes de um produto usando o ID gerado sequencialmente pela view, incluindo descrição
  *     tags: [Vitrine Virtual]
  *     parameters:
  *       - in: path
@@ -136,7 +298,30 @@ router.get('/codigo/:codigo', vitrineVirtualController.getVitrineVirtualByCodigo
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/VitrineVirtual'
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 code:
+ *                   type: string
+ *                 title:
+ *                   type: string
+ *                 description:
+ *                   type: string
+ *                 category:
+ *                   type: string
+ *                 image:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 price:
+ *                   type: string
+ *                 variants:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 totalAvailable:
+ *                   type: number
  *       404:
  *         description: Produto não encontrado
  */
