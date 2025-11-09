@@ -48,6 +48,7 @@ import {
 import { clientesAPI, vendasAPI, produtosAPI, estoqueAPI, vendedoresAPI, caixaAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { formatDateTime, safeDate } from "@/lib/utils";
+import { ComparacaoPeriodoDialog } from "@/components/ComparacaoPeriodoDialog";
 
 const STORAGE_KEY = "mariela-dashboard-config";
 
@@ -81,9 +82,9 @@ const defaultCards: DashboardCardConfig[] = [
     category: "stats",
   },
   {
-    id: "performance-caixa",
-    title: "Performance de Caixa",
-    description: "Resultado do caixa atual",
+    id: "caixa-unificado",
+    title: "Caixa Atual",
+    description: "Performance e status do caixa",
     visible: true,
     category: "stats",
   },
@@ -530,106 +531,6 @@ const Dashboard = () => {
             gradient
           />
         );
-      case "fluxo-diario":
-        return (
-          <DashboardCard id={cardConfig.id}>
-            <h3 className="text-lg font-bold text-foreground mb-4">
-              Fluxo de Caixa Diário
-            </h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-500 rounded-lg">
-                    <TrendingUp className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Entrada (Vendas)
-                    </p>
-                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                      R$ {stats.entradaDiaria.toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-4 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-red-500 rounded-lg">
-                    <TrendingDown className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Saída (Custos)
-                    </p>
-                    <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                      R$ {stats.saidaDiaria.toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="pt-4 border-t border-border">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Lucro Diário
-                  </span>
-                  <span className="text-xl font-bold text-primary">
-                    R$ {(stats.entradaDiaria - stats.saidaDiaria).toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </DashboardCard>
-        );
-      case "fluxo-mensal":
-        return (
-          <DashboardCard id={cardConfig.id}>
-            <h3 className="text-lg font-bold text-foreground mb-4">
-              Fluxo de Caixa Mensal
-            </h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-500 rounded-lg">
-                    <TrendingUp className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Entrada (Vendas)
-                    </p>
-                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                      R$ {stats.entradaMensal.toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-4 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-red-500 rounded-lg">
-                    <TrendingDown className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Saída (Custos)
-                    </p>
-                    <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                      R$ {stats.saidaMensal.toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="pt-4 border-t border-border">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Lucro Mensal
-                  </span>
-                  <span className="text-xl font-bold text-primary">
-                    R$ {(stats.entradaMensal - stats.saidaMensal).toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </DashboardCard>
-        );
       case "produtos-vendidos":
         return (
           <DashboardCard id={cardConfig.id}>
@@ -868,11 +769,12 @@ const Dashboard = () => {
             </TooltipProvider>
           </DashboardCard>
         );
-      case "caixa-aberto":
+      case "caixa-unificado":
         return (
           <DashboardCard id={cardConfig.id}>
-            <h3 className="text-lg font-bold text-foreground mb-4">
-              Caixa Aberto
+            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-primary" />
+              Caixa Atual
             </h3>
             {caixaAberto ? (
               <div className="space-y-3">
@@ -880,22 +782,34 @@ const Dashboard = () => {
                   <Badge variant="default" className="bg-green-500">Aberto</Badge>
                   <span className="text-sm text-muted-foreground">{caixaAberto.codigoCaixa}</span>
                 </div>
-                <div className="p-4 rounded-lg bg-gradient-card">
-                  <p className="text-sm text-muted-foreground mb-1">Valor Inicial</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    R$ {caixaAberto.valorInicial?.toFixed(2) || '0.00'}
+                <div className="p-4 rounded-lg bg-gradient-to-br from-primary/10 to-accent/5 border border-primary/20">
+                  <p className="text-sm text-muted-foreground mb-1">Performance do Caixa</p>
+                  <p className={`text-3xl font-bold ${
+                    caixaAberto.performance >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    R$ {caixaAberto.performance?.toFixed(2) || '0.00'}
                   </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    {caixaAberto.performance >= 0 ? (
+                      <TrendingUp className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <TrendingDown className="h-4 w-4 text-red-600" />
+                    )}
+                    <span className="text-xs text-muted-foreground">
+                      Valor Inicial: R$ {caixaAberto.valorInicial?.toFixed(2) || '0.00'}
+                    </span>
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/20">
-                    <p className="text-xs text-muted-foreground mb-1">Entradas</p>
-                    <p className="text-lg font-bold text-green-600">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-2 rounded-lg bg-green-50 dark:bg-green-950/20">
+                    <p className="text-xs text-muted-foreground">Entradas</p>
+                    <p className="text-sm font-bold text-green-600">
                       R$ {caixaAberto.entrada?.toFixed(2) || '0.00'}
                     </p>
                   </div>
-                  <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/20">
-                    <p className="text-xs text-muted-foreground mb-1">Saídas</p>
-                    <p className="text-lg font-bold text-red-600">
+                  <div className="p-2 rounded-lg bg-red-50 dark:bg-red-950/20">
+                    <p className="text-xs text-muted-foreground">Saídas</p>
+                    <p className="text-sm font-bold text-red-600">
                       R$ {caixaAberto.saida?.toFixed(2) || '0.00'}
                     </p>
                   </div>
@@ -904,23 +818,10 @@ const Dashboard = () => {
             ) : (
               <div className="text-center py-8">
                 <Wallet className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                <p className="text-muted-foreground">Nenhum caixa aberto</p>
+                <p className="text-muted-foreground text-sm">Nenhum caixa aberto</p>
               </div>
             )}
           </DashboardCard>
-        );
-      case "performance-caixa":
-        return (
-          <StatsCard
-            title="Performance do Caixa"
-            value={caixaAberto ? `R$ ${caixaAberto.performance?.toFixed(2) || '0.00'}` : 'Caixa Fechado'}
-            icon={Wallet}
-            trend={caixaAberto && caixaAberto.performance ? { 
-              value: Math.abs(caixaAberto.performance), 
-              isPositive: caixaAberto.performance >= 0 
-            } : undefined}
-            gradient
-          />
         );
       default:
         return null;
@@ -928,7 +829,7 @@ const Dashboard = () => {
   };
 
   const statsCards = sortedCards.filter((c) =>
-    ["vendas-hoje", "faturamento-diario", "total-clientes", "produtos-estoque", "valor-estoque-custo", "valor-estoque-venda", "ticket-medio", "margem-lucro", "crescimento-mensal"].includes(
+    ["vendas-hoje", "faturamento-diario", "total-clientes", "produtos-estoque", "caixa-unificado", "ticket-medio", "margem-lucro", "crescimento-mensal"].includes(
       c.id
     )
   );
@@ -940,8 +841,7 @@ const Dashboard = () => {
         "faturamento-diario",
         "total-clientes",
         "produtos-estoque",
-        "valor-estoque-custo",
-        "valor-estoque-venda",
+        "caixa-unificado",
         "ticket-medio",
         "margem-lucro",
         "crescimento-mensal",
@@ -976,11 +876,12 @@ const Dashboard = () => {
 
       {/* Filtros de Data */}
       <Card className="p-4 shadow-card">
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <CalendarIcon className="h-5 w-5 text-muted-foreground" />
-            <span className="text-sm font-medium">Período de análise:</span>
-          </div>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+              <span className="text-sm font-medium">Período de análise:</span>
+            </div>
           
           <div className="flex items-center gap-2">
             <Popover>
@@ -1022,22 +923,25 @@ const Dashboard = () => {
             </Popover>
           </div>
 
-          {(dataInicio || dataFim) && (
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="gap-2">
-                Período ativo
-              </Badge>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={limparFiltros}
-                className="h-8 gap-1"
-              >
-                <X className="h-3 w-3" />
-                Limpar filtros
-              </Button>
-            </div>
-          )}
+            {(dataInicio || dataFim) && (
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="gap-2">
+                  Período ativo
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={limparFiltros}
+                  className="h-8 gap-1"
+                >
+                  <X className="h-3 w-3" />
+                  Limpar filtros
+                </Button>
+              </div>
+            )}
+          </div>
+          
+          <ComparacaoPeriodoDialog vendas={vendasParaGrafico} />
         </div>
       </Card>
 

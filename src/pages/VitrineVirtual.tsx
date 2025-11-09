@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { vitrineVirtualAPI } from "@/lib/api";
+import { getDefaultImageByCategory } from "@/lib/defaultImages";
 
 const VitrineVirtual = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -102,7 +103,7 @@ const VitrineVirtual = () => {
             style={{ animationDelay: `${index * 50}ms` }}
           >
             <div className="relative">
-              {item.image && item.image[0] !== 'default.jpg' ? (
+              {item.image && item.image[0] && item.image[0] !== 'default.jpg' ? (
                 <img 
                   src={item.image[0]} 
                   alt={item.title}
@@ -110,7 +111,15 @@ const VitrineVirtual = () => {
                 />
               ) : (
                 <div className="w-full h-48 bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center">
-                  <Package className="h-16 w-16 text-muted-foreground" />
+                  <img 
+                    src={getDefaultImageByCategory(item.category)} 
+                    alt={`${item.category || 'Produto'} - Logo Mariela`}
+                    className="w-32 h-32 object-contain opacity-50"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.parentElement!.innerHTML = '<svg class="h-16 w-16 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>';
+                    }}
+                  />
                 </div>
               )}
               

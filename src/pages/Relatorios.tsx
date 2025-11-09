@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FileText, Calendar, Filter, Download, TrendingUp, Package, Users, DollarSign, ShoppingBag, Sparkles, Tag, Crown, UserCheck, Wallet, BarChart3, Boxes } from "lucide-react";
+import { FileText, Calendar, Filter, Download, TrendingUp, TrendingDown, Package, Users, DollarSign, ShoppingBag, Sparkles, Tag, Crown, UserCheck, Wallet, BarChart3, Boxes } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1260,6 +1260,272 @@ const Relatorios = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* Relatório de Caixa */}
+        <TabsContent value="caixa" className="space-y-6">
+          <Card className="p-6 shadow-card">
+            <div className="flex items-center gap-2 mb-4">
+              <Filter className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-bold text-foreground">Filtros de Caixa</h3>
+            </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                    Período de Análise
+                  </label>
+                  <Select value={periodoCaixa} onValueChange={setPeriodoCaixa}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Mensal" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="semanal">Última Semana</SelectItem>
+                      <SelectItem value="mensal">Último Mês</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Button onClick={limparFiltros} variant="outline" size="sm">
+                <Filter className="h-4 w-4 mr-2" />
+                Limpar Filtros
+              </Button>
+            </div>
+          </Card>
+
+          <h2 className="text-2xl font-bold text-foreground">Relatório de Caixa</h2>
+
+          {/* Cards de Estatísticas */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <Card className="bg-gradient-to-br from-card via-card to-primary/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Total de Caixas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <Wallet className="h-8 w-8 text-primary" />
+                  <p className="text-3xl font-bold text-foreground">
+                    {relatorioCaixa.totalCaixas}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-card via-card to-green-500/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Total Entradas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <TrendingUp className="h-8 w-8 text-green-600" />
+                  <p className="text-3xl font-bold text-foreground">
+                    R$ {relatorioCaixa.totalEntradas.toFixed(2)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-card via-card to-red-500/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Total Saídas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <TrendingDown className="h-8 w-8 text-red-600" />
+                  <p className="text-3xl font-bold text-foreground">
+                    R$ {relatorioCaixa.totalSaidas.toFixed(2)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-card via-card to-blue-500/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Performance Total
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <Wallet className="h-8 w-8 text-blue-600" />
+                  <p className={`text-3xl font-bold ${
+                    performanceTotalFiltrado >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    R$ {performanceTotalFiltrado.toFixed(2)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Fluxo de Caixa Diário e Mensal */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="p-6 shadow-card">
+              <h3 className="text-lg font-bold text-foreground mb-4">
+                Fluxo de Caixa Diário
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-500 rounded-lg">
+                      <TrendingUp className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        Entrada (Vendas)
+                      </p>
+                      <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                        R$ {(relatorioCaixa.totalEntradas / (relatorioCaixa.totalCaixas || 1)).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-4 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-red-500 rounded-lg">
+                      <TrendingDown className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        Saída (Custos)
+                      </p>
+                      <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+                        R$ {(relatorioCaixa.totalSaidas / (relatorioCaixa.totalCaixas || 1)).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="pt-4 border-t border-border">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Lucro Médio Diário
+                    </span>
+                    <span className="text-xl font-bold text-primary">
+                      R$ {((relatorioCaixa.totalEntradas - relatorioCaixa.totalSaidas) / (relatorioCaixa.totalCaixas || 1)).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6 shadow-card">
+              <h3 className="text-lg font-bold text-foreground mb-4">
+                Fluxo de Caixa Mensal
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-500 rounded-lg">
+                      <TrendingUp className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        Entrada (Vendas)
+                      </p>
+                      <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                        R$ {relatorioCaixa.totalEntradas.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-4 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-red-500 rounded-lg">
+                      <TrendingDown className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        Saída (Custos)
+                      </p>
+                      <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+                        R$ {relatorioCaixa.totalSaidas.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="pt-4 border-t border-border">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Lucro Mensal
+                    </span>
+                    <span className="text-xl font-bold text-primary">
+                      R$ {(relatorioCaixa.totalEntradas - relatorioCaixa.totalSaidas).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Histórico de Caixas */}
+          <Card className="p-6 shadow-card">
+            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              Histórico de Caixas Recentes
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                      Código
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                      Abertura
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                      Fechamento
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                      Status
+                    </th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">
+                      Performance
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {relatorioCaixaFiltrado.ultimosCaixas.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="text-center py-8 text-muted-foreground">
+                        Nenhum caixa encontrado no período
+                      </td>
+                    </tr>
+                  ) : (
+                    relatorioCaixaFiltrado.ultimosCaixas.map((caixa: any, index: number) => (
+                      <tr key={index} className="border-b border-border hover:bg-muted/50">
+                        <td className="py-3 px-4 font-medium text-foreground">
+                          {caixa.codigo}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-muted-foreground">
+                          {caixa.dataAbertura}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-muted-foreground">
+                          {caixa.dataFechamento}
+                        </td>
+                        <td className="py-3 px-4">
+                          <Badge variant={caixa.status === 'aberto' ? 'default' : 'secondary'}>
+                            {caixa.status === 'aberto' ? 'Aberto' : 'Fechado'}
+                          </Badge>
+                        </td>
+                        <td className={`py-3 px-4 text-right font-semibold ${
+                          caixa.performance >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          R$ {caixa.performance.toFixed(2)}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </Card>
         </TabsContent>

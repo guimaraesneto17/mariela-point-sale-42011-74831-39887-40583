@@ -17,6 +17,7 @@ import { EditVariantImagesDialog } from "@/components/EditVariantImagesDialog";
 import { ImageGalleryDialog } from "@/components/ImageGalleryDialog";
 import { estoqueAPI } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
+import { getDefaultImageByCategory } from "@/lib/defaultImages";
 
 const Estoque = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -379,12 +380,24 @@ const Estoque = () => {
                 <div className="flex flex-col gap-6">
                   {/* Header com imagem, nome e badges */}
                   <div className="flex items-start gap-4">
-                    {varianteSelecionada && varianteSelecionada.imagens && varianteSelecionada.imagens.length > 0 && (
+                    {varianteSelecionada && varianteSelecionada.imagens && varianteSelecionada.imagens.length > 0 ? (
                       <img
                         src={varianteSelecionada.imagens[0]}
                         alt={`${item.nomeProduto} - ${selectedCor} ${selectedTamanho}`}
                         className="w-16 h-16 object-cover rounded-lg"
                       />
+                    ) : (
+                      <div className="w-16 h-16 bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg flex items-center justify-center">
+                        <img 
+                          src={getDefaultImageByCategory(item.categoria)} 
+                          alt={`${item.categoria || 'Produto'} - Logo Mariela`}
+                          className="w-12 h-12 object-contain opacity-50"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.parentElement!.innerHTML = '<svg class="h-8 w-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>';
+                          }}
+                        />
+                      </div>
                     )}
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-2">
