@@ -3,11 +3,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, TrendingUp, TrendingDown, AlertCircle, Plus, CreditCard, Calendar } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, AlertCircle, Plus, CreditCard, Calendar, Split, BarChart3, Edit } from "lucide-react";
 import { contasPagarAPI, contasReceberAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ContaPagarDialog } from "@/components/ContaPagarDialog";
+import { ContaReceberDialog } from "@/components/ContaReceberDialog";
+import { FluxoCaixaReport } from "@/components/FluxoCaixaReport";
+import { ParcelamentoDialog } from "@/components/ParcelamentoDialog";
 
 const Financeiro = () => {
   const [loading, setLoading] = useState(true);
@@ -15,6 +19,12 @@ const Financeiro = () => {
   const [contasReceber, setContasReceber] = useState<any[]>([]);
   const [resumoPagar, setResumoPagar] = useState<any>(null);
   const [resumoReceber, setResumoReceber] = useState<any>(null);
+  const [contaPagarDialogOpen, setContaPagarDialogOpen] = useState(false);
+  const [contaReceberDialogOpen, setContaReceberDialogOpen] = useState(false);
+  const [parcelamentoDialogOpen, setParcelamentoDialogOpen] = useState(false);
+  const [selectedContaPagar, setSelectedContaPagar] = useState<any>(null);
+  const [selectedContaReceber, setSelectedContaReceber] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<string>("resumo");
 
   useEffect(() => {
     loadData();
@@ -142,9 +152,21 @@ const Financeiro = () => {
         </Card>
       </div>
 
+      {/* Botões de Ação */}
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={() => setParcelamentoDialogOpen(true)} className="gap-2">
+          <Split className="h-4 w-4" />
+          Criar Parcelamento
+        </Button>
+      </div>
+
       {/* Tabs de Contas */}
-      <Tabs defaultValue="pagar" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="resumo">
+            <DollarSign className="h-4 w-4 mr-2" />
+            Resumo
+          </TabsTrigger>
           <TabsTrigger value="pagar">
             <TrendingDown className="h-4 w-4 mr-2" />
             Contas a Pagar
@@ -155,10 +177,14 @@ const Financeiro = () => {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="resumo">
+          <FluxoCaixaReport />
+        </TabsContent>
+
         <TabsContent value="pagar" className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-foreground">Contas a Pagar</h2>
-            <Button className="gap-2">
+            <Button onClick={() => { setSelectedContaPagar(null); setContaPagarDialogOpen(true); }} className="gap-2">
               <Plus className="h-4 w-4" />
               Nova Conta
             </Button>
@@ -206,9 +232,18 @@ const Financeiro = () => {
                           Pago: {formatCurrency(conta.valorPago)}
                         </div>
                       )}
-                      {conta.status === 'Pendente' || conta.status === 'Parcial' ? (
-                        <Button size="sm" variant="outline">Registrar Pagamento</Button>
-                      ) : null}
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => { setSelectedContaPagar(conta); setContaPagarDialogOpen(true); }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        {conta.status === 'Pendente' || conta.status === 'Parcial' ? (
+                          <Button size="sm" variant="outline">Registrar Pagamento</Button>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -220,7 +255,7 @@ const Financeiro = () => {
         <TabsContent value="receber" className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-foreground">Contas a Receber</h2>
-            <Button className="gap-2">
+            <Button onClick={() => { setSelectedContaReceber(null); setContaReceberDialogOpen(true); }} className="gap-2">
               <Plus className="h-4 w-4" />
               Nova Conta
             </Button>
@@ -268,9 +303,18 @@ const Financeiro = () => {
                           Recebido: {formatCurrency(conta.valorRecebido)}
                         </div>
                       )}
-                      {conta.status === 'Pendente' || conta.status === 'Parcial' ? (
-                        <Button size="sm" variant="outline">Registrar Recebimento</Button>
-                      ) : null}
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => { setSelectedContaReceber(conta); setContaReceberDialogOpen(true); }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        {conta.status === 'Pendente' || conta.status === 'Parcial' ? (
+                          <Button size="sm" variant="outline">Registrar Recebimento</Button>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -279,6 +323,27 @@ const Financeiro = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Diálogos */}
+      <ContaPagarDialog 
+        open={contaPagarDialogOpen}
+        onOpenChange={setContaPagarDialogOpen}
+        conta={selectedContaPagar}
+        onSuccess={loadData}
+      />
+      
+      <ContaReceberDialog 
+        open={contaReceberDialogOpen}
+        onOpenChange={setContaReceberDialogOpen}
+        conta={selectedContaReceber}
+        onSuccess={loadData}
+      />
+
+      <ParcelamentoDialog
+        open={parcelamentoDialogOpen}
+        onOpenChange={setParcelamentoDialogOpen}
+        onSuccess={loadData}
+      />
     </div>
   );
 };
