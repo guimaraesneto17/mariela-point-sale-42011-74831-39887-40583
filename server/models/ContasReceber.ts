@@ -22,6 +22,10 @@ const ContasReceberSchema = new mongoose.Schema({
       trim: true
     }
   },
+  clienteCodigo: {
+    type: String,
+    trim: true
+  },
   vendaRelacionada: {
     codigoVenda: {
       type: String,
@@ -46,7 +50,7 @@ const ContasReceberSchema = new mongoose.Schema({
   },
   dataEmissao: {
     type: Date,
-    required: true
+    default: Date.now
   },
   dataVencimento: {
     type: Date,

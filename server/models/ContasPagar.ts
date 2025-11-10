@@ -22,6 +22,10 @@ const ContasPagarSchema = new mongoose.Schema({
       trim: true
     }
   },
+  fornecedorCodigo: {
+    type: String,
+    trim: true
+  },
   categoria: {
     type: String,
     required: true,
@@ -40,7 +44,7 @@ const ContasPagarSchema = new mongoose.Schema({
   },
   dataEmissao: {
     type: Date,
-    required: true
+    default: Date.now
   },
   dataVencimento: {
     type: Date,
