@@ -87,7 +87,7 @@ const Financeiro = () => {
 
       {/* Cards de Resumo */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="shadow-card hover:shadow-elegant transition-all">
+        <Card className="shadow-card hover:shadow-elegant transition-all animate-fade-in hover-lift">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Saldo Geral
@@ -104,7 +104,7 @@ const Financeiro = () => {
           </CardContent>
         </Card>
 
-        <Card className="shadow-card hover:shadow-elegant transition-all">
+        <Card className="shadow-card hover:shadow-elegant transition-all animate-fade-in hover-lift">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               A Receber
@@ -121,7 +121,7 @@ const Financeiro = () => {
           </CardContent>
         </Card>
 
-        <Card className="shadow-card hover:shadow-elegant transition-all">
+        <Card className="shadow-card hover:shadow-elegant transition-all animate-fade-in hover-lift">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               A Pagar
@@ -138,7 +138,7 @@ const Financeiro = () => {
           </CardContent>
         </Card>
 
-        <Card className="shadow-card hover:shadow-elegant transition-all">
+        <Card className="shadow-card hover:shadow-elegant transition-all animate-fade-in hover-lift">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Contas Vencidas
@@ -196,7 +196,7 @@ const Financeiro = () => {
 
           <div className="grid gap-4">
             {contasPagar.map((conta) => (
-              <Card key={conta.numeroDocumento} className="shadow-card hover:shadow-elegant transition-all">
+              <Card key={conta.numeroDocumento} className="shadow-card hover:shadow-elegant transition-smooth hover-lift animate-fade-in">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="space-y-2 flex-1">
@@ -267,7 +267,7 @@ const Financeiro = () => {
 
           <div className="grid gap-4">
             {contasReceber.map((conta) => (
-              <Card key={conta.numeroDocumento} className="shadow-card hover:shadow-elegant transition-all">
+              <Card key={conta.numeroDocumento} className="shadow-card hover:shadow-elegant transition-smooth hover-lift animate-fade-in">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="space-y-2 flex-1">

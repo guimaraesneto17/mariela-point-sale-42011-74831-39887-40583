@@ -175,6 +175,103 @@ export const estoqueSchema = z.object({
   })).optional(),
 });
 
+// CONTAS A PAGAR
+export const contaPagarSchema = z.object({
+  numeroDocumento: z.string()
+    .min(1, "Número do documento é obrigatório")
+    .max(50, "Número do documento deve ter no máximo 50 caracteres"),
+  descricao: z.string()
+    .min(3, "Descrição deve ter no mínimo 3 caracteres")
+    .max(200, "Descrição deve ter no máximo 200 caracteres"),
+  fornecedor: z.object({
+    codigoFornecedor: optionalString(),
+    nome: optionalString(),
+  }).optional(),
+  categoria: z.string()
+    .min(1, "Categoria é obrigatória"),
+  valor: z.number()
+    .min(0.01, "Valor deve ser maior que 0"),
+  valorPago: z.number()
+    .min(0, "Valor pago deve ser maior ou igual a 0")
+    .default(0)
+    .optional(),
+  dataEmissao: z.date({
+    required_error: "Data de emissão é obrigatória",
+  }),
+  dataVencimento: z.date({
+    required_error: "Data de vencimento é obrigatória",
+  }),
+  dataPagamento: z.date().nullable().optional(),
+  status: z.enum(['Pendente', 'Pago', 'Vencido', 'Parcial'], {
+    errorMap: () => ({ message: "Status inválido" }),
+  }).default('Pendente'),
+  formaPagamento: z.string().max(50).optional(),
+  observacoes: z.string().max(500, "Observações devem ter no máximo 500 caracteres").optional(),
+  anexos: z.array(z.string().url("URL de anexo inválida")).optional(),
+});
+
+// CONTAS A RECEBER
+export const contaReceberSchema = z.object({
+  numeroDocumento: z.string()
+    .min(1, "Número do documento é obrigatório")
+    .max(50, "Número do documento deve ter no máximo 50 caracteres"),
+  descricao: z.string()
+    .min(3, "Descrição deve ter no mínimo 3 caracteres")
+    .max(200, "Descrição deve ter no máximo 200 caracteres"),
+  cliente: z.object({
+    codigoCliente: optionalString(),
+    nome: optionalString(),
+  }).optional(),
+  vendaRelacionada: z.object({
+    codigoVenda: optionalString(),
+  }).optional(),
+  categoria: z.string()
+    .min(1, "Categoria é obrigatória"),
+  valor: z.number()
+    .min(0.01, "Valor deve ser maior que 0"),
+  valorRecebido: z.number()
+    .min(0, "Valor recebido deve ser maior ou igual a 0")
+    .default(0)
+    .optional(),
+  dataEmissao: z.date({
+    required_error: "Data de emissão é obrigatória",
+  }),
+  dataVencimento: z.date({
+    required_error: "Data de vencimento é obrigatória",
+  }),
+  dataRecebimento: z.date().nullable().optional(),
+  status: z.enum(['Pendente', 'Recebido', 'Vencido', 'Parcial'], {
+    errorMap: () => ({ message: "Status inválido" }),
+  }).default('Pendente'),
+  formaPagamento: z.string().max(50).optional(),
+  observacoes: z.string().max(500, "Observações devem ter no máximo 500 caracteres").optional(),
+});
+
+// CATEGORIA FINANCEIRA
+export const categoriaFinanceiraSchema = z.object({
+  nome: z.string()
+    .min(2, "Nome deve ter no mínimo 2 caracteres")
+    .max(50, "Nome deve ter no máximo 50 caracteres"),
+  tipo: z.enum(['pagar', 'receber', 'ambos'], {
+    errorMap: () => ({ message: "Tipo deve ser 'pagar', 'receber' ou 'ambos'" }),
+  }),
+  cor: z.string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, "Cor deve estar no formato hexadecimal (#RRGGBB)"),
+  icone: z.string()
+    .min(1, "Ícone é obrigatório")
+    .max(50, "Ícone deve ter no máximo 50 caracteres"),
+  descricao: optionalString(),
+  categoriaPai: z.string()
+    .nullable()
+    .optional(),
+  ativo: z.boolean().default(true),
+  ordem: z.number()
+    .int("Ordem deve ser um número inteiro")
+    .min(0, "Ordem deve ser maior ou igual a 0")
+    .default(0)
+    .optional(),
+});
+
 // ===========================================================
 // Helper de formatação de erros
 // ===========================================================

@@ -224,3 +224,25 @@ export const contasReceberAPI = {
     }),
   delete: (numero: string) => fetchAPI(`/contas-receber/${numero}`, { method: 'DELETE' }),
 };
+
+// ============= CATEGORIAS FINANCEIRAS =============
+export const categoriasFinanceirasAPI = {
+  getAll: (tipo?: 'pagar' | 'receber') => {
+    const queryParam = tipo ? `?tipo=${tipo}` : '';
+    return fetchAPI(`/categorias-financeiras${queryParam}`);
+  },
+  getById: (id: string) => fetchAPI(`/categorias-financeiras/${id}`),
+  create: (data: any) => fetchAPI('/categorias-financeiras', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  update: (id: string, data: any) => fetchAPI(`/categorias-financeiras/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+  delete: (id: string) => fetchAPI(`/categorias-financeiras/${id}`, { method: 'DELETE' }),
+  reorder: (categorias: { id: string; ordem: number }[]) => fetchAPI('/categorias-financeiras/reorder', {
+    method: 'POST',
+    body: JSON.stringify({ categorias }),
+  }),
+};

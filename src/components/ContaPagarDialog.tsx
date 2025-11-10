@@ -10,12 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, Settings } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { contasPagarAPI, fornecedoresAPI } from "@/lib/api";
+import { contasPagarAPI, fornecedoresAPI, categoriasFinanceirasAPI } from "@/lib/api";
 import { toast } from "sonner";
+import { CategoriasFinanceirasManager } from "@/components/CategoriasFinanceirasManager";
 
 const contaPagarSchema = z.object({
   numeroDocumento: z.string().min(1, "Número do documento é obrigatório"),
@@ -60,6 +61,8 @@ const formasPagamento = [
 export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: ContaPagarDialogProps) {
   const [loading, setLoading] = useState(false);
   const [fornecedores, setFornecedores] = useState<any[]>([]);
+  const [categorias, setCategorias] = useState<any[]>([]);
+  const [showCategoriesManager, setShowCategoriesManager] = useState(false);
 
   const form = useForm<ContaPagarFormData>({
     resolver: zodResolver(contaPagarSchema),
@@ -76,6 +79,7 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
 
   useEffect(() => {
     loadFornecedores();
+    loadCategorias();
   }, []);
 
   useEffect(() => {
@@ -109,6 +113,15 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
       setFornecedores(data);
     } catch (error) {
       console.error('Erro ao carregar fornecedores:', error);
+    }
+  };
+
+  const loadCategorias = async () => {
+    try {
+      const data = await categoriasFinanceirasAPI.getAll('pagar');
+      setCategorias(data);
+    } catch (error) {
+      console.error('Erro ao carregar categorias:', error);
     }
   };
 
@@ -202,7 +215,17 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
                 name="categoria"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Categoria*</FormLabel>
+                    <div className="flex items-center justify-between">
+                      <FormLabel>Categoria*</FormLabel>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowCategoriesManager(true)}
+                      >
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </div>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -211,7 +234,9 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
                       </FormControl>
                       <SelectContent className="bg-background z-50">
                         {categorias.map((cat) => (
-                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          <SelectItem key={cat._id || cat} value={cat.nome || cat}>
+                            {cat.nome || cat}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -336,6 +361,12 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
             </div>
           </form>
         </Form>
+
+        <CategoriasFinanceirasManager
+          open={showCategoriesManager}
+          onOpenChange={setShowCategoriesManager}
+          tipo="pagar"
+        />
       </DialogContent>
     </Dialog>
   );

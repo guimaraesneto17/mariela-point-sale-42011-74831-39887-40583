@@ -17,6 +17,7 @@ import recalculoRouter from './routes/recalculo';
 import caixaRouter from './routes/caixa';
 import contasPagarRouter from './routes/contasPagar';
 import contasReceberRouter from './routes/contasReceber';
+import categoriasFinanceirasRouter from './routes/categoriasFinanceiras';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -116,6 +117,7 @@ app.use('/api/recalculo', recalculoRouter);
 app.use('/api/caixa', caixaRouter);
 app.use('/api/contas-pagar', contasPagarRouter);
 app.use('/api/contas-receber', contasReceberRouter);
+app.use('/api/categorias-financeiras', categoriasFinanceirasRouter);
 
 // Rota 404
 app.use(/.*/, (req, res) => {

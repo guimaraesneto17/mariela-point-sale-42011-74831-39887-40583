@@ -10,12 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, Settings } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { contasReceberAPI, clientesAPI } from "@/lib/api";
+import { contasReceberAPI, clientesAPI, categoriasFinanceirasAPI } from "@/lib/api";
 import { toast } from "sonner";
+import { CategoriasFinanceirasManager } from "@/components/CategoriasFinanceirasManager";
 
 const contaReceberSchema = z.object({
   numeroDocumento: z.string().min(1, "Número do documento é obrigatório"),
@@ -57,6 +58,8 @@ const formasPagamento = [
 export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: ContaReceberDialogProps) {
   const [loading, setLoading] = useState(false);
   const [clientes, setClientes] = useState<any[]>([]);
+  const [categorias, setCategorias] = useState<any[]>([]);
+  const [showCategoriesManager, setShowCategoriesManager] = useState(false);
 
   const form = useForm<ContaReceberFormData>({
     resolver: zodResolver(contaReceberSchema),
@@ -73,6 +76,7 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
 
   useEffect(() => {
     loadClientes();
+    loadCategorias();
   }, []);
 
   useEffect(() => {
@@ -106,6 +110,15 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
       setClientes(data);
     } catch (error) {
       console.error('Erro ao carregar clientes:', error);
+    }
+  };
+
+  const loadCategorias = async () => {
+    try {
+      const data = await categoriasFinanceirasAPI.getAll('receber');
+      setCategorias(data);
+    } catch (error) {
+      console.error('Erro ao carregar categorias:', error);
     }
   };
 
@@ -199,7 +212,17 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
                 name="categoria"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Categoria*</FormLabel>
+                    <div className="flex items-center justify-between">
+                      <FormLabel>Categoria*</FormLabel>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowCategoriesManager(true)}
+                      >
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </div>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -208,7 +231,9 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
                       </FormControl>
                       <SelectContent className="bg-background z-50">
                         {categorias.map((cat) => (
-                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          <SelectItem key={cat._id || cat} value={cat.nome || cat}>
+                            {cat.nome || cat}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -333,6 +358,12 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
             </div>
           </form>
         </Form>
+
+        <CategoriasFinanceirasManager
+          open={showCategoriesManager}
+          onOpenChange={setShowCategoriesManager}
+          tipo="receber"
+        />
       </DialogContent>
     </Dialog>
   );
