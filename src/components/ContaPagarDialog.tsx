@@ -364,7 +364,12 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
 
         <CategoriasFinanceirasManager
           open={showCategoriesManager}
-          onOpenChange={setShowCategoriesManager}
+          onOpenChange={(open) => {
+            setShowCategoriesManager(open);
+            if (!open) {
+              loadCategorias(); // Recarrega categorias quando fecha o dialog
+            }
+          }}
           tipo="pagar"
         />
       </DialogContent>

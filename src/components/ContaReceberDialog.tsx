@@ -361,7 +361,12 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
 
         <CategoriasFinanceirasManager
           open={showCategoriesManager}
-          onOpenChange={setShowCategoriesManager}
+          onOpenChange={(open) => {
+            setShowCategoriesManager(open);
+            if (!open) {
+              loadCategorias(); // Recarrega categorias quando fecha o dialog
+            }
+          }}
           tipo="receber"
         />
       </DialogContent>

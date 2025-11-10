@@ -114,7 +114,7 @@ export function CategoriasFinanceirasManager({ open, onOpenChange, tipo }: Categ
         await categoriasFinanceirasAPI.create(data);
         toast.success("Categoria criada com sucesso!");
       }
-      loadCategorias();
+      await loadCategorias();
       setShowForm(false);
       setEditingCategoria(null);
       form.reset();
