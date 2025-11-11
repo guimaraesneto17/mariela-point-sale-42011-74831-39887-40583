@@ -300,70 +300,89 @@ const Caixa = () => {
         </Card>
       ) : (
         <>
-          {/* Cards de Resumo */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
+          {/* Dashboard de Caixa */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Card de Entrada */}
+            <Card className="animate-fade-in hover-lift transition-smooth border-l-4 border-l-green-500 bg-gradient-to-br from-green-50/50 to-background dark:from-green-950/20">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Valor Inicial
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Total de Entradas
+                  </CardTitle>
+                  <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                    <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-blue-500" />
-                  <span className="text-2xl font-bold">
-                    {formatarMoeda(caixaAberto.valorInicial)}
-                  </span>
+              <CardContent className="space-y-2">
+                <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+                  {formatarMoeda(caixaAberto.entrada)}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <DollarSign className="h-3 w-3" />
+                  <span>Valor inicial: {formatarMoeda(caixaAberto.valorInicial)}</span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            {/* Card de Saída */}
+            <Card className="animate-fade-in hover-lift transition-smooth border-l-4 border-l-red-500 bg-gradient-to-br from-red-50/50 to-background dark:from-red-950/20" style={{ animationDelay: '0.1s' }}>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total Entradas
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Total de Saídas
+                  </CardTitle>
+                  <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                    <TrendingDown className="h-5 w-5 text-red-600 dark:text-red-400" />
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-green-500" />
-                  <span className="text-2xl font-bold text-green-600">
-                    {formatarMoeda(caixaAberto.entrada)}
-                  </span>
+              <CardContent className="space-y-2">
+                <div className="text-3xl font-bold text-red-600 dark:text-red-400">
+                  {formatarMoeda(caixaAberto.saida)}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Minus className="h-3 w-3" />
+                  <span>Sangrias e retiradas</span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            {/* Card de Performance */}
+            <Card className={`animate-fade-in hover-lift transition-smooth border-l-4 ${
+              caixaAberto.performance >= 0 
+                ? 'border-l-primary bg-gradient-to-br from-primary/10 to-background' 
+                : 'border-l-orange-500 bg-gradient-to-br from-orange-50/50 to-background dark:from-orange-950/20'
+            }`} style={{ animationDelay: '0.2s' }}>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total Saídas
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <TrendingDown className="h-5 w-5 text-red-500" />
-                  <span className="text-2xl font-bold text-red-600">
-                    {formatarMoeda(caixaAberto.saida)}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-2">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Performance
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <Wallet className="h-5 w-5 text-primary" />
-                  <span className={`text-2xl font-bold ${
-                    caixaAberto.performance >= 0 ? 'text-green-600' : 'text-red-600'
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Performance do Caixa
+                  </CardTitle>
+                  <div className={`p-2 rounded-lg ${
+                    caixaAberto.performance >= 0 
+                      ? 'bg-primary/10' 
+                      : 'bg-orange-100 dark:bg-orange-900/30'
                   }`}>
-                    {formatarMoeda(caixaAberto.performance)}
-                  </span>
+                    <Wallet className={`h-5 w-5 ${
+                      caixaAberto.performance >= 0 
+                        ? 'text-primary' 
+                        : 'text-orange-600 dark:text-orange-400'
+                    }`} />
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className={`text-3xl font-bold ${
+                  caixaAberto.performance >= 0 
+                    ? 'text-primary' 
+                    : 'text-orange-600 dark:text-orange-400'
+                }`}>
+                  {formatarMoeda(caixaAberto.performance)}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <TrendingUp className="h-3 w-3" />
+                  <span>Saldo atual (Inicial + Entradas - Saídas)</span>
                 </div>
               </CardContent>
             </Card>
