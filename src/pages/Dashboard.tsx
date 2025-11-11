@@ -9,7 +9,6 @@ import {
   UserCheck,
   Award,
   Crown,
-  Settings,
   BarChart3,
   Wallet,
   ArrowUpDown,
@@ -18,117 +17,17 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Card } from "@/components/ui/card";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import StatsCard from "@/components/StatsCard";
-import { DashboardCard } from "@/components/DashboardCard";
-import {
-  DashboardConfigDialog,
-  DashboardCardConfig,
-} from "@/components/DashboardConfigDialog";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  rectSortingStrategy,
-} from "@dnd-kit/sortable";
 import { clientesAPI, vendasAPI, produtosAPI, estoqueAPI, vendedoresAPI, caixaAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { formatDateTime, safeDate } from "@/lib/utils";
 import { ComparacaoPeriodoDialog } from "@/components/ComparacaoPeriodoDialog";
 
-const STORAGE_KEY = "mariela-dashboard-config";
-
-const defaultCards: DashboardCardConfig[] = [
-  {
-    id: "vendas-hoje",
-    title: "Vendas Hoje",
-    description: "Número total de vendas realizadas hoje",
-    visible: true,
-    category: "stats",
-  },
-  {
-    id: "faturamento-diario",
-    title: "Faturamento Diário",
-    description: "Total faturado no dia atual",
-    visible: true,
-    category: "stats",
-  },
-  {
-    id: "total-clientes",
-    title: "Total de Clientes",
-    description: "Número de clientes cadastrados",
-    visible: true,
-    category: "stats",
-  },
-  {
-    id: "produtos-estoque",
-    title: "Produtos em Estoque",
-    description: "Quantidade de produtos disponíveis",
-    visible: true,
-    category: "stats",
-  },
-  {
-    id: "caixa-unificado",
-    title: "Caixa Atual",
-    description: "Performance e status do caixa",
-    visible: true,
-    category: "stats",
-  },
-  {
-    id: "ticket-medio",
-    title: "Ticket Médio",
-    description: "Valor médio por venda",
-    visible: true,
-    category: "stats",
-  },
-  {
-    id: "produtos-vendidos",
-    title: "Produtos Mais Vendidos",
-    description: "Top produtos com maior número de vendas",
-    visible: true,
-    category: "sales",
-  },
-  {
-    id: "vendas-recentes",
-    title: "Vendas Recentes",
-    description: "Últimas vendas realizadas",
-    visible: true,
-    category: "sales",
-  },
-  {
-    id: "top-clientes",
-    title: "Top Clientes",
-    description: "Clientes com maior volume de compras",
-    visible: true,
-    category: "ranking",
-  },
-  {
-    id: "top-vendedores",
-    title: "Top Vendedores",
-    description: "Vendedores com melhor desempenho",
-    visible: true,
-    category: "ranking",
-  },
-];
-
 const Dashboard = () => {
-  const [configOpen, setConfigOpen] = useState(false);
-  const [cards, setCards] = useState<DashboardCardConfig[]>([]);
-  const [cardOrder, setCardOrder] = useState<string[]>([]);
   const [dataInicio, setDataInicio] = useState<Date | undefined>(undefined);
   const [dataFim, setDataFim] = useState<Date | undefined>(undefined);
   const [stats, setStats] = useState<any>({
@@ -159,23 +58,7 @@ const Dashboard = () => {
   const [vendasParaGrafico, setVendasParaGrafico] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const { cards: storedCards, order } = JSON.parse(stored);
-      setCards(storedCards);
-      setCardOrder(order);
-    } else {
-      setCards(defaultCards);
-      setCardOrder(defaultCards.map((c) => c.id));
-    }
     loadDashboardData();
   }, [dataInicio, dataFim]);
 
@@ -418,446 +301,6 @@ const Dashboard = () => {
     }
   };
 
-  const saveConfig = (newCards: DashboardCardConfig[]) => {
-    setCards(newCards);
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ cards: newCards, order: cardOrder })
-    );
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      setCardOrder((items) => {
-        const oldIndex = items.indexOf(active.id as string);
-        const newIndex = items.indexOf(over.id as string);
-        const newOrder = arrayMove(items, oldIndex, newIndex);
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({ cards, order: newOrder })
-        );
-        return newOrder;
-      });
-    }
-  };
-
-  const visibleCards = cards.filter((c) => c.visible);
-  const sortedCards = cardOrder
-    .map((id) => visibleCards.find((c) => c.id === id))
-    .filter(Boolean) as DashboardCardConfig[];
-
-  const renderCard = (cardConfig: DashboardCardConfig) => {
-    switch (cardConfig.id) {
-      case "vendas-hoje":
-        return (
-          <StatsCard
-            title="Vendas Hoje"
-            value={stats.vendasHoje}
-            icon={ShoppingCart}
-            gradient
-          />
-        );
-      case "faturamento-diario":
-        return (
-          <StatsCard
-            title="Faturamento Diário"
-            value={`R$ ${stats.faturamentoDiario.toFixed(2)}`}
-            icon={DollarSign}
-            gradient
-          />
-        );
-      case "total-clientes":
-        return (
-          <StatsCard
-            title="Total de Clientes"
-            value={stats.totalClientes}
-            icon={Users}
-          />
-        );
-      case "produtos-estoque":
-        return (
-          <StatsCard
-            title="Produtos em Estoque"
-            value={stats.produtosEstoque}
-            icon={Package}
-          />
-        );
-      case "valor-estoque-custo":
-        return (
-          <StatsCard
-            title="Valor em Estoque (Custo)"
-            value={`R$ ${stats.valorEstoqueCusto.toFixed(2)}`}
-            icon={Package}
-            gradient
-          />
-        );
-      case "valor-estoque-venda":
-        return (
-          <StatsCard
-            title="Valor em Estoque (Venda)"
-            value={`R$ ${stats.valorEstoqueVenda.toFixed(2)}`}
-            icon={DollarSign}
-            gradient
-          />
-        );
-      case "ticket-medio":
-        return (
-          <StatsCard
-            title="Ticket Médio"
-            value={`R$ ${stats.ticketMedio.toFixed(2)}`}
-            icon={Wallet}
-          />
-        );
-      case "margem-lucro":
-        return (
-          <StatsCard
-            title="Margem de Lucro"
-            value={`${stats.margemLucro.toFixed(1)}%`}
-            icon={BarChart3}
-            gradient
-          />
-        );
-      case "crescimento-mensal":
-        return (
-          <StatsCard
-            title="Crescimento Mensal"
-            value={`${stats.crescimentoMensal.toFixed(1)}%`}
-            icon={ArrowUpDown}
-            trend={{ 
-              value: Math.abs(stats.crescimentoMensal), 
-              isPositive: stats.crescimentoMensal >= 0 
-            }}
-            gradient
-          />
-        );
-      case "produtos-vendidos":
-        return (
-          <DashboardCard id={cardConfig.id}>
-            <h3 className="text-lg font-bold text-foreground mb-4">
-              Produtos Mais Vendidos
-            </h3>
-            <div className="space-y-3">
-              {topProducts.map((product, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-4 rounded-lg bg-gradient-card hover:shadow-md transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-sm font-bold text-primary">
-                        {index + 1}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">
-                        {product.nome}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {product.vendas} vendas
-                      </p>
-                    </div>
-                  </div>
-                  <span className="font-bold text-primary">
-                    R$ {product.valor.toFixed(2)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </DashboardCard>
-        );
-      case "vendas-recentes":
-        return (
-          <DashboardCard id={cardConfig.id}>
-            <h3 className="text-lg font-bold text-foreground mb-4">
-              Vendas Recentes
-            </h3>
-            <div className="space-y-3">
-              {recentSales.map((sale) => (
-                <div
-                  key={sale.codigo}
-                  className="p-4 rounded-lg bg-gradient-card hover:shadow-md transition-all"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-primary">
-                      {sale.codigo}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      {sale.data}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        {sale.cliente}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Vendedor: {sale.vendedor}
-                      </p>
-                    </div>
-                    <span className="font-bold text-foreground">
-                      R$ {sale.valor.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </DashboardCard>
-        );
-      case "top-clientes":
-        return (
-          <DashboardCard id={cardConfig.id} className="bg-gradient-to-br from-card via-card to-blue-500/5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
-                <Crown className="h-5 w-5 text-blue-600" />
-              </div>
-              <h3 className="text-lg font-bold text-foreground">
-                Top Clientes
-              </h3>
-            </div>
-            <div className="space-y-3">
-              {topClientes.map((cliente, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-4 rounded-lg bg-gradient-card hover:shadow-md transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        index === 0
-                          ? "bg-yellow-500/20"
-                          : index === 1
-                          ? "bg-gray-400/20"
-                          : index === 2
-                          ? "bg-orange-600/20"
-                          : "bg-primary/10"
-                      }`}
-                    >
-                      {index === 0 ? (
-                        <Award className="h-4 w-4 text-yellow-600" />
-                      ) : index === 1 ? (
-                        <Award className="h-4 w-4 text-gray-500" />
-                      ) : index === 2 ? (
-                        <Award className="h-4 w-4 text-orange-700" />
-                      ) : (
-                        <span className="text-sm font-bold text-primary">
-                          {index + 1}
-                        </span>
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">
-                        {cliente.nome}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {cliente.compras} compras
-                      </p>
-                    </div>
-                  </div>
-                  <span className="font-bold text-blue-600">
-                    R$ {cliente.valorTotal.toFixed(2)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </DashboardCard>
-        );
-      case "top-vendedores":
-        return (
-          <DashboardCard id={cardConfig.id} className="bg-gradient-to-br from-card via-card to-green-500/5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                <UserCheck className="h-5 w-5 text-green-600" />
-              </div>
-              <h3 className="text-lg font-bold text-foreground">
-                Top Vendedores
-              </h3>
-            </div>
-            <div className="space-y-3">
-              {topVendedores.map((vendedor, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-4 rounded-lg bg-gradient-card hover:shadow-md transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        index === 0
-                          ? "bg-yellow-500/20"
-                          : index === 1
-                          ? "bg-gray-400/20"
-                          : index === 2
-                          ? "bg-orange-600/20"
-                          : "bg-primary/10"
-                      }`}
-                    >
-                      {index === 0 ? (
-                        <Award className="h-4 w-4 text-yellow-600" />
-                      ) : index === 1 ? (
-                        <Award className="h-4 w-4 text-gray-500" />
-                      ) : index === 2 ? (
-                        <Award className="h-4 w-4 text-orange-700" />
-                      ) : (
-                        <span className="text-sm font-bold text-primary">
-                          {index + 1}
-                        </span>
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">
-                        {vendedor.nome}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {vendedor.vendas} vendas
-                      </p>
-                    </div>
-                  </div>
-                  <span className="font-bold text-green-600">
-                    R$ {vendedor.valorTotal.toFixed(2)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </DashboardCard>
-        );
-      case "produtos-baixo-estoque":
-        return (
-          <DashboardCard id={cardConfig.id}>
-            <h3 className="text-lg font-bold text-foreground mb-4">
-              Produtos em Baixo Estoque
-            </h3>
-            <TooltipProvider>
-              <div className="space-y-3">
-                {produtosBaixoEstoque.map((produto, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-4 rounded-lg bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800"
-                  >
-                    <div>
-                      <p className="font-medium text-foreground">{produto.nome}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Mínimo: {(produto.minimo ?? 5)} unidades
-                      </p>
-                    </div>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Badge variant="destructive" className="cursor-help">
-                          {produto.quantidade} restantes
-                        </Badge>
-                      </TooltipTrigger>
-                      <TooltipContent side="left" className="max-w-xs">
-                        <div className="space-y-1">
-                          <p className="font-semibold text-sm mb-2">Variantes em estoque:</p>
-                          {produto.variantes && produto.variantes.length > 0 ? (
-                            produto.variantes.map((variante: any, idx: number) => (
-                              <div key={idx} className="flex justify-between gap-4 text-xs">
-                                <span className="font-medium">
-                                  {variante.cor} - {variante.tamanho}:
-                                </span>
-                                <span>{variante.quantidade} un.</span>
-                              </div>
-                            ))
-                          ) : (
-                            <p className="text-xs text-muted-foreground">Sem variantes cadastradas</p>
-                          )}
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                ))}
-              </div>
-            </TooltipProvider>
-          </DashboardCard>
-        );
-      case "caixa-unificado":
-        return (
-          <DashboardCard id={cardConfig.id}>
-            {caixaAberto ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md">
-                      <Wallet className="h-5 w-5 text-primary-foreground" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-foreground">Caixa Atual</h3>
-                      <p className="text-xs text-muted-foreground">{caixaAberto.codigoCaixa}</p>
-                    </div>
-                  </div>
-                  <Badge className="bg-green-500 hover:bg-green-600 shadow-sm">Aberto</Badge>
-                </div>
-                
-                <div className="p-5 rounded-xl bg-gradient-to-br from-card via-card to-primary/5 border-2 border-primary/20 shadow-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-muted-foreground">Performance do Caixa</p>
-                    {caixaAberto.performance >= 0 ? (
-                      <TrendingUp className="h-5 w-5 text-green-600" />
-                    ) : (
-                      <TrendingDown className="h-5 w-5 text-red-600" />
-                    )}
-                  </div>
-                  <p className={`text-4xl font-bold mb-1 ${
-                    caixaAberto.performance >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    R$ {caixaAberto.performance?.toFixed(2) || '0.00'}
-                  </p>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <ArrowUpDown className="h-3 w-3" />
-                    Valor Inicial: R$ {caixaAberto.valorInicial?.toFixed(2) || '0.00'}
-                  </p>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-4 rounded-lg bg-gradient-card border border-border hover:shadow-md transition-all">
-                    <p className="text-xs font-medium text-muted-foreground mb-1">Entradas</p>
-                    <p className="text-xl font-bold text-green-600">
-                      R$ {caixaAberto.entrada?.toFixed(2) || '0.00'}
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-gradient-card border border-border hover:shadow-md transition-all">
-                    <p className="text-xs font-medium text-muted-foreground mb-1">Saídas</p>
-                    <p className="text-xl font-bold text-red-600">
-                      R$ {caixaAberto.saida?.toFixed(2) || '0.00'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
-                  <Wallet className="h-8 w-8 text-muted-foreground/50" />
-                </div>
-                <h3 className="text-lg font-bold text-foreground mb-1">Caixa Atual</h3>
-                <p className="text-muted-foreground text-sm">Nenhum caixa aberto no momento</p>
-              </div>
-            )}
-          </DashboardCard>
-        );
-      default:
-        return null;
-    }
-  };
-
-  const statsCards = sortedCards.filter((c) =>
-    ["vendas-hoje", "faturamento-diario", "total-clientes", "produtos-estoque", "caixa-unificado", "ticket-medio", "margem-lucro", "crescimento-mensal"].includes(
-      c.id
-    )
-  );
-
-  const otherCards = sortedCards.filter(
-    (c) =>
-      ![
-        "vendas-hoje",
-        "faturamento-diario",
-        "total-clientes",
-        "produtos-estoque",
-        "caixa-unificado",
-        "ticket-medio",
-        "margem-lucro",
-        "crescimento-mensal",
-      ].includes(c.id)
-  );
-
   const limparFiltros = () => {
     setDataInicio(undefined);
     setDataFim(undefined);
@@ -874,14 +317,6 @@ const Dashboard = () => {
             Visão geral do seu negócio em tempo real
           </p>
         </div>
-        <Button
-          onClick={() => setConfigOpen(true)}
-          variant="outline"
-          className="gap-2"
-        >
-          <Settings className="h-4 w-4" />
-          Configurar Dashboard
-        </Button>
       </div>
 
       {/* Filtros de Data */}
@@ -955,40 +390,247 @@ const Dashboard = () => {
         </div>
       </Card>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        {/* Stats Cards */}
-        {statsCards.length > 0 && (
-          <SortableContext items={statsCards.map((c) => c.id)} strategy={rectSortingStrategy}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {statsCards.map((card) => (
-                <div key={card.id}>{renderCard(card)}</div>
-              ))}
+      {/* Card Único Resumido */}
+      <Card className="p-8 shadow-card animate-fade-in hover-lift transition-smooth bg-gradient-to-br from-card via-card to-primary/5">
+        <div className="space-y-8">
+          {/* Header do Card */}
+          <div className="flex items-center justify-between pb-4 border-b border-border">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+                <BarChart3 className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-foreground">Resumo do Negócio</h2>
+                <p className="text-sm text-muted-foreground">Principais métricas em tempo real</p>
+              </div>
             </div>
-          </SortableContext>
-        )}
+            {caixaAberto && (
+              <Badge className="bg-green-500 hover:bg-green-600 shadow-sm text-base px-4 py-2">
+                <Wallet className="h-4 w-4 mr-2" />
+                Caixa {caixaAberto.codigoCaixa} - Aberto
+              </Badge>
+            )}
+          </div>
 
-        {/* Other Cards */}
-        {otherCards.length > 0 && (
-          <SortableContext items={otherCards.map((c) => c.id)} strategy={rectSortingStrategy}>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {otherCards.map((card) => (
-                <div key={card.id}>{renderCard(card)}</div>
-              ))}
+          {/* Grid de Métricas */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {/* Vendas Hoje */}
+            <div className="p-5 rounded-xl bg-gradient-card border border-border hover:shadow-md transition-smooth">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <ShoppingCart className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-foreground mb-1">{stats.vendasHoje}</p>
+              <p className="text-sm text-muted-foreground">Vendas Hoje</p>
             </div>
-          </SortableContext>
-        )}
-      </DndContext>
 
-      <DashboardConfigDialog
-        open={configOpen}
-        onOpenChange={setConfigOpen}
-        cards={cards}
-        onSave={saveConfig}
-      />
+            {/* Faturamento Diário */}
+            <div className="p-5 rounded-xl bg-gradient-card border border-border hover:shadow-md transition-smooth">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-2 bg-green-500/10 rounded-lg">
+                  <DollarSign className="h-5 w-5 text-green-600" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-green-600 mb-1">
+                R$ {stats.faturamentoDiario.toFixed(2)}
+              </p>
+              <p className="text-sm text-muted-foreground">Faturamento Diário</p>
+            </div>
+
+            {/* Total Clientes */}
+            <div className="p-5 rounded-xl bg-gradient-card border border-border hover:shadow-md transition-smooth">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-2 bg-blue-500/10 rounded-lg">
+                  <Users className="h-5 w-5 text-blue-600" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-foreground mb-1">{stats.totalClientes}</p>
+              <p className="text-sm text-muted-foreground">Total de Clientes</p>
+            </div>
+
+            {/* Ticket Médio */}
+            <div className="p-5 rounded-xl bg-gradient-card border border-border hover:shadow-md transition-smooth">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-2 bg-purple-500/10 rounded-lg">
+                  <Wallet className="h-5 w-5 text-purple-600" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-foreground mb-1">
+                R$ {stats.ticketMedio.toFixed(2)}
+              </p>
+              <p className="text-sm text-muted-foreground">Ticket Médio</p>
+            </div>
+          </div>
+
+          {/* Caixa e Performance - Destaque */}
+          {caixaAberto && (
+            <div className="p-6 rounded-xl bg-gradient-to-br from-primary/5 via-background to-accent/5 border-2 border-primary/20 shadow-lg">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-foreground mb-1">Performance do Caixa</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Aberto em {format(new Date(caixaAberto.dataAbertura), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                  </p>
+                </div>
+                {caixaAberto.performance >= 0 ? (
+                  <TrendingUp className="h-6 w-6 text-green-600" />
+                ) : (
+                  <TrendingDown className="h-6 w-6 text-red-600" />
+                )}
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Valor Inicial</p>
+                  <p className="text-xl font-bold text-blue-600">
+                    R$ {caixaAberto.valorInicial?.toFixed(2) || '0.00'}
+                  </p>
+                </div>
+                
+                <div className="text-center p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Entradas</p>
+                  <p className="text-xl font-bold text-green-600">
+                    R$ {caixaAberto.entrada?.toFixed(2) || '0.00'}
+                  </p>
+                </div>
+                
+                <div className="text-center p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Saídas</p>
+                  <p className="text-xl font-bold text-red-600">
+                    R$ {caixaAberto.saida?.toFixed(2) || '0.00'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-border">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-muted-foreground">Saldo Atual</p>
+                  <p className={`text-3xl font-bold ${
+                    caixaAberto.performance >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    R$ {caixaAberto.performance?.toFixed(2) || '0.00'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Estoque e Margem */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-5 rounded-xl bg-gradient-card border border-border hover:shadow-md transition-smooth">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-orange-600" />
+                  <p className="text-sm font-medium text-muted-foreground">Produtos em Estoque</p>
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-foreground">{stats.produtosEstoque}</p>
+            </div>
+
+            <div className="p-5 rounded-xl bg-gradient-card border border-border hover:shadow-md transition-smooth">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  <p className="text-sm font-medium text-muted-foreground">Margem de Lucro</p>
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-primary">{stats.margemLucro.toFixed(1)}%</p>
+            </div>
+
+            <div className="p-5 rounded-xl bg-gradient-card border border-border hover:shadow-md transition-smooth">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <ArrowUpDown className="h-5 w-5 text-accent" />
+                  <p className="text-sm font-medium text-muted-foreground">Crescimento Mensal</p>
+                </div>
+              </div>
+              <p className={`text-2xl font-bold ${stats.crescimentoMensal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {stats.crescimentoMensal >= 0 ? '+' : ''}{stats.crescimentoMensal.toFixed(1)}%
+              </p>
+            </div>
+          </div>
+
+          {/* Top 3 Informações */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Top Produtos */}
+            <div className="p-5 rounded-xl bg-gradient-card border border-border">
+              <div className="flex items-center gap-2 mb-4">
+                <Award className="h-5 w-5 text-primary" />
+                <h3 className="text-base font-bold text-foreground">Top 3 Produtos</h3>
+              </div>
+              <div className="space-y-3">
+                {topProducts.slice(0, 3).map((product, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                        index === 0 ? 'bg-yellow-500/20 text-yellow-600' :
+                        index === 1 ? 'bg-gray-400/20 text-gray-600' :
+                        'bg-orange-600/20 text-orange-600'
+                      }`}>
+                        {index + 1}
+                      </div>
+                      <p className="text-sm font-medium text-foreground truncate">{product.nome}</p>
+                    </div>
+                    <p className="text-sm font-bold text-primary">R$ {product.valor.toFixed(2)}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Top Clientes */}
+            <div className="p-5 rounded-xl bg-gradient-card border border-border">
+              <div className="flex items-center gap-2 mb-4">
+                <Crown className="h-5 w-5 text-blue-600" />
+                <h3 className="text-base font-bold text-foreground">Top 3 Clientes</h3>
+              </div>
+              <div className="space-y-3">
+                {topClientes.slice(0, 3).map((cliente, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                        index === 0 ? 'bg-yellow-500/20 text-yellow-600' :
+                        index === 1 ? 'bg-gray-400/20 text-gray-600' :
+                        'bg-orange-600/20 text-orange-600'
+                      }`}>
+                        {index + 1}
+                      </div>
+                      <p className="text-sm font-medium text-foreground truncate">{cliente.nome}</p>
+                    </div>
+                    <p className="text-sm font-bold text-blue-600">R$ {cliente.valorTotal.toFixed(2)}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Top Vendedores */}
+            <div className="p-5 rounded-xl bg-gradient-card border border-border">
+              <div className="flex items-center gap-2 mb-4">
+                <UserCheck className="h-5 w-5 text-green-600" />
+                <h3 className="text-base font-bold text-foreground">Top 3 Vendedores</h3>
+              </div>
+              <div className="space-y-3">
+                {topVendedores.slice(0, 3).map((vendedor, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                        index === 0 ? 'bg-yellow-500/20 text-yellow-600' :
+                        index === 1 ? 'bg-gray-400/20 text-gray-600' :
+                        'bg-orange-600/20 text-orange-600'
+                      }`}>
+                        {index + 1}
+                      </div>
+                      <p className="text-sm font-medium text-foreground truncate">{vendedor.nome}</p>
+                    </div>
+                    <p className="text-sm font-bold text-green-600">R$ {vendedor.valorTotal.toFixed(2)}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
     </div>
   );
 };
