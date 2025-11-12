@@ -38,24 +38,14 @@ interface ContaPagarDialogProps {
   onSuccess: () => void;
 }
 
-const categorias = [
-  "Fornecedores",
-  "Aluguel",
-  "Energia",
-  "Água",
-  "Internet",
-  "Salários",
-  "Impostos",
-  "Outros"
-];
-
 const formasPagamento = [
   "Dinheiro",
   "PIX",
-  "Cartão de Crédito",
-  "Cartão de Débito",
+  "Débito",
+  "Crédito",
   "Boleto",
-  "Transferência"
+  "Transferência",
+  "Outro"
 ];
 
 export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: ContaPagarDialogProps) {

@@ -187,8 +187,9 @@ export const contaPagarSchema = z.object({
     codigoFornecedor: optionalString(),
     nome: optionalString(),
   }).optional(),
-  categoria: z.string()
-    .min(1, "Categoria é obrigatória"),
+  categoria: z.enum(['Aluguel', 'Fornecedores', 'Salários', 'Impostos', 'Energia', 'Água', 'Internet', 'Marketing', 'Manutenção', 'Outros'], {
+    errorMap: () => ({ message: "Categoria é obrigatória" }),
+  }),
   valor: z.number()
     .min(0.01, "Valor deve ser maior que 0"),
   valorPago: z.number()
@@ -205,7 +206,9 @@ export const contaPagarSchema = z.object({
   status: z.enum(['Pendente', 'Pago', 'Vencido', 'Parcial'], {
     errorMap: () => ({ message: "Status inválido" }),
   }).default('Pendente'),
-  formaPagamento: z.string().max(50).optional(),
+  formaPagamento: z.enum(['Dinheiro', 'PIX', 'Débito', 'Crédito', 'Boleto', 'Transferência', 'Outro'], {
+    errorMap: () => ({ message: "Forma de pagamento inválida" }),
+  }).optional(),
   observacoes: z.string().max(500, "Observações devem ter no máximo 500 caracteres").optional(),
   anexos: z.array(z.string().url("URL de anexo inválida")).optional(),
 });
@@ -225,8 +228,9 @@ export const contaReceberSchema = z.object({
   vendaRelacionada: z.object({
     codigoVenda: optionalString(),
   }).optional(),
-  categoria: z.string()
-    .min(1, "Categoria é obrigatória"),
+  categoria: z.enum(['Venda', 'Serviço', 'Outros'], {
+    errorMap: () => ({ message: "Categoria é obrigatória" }),
+  }),
   valor: z.number()
     .min(0.01, "Valor deve ser maior que 0"),
   valorRecebido: z.number()
@@ -243,7 +247,9 @@ export const contaReceberSchema = z.object({
   status: z.enum(['Pendente', 'Recebido', 'Vencido', 'Parcial'], {
     errorMap: () => ({ message: "Status inválido" }),
   }).default('Pendente'),
-  formaPagamento: z.string().max(50).optional(),
+  formaPagamento: z.enum(['Dinheiro', 'PIX', 'Débito', 'Crédito', 'Boleto', 'Transferência', 'Outro'], {
+    errorMap: () => ({ message: "Forma de pagamento inválida" }),
+  }).optional(),
   observacoes: z.string().max(500, "Observações devem ter no máximo 500 caracteres").optional(),
 });
 

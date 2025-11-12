@@ -38,21 +38,14 @@ interface ContaReceberDialogProps {
   onSuccess: () => void;
 }
 
-const categorias = [
-  "Vendas",
-  "Serviços",
-  "Comissões",
-  "Aluguel",
-  "Outros"
-];
-
 const formasPagamento = [
   "Dinheiro",
   "PIX",
-  "Cartão de Crédito",
-  "Cartão de Débito",
+  "Débito",
+  "Crédito",
   "Boleto",
-  "Transferência"
+  "Transferência",
+  "Outro"
 ];
 
 export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: ContaReceberDialogProps) {
