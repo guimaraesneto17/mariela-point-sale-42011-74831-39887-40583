@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   DollarSign,
   ShoppingCart,
@@ -14,7 +14,12 @@ import {
   ArrowUpDown,
   Calendar as CalendarIcon,
   X,
+  PackageOpen,
+  ShoppingBag,
+  Percent,
 } from "lucide-react";
+import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -26,6 +31,8 @@ import { clientesAPI, vendasAPI, produtosAPI, estoqueAPI, vendedoresAPI, caixaAP
 import { toast } from "sonner";
 import { formatDateTime, safeDate } from "@/lib/utils";
 import { ComparacaoPeriodoDialog } from "@/components/ComparacaoPeriodoDialog";
+import { DashboardWidgetCard } from "@/components/DashboardWidgetCard";
+import { DashboardWidgetConfig, WidgetConfig } from "@/components/DashboardWidgetConfig";
 
 const Dashboard = () => {
   const [dataInicio, setDataInicio] = useState<Date | undefined>(undefined);
@@ -45,6 +52,29 @@ const Dashboard = () => {
     crescimentoMensal: 0,
     valorEstoqueCusto: 0,
     valorEstoqueVenda: 0,
+  });
+  const [statsPeriodoAnterior, setStatsPeriodoAnterior] = useState<any>(null);
+  
+  const defaultWidgets: WidgetConfig[] = [
+    { id: "vendas-hoje", label: "Vendas Hoje", category: "Vendas", visible: true },
+    { id: "faturamento-diario", label: "Faturamento Diário", category: "Vendas", visible: true },
+    { id: "total-clientes", label: "Total de Clientes", category: "Clientes", visible: true },
+    { id: "ticket-medio", label: "Ticket Médio", category: "Vendas", visible: true },
+    { id: "produtos-estoque", label: "Produtos em Estoque", category: "Estoque", visible: true },
+    { id: "valor-estoque-custo", label: "Valor Estoque (Custo)", category: "Estoque", visible: true },
+    { id: "valor-estoque-venda", label: "Valor Estoque (Venda)", category: "Estoque", visible: true },
+    { id: "margem-lucro", label: "Margem de Lucro Real", category: "Financeiro", visible: true },
+    { id: "crescimento-mensal", label: "Crescimento Mensal", category: "Financeiro", visible: true },
+  ];
+  
+  const [widgetConfig, setWidgetConfig] = useState<WidgetConfig[]>(() => {
+    const saved = localStorage.getItem("dashboard-widgets");
+    return saved ? JSON.parse(saved) : defaultWidgets;
+  });
+  
+  const [widgetOrder, setWidgetOrder] = useState<string[]>(() => {
+    const saved = localStorage.getItem("dashboard-widget-order");
+    return saved ? JSON.parse(saved) : defaultWidgets.map(w => w.id);
   });
   const [topProducts, setTopProducts] = useState<any[]>([]);
   const [produtos, setProdutos] = useState<any[]>([]);
@@ -127,7 +157,7 @@ const Dashboard = () => {
       console.log('📦 Total de movimentações coletadas:', todasMovimentacoes.length);
       setMovimentacoesEstoque(todasMovimentacoes);
 
-      // Calcular estatísticas
+      // Calcular estatísticas do período atual
       const hoje = new Date();
       hoje.setHours(0, 0, 0, 0);
       
@@ -136,6 +166,36 @@ const Dashboard = () => {
         if (!vendaData) return false;
         vendaData.setHours(0, 0, 0, 0);
         return vendaData.getTime() === hoje.getTime();
+      });
+      
+      // Calcular período anterior para comparação
+      const calcularPeriodoAnterior = () => {
+        const dataInicioAtual = dataInicio || hoje;
+        const dataFimAtual = dataFim || hoje;
+        
+        const diffDias = Math.ceil((dataFimAtual.getTime() - dataInicioAtual.getTime()) / (1000 * 60 * 60 * 24));
+        
+        const dataInicioAnterior = new Date(dataInicioAtual);
+        dataInicioAnterior.setDate(dataInicioAnterior.getDate() - diffDias - 1);
+        
+        const dataFimAnterior = new Date(dataInicioAtual);
+        dataFimAnterior.setDate(dataFimAnterior.getDate() - 1);
+        
+        return { dataInicioAnterior, dataFimAnterior, diffDias };
+      };
+      
+      const { dataInicioAnterior, dataFimAnterior } = calcularPeriodoAnterior();
+      
+      // Filtrar vendas do período anterior
+      const vendasPeriodoAnterior = vendasAll.filter((v: any) => {
+        const vendaData = safeDate(v.data || v.dataVenda);
+        if (!vendaData) return false;
+        
+        const inicio = new Date(dataInicioAnterior);
+        const fim = new Date(dataFimAnterior);
+        inicio.setHours(0, 0, 0, 0);
+        fim.setHours(23, 59, 59, 999);
+        return vendaData >= inicio && vendaData <= fim;
       });
 
       const faturamentoDiario = vendasHoje.reduce((acc: number, v: any) => acc + (v.total || 0), 0);
@@ -196,6 +256,18 @@ const Dashboard = () => {
       
       const vendasPorMesArray = Object.values(vendasPorMesMap).slice(-6); // últimos 6 meses
       setVendasPorMes(vendasPorMesArray);
+
+      // Calcular estatísticas do período anterior
+      const faturamentoPeriodoAnterior = vendasPeriodoAnterior.reduce((acc: number, v: any) => acc + (v.total || 0), 0);
+      const ticketMedioPeriodoAnterior = vendasPeriodoAnterior.length > 0 
+        ? faturamentoPeriodoAnterior / vendasPeriodoAnterior.length 
+        : 0;
+      
+      setStatsPeriodoAnterior({
+        vendasTotal: vendasPeriodoAnterior.length,
+        faturamento: faturamentoPeriodoAnterior,
+        ticketMedio: ticketMedioPeriodoAnterior,
+      });
 
       setStats({
         vendasHoje: vendasHoje.length,
@@ -306,6 +378,140 @@ const Dashboard = () => {
     setDataFim(undefined);
   };
 
+  const handleWidgetConfigSave = (newConfig: WidgetConfig[]) => {
+    setWidgetConfig(newConfig);
+    localStorage.setItem("dashboard-widgets", JSON.stringify(newConfig));
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      setWidgetOrder((items) => {
+        const oldIndex = items.indexOf(active.id as string);
+        const newIndex = items.indexOf(over.id as string);
+        const newOrder = arrayMove(items, oldIndex, newIndex);
+        localStorage.setItem("dashboard-widget-order", JSON.stringify(newOrder));
+        return newOrder;
+      });
+    }
+  };
+
+  const calcularComparacao = (valorAtual: number, valorAnterior: number) => {
+    if (!statsPeriodoAnterior || valorAnterior === 0) return null;
+    const percentual = ((valorAtual - valorAnterior) / valorAnterior) * 100;
+    return {
+      percentage: percentual,
+      label: "vs período anterior",
+    };
+  };
+
+  const visibleWidgets = useMemo(() => {
+    return widgetOrder
+      .filter(id => widgetConfig.find(w => w.id === id)?.visible)
+      .map(id => widgetConfig.find(w => w.id === id)!)
+      .filter(Boolean);
+  }, [widgetOrder, widgetConfig]);
+
+  const renderWidget = (widget: WidgetConfig) => {
+    const widgets: Record<string, any> = {
+      "vendas-hoje": (
+        <DashboardWidgetCard
+          id={widget.id}
+          title="Vendas Hoje"
+          value={stats.vendasHoje}
+          icon={<ShoppingCart className="h-5 w-5 text-primary" />}
+          iconBgColor="bg-primary/10"
+          comparison={calcularComparacao(stats.vendasHoje, statsPeriodoAnterior?.vendasTotal || 0)}
+        />
+      ),
+      "faturamento-diario": (
+        <DashboardWidgetCard
+          id={widget.id}
+          title="Faturamento Diário"
+          value={`R$ ${stats.faturamentoDiario.toFixed(2)}`}
+          icon={<DollarSign className="h-5 w-5 text-green-600" />}
+          iconBgColor="bg-green-500/10"
+          valueColor="text-green-600"
+          comparison={calcularComparacao(stats.faturamentoDiario, statsPeriodoAnterior?.faturamento || 0)}
+        />
+      ),
+      "total-clientes": (
+        <DashboardWidgetCard
+          id={widget.id}
+          title="Total de Clientes"
+          value={stats.totalClientes}
+          icon={<Users className="h-5 w-5 text-blue-600" />}
+          iconBgColor="bg-blue-500/10"
+        />
+      ),
+      "ticket-medio": (
+        <DashboardWidgetCard
+          id={widget.id}
+          title="Ticket Médio"
+          value={`R$ ${stats.ticketMedio.toFixed(2)}`}
+          icon={<Wallet className="h-5 w-5 text-purple-600" />}
+          iconBgColor="bg-purple-500/10"
+          comparison={calcularComparacao(stats.ticketMedio, statsPeriodoAnterior?.ticketMedio || 0)}
+        />
+      ),
+      "produtos-estoque": (
+        <DashboardWidgetCard
+          id={widget.id}
+          title="Produtos em Estoque"
+          value={stats.produtosEstoque}
+          icon={<Package className="h-5 w-5 text-orange-600" />}
+          iconBgColor="bg-orange-500/10"
+        />
+      ),
+      "valor-estoque-custo": (
+        <DashboardWidgetCard
+          id={widget.id}
+          title="Valor Estoque (Custo)"
+          value={`R$ ${stats.valorEstoqueCusto.toFixed(2)}`}
+          subtitle="Total investido em estoque"
+          icon={<PackageOpen className="h-5 w-5 text-amber-600" />}
+          iconBgColor="bg-amber-500/10"
+          valueColor="text-amber-600"
+        />
+      ),
+      "valor-estoque-venda": (
+        <DashboardWidgetCard
+          id={widget.id}
+          title="Valor Estoque (Venda)"
+          value={`R$ ${stats.valorEstoqueVenda.toFixed(2)}`}
+          subtitle="Valor potencial de venda"
+          icon={<ShoppingBag className="h-5 w-5 text-emerald-600" />}
+          iconBgColor="bg-emerald-500/10"
+          valueColor="text-emerald-600"
+        />
+      ),
+      "margem-lucro": (
+        <DashboardWidgetCard
+          id={widget.id}
+          title="Margem de Lucro Real"
+          value={`${stats.margemLucro.toFixed(1)}%`}
+          subtitle="Baseado no estoque atual"
+          icon={<Percent className="h-5 w-5 text-primary" />}
+          iconBgColor="bg-primary/10"
+          valueColor="text-primary"
+        />
+      ),
+      "crescimento-mensal": (
+        <DashboardWidgetCard
+          id={widget.id}
+          title="Crescimento Mensal"
+          value={`${stats.crescimentoMensal >= 0 ? '+' : ''}${stats.crescimentoMensal.toFixed(1)}%`}
+          icon={<ArrowUpDown className="h-5 w-5 text-accent" />}
+          iconBgColor="bg-accent/10"
+          valueColor={stats.crescimentoMensal >= 0 ? "text-green-600" : "text-red-600"}
+        />
+      ),
+    };
+
+    return widgets[widget.id] || null;
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -394,7 +600,7 @@ const Dashboard = () => {
       <Card className="p-8 shadow-card animate-fade-in hover-lift transition-smooth bg-gradient-to-br from-card via-card to-primary/5">
         <div className="space-y-8">
           {/* Header do Card */}
-          <div className="flex items-center justify-between pb-4 border-b border-border">
+          <div className="flex items-center justify-between pb-4 border-b border-border flex-wrap gap-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
                 <BarChart3 className="h-6 w-6 text-primary-foreground" />
@@ -404,64 +610,38 @@ const Dashboard = () => {
                 <p className="text-sm text-muted-foreground">Principais métricas em tempo real</p>
               </div>
             </div>
-            {caixaAberto && (
-              <Badge className="bg-green-500 hover:bg-green-600 shadow-sm text-base px-4 py-2">
-                <Wallet className="h-4 w-4 mr-2" />
-                Caixa {caixaAberto.codigoCaixa} - Aberto
-              </Badge>
-            )}
-          </div>
-
-          {/* Grid de Métricas */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {/* Vendas Hoje */}
-            <div className="p-5 rounded-xl bg-gradient-card border border-border hover:shadow-md transition-smooth">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <ShoppingCart className="h-5 w-5 text-primary" />
-                </div>
-              </div>
-              <p className="text-3xl font-bold text-foreground mb-1">{stats.vendasHoje}</p>
-              <p className="text-sm text-muted-foreground">Vendas Hoje</p>
-            </div>
-
-            {/* Faturamento Diário */}
-            <div className="p-5 rounded-xl bg-gradient-card border border-border hover:shadow-md transition-smooth">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 bg-green-500/10 rounded-lg">
-                  <DollarSign className="h-5 w-5 text-green-600" />
-                </div>
-              </div>
-              <p className="text-3xl font-bold text-green-600 mb-1">
-                R$ {stats.faturamentoDiario.toFixed(2)}
-              </p>
-              <p className="text-sm text-muted-foreground">Faturamento Diário</p>
-            </div>
-
-            {/* Total Clientes */}
-            <div className="p-5 rounded-xl bg-gradient-card border border-border hover:shadow-md transition-smooth">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 bg-blue-500/10 rounded-lg">
-                  <Users className="h-5 w-5 text-blue-600" />
-                </div>
-              </div>
-              <p className="text-3xl font-bold text-foreground mb-1">{stats.totalClientes}</p>
-              <p className="text-sm text-muted-foreground">Total de Clientes</p>
-            </div>
-
-            {/* Ticket Médio */}
-            <div className="p-5 rounded-xl bg-gradient-card border border-border hover:shadow-md transition-smooth">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 bg-purple-500/10 rounded-lg">
-                  <Wallet className="h-5 w-5 text-purple-600" />
-                </div>
-              </div>
-              <p className="text-3xl font-bold text-foreground mb-1">
-                R$ {stats.ticketMedio.toFixed(2)}
-              </p>
-              <p className="text-sm text-muted-foreground">Ticket Médio</p>
+            <div className="flex items-center gap-3">
+              <DashboardWidgetConfig
+                widgets={widgetConfig}
+                onSave={handleWidgetConfigSave}
+              />
+              {caixaAberto && (
+                <Badge className="bg-green-500 hover:bg-green-600 shadow-sm text-base px-4 py-2">
+                  <Wallet className="h-4 w-4 mr-2" />
+                  Caixa {caixaAberto.codigoCaixa} - Aberto
+                </Badge>
+              )}
             </div>
           </div>
+
+          {/* Grid de Widgets Personalizáveis */}
+          <DndContext
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={visibleWidgets.map(w => w.id)}
+              strategy={rectSortingStrategy}
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {visibleWidgets.map((widget) => (
+                  <div key={widget.id}>
+                    {renderWidget(widget)}
+                  </div>
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
 
           {/* Caixa e Performance - Destaque */}
           {caixaAberto && (
@@ -516,40 +696,6 @@ const Dashboard = () => {
             </div>
           )}
 
-          {/* Estoque e Margem */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-5 rounded-xl bg-gradient-card border border-border hover:shadow-md transition-smooth">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Package className="h-5 w-5 text-orange-600" />
-                  <p className="text-sm font-medium text-muted-foreground">Produtos em Estoque</p>
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-foreground">{stats.produtosEstoque}</p>
-            </div>
-
-            <div className="p-5 rounded-xl bg-gradient-card border border-border hover:shadow-md transition-smooth">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  <p className="text-sm font-medium text-muted-foreground">Margem de Lucro</p>
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-primary">{stats.margemLucro.toFixed(1)}%</p>
-            </div>
-
-            <div className="p-5 rounded-xl bg-gradient-card border border-border hover:shadow-md transition-smooth">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <ArrowUpDown className="h-5 w-5 text-accent" />
-                  <p className="text-sm font-medium text-muted-foreground">Crescimento Mensal</p>
-                </div>
-              </div>
-              <p className={`text-2xl font-bold ${stats.crescimentoMensal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {stats.crescimentoMensal >= 0 ? '+' : ''}{stats.crescimentoMensal.toFixed(1)}%
-              </p>
-            </div>
-          </div>
 
           {/* Top 3 Informações */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
