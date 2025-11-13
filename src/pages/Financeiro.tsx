@@ -160,11 +160,11 @@ const Financeiro = () => {
         </Card>
       </div>
 
-      {/* Botões de Ação */}
+      {/* Botão de Ação Unificado */}
       <div className="flex flex-wrap gap-2">
         <Button onClick={() => setParcelamentoDialogOpen(true)} className="gap-2">
-          <Split className="h-4 w-4" />
-          Criar Parcelamento
+          <Plus className="h-4 w-4" />
+          Nova Conta Financeira
         </Button>
       </div>
 
@@ -192,10 +192,6 @@ const Financeiro = () => {
         <TabsContent value="pagar" className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-foreground">Contas a Pagar</h2>
-            <Button onClick={() => { setSelectedContaPagar(null); setContaPagarDialogOpen(true); }} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Nova Conta
-            </Button>
           </div>
 
           <div className="grid gap-4">
@@ -268,10 +264,6 @@ const Financeiro = () => {
         <TabsContent value="receber" className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-foreground">Contas a Receber</h2>
-            <Button onClick={() => { setSelectedContaReceber(null); setContaReceberDialogOpen(true); }} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Nova Conta
-            </Button>
           </div>
 
           <div className="grid gap-4">

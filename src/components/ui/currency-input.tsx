@@ -16,11 +16,14 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
 
     React.useEffect(() => {
       if (value !== undefined && value !== null && value !== '') {
-        // Converter para número e formatar
+        // Se o valor já é uma string formatada ou número válido
         const numericValue = typeof value === 'string' ? parseFloat(value) : value;
         if (!isNaN(numericValue) && numericValue >= 0) {
-          // Multiplicar por 100 para trabalhar com centavos
-          setDisplayValue(applyCurrencyMask((numericValue * 100).toString()));
+          // Formatar diretamente como moeda (já está em reais)
+          setDisplayValue(new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+          }).format(numericValue));
         } else {
           setDisplayValue('R$ 0,00');
         }

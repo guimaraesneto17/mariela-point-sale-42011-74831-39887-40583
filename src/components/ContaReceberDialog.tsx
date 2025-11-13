@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { CalendarIcon, Loader2, Settings, X } from "lucide-react";
+import { CalendarIcon, Loader2, Settings } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,6 @@ import { CategoriasFinanceirasManager } from "@/components/CategoriasFinanceiras
 import { CurrencyInput } from "@/components/ui/currency-input";
 
 const contaReceberSchema = z.object({
-  numeroDocumento: z.string().optional(),
   descricao: z.string().min(3, "Descrição deve ter no mínimo 3 caracteres"),
   valor: z.string().min(1, "Valor é obrigatório"),
   categoria: z.string().min(1, "Categoria é obrigatória"),
@@ -54,12 +53,10 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
   const [clientes, setClientes] = useState<any[]>([]);
   const [categorias, setCategorias] = useState<any[]>([]);
   const [showCategoriesManager, setShowCategoriesManager] = useState(false);
-  const [manualDocNumber, setManualDocNumber] = useState(false);
 
   const form = useForm<ContaReceberFormData>({
     resolver: zodResolver(contaReceberSchema),
     defaultValues: {
-      numeroDocumento: "",
       descricao: "",
       valor: "",
       categoria: "",
@@ -77,7 +74,6 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
   useEffect(() => {
     if (conta) {
       form.reset({
-        numeroDocumento: conta.numeroDocumento || "",
         descricao: conta.descricao || "",
         valor: conta.valor?.toString() || "",
         categoria: conta.categoria || "",
@@ -88,7 +84,6 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
       });
     } else {
       form.reset({
-        numeroDocumento: "",
         descricao: "",
         valor: "",
         categoria: "",
@@ -160,37 +155,6 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="numeroDocumento"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Número do Documento*</FormLabel>
-                    <div className="flex gap-2">
-                      <FormControl>
-                        <Input 
-                          {...field} 
-                          placeholder="Gerado automaticamente (CR###)" 
-                          disabled={conta || !manualDocNumber}
-                        />
-                      </FormControl>
-                      {!conta && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => setManualDocNumber(!manualDocNumber)}
-                          className="shrink-0"
-                        >
-                          {manualDocNumber ? <X className="h-4 w-4" /> : "✎"}
-                        </Button>
-                      )}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="valor"
                 render={({ field }) => (
                   <FormItem>
@@ -202,6 +166,29 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
                         onValueChange={field.onChange}
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="formaPagamento"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Forma de Pagamento</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione (opcional)" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-background z-50">
+                        {formasPagamento.map((forma) => (
+                          <SelectItem key={forma} value={forma}>{forma}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -287,7 +274,17 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
                         <Calendar
                           mode="single"
                           selected={field.value}
-                          onSelect={field.onChange}
+                          onSelect={(date) => {
+                            field.onChange(date);
+                            // Fechar popover após selecionar
+                            const popover = document.querySelector('[data-radix-popper-content-wrapper]');
+                            if (popover) {
+                              (popover as HTMLElement).style.display = 'none';
+                              setTimeout(() => {
+                                (popover as HTMLElement).style.display = '';
+                              }, 100);
+                            }
+                          }}
                           className="pointer-events-auto"
                           initialFocus
                         />
@@ -317,29 +314,6 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
                           <SelectItem key={cli.codigo} value={cli.codigo}>
                             {cli.nome}
                           </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="formaPagamento"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Forma de Pagamento</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione (opcional)" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="bg-background z-50">
-                        {formasPagamento.map((forma) => (
-                          <SelectItem key={forma} value={forma}>{forma}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
