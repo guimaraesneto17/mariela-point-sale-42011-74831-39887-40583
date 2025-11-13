@@ -28,13 +28,46 @@ export const createContaPagar = async (req: Request, res: Response) => {
   try {
     let numero = (req.body?.numeroDocumento || '').trim();
     const isParcelamento = req.body?.isParcelamento || false;
+    const numeroParcela = req.body?.numeroParcela || 1;
     
     if (!numero) {
       if (isParcelamento) {
-        // Formato CPP001, CPP002, etc para parcelamento
-        const last = await ContasPagar.findOne({ numeroDocumento: /^CPP\d{3}$/ }).sort({ numeroDocumento: -1 });
-        const next = last ? parseInt((last as any).numeroDocumento.slice(3), 10) + 1 : 1;
-        numero = `CPP${String(next).padStart(3, '0')}`;
+        // Formato CPP-001-1, CPP-001-2, etc para parcelamento
+        let baseNum = 1;
+        
+        if (numeroParcela === 1) {
+          // Primeira parcela: buscar o último número base e incrementar
+          const last = await ContasPagar.findOne({ numeroDocumento: /^CPP-\d{3}-\d+$/ }).sort({ numeroDocumento: -1 });
+          if (last) {
+            const match = (last as any).numeroDocumento.match(/^CPP-(\d{3})-\d+$/);
+            if (match) {
+              baseNum = parseInt(match[1], 10) + 1;
+            }
+          }
+        } else {
+          // Parcelas subsequentes: buscar a parcela anterior e usar o mesmo número base
+          const parcelaAnterior = await ContasPagar.findOne({ 
+            numeroDocumento: new RegExp(`^CPP-\\d{3}-${numeroParcela - 1}$`) 
+          }).sort({ _id: -1 });
+          
+          if (parcelaAnterior) {
+            const match = (parcelaAnterior as any).numeroDocumento.match(/^CPP-(\d{3})-\d+$/);
+            if (match) {
+              baseNum = parseInt(match[1], 10);
+            }
+          } else {
+            // Se não encontrar parcela anterior, buscar o último e incrementar
+            const last = await ContasPagar.findOne({ numeroDocumento: /^CPP-\d{3}-\d+$/ }).sort({ numeroDocumento: -1 });
+            if (last) {
+              const match = (last as any).numeroDocumento.match(/^CPP-(\d{3})-\d+$/);
+              if (match) {
+                baseNum = parseInt(match[1], 10) + 1;
+              }
+            }
+          }
+        }
+        
+        numero = `CPP-${String(baseNum).padStart(3, '0')}-${numeroParcela}`;
       } else {
         // Formato CP001, CP002, etc para contas normais
         const last = await ContasPagar.findOne({ numeroDocumento: /^CP\d{3}$/ }).sort({ numeroDocumento: -1 });

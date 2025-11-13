@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Calendar as CalendarIcon } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { format, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { contasPagarAPI, contasReceberAPI } from "@/lib/api";
@@ -32,9 +32,6 @@ interface ParcelamentoDialogProps {
   onSuccess: () => void;
 }
 
-const categoriasPagar = ["Aluguel", "Fornecedores", "Salários", "Impostos", "Energia", "Água", "Internet", "Marketing", "Manutenção", "Outros"];
-const categoriasReceber = ["Venda", "Serviço", "Outros"];
-
 export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: ParcelamentoDialogProps) {
   const [loading, setLoading] = useState(false);
   const [parcelas, setParcelas] = useState<any[]>([]);
@@ -54,7 +51,6 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
   const watchValorTotal = form.watch("valorTotal");
   const watchNumeroParcelas = form.watch("numeroParcelas");
   const watchDataInicio = form.watch("dataInicio");
-  const watchTipo = form.watch("tipo");
 
   const calcularParcelas = () => {
     const valor = parseFloat(watchValorTotal);
@@ -100,6 +96,8 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
       for (const parcela of parcelas) {
         const payload = {
           isParcelamento: true,
+          numeroParcela: parcela.numero,
+          totalParcelas: parcelas.length,
           descricao: `${data.descricaoBase} - Parcela ${parcela.numero}/${parcelas.length}`,
           valor: parcela.valor,
           categoria: data.categoria,
@@ -128,8 +126,6 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
       currency: 'BRL'
     }).format(value);
   };
-
-  const categorias = watchTipo === "pagar" ? categoriasPagar : categoriasReceber;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -172,18 +168,9 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Categoria*</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="bg-background z-50">
-                        {categorias.map((cat) => (
-                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <Input {...field} placeholder="Ex: Fornecedores, Aluguel, Venda..." maxLength={100} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
