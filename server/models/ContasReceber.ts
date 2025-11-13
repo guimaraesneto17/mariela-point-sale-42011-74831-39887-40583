@@ -72,7 +72,13 @@ const ContasReceberSchema = new mongoose.Schema({
   observacoes: {
     type: String,
     trim: true
-  }
+  },
+  historicoRecebimentos: [{
+    valor: { type: Number, required: true, min: 0 },
+    data: { type: Date, default: Date.now },
+    formaPagamento: { type: String, enum: ['Dinheiro', 'PIX', 'Débito', 'Crédito', 'Boleto', 'Transferência', 'Outro'] },
+    observacoes: { type: String, trim: true }
+  }]
 }, {
   timestamps: { createdAt: 'dataCadastro', updatedAt: 'dataAtualizacao' },
   collection: 'contasReceber',

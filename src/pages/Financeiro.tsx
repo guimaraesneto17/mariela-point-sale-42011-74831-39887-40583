@@ -13,6 +13,7 @@ import { ContaReceberDialog } from "@/components/ContaReceberDialog";
 import { FluxoCaixaReport } from "@/components/FluxoCaixaReport";
 import { ParcelamentoDialog } from "@/components/ParcelamentoDialog";
 import { FinanceNotifications } from "@/components/FinanceNotifications";
+import { RegistrarPagamentoDialog } from "@/components/RegistrarPagamentoDialog";
 
 const Financeiro = () => {
   const [loading, setLoading] = useState(true);
@@ -26,6 +27,9 @@ const Financeiro = () => {
   const [selectedContaPagar, setSelectedContaPagar] = useState<any>(null);
   const [selectedContaReceber, setSelectedContaReceber] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<string>("resumo");
+  const [registroDialogOpen, setRegistroDialogOpen] = useState(false);
+  const [registroTipo, setRegistroTipo] = useState<'pagar'|'receber'>("pagar");
+  const [registroConta, setRegistroConta] = useState<any | null>(null);
 
   useEffect(() => {
     loadData();
@@ -226,6 +230,11 @@ const Financeiro = () => {
                           </div>
                         )}
                       </div>
+                      {Array.isArray(conta.historicoPagamentos) && conta.historicoPagamentos.length > 0 && (
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          Histórico: {conta.historicoPagamentos.slice(-2).map((h: any) => `${format(new Date(h.data), 'dd/MM')} ${formatCurrency(h.valor)}`).join(' • ')}
+                        </div>
+                      )}
                     </div>
                     <div className="text-right space-y-2">
                       <div className="text-2xl font-bold text-foreground">
@@ -245,7 +254,7 @@ const Financeiro = () => {
                           <Edit className="h-4 w-4" />
                         </Button>
                         {conta.status === 'Pendente' || conta.status === 'Parcial' ? (
-                          <Button size="sm" variant="outline">Registrar Pagamento</Button>
+                          <Button size="sm" variant="outline" onClick={() => { setRegistroTipo('pagar'); setRegistroConta(conta); setRegistroDialogOpen(true); }}>Registrar Pagamento</Button>
                         ) : null}
                       </div>
                     </div>
@@ -297,6 +306,11 @@ const Financeiro = () => {
                           </div>
                         )}
                       </div>
+                      {Array.isArray(conta.historicoRecebimentos) && conta.historicoRecebimentos.length > 0 && (
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          Histórico: {conta.historicoRecebimentos.slice(-2).map((h: any) => `${format(new Date(h.data), 'dd/MM')} ${formatCurrency(h.valor)}`).join(' • ')}
+                        </div>
+                      )}
                     </div>
                     <div className="text-right space-y-2">
                       <div className="text-2xl font-bold text-foreground">
@@ -316,7 +330,7 @@ const Financeiro = () => {
                           <Edit className="h-4 w-4" />
                         </Button>
                         {conta.status === 'Pendente' || conta.status === 'Parcial' ? (
-                          <Button size="sm" variant="outline">Registrar Recebimento</Button>
+                          <Button size="sm" variant="outline" onClick={() => { setRegistroTipo('receber'); setRegistroConta(conta); setRegistroDialogOpen(true); }}>Registrar Recebimento</Button>
                         ) : null}
                       </div>
                     </div>
@@ -346,6 +360,14 @@ const Financeiro = () => {
       <ParcelamentoDialog
         open={parcelamentoDialogOpen}
         onOpenChange={setParcelamentoDialogOpen}
+        onSuccess={loadData}
+      />
+
+      <RegistrarPagamentoDialog
+        open={registroDialogOpen}
+        onOpenChange={(o)=>{ setRegistroDialogOpen(o); if(!o){ setRegistroConta(null);} }}
+        tipo={registroTipo}
+        conta={registroConta}
         onSuccess={loadData}
       />
     </div>

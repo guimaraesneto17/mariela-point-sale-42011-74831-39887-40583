@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { CategoriasFinanceirasManager } from "@/components/CategoriasFinanceirasManager";
 
 const contaPagarSchema = z.object({
-  numeroDocumento: z.string().min(1, "Número do documento é obrigatório"),
+  numeroDocumento: z.string().optional(),
   descricao: z.string().min(3, "Descrição deve ter no mínimo 3 caracteres"),
   valor: z.string().min(1, "Valor é obrigatório"),
   categoria: z.string().min(1, "Categoria é obrigatória"),
@@ -163,7 +163,7 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
                   <FormItem>
                     <FormLabel>Número do Documento*</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Ex: NF-001" disabled={!!conta} />
+                      <Input {...field} placeholder="Gerado automaticamente (CP###)" disabled />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

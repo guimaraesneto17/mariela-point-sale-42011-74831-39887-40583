@@ -26,27 +26,37 @@ export const getContaPagarByNumero = async (req: Request, res: Response) => {
 
 export const createContaPagar = async (req: Request, res: Response) => {
   try {
-    const conta = new ContasPagar(req.body);
-    
+    let numero = (req.body?.numeroDocumento || '').trim();
+    if (!numero) {
+      const last = await ContasPagar.findOne({ numeroDocumento: /^CP\d{3}$/ }).sort({ numeroDocumento: -1 });
+      const next = last ? parseInt((last as any).numeroDocumento.slice(2), 10) + 1 : 1;
+      numero = `CP${String(next).padStart(3, '0')}`;
+    }
+
+    const conta = new ContasPagar({ ...req.body, numeroDocumento: numero });
+
     // Verificar status baseado na data de vencimento
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
     const vencimento = new Date(conta.dataVencimento);
     vencimento.setHours(0, 0, 0, 0);
-    
+
     if (conta.status === 'Pendente' && vencimento < hoje) {
       conta.status = 'Vencido';
     }
-    
+
     await conta.save();
     res.status(201).json(conta);
   } catch (error: any) {
     console.error('Erro ao criar conta a pagar:', error);
-    if (error.code === 11000) {
-      res.status(400).json({ error: 'Número de documento já existe' });
-    } else {
-      res.status(400).json({ error: 'Erro ao criar conta a pagar' });
+    if (error?.code === 11000) {
+      return res.status(400).json({ error: 'Número de documento já existe' });
     }
+    if (error?.name === 'ValidationError') {
+      const messages = Object.values(error.errors || {}).map((e: any) => e.message);
+      return res.status(400).json({ error: messages.join('; ') });
+    }
+    res.status(400).json({ error: 'Erro ao criar conta a pagar' });
   }
 };
 
@@ -71,23 +81,36 @@ export const updateContaPagar = async (req: Request, res: Response) => {
 
 export const pagarConta = async (req: Request, res: Response) => {
   try {
-    const { valorPago, dataPagamento, formaPagamento } = req.body;
-    
+    const { valorPago, dataPagamento, formaPagamento, observacoes } = req.body;
+
+    if (typeof valorPago !== 'number' || valorPago <= 0) {
+      return res.status(400).json({ error: 'valorPago deve ser um número positivo' });
+    }
+
     const conta = await ContasPagar.findOne({ numeroDocumento: req.params.numero });
     if (!conta) {
       return res.status(404).json({ error: 'Conta a pagar não encontrada' });
     }
-    
+
     conta.valorPago = (conta.valorPago || 0) + valorPago;
     conta.dataPagamento = dataPagamento || new Date();
     conta.formaPagamento = formaPagamento;
-    
+
+    // Histórico
+    (conta as any).historicoPagamentos = (conta as any).historicoPagamentos || [];
+    (conta as any).historicoPagamentos.push({
+      valor: valorPago,
+      data: dataPagamento || new Date(),
+      formaPagamento,
+      observacoes
+    });
+
     if (conta.valorPago >= conta.valor) {
       conta.status = 'Pago';
     } else if (conta.valorPago > 0) {
       conta.status = 'Parcial';
     }
-    
+
     await conta.save();
     res.json(conta);
   } catch (error) {
