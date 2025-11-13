@@ -31,8 +31,8 @@ interface ParcelamentoDialogProps {
   onSuccess: () => void;
 }
 
-const categoriasPagar = ["Fornecedores", "Aluguel", "Energia", "Água", "Internet", "Salários", "Impostos", "Outros"];
-const categoriasReceber = ["Vendas", "Serviços", "Comissões", "Aluguel", "Outros"];
+const categoriasPagar = ["Aluguel", "Fornecedores", "Salários", "Impostos", "Energia", "Água", "Internet", "Marketing", "Manutenção", "Outros"];
+const categoriasReceber = ["Venda", "Serviço", "Outros"];
 
 export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: ParcelamentoDialogProps) {
   const [loading, setLoading] = useState(false);
