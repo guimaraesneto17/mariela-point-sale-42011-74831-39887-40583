@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { contasReceberAPI, clientesAPI, categoriasFinanceirasAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { CategoriasFinanceirasManager } from "@/components/CategoriasFinanceirasManager";
+import { CurrencyInput } from "@/components/ui/currency-input";
 
 const contaReceberSchema = z.object({
   numeroDocumento: z.string().optional(),
@@ -177,7 +178,11 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
                   <FormItem>
                     <FormLabel>Valor*</FormLabel>
                     <FormControl>
-                      <Input {...field} type="number" step="0.01" placeholder="0,00" />
+                      <CurrencyInput 
+                        {...field} 
+                        placeholder="R$ 0,00"
+                        onValueChange={field.onChange}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

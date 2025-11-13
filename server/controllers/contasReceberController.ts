@@ -26,13 +26,22 @@ export const getContaReceberByNumero = async (req: Request, res: Response) => {
 
 export const createContaReceber = async (req: Request, res: Response) => {
   try {
-    // Gerar número CR### se não vier informado ou inválido
+    // Gerar número CR### ou CRP### se não vier informado ou inválido
     let numero = (req.body?.numeroDocumento || '').trim();
-    const pattern = /^CR\d{3}$/;
-    if (!pattern.test(numero)) {
-      const last = await ContasReceber.findOne({ numeroDocumento: /^CR\d{3}$/ }).sort({ numeroDocumento: -1 });
-      const next = last ? parseInt((last as any).numeroDocumento.slice(2), 10) + 1 : 1;
-      numero = `CR${String(next).padStart(3, '0')}`;
+    const isParcelamento = req.body?.isParcelamento || false;
+    
+    if (!numero) {
+      if (isParcelamento) {
+        // Formato CRP001, CRP002, etc para parcelamento
+        const last = await ContasReceber.findOne({ numeroDocumento: /^CRP\d{3}$/ }).sort({ numeroDocumento: -1 });
+        const next = last ? parseInt((last as any).numeroDocumento.slice(3), 10) + 1 : 1;
+        numero = `CRP${String(next).padStart(3, '0')}`;
+      } else {
+        // Formato CR001, CR002, etc para contas normais
+        const last = await ContasReceber.findOne({ numeroDocumento: /^CR\d{3}$/ }).sort({ numeroDocumento: -1 });
+        const next = last ? parseInt((last as any).numeroDocumento.slice(2), 10) + 1 : 1;
+        numero = `CR${String(next).padStart(3, '0')}`;
+      }
     }
 
     const conta = new ContasReceber({ ...req.body, numeroDocumento: numero });
@@ -83,7 +92,7 @@ export const updateContaReceber = async (req: Request, res: Response) => {
 
 export const receberConta = async (req: Request, res: Response) => {
   try {
-    const { valorRecebido, dataRecebimento, formaPagamento, observacoes } = req.body;
+    const { valorRecebido, dataRecebimento, formaPagamento, observacoes, registrarNoCaixa } = req.body;
 
     if (typeof valorRecebido !== 'number' || valorRecebido <= 0) {
       return res.status(400).json({ error: 'valorRecebido deve ser um número positivo' });
@@ -114,6 +123,32 @@ export const receberConta = async (req: Request, res: Response) => {
     }
 
     await conta.save();
+
+    // Registrar no caixa se solicitado
+    if (registrarNoCaixa) {
+      try {
+        const Caixa = (await import('../models/Caixa')).default;
+        const caixaAberto = await Caixa.findOne({ status: 'Aberto' }).sort({ dataAbertura: -1 });
+        
+        if (caixaAberto) {
+          caixaAberto.movimentacoes.push({
+            tipo: 'Entrada',
+            categoria: 'Recebimento',
+            descricao: `Recebimento: ${conta.descricao} - ${conta.numeroDocumento}`,
+            valor: valorRecebido,
+            formaPagamento: formaPagamento || 'Dinheiro',
+            data: dataRecebimento || new Date()
+          } as any);
+          
+          caixaAberto.saldoAtual += valorRecebido;
+          await caixaAberto.save();
+        }
+      } catch (caixaError) {
+        console.error('Erro ao registrar no caixa:', caixaError);
+        // Não falha a operação se o caixa não estiver disponível
+      }
+    }
+
     res.json(conta);
   } catch (error) {
     console.error('Erro ao registrar recebimento:', error);

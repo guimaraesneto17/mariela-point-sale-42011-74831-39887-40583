@@ -4,18 +4,21 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { contasPagarAPI, contasReceberAPI } from "@/lib/api";
 import { toast } from "sonner";
+import { CurrencyInput } from "@/components/ui/currency-input";
 
 const formas = ["Dinheiro","PIX","Débito","Crédito","Boleto","Transferência","Outro"] as const;
 
 const schema = z.object({
-  valor: z.number({ required_error: "Informe o valor" }).positive("Valor deve ser positivo"),
+  valor: z.string().min(1, "Informe o valor"),
   formaPagamento: z.enum(["Dinheiro","PIX","Débito","Crédito","Boleto","Transferência","Outro"], { required_error: "Selecione a forma de pagamento" }),
   observacoes: z.string().max(500).optional(),
+  registrarNoCaixa: z.boolean().default(true)
 });
 
 type FormData = z.infer<typeof schema>;
@@ -32,7 +35,7 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
   const [loading, setLoading] = useState(false);
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { valor: 0, formaPagamento: undefined, observacoes: '' }
+    defaultValues: { valor: "0", formaPagamento: undefined, observacoes: '', registrarNoCaixa: true }
   });
 
   const saldoRestante = (() => {
@@ -46,14 +49,32 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
     try {
       setLoading(true);
       if (!conta) return;
-      if (values.valor > saldoRestante) {
+      
+      const valorNumerico = parseFloat(values.valor);
+      if (isNaN(valorNumerico) || valorNumerico <= 0) {
+        toast.error('Valor inválido');
+        return;
+      }
+      
+      if (valorNumerico > saldoRestante) {
         toast.error('Valor excede o saldo restante');
         return;
       }
+      
       if (tipo === 'pagar') {
-        await contasPagarAPI.pagar(conta.numeroDocumento, { valorPago: values.valor, formaPagamento: values.formaPagamento });
+        await contasPagarAPI.pagar(conta.numeroDocumento, { 
+          valorPago: valorNumerico, 
+          formaPagamento: values.formaPagamento,
+          observacoes: values.observacoes,
+          registrarNoCaixa: values.registrarNoCaixa
+        });
       } else {
-        await contasReceberAPI.receber(conta.numeroDocumento, { valorRecebido: values.valor, formaPagamento: values.formaPagamento });
+        await contasReceberAPI.receber(conta.numeroDocumento, { 
+          valorRecebido: valorNumerico, 
+          formaPagamento: values.formaPagamento,
+          observacoes: values.observacoes,
+          registrarNoCaixa: values.registrarNoCaixa
+        });
       }
       toast.success(tipo === 'pagar' ? 'Pagamento registrado' : 'Recebimento registrado');
       onSuccess();
@@ -79,9 +100,13 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
             </div>
             <FormField name="valor" control={form.control} render={({ field }) => (
               <FormItem>
-                <FormLabel>Valor</FormLabel>
+                <FormLabel>Valor*</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.01" min={0} max={saldoRestante} value={field.value ?? ''} onChange={(e)=>field.onChange(parseFloat(e.target.value))} />
+                  <CurrencyInput 
+                    {...field} 
+                    placeholder="R$ 0,00"
+                    onValueChange={field.onChange}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -109,6 +134,19 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
                   <Input {...field} placeholder="Opcional" />
                 </FormControl>
                 <FormMessage />
+              </FormItem>
+            )} />
+            <FormField name="registrarNoCaixa" control={form.control} render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                <FormControl>
+                  <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel>Registrar movimentação no caixa</FormLabel>
+                  <p className="text-sm text-muted-foreground">
+                    Esta transação será automaticamente lançada no caixa aberto
+                  </p>
+                </div>
               </FormItem>
             )} />
             <div className="flex gap-2 justify-end">

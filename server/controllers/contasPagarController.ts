@@ -27,10 +27,20 @@ export const getContaPagarByNumero = async (req: Request, res: Response) => {
 export const createContaPagar = async (req: Request, res: Response) => {
   try {
     let numero = (req.body?.numeroDocumento || '').trim();
+    const isParcelamento = req.body?.isParcelamento || false;
+    
     if (!numero) {
-      const last = await ContasPagar.findOne({ numeroDocumento: /^CP\d{3}$/ }).sort({ numeroDocumento: -1 });
-      const next = last ? parseInt((last as any).numeroDocumento.slice(2), 10) + 1 : 1;
-      numero = `CP${String(next).padStart(3, '0')}`;
+      if (isParcelamento) {
+        // Formato CPP001, CPP002, etc para parcelamento
+        const last = await ContasPagar.findOne({ numeroDocumento: /^CPP\d{3}$/ }).sort({ numeroDocumento: -1 });
+        const next = last ? parseInt((last as any).numeroDocumento.slice(3), 10) + 1 : 1;
+        numero = `CPP${String(next).padStart(3, '0')}`;
+      } else {
+        // Formato CP001, CP002, etc para contas normais
+        const last = await ContasPagar.findOne({ numeroDocumento: /^CP\d{3}$/ }).sort({ numeroDocumento: -1 });
+        const next = last ? parseInt((last as any).numeroDocumento.slice(2), 10) + 1 : 1;
+        numero = `CP${String(next).padStart(3, '0')}`;
+      }
     }
 
     const conta = new ContasPagar({ ...req.body, numeroDocumento: numero });
@@ -81,7 +91,7 @@ export const updateContaPagar = async (req: Request, res: Response) => {
 
 export const pagarConta = async (req: Request, res: Response) => {
   try {
-    const { valorPago, dataPagamento, formaPagamento, observacoes } = req.body;
+    const { valorPago, dataPagamento, formaPagamento, observacoes, registrarNoCaixa } = req.body;
 
     if (typeof valorPago !== 'number' || valorPago <= 0) {
       return res.status(400).json({ error: 'valorPago deve ser um número positivo' });
@@ -112,6 +122,32 @@ export const pagarConta = async (req: Request, res: Response) => {
     }
 
     await conta.save();
+
+    // Registrar no caixa se solicitado
+    if (registrarNoCaixa) {
+      try {
+        const Caixa = (await import('../models/Caixa')).default;
+        const caixaAberto = await Caixa.findOne({ status: 'Aberto' }).sort({ dataAbertura: -1 });
+        
+        if (caixaAberto) {
+          caixaAberto.movimentacoes.push({
+            tipo: 'Saída',
+            categoria: 'Pagamento',
+            descricao: `Pagamento: ${conta.descricao} - ${conta.numeroDocumento}`,
+            valor: valorPago,
+            formaPagamento: formaPagamento || 'Dinheiro',
+            data: dataPagamento || new Date()
+          } as any);
+          
+          caixaAberto.saldoAtual -= valorPago;
+          await caixaAberto.save();
+        }
+      } catch (caixaError) {
+        console.error('Erro ao registrar no caixa:', caixaError);
+        // Não falha a operação se o caixa não estiver disponível
+      }
+    }
+
     res.json(conta);
   } catch (error) {
     console.error('Erro ao registrar pagamento:', error);

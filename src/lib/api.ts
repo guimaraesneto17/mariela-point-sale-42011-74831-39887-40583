@@ -196,7 +196,13 @@ export const contasPagarAPI = {
     method: 'PUT',
     body: JSON.stringify(data),
   }),
-  pagar: (numero: string, data: { valorPago: number; dataPagamento?: string; formaPagamento: string }) => 
+  pagar: (numero: string, data: { 
+    valorPago: number; 
+    dataPagamento?: string; 
+    formaPagamento: string; 
+    observacoes?: string; 
+    registrarNoCaixa?: boolean 
+  }) => 
     fetchAPI(`/contas-pagar/${numero}/pagar`, {
       method: 'POST',
       body: JSON.stringify(data),
@@ -217,7 +223,13 @@ export const contasReceberAPI = {
     method: 'PUT',
     body: JSON.stringify(data),
   }),
-  receber: (numero: string, data: { valorRecebido: number; dataRecebimento?: string; formaPagamento: string }) => 
+  receber: (numero: string, data: { 
+    valorRecebido: number; 
+    dataRecebimento?: string; 
+    formaPagamento: string; 
+    observacoes?: string; 
+    registrarNoCaixa?: boolean 
+  }) => 
     fetchAPI(`/contas-receber/${numero}/receber`, {
       method: 'POST',
       body: JSON.stringify(data),

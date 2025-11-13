@@ -35,8 +35,7 @@ const ContasReceberSchema = new mongoose.Schema({
   categoria: {
     type: String,
     required: true,
-    enum: ['Venda', 'Serviço', 'Outros'],
-    default: 'Venda'
+    trim: true
   },
   valor: {
     type: Number,

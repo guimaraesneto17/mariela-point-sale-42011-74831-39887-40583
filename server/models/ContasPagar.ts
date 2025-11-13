@@ -29,8 +29,7 @@ const ContasPagarSchema = new mongoose.Schema({
   categoria: {
     type: String,
     required: true,
-    enum: ['Aluguel', 'Fornecedores', 'Salários', 'Impostos', 'Energia', 'Água', 'Internet', 'Marketing', 'Manutenção', 'Outros'],
-    default: 'Outros'
+    trim: true
   },
   valor: {
     type: Number,

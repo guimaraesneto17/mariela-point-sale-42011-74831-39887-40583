@@ -13,6 +13,7 @@ import { format, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { contasPagarAPI, contasReceberAPI } from "@/lib/api";
 import { toast } from "sonner";
+import { CurrencyInput } from "@/components/ui/currency-input";
 
 const parcelamentoSchema = z.object({
   valorTotal: z.string().min(1, "Valor total é obrigatório"),
@@ -98,7 +99,7 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
       
       for (const parcela of parcelas) {
         const payload = {
-          numeroDocumento: `${data.tipo === "pagar" ? "PARC-PAG" : "PARC-REC"}-${Date.now()}-${parcela.numero}`,
+          isParcelamento: true,
           descricao: `${data.descricaoBase} - Parcela ${parcela.numero}/${parcelas.length}`,
           valor: parcela.valor,
           categoria: data.categoria,
@@ -211,13 +212,11 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
                   <FormItem>
                     <FormLabel>Valor Total*</FormLabel>
                     <FormControl>
-                      <Input 
+                      <CurrencyInput 
                         {...field} 
-                        type="number" 
-                        step="0.01" 
-                        placeholder="0,00"
-                        onChange={(e) => {
-                          field.onChange(e);
+                        placeholder="R$ 0,00"
+                        onValueChange={(value) => {
+                          field.onChange(value);
                           setTimeout(calcularParcelas, 100);
                         }}
                       />
