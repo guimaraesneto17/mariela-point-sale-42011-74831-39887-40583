@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { CalendarIcon, Loader2, Settings } from "lucide-react";
+import { CalendarIcon, Loader2, Settings, X } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -54,6 +54,7 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
   const [clientes, setClientes] = useState<any[]>([]);
   const [categorias, setCategorias] = useState<any[]>([]);
   const [showCategoriesManager, setShowCategoriesManager] = useState(false);
+  const [manualDocNumber, setManualDocNumber] = useState(false);
 
   const form = useForm<ContaReceberFormData>({
     resolver: zodResolver(contaReceberSchema),
@@ -163,9 +164,26 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Número do Documento*</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Gerado automaticamente (CR###)" disabled />
-                    </FormControl>
+                    <div className="flex gap-2">
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          placeholder="Gerado automaticamente (CR###)" 
+                          disabled={conta || !manualDocNumber}
+                        />
+                      </FormControl>
+                      {!conta && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setManualDocNumber(!manualDocNumber)}
+                          className="shrink-0"
+                        >
+                          {manualDocNumber ? <X className="h-4 w-4" /> : "✎"}
+                        </Button>
+                      )}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}

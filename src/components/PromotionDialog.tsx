@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { estoqueAPI } from "@/lib/api";
+import { CurrencyInput } from "@/components/ui/currency-input";
 
 interface PromotionDialogProps {
   open: boolean;
@@ -178,16 +179,24 @@ export function PromotionDialog({
           </div>
 
           <div>
-            <Label>{tipoDesconto === "valor" ? "Valor do Desconto (R$)" : "Porcentagem do Desconto (%)"}</Label>
-            <Input
-              type="number"
-              min="0"
-              step={tipoDesconto === "valor" ? "0.01" : "1"}
-              max={tipoDesconto === "porcentagem" ? "100" : undefined}
-              value={valor}
-              onChange={(e) => setValor(parseFloat(e.target.value) || 0)}
-              placeholder={tipoDesconto === "valor" ? "0.00" : "0"}
-            />
+            <Label>{tipoDesconto === "valor" ? "Valor do Desconto" : "Porcentagem do Desconto (%)"}</Label>
+            {tipoDesconto === "valor" ? (
+              <CurrencyInput
+                value={valor}
+                onValueChange={(value) => setValor(parseFloat(value) || 0)}
+                placeholder="R$ 0,00"
+              />
+            ) : (
+              <Input
+                type="number"
+                min="0"
+                step="1"
+                max="100"
+                value={valor}
+                onChange={(e) => setValor(parseFloat(e.target.value) || 0)}
+                placeholder="0"
+              />
+            )}
           </div>
 
           <div>

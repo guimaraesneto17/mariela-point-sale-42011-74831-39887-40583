@@ -12,6 +12,7 @@ import { caixaAPI, vendasAPI } from "@/lib/api";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
+import { CurrencyInput } from "@/components/ui/currency-input";
 
 interface Movimento {
   tipo: 'entrada' | 'saida';
@@ -510,15 +511,12 @@ const Caixa = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="valorInicial">Valor Inicial (R$)</Label>
-              <Input
+              <Label htmlFor="valorInicial">Valor Inicial</Label>
+              <CurrencyInput
                 id="valorInicial"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0,00"
                 value={valorInicial}
-                onChange={(e) => setValorInicial(e.target.value)}
+                onValueChange={(value) => setValorInicial(value)}
+                placeholder="R$ 0,00"
               />
             </div>
           </div>
@@ -548,15 +546,12 @@ const Caixa = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="valorMovimento">Valor (R$)</Label>
-              <Input
+              <Label htmlFor="valorMovimento">Valor</Label>
+              <CurrencyInput
                 id="valorMovimento"
-                type="number"
-                step="0.01"
-                min="0.01"
-                placeholder="0,00"
                 value={valorMovimento}
-                onChange={(e) => setValorMovimento(e.target.value)}
+                onValueChange={(value) => setValorMovimento(value)}
+                placeholder="R$ 0,00"
               />
             </div>
             <div className="space-y-2">

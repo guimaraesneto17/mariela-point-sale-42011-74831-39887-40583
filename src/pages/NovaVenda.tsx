@@ -16,6 +16,7 @@ import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import { clientesAPI, vendedoresAPI, estoqueAPI, vendasAPI } from "@/lib/api";
 import { formatInTimeZone } from "date-fns-tz";
 import { startOfDay, endOfDay } from "date-fns";
+import { CurrencyInput } from "@/components/ui/currency-input";
 
 interface ItemVenda {
   codigoProduto: string;
@@ -744,16 +745,25 @@ const NovaVenda = () => {
 
               <div className="flex items-center justify-between">
                 <Label>Desconto Total</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step={tipoDesconto === "valor" ? "0.01" : "1"}
-                  max={tipoDesconto === "porcentagem" ? "100" : undefined}
-                  value={descontoTotal}
-                  onChange={(e) => setDescontoTotal(parseFloat(e.target.value) || 0)}
-                  className="w-32"
-                  placeholder={tipoDesconto === "porcentagem" ? "0%" : "R$ 0,00"}
-                />
+                {tipoDesconto === "valor" ? (
+                  <CurrencyInput
+                    value={descontoTotal}
+                    onValueChange={(value) => setDescontoTotal(parseFloat(value) || 0)}
+                    className="w-32"
+                    placeholder="R$ 0,00"
+                  />
+                ) : (
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1"
+                    max="100"
+                    value={descontoTotal}
+                    onChange={(e) => setDescontoTotal(parseFloat(e.target.value) || 0)}
+                    className="w-32"
+                    placeholder="0%"
+                  />
+                )}
               </div>
 
               {descontoTotal > 0 && (

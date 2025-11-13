@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -8,12 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2 } from "lucide-react";
+import { Loader2, Settings } from "lucide-react";
 import { format, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { contasPagarAPI, contasReceberAPI } from "@/lib/api";
+import { contasPagarAPI, contasReceberAPI, categoriasFinanceirasAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { CategoriasFinanceirasManager } from "@/components/CategoriasFinanceirasManager";
 
 const parcelamentoSchema = z.object({
   valorTotal: z.string().min(1, "Valor total é obrigatório"),
@@ -35,6 +36,8 @@ interface ParcelamentoDialogProps {
 export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: ParcelamentoDialogProps) {
   const [loading, setLoading] = useState(false);
   const [parcelas, setParcelas] = useState<any[]>([]);
+  const [categorias, setCategorias] = useState<any[]>([]);
+  const [showCategoriesManager, setShowCategoriesManager] = useState(false);
 
   const form = useForm<ParcelamentoFormData>({
     resolver: zodResolver(parcelamentoSchema),
@@ -47,6 +50,28 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
       dataInicio: format(new Date(), 'yyyy-MM-dd'),
     }
   });
+
+  useEffect(() => {
+    if (open) {
+      loadCategorias();
+    }
+  }, [open]);
+
+  const watchTipo = form.watch("tipo");
+
+  useEffect(() => {
+    loadCategorias();
+  }, [watchTipo]);
+
+  const loadCategorias = async () => {
+    try {
+      const tipo = form.getValues("tipo");
+      const data = await categoriasFinanceirasAPI.getAll(tipo);
+      setCategorias(data);
+    } catch (error) {
+      console.error('Erro ao carregar categorias:', error);
+    }
+  };
 
   const watchValorTotal = form.watch("valorTotal");
   const watchNumeroParcelas = form.watch("numeroParcelas");
@@ -167,10 +192,31 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
                 name="categoria"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Categoria*</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Ex: Fornecedores, Aluguel, Venda..." maxLength={100} />
-                    </FormControl>
+                    <div className="flex items-center justify-between">
+                      <FormLabel>Categoria*</FormLabel>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowCategoriesManager(true)}
+                      >
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-background z-50">
+                        {categorias.map((cat) => (
+                          <SelectItem key={cat._id || cat} value={cat.nome || cat}>
+                            {cat.nome || cat}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -307,6 +353,17 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
             </div>
           </form>
         </Form>
+
+        <CategoriasFinanceirasManager
+          open={showCategoriesManager}
+          onOpenChange={(open) => {
+            setShowCategoriesManager(open);
+            if (!open) {
+              loadCategorias();
+            }
+          }}
+          tipo={form.getValues("tipo")}
+        />
       </DialogContent>
     </Dialog>
   );

@@ -17,6 +17,7 @@ import { z } from "zod";
 import { produtosAPI, fornecedoresAPI } from "@/lib/api";
 import { AddToStockDialog } from "@/components/AddToStockDialog";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
+import { CurrencyInput } from "@/components/ui/currency-input";
 
 type ProdutoFormData = z.infer<typeof produtoSchema>;
 
@@ -422,17 +423,14 @@ const Produtos = () => {
                           <FormItem>
                             <FormLabel className="text-sm font-semibold text-foreground flex items-center gap-2">
                               Preço de Custo *
-                              <span className="text-xs text-muted-foreground font-normal">(R$)</span>
                             </FormLabel>
                             <FormControl>
-                              <Input 
-                                {...field}
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                placeholder="0.00"
-                                value={field.value || ''}
-                                onChange={(e) => handlePrecoCustoChange(parseFloat(e.target.value) || 0)}
+                              <CurrencyInput 
+                                value={field.value}
+                                onValueChange={(value) => handlePrecoCustoChange(parseFloat(value) || 0)}
+                                placeholder="R$ 0,00"
+                                min={0}
+                                max={999999}
                                 className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
                               />
                             </FormControl>
@@ -452,17 +450,14 @@ const Produtos = () => {
                           <FormItem>
                             <FormLabel className="text-sm font-semibold text-foreground flex items-center gap-2">
                               Preço de Venda *
-                              <span className="text-xs text-muted-foreground font-normal">(R$)</span>
                             </FormLabel>
                             <FormControl>
-                              <Input 
-                                {...field}
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                placeholder="0.00"
-                                value={field.value || ''}
-                                onChange={(e) => handlePrecoVendaChange(parseFloat(e.target.value) || 0)}
+                              <CurrencyInput 
+                                value={field.value}
+                                onValueChange={(value) => handlePrecoVendaChange(parseFloat(value) || 0)}
+                                placeholder="R$ 0,00"
+                                min={0}
+                                max={999999}
                                 className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
                               />
                             </FormControl>
