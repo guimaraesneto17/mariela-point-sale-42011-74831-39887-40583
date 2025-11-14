@@ -123,7 +123,9 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
       const payload = {
         ...data,
         valor: parseFloat(data.valor),
+        dataEmissao: new Date().toISOString(),
         dataVencimento: data.dataVencimento.toISOString(),
+        status: 'Pendente'
       };
 
       if (conta) {

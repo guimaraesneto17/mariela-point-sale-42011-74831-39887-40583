@@ -136,7 +136,9 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
             descricao: `${data.descricaoBase} - Parcela ${parcela.numero}/${parcelas.length}`,
             valor: parcela.valor,
             categoria: data.categoria,
+            dataEmissao: new Date().toISOString(),
             dataVencimento: parcela.dataVencimento.toISOString(),
+            status: 'Pendente'
           };
 
           await api.create(payload);
@@ -149,7 +151,9 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
           descricao: data.descricaoBase,
           valor: parseFloat(data.valorTotal),
           categoria: data.categoria,
+          dataEmissao: new Date().toISOString(),
           dataVencimento: new Date(data.dataInicio).toISOString(),
+          status: 'Pendente'
         };
 
         await api.create(payload);
