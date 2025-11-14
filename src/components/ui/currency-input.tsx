@@ -64,6 +64,53 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
       }
     };
 
+    const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+      e.preventDefault();
+      const pastedText = e.clipboardData.getData('text');
+      
+      // Detectar e processar diferentes formatos de moeda
+      let cleanedValue = pastedText;
+      
+      // Remover símbolos de moeda comuns (R$, $, €, etc.)
+      cleanedValue = cleanedValue.replace(/[R$€£¥]/g, '').trim();
+      
+      // Detectar formato: se tem ponto E vírgula, assumir formato brasileiro (1.234,56)
+      if (cleanedValue.includes('.') && cleanedValue.includes(',')) {
+        // Formato brasileiro: 1.234,56 -> remover pontos, trocar vírgula por ponto
+        cleanedValue = cleanedValue.replace(/\./g, '').replace(',', '.');
+      } 
+      // Se tem apenas vírgula, assumir formato brasileiro (1234,56)
+      else if (cleanedValue.includes(',')) {
+        cleanedValue = cleanedValue.replace(',', '.');
+      }
+      // Se tem apenas ponto, pode ser formato americano (1234.56) - manter como está
+      
+      // Remover todos os caracteres não numéricos exceto o ponto decimal
+      cleanedValue = cleanedValue.replace(/[^\d.]/g, '');
+      
+      // Converter para número
+      const numericValue = parseFloat(cleanedValue);
+      
+      if (!isNaN(numericValue) && numericValue >= 0) {
+        // Validar min/max
+        let finalValue = numericValue;
+        if (finalValue < min) finalValue = min;
+        if (finalValue > max) finalValue = max;
+        
+        // Formatar e atualizar
+        const formatted = new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL'
+        }).format(finalValue);
+        
+        setDisplayValue(formatted);
+        
+        if (onValueChange) {
+          onValueChange(finalValue.toString());
+        }
+      }
+    };
+
     const handleFocus = () => {
       isFocusedRef.current = true;
     };
@@ -90,6 +137,7 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
         className={cn(className)}
         value={displayValue}
         onChange={handleChange}
+        onPaste={handlePaste}
         onBlur={handleBlur}
         onFocus={handleFocus}
         ref={ref}
