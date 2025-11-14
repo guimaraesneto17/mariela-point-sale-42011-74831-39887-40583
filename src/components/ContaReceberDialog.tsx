@@ -21,7 +21,12 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 
 const contaReceberSchema = z.object({
   descricao: z.string().min(3, "Descrição deve ter no mínimo 3 caracteres"),
-  valor: z.string().min(1, "Valor é obrigatório"),
+  valor: z.string()
+    .min(1, "Valor é obrigatório")
+    .refine((val) => {
+      const num = parseFloat(val);
+      return !isNaN(num) && num > 0;
+    }, "Valor deve ser maior que zero"),
   categoria: z.string().min(1, "Categoria é obrigatória"),
   dataVencimento: z.date({ required_error: "Data de vencimento é obrigatória" }),
   clienteCodigo: z.string().optional(),
