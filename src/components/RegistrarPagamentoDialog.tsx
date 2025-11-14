@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,12 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 const formas = ["Dinheiro","PIX","Débito","Crédito","Boleto","Transferência","Outro"] as const;
 
 const schema = z.object({
-  valor: z.string().min(1, "Informe o valor"),
+  valor: z.string()
+    .min(1, "Informe o valor")
+    .refine((val) => {
+      const num = parseFloat(val);
+      return !isNaN(num) && num > 0;
+    }, "Valor deve ser maior que zero"),
   formaPagamento: z.enum(["Dinheiro","PIX","Débito","Crédito","Boleto","Transferência","Outro"], { required_error: "Selecione a forma de pagamento" }),
   observacoes: z.string().max(500).optional(),
   registrarNoCaixa: z.boolean().default(true)
@@ -33,17 +38,30 @@ interface RegistrarPagamentoDialogProps {
 
 export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSuccess }: RegistrarPagamentoDialogProps) {
   const [loading, setLoading] = useState(false);
-  const form = useForm<FormData>({
-    resolver: zodResolver(schema),
-    defaultValues: { valor: "0", formaPagamento: undefined, observacoes: '', registrarNoCaixa: true }
-  });
-
+  
   const saldoRestante = (() => {
     if (!conta) return 0;
     const total = Number(conta.valor || 0);
     const pago = Number((tipo === 'pagar' ? conta.valorPago : conta.valorRecebido) || 0);
     return Math.max(total - pago, 0);
   })();
+  
+  const form = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: { valor: "0", formaPagamento: undefined, observacoes: '', registrarNoCaixa: true }
+  });
+
+  // Atualiza o valor default quando a conta muda
+  useEffect(() => {
+    if (conta && open) {
+      form.reset({
+        valor: saldoRestante.toFixed(2),
+        formaPagamento: undefined,
+        observacoes: '',
+        registrarNoCaixa: true
+      });
+    }
+  }, [conta, open, saldoRestante]);
 
   const onSubmit = async (values: FormData) => {
     try {

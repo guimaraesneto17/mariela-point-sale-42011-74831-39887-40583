@@ -3,7 +3,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, TrendingUp, TrendingDown, AlertCircle, Plus, CreditCard, Calendar, Split, BarChart3, Edit } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, AlertCircle, Plus, CreditCard, Calendar, Split, BarChart3, Edit, Trash2, Filter } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import { contasPagarAPI, contasReceberAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -30,6 +32,10 @@ const Financeiro = () => {
   const [registroDialogOpen, setRegistroDialogOpen] = useState(false);
   const [registroTipo, setRegistroTipo] = useState<'pagar'|'receber'>("pagar");
   const [registroConta, setRegistroConta] = useState<any | null>(null);
+  const [filtroStatusPagar, setFiltroStatusPagar] = useState<string>("todos");
+  const [filtroStatusReceber, setFiltroStatusReceber] = useState<string>("todos");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [contaToDelete, setContaToDelete] = useState<{tipo: 'pagar'|'receber', numeroDocumento: string, descricao: string} | null>(null);
 
   useEffect(() => {
     loadData();
@@ -76,6 +82,35 @@ const Financeiro = () => {
 
   const saldoGeral = (resumoReceber?.totalRecebido || 0) - (resumoPagar?.totalPago || 0);
   const saldoPendente = (resumoReceber?.totalPendente || 0) - (resumoPagar?.totalPendente || 0);
+
+  const handleDeleteConta = async () => {
+    if (!contaToDelete) return;
+    try {
+      if (contaToDelete.tipo === 'pagar') {
+        await contasPagarAPI.delete(contaToDelete.numeroDocumento);
+        toast.success('Conta a pagar excluída com sucesso');
+      } else {
+        await contasReceberAPI.delete(contaToDelete.numeroDocumento);
+        toast.success('Conta a receber excluída com sucesso');
+      }
+      loadData();
+      setDeleteDialogOpen(false);
+      setContaToDelete(null);
+    } catch (error) {
+      console.error('Erro ao deletar conta:', error);
+      toast.error('Erro ao deletar conta');
+    }
+  };
+
+  const contasPagarFiltradas = contasPagar.filter(conta => {
+    if (filtroStatusPagar === "todos") return true;
+    return conta.status === filtroStatusPagar;
+  });
+
+  const contasReceberFiltradas = contasReceber.filter(conta => {
+    if (filtroStatusReceber === "todos") return true;
+    return conta.status === filtroStatusReceber;
+  });
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -192,10 +227,25 @@ const Financeiro = () => {
         <TabsContent value="pagar" className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-foreground">Contas a Pagar</h2>
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select value={filtroStatusPagar} onValueChange={setFiltroStatusPagar}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filtrar por status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="Pendente">Pendente</SelectItem>
+                  <SelectItem value="Pago">Pago</SelectItem>
+                  <SelectItem value="Vencido">Vencido</SelectItem>
+                  <SelectItem value="Parcial">Parcial</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="grid gap-4">
-            {contasPagar.map((conta) => (
+            {contasPagarFiltradas.map((conta) => (
               <Card key={conta.numeroDocumento} className="shadow-card hover:shadow-elegant transition-smooth hover-lift animate-fade-in">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
@@ -252,6 +302,17 @@ const Financeiro = () => {
                         {conta.status === 'Pendente' || conta.status === 'Parcial' ? (
                           <Button size="sm" variant="outline" onClick={() => { setRegistroTipo('pagar'); setRegistroConta(conta); setRegistroDialogOpen(true); }}>Registrar Pagamento</Button>
                         ) : null}
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => {
+                            setContaToDelete({ tipo: 'pagar', numeroDocumento: conta.numeroDocumento, descricao: conta.descricao });
+                            setDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -264,10 +325,25 @@ const Financeiro = () => {
         <TabsContent value="receber" className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-foreground">Contas a Receber</h2>
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select value={filtroStatusReceber} onValueChange={setFiltroStatusReceber}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filtrar por status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="Pendente">Pendente</SelectItem>
+                  <SelectItem value="Recebido">Recebido</SelectItem>
+                  <SelectItem value="Vencido">Vencido</SelectItem>
+                  <SelectItem value="Parcial">Parcial</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="grid gap-4">
-            {contasReceber.map((conta) => (
+            {contasReceberFiltradas.map((conta) => (
               <Card key={conta.numeroDocumento} className="shadow-card hover:shadow-elegant transition-smooth hover-lift animate-fade-in">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
@@ -324,6 +400,17 @@ const Financeiro = () => {
                         {conta.status === 'Pendente' || conta.status === 'Parcial' ? (
                           <Button size="sm" variant="outline" onClick={() => { setRegistroTipo('receber'); setRegistroConta(conta); setRegistroDialogOpen(true); }}>Registrar Recebimento</Button>
                         ) : null}
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => {
+                            setContaToDelete({ tipo: 'receber', numeroDocumento: conta.numeroDocumento, descricao: conta.descricao });
+                            setDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -361,6 +448,14 @@ const Financeiro = () => {
         tipo={registroTipo}
         conta={registroConta}
         onSuccess={loadData}
+      />
+
+      <AlertDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleDeleteConta}
+        title={contaToDelete?.tipo === 'pagar' ? 'Deletar Conta a Pagar' : 'Deletar Conta a Receber'}
+        description={`Tem certeza que deseja deletar a conta "${contaToDelete?.descricao}"? Esta ação não pode ser desfeita.`}
       />
     </div>
   );

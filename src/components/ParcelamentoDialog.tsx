@@ -17,7 +17,12 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 import { CategoriasFinanceirasManager } from "@/components/CategoriasFinanceirasManager";
 
 const parcelamentoSchema = z.object({
-  valorTotal: z.string().min(1, "Valor total é obrigatório"),
+  valorTotal: z.string()
+    .min(1, "Valor total é obrigatório")
+    .refine((val) => {
+      const num = parseFloat(val);
+      return !isNaN(num) && num > 0;
+    }, "Valor total deve ser maior que zero"),
   numeroParcelas: z.string().min(1, "Número de parcelas é obrigatório").optional(),
   descricaoBase: z.string().min(3, "Descrição base é obrigatória"),
   categoria: z.string().min(1, "Categoria é obrigatória"),
@@ -393,7 +398,7 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={loading || (watchParcelar && parcelas.length === 0)}>
+              <Button type="submit" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {watchParcelar ? `Criar ${parcelas.length} Parcela${parcelas.length !== 1 ? 's' : ''}` : 'Criar Conta'}
               </Button>
