@@ -14,6 +14,8 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
   ({ className, value, onValueChange, min = 0, max = 999999999, ...props }, ref) => {
     const [displayValue, setDisplayValue] = React.useState('R$ 0,00');
     const isFocusedRef = React.useRef(false);
+    // Prevent parent-provided handlers (like RHF's onChange) from overriding internal logic
+    const { onChange: _ignoredOnChange, onBlur: _ignoredOnBlur, onFocus: _ignoredOnFocus, ...restProps } = props as any;
 
     React.useEffect(() => {
       // Só atualizar o displayValue se o input NÃO estiver focado
@@ -82,6 +84,7 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
 
     return (
       <Input
+        {...restProps}
         type="text"
         inputMode="numeric"
         className={cn(className)}
@@ -90,7 +93,6 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
         onBlur={handleBlur}
         onFocus={handleFocus}
         ref={ref}
-        {...props}
       />
     )
   }
