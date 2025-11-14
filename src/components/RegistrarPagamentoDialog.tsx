@@ -15,7 +15,12 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 const formas = ["Dinheiro","PIX","Débito","Crédito","Boleto","Transferência","Outro"] as const;
 
 const schema = z.object({
-  valor: z.string().min(1, "Informe o valor"),
+  valor: z.string()
+    .min(1, "Informe o valor")
+    .refine((val) => {
+      const num = parseFloat(val);
+      return !isNaN(num) && num > 0;
+    }, "Valor deve ser maior que zero"),
   formaPagamento: z.enum(["Dinheiro","PIX","Débito","Crédito","Boleto","Transferência","Outro"], { required_error: "Selecione a forma de pagamento" }),
   observacoes: z.string().max(500).optional(),
   registrarNoCaixa: z.boolean().default(true)
