@@ -120,13 +120,29 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
   const onSubmit = async (data: ContaPagarFormData) => {
     try {
       setLoading(true);
-      const payload = {
-        ...data,
+      
+      // Construir payload com dados formatados corretamente
+      const payload: any = {
+        descricao: data.descricao.trim(),
+        categoria: data.categoria,
         valor: parseFloat(data.valor),
-        dataEmissao: new Date().toISOString(),
-        dataVencimento: data.dataVencimento.toISOString(),
+        dataEmissao: new Date(),
+        dataVencimento: new Date(data.dataVencimento),
         status: 'Pendente'
       };
+
+      // Adicionar campos opcionais apenas se tiverem valor
+      if (data.fornecedorCodigo && data.fornecedorCodigo.trim()) {
+        payload.fornecedorCodigo = data.fornecedorCodigo.trim();
+      }
+      
+      if (data.formaPagamento && data.formaPagamento.trim()) {
+        payload.formaPagamento = data.formaPagamento;
+      }
+      
+      if (data.observacoes && data.observacoes.trim()) {
+        payload.observacoes = data.observacoes.trim();
+      }
 
       if (conta) {
         await contasPagarAPI.update(conta.numeroDocumento, payload);

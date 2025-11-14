@@ -76,7 +76,20 @@ export const createContaPagar = async (req: Request, res: Response) => {
       }
     }
 
-    const conta = new ContasPagar({ ...req.body, numeroDocumento: numero });
+    // Converter datas de string para Date object se necessário
+    const contaData: any = {
+      ...req.body,
+      numeroDocumento: numero,
+      dataEmissao: req.body.dataEmissao ? new Date(req.body.dataEmissao) : new Date(),
+      dataVencimento: new Date(req.body.dataVencimento)
+    };
+
+    // Converter outras datas se presentes
+    if (req.body.dataPagamento) {
+      contaData.dataPagamento = new Date(req.body.dataPagamento);
+    }
+
+    const conta = new ContasPagar(contaData);
 
     // Verificar status baseado na data de vencimento
     const hoje = new Date();
