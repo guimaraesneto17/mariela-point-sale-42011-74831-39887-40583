@@ -13,11 +13,11 @@ export interface CurrencyInputProps extends Omit<React.InputHTMLAttributes<HTMLI
 const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
   ({ className, value, onValueChange, min = 0, max = 999999999, ...props }, ref) => {
     const [displayValue, setDisplayValue] = React.useState('R$ 0,00');
-    const [isEditing, setIsEditing] = React.useState(false);
+    const isFocusedRef = React.useRef(false);
 
     React.useEffect(() => {
-      // Não atualizar se estiver editando
-      if (isEditing) return;
+      // Só atualizar o displayValue se o input NÃO estiver focado
+      if (isFocusedRef.current) return;
       
       if (value !== undefined && value !== null && value !== '') {
         const numericValue = typeof value === 'string' ? parseFloat(value) : value;
@@ -32,10 +32,9 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
       } else {
         setDisplayValue('R$ 0,00');
       }
-    }, [value, isEditing]);
+    }, [value]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      setIsEditing(true);
       const inputValue = e.target.value;
       
       // Aplicar máscara para visualização
@@ -51,12 +50,10 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
         if (!isNaN(numericValue)) {
           if (numericValue < min) {
             onValueChange(min.toString());
-            setIsEditing(false);
             return;
           }
           if (numericValue > max) {
             onValueChange(max.toString());
-            setIsEditing(false);
             return;
           }
         }
@@ -65,12 +62,22 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
       }
     };
 
-    const handleBlur = () => {
-      setIsEditing(false);
+    const handleFocus = () => {
+      isFocusedRef.current = true;
     };
 
-    const handleFocus = () => {
-      setIsEditing(true);
+    const handleBlur = () => {
+      isFocusedRef.current = false;
+      // Forçar re-formatação após perder o foco
+      if (value !== undefined && value !== null && value !== '') {
+        const numericValue = typeof value === 'string' ? parseFloat(value) : value;
+        if (!isNaN(numericValue) && numericValue >= 0) {
+          setDisplayValue(new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+          }).format(numericValue));
+        }
+      }
     };
 
     return (
