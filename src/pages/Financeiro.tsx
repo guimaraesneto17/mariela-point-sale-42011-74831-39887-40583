@@ -10,12 +10,13 @@ import { contasPagarAPI, contasReceberAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ContaPagarDialog } from "@/components/ContaPagarDialog";
-import { ContaReceberDialog } from "@/components/ContaReceberDialog";
+import { ContaPagarDialogV2 } from "@/components/ContaPagarDialogV2";
+import { ContaReceberDialogV2 } from "@/components/ContaReceberDialogV2";
 import { FluxoCaixaReport } from "@/components/FluxoCaixaReport";
-import { ParcelamentoDialog } from "@/components/ParcelamentoDialog";
+
 import { FinanceNotifications } from "@/components/FinanceNotifications";
 import { RegistrarPagamentoDialog } from "@/components/RegistrarPagamentoDialog";
+import { FinancialDashboard } from "@/components/FinancialDashboard";
 
 const Financeiro = () => {
   const [loading, setLoading] = useState(true);
@@ -25,7 +26,7 @@ const Financeiro = () => {
   const [resumoReceber, setResumoReceber] = useState<any>(null);
   const [contaPagarDialogOpen, setContaPagarDialogOpen] = useState(false);
   const [contaReceberDialogOpen, setContaReceberDialogOpen] = useState(false);
-  const [parcelamentoDialogOpen, setParcelamentoDialogOpen] = useState(false);
+  
   const [selectedContaPagar, setSelectedContaPagar] = useState<any>(null);
   const [selectedContaReceber, setSelectedContaReceber] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<string>("resumo");
@@ -195,11 +196,15 @@ const Financeiro = () => {
         </Card>
       </div>
 
-      {/* Botão de Ação Unificado */}
+      {/* Botões de Ação */}
       <div className="flex flex-wrap gap-2">
-        <Button onClick={() => setParcelamentoDialogOpen(true)} className="gap-2">
+        <Button onClick={() => { setSelectedContaPagar(null); setContaPagarDialogOpen(true); }} className="gap-2" variant="default">
           <Plus className="h-4 w-4" />
-          Nova Conta Financeira
+          Nova Conta a Pagar
+        </Button>
+        <Button onClick={() => { setSelectedContaReceber(null); setContaReceberDialogOpen(true); }} className="gap-2" variant="secondary">
+          <Plus className="h-4 w-4" />
+          Nova Conta a Receber
         </Button>
       </div>
 
@@ -220,7 +225,8 @@ const Financeiro = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="resumo">
+        <TabsContent value="resumo" className="space-y-6">
+          <FinancialDashboard />
           <FluxoCaixaReport />
         </TabsContent>
 
@@ -422,23 +428,17 @@ const Financeiro = () => {
       </Tabs>
 
       {/* Diálogos */}
-      <ContaPagarDialog 
+      <ContaPagarDialogV2 
         open={contaPagarDialogOpen}
         onOpenChange={setContaPagarDialogOpen}
         conta={selectedContaPagar}
         onSuccess={loadData}
       />
       
-      <ContaReceberDialog 
+      <ContaReceberDialogV2 
         open={contaReceberDialogOpen}
         onOpenChange={setContaReceberDialogOpen}
         conta={selectedContaReceber}
-        onSuccess={loadData}
-      />
-
-      <ParcelamentoDialog
-        open={parcelamentoDialogOpen}
-        onOpenChange={setParcelamentoDialogOpen}
         onSuccess={loadData}
       />
 
