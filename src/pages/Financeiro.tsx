@@ -10,15 +10,14 @@ import { contasPagarAPI, contasReceberAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ContaPagarDialogV2 } from "@/components/ContaPagarDialogV2";
-import { ContaReceberDialogV2 } from "@/components/ContaReceberDialogV2";
-import { FluxoCaixaReport } from "@/components/FluxoCaixaReport";
-
+import { ContaPagarDialog } from "@/components/ContaPagarDialog";
+import { ContaReceberDialog } from "@/components/ContaReceberDialog";
 import { FinanceNotifications } from "@/components/FinanceNotifications";
 import { RegistrarPagamentoDialog } from "@/components/RegistrarPagamentoDialog";
-import { FinancialDashboard } from "@/components/FinancialDashboard";
+import { useNavigate } from "react-router-dom";
 
 const Financeiro = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [contasPagar, setContasPagar] = useState<any[]>([]);
   const [contasReceber, setContasReceber] = useState<any[]>([]);
@@ -29,7 +28,6 @@ const Financeiro = () => {
   
   const [selectedContaPagar, setSelectedContaPagar] = useState<any>(null);
   const [selectedContaReceber, setSelectedContaReceber] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<string>("resumo");
   const [registroDialogOpen, setRegistroDialogOpen] = useState(false);
   const [registroTipo, setRegistroTipo] = useState<'pagar'|'receber'>("pagar");
   const [registroConta, setRegistroConta] = useState<any | null>(null);
@@ -81,8 +79,8 @@ const Financeiro = () => {
     return <Badge variant={variants[status] || 'secondary'}>{status}</Badge>;
   };
 
-  const saldoGeral = (resumoReceber?.totalRecebido || 0) - (resumoPagar?.totalPago || 0);
-  const saldoPendente = (resumoReceber?.totalPendente || 0) - (resumoPagar?.totalPendente || 0);
+  const saldoRealizado = (resumoReceber?.totalRecebido || 0) - (resumoPagar?.totalPago || 0);
+  const saldoPrevisto = (resumoReceber?.totalPendente || 0) - (resumoPagar?.totalPendente || 0);
 
   const handleDeleteConta = async () => {
     if (!contaToDelete) return;
@@ -115,11 +113,19 @@ const Financeiro = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-foreground mb-2">Módulo Financeiro</h1>
-        <p className="text-muted-foreground">
-          Gestão completa de contas a pagar e receber
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-4xl font-bold text-foreground mb-2">Financeiro</h1>
+          <p className="text-muted-foreground">Controle de contas a pagar e receber</p>
+        </div>
+        <Button
+          onClick={() => navigate('/relatorios')}
+          variant="outline"
+          className="gap-2"
+        >
+          <BarChart3 className="h-4 w-4" />
+          Ver Relatórios
+        </Button>
       </div>
 
       {/* Notificações de Vencimento */}
@@ -135,8 +141,8 @@ const Financeiro = () => {
             <DollarSign className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${saldoGeral >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(saldoGeral)}
+            <div className={`text-2xl font-bold ${saldoRealizado >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatCurrency(saldoRealizado)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Receitas - Despesas pagas
@@ -209,12 +215,8 @@ const Financeiro = () => {
       </div>
 
       {/* Tabs de Contas */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="resumo">
-            <DollarSign className="h-4 w-4 mr-2" />
-            Resumo
-          </TabsTrigger>
+      <Tabs defaultValue="pagar" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="pagar">
             <TrendingDown className="h-4 w-4 mr-2" />
             Contas a Pagar
@@ -225,10 +227,6 @@ const Financeiro = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="resumo" className="space-y-6">
-          <FinancialDashboard />
-          <FluxoCaixaReport />
-        </TabsContent>
 
         <TabsContent value="pagar" className="space-y-4">
           <div className="flex justify-between items-center">
@@ -428,14 +426,14 @@ const Financeiro = () => {
       </Tabs>
 
       {/* Diálogos */}
-      <ContaPagarDialogV2 
+      <ContaPagarDialog 
         open={contaPagarDialogOpen}
         onOpenChange={setContaPagarDialogOpen}
         conta={selectedContaPagar}
         onSuccess={loadData}
       />
       
-      <ContaReceberDialogV2 
+      <ContaReceberDialog 
         open={contaReceberDialogOpen}
         onOpenChange={setContaReceberDialogOpen}
         conta={selectedContaReceber}
