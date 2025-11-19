@@ -16,7 +16,6 @@ import { MargemLucroCard } from "@/components/MargemLucroCard";
 import { DashboardMovimentacoes } from "@/components/DashboardMovimentacoes";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, LineChart, Line, Area, AreaChart } from "recharts";
 import { GlobalLoading } from "@/components/GlobalLoading";
-import { Skeleton } from "@/components/ui/skeleton";
 
 const Relatorios = () => {
   // Filtros para vendas
@@ -86,6 +85,9 @@ const Relatorios = () => {
     saldoRealizado: 0,
     saldoPrevisto: 0,
     fluxoPorMes: [],
+    evolucaoContas: [],
+    topFornecedores: [],
+    topClientes: [],
     contasPagar: [],
     contasReceber: [],
   });
@@ -402,12 +404,68 @@ const Relatorios = () => {
         fluxoPorMes[mes].saldo = fluxoPorMes[mes].entradas - fluxoPorMes[mes].saidas;
       });
 
+      // Evolução de contas ao longo do tempo
+      const evolucaoContas: any = {};
+      
+      [...contasPagar, ...contasReceber].forEach((conta: any) => {
+        const data = new Date(conta.dataVencimento);
+        const mesAno = `${data.toLocaleString('pt-BR', { month: 'short' })}/${data.getFullYear().toString().substr(2)}`;
+        if (!evolucaoContas[mesAno]) {
+          evolucaoContas[mesAno] = { mes: mesAno, pagar: 0, receber: 0 };
+        }
+      });
+
+      contasPagar.forEach((conta: any) => {
+        const data = new Date(conta.dataVencimento);
+        const mesAno = `${data.toLocaleString('pt-BR', { month: 'short' })}/${data.getFullYear().toString().substr(2)}`;
+        evolucaoContas[mesAno].pagar += conta.valor || 0;
+      });
+
+      contasReceber.forEach((conta: any) => {
+        const data = new Date(conta.dataVencimento);
+        const mesAno = `${data.toLocaleString('pt-BR', { month: 'short' })}/${data.getFullYear().toString().substr(2)}`;
+        evolucaoContas[mesAno].receber += conta.valor || 0;
+      });
+
+      // Top fornecedores por valor
+      const fornecedoresMap: any = {};
+      contasPagar.forEach((conta: any) => {
+        const fornecedor = conta.fornecedor || 'Sem Fornecedor';
+        if (!fornecedoresMap[fornecedor]) {
+          fornecedoresMap[fornecedor] = { nome: fornecedor, total: 0, quantidade: 0 };
+        }
+        fornecedoresMap[fornecedor].total += conta.valor || 0;
+        fornecedoresMap[fornecedor].quantidade += 1;
+      });
+
+      const topFornecedores = Object.values(fornecedoresMap)
+        .sort((a: any, b: any) => b.total - a.total)
+        .slice(0, 5);
+
+      // Top clientes por valor
+      const clientesMap: any = {};
+      contasReceber.forEach((conta: any) => {
+        const cliente = conta.cliente || 'Sem Cliente';
+        if (!clientesMap[cliente]) {
+          clientesMap[cliente] = { nome: cliente, total: 0, quantidade: 0 };
+        }
+        clientesMap[cliente].total += conta.valor || 0;
+        clientesMap[cliente].quantidade += 1;
+      });
+
+      const topClientesFinanceiro = Object.values(clientesMap)
+        .sort((a: any, b: any) => b.total - a.total)
+        .slice(0, 5);
+
       setRelatorioFinanceiro({
         totalReceber,
         totalPagar,
         saldoRealizado: recebidoTotal - pagoTotal,
         saldoPrevisto: totalReceber - totalPagar,
         fluxoPorMes: Object.values(fluxoPorMes).slice(-6),
+        evolucaoContas: Object.values(evolucaoContas).slice(-6),
+        topFornecedores,
+        topClientes: topClientesFinanceiro,
         contasPagar,
         contasReceber,
       });
@@ -1731,6 +1789,93 @@ const Relatorios = () => {
                   <RechartsTooltip />
                 </PieChart>
               </ResponsiveContainer>
+            </Card>
+          </div>
+          
+          {/* Evolução de Contas a Pagar e Receber */}
+          <Card className="p-6 shadow-card">
+            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Evolução de Contas a Pagar e Receber
+            </h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={relatorioFinanceiro.evolucaoContas}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="mes" />
+                <YAxis />
+                <RechartsTooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload) return null;
+                    return (
+                      <div className="bg-background border rounded-lg p-3 shadow-lg">
+                        <p className="font-medium mb-2">{payload[0]?.payload.mes}</p>
+                        <p className="text-sm text-red-600">
+                          A Pagar: R$ {Number(payload[0]?.value || 0).toFixed(2)}
+                        </p>
+                        <p className="text-sm text-green-600">
+                          A Receber: R$ {Number(payload[1]?.value || 0).toFixed(2)}
+                        </p>
+                      </div>
+                    );
+                  }}
+                />
+                <Legend />
+                <Line type="monotone" dataKey="pagar" stroke="#ef4444" name="A Pagar" strokeWidth={2} />
+                <Line type="monotone" dataKey="receber" stroke="#22c55e" name="A Receber" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </Card>
+
+          {/* Top Fornecedores e Clientes */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="p-6 shadow-card">
+              <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <Package className="h-5 w-5 text-red-600" />
+                Top 5 Fornecedores
+              </h3>
+              <div className="space-y-3">
+                {relatorioFinanceiro.topFornecedores.map((fornecedor: any, index: number) => (
+                  <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-gradient-card">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
+                        <span className="text-sm font-bold text-red-600">{index + 1}</span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">{fornecedor.nome}</p>
+                        <p className="text-xs text-muted-foreground">{fornecedor.quantidade} contas</p>
+                      </div>
+                    </div>
+                    <span className="font-bold text-red-600">
+                      R$ {fornecedor.total.toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <Card className="p-6 shadow-card">
+              <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <Users className="h-5 w-5 text-green-600" />
+                Top 5 Clientes (Receber)
+              </h3>
+              <div className="space-y-3">
+                {relatorioFinanceiro.topClientes.map((cliente: any, index: number) => (
+                  <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-gradient-card">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                        <span className="text-sm font-bold text-green-600">{index + 1}</span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">{cliente.nome}</p>
+                        <p className="text-xs text-muted-foreground">{cliente.quantidade} contas</p>
+                      </div>
+                    </div>
+                    <span className="font-bold text-green-600">
+                      R$ {cliente.total.toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </Card>
           </div>
         </TabsContent>
