@@ -19,6 +19,7 @@ import { ImageGalleryDialog } from "@/components/ImageGalleryDialog";
 import { estoqueAPI } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
 import { getDefaultImageByCategory } from "@/lib/defaultImages";
+import { GlobalLoading } from "@/components/GlobalLoading";
 
 const Estoque = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -250,6 +251,10 @@ const Estoque = () => {
   const handleImagesSuccess = () => {
     loadEstoque();
   };
+
+  if (loading) {
+    return <GlobalLoading message="Carregando estoque..." />;
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
