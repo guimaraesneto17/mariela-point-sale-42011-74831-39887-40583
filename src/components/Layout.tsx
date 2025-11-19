@@ -17,9 +17,12 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import logo from "@/logo.png";
+import { useAPIWakeup } from "@/hooks/useAPIWakeup";
+import { GlobalLoading } from "@/components/GlobalLoading";
 
 const Layout = () => {
   const navigate = useNavigate();
+  const { isWakingUp } = useAPIWakeup();
 
   const handleLogout = async () => {
     try {
@@ -47,6 +50,7 @@ const Layout = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {isWakingUp && <GlobalLoading message="Iniciando sistema..." />}
       <aside className="fixed left-0 top-0 h-full w-64 bg-[#7c3aed] shadow-xl flex flex-col">
 
         {/* Header com logo */}

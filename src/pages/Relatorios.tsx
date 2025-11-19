@@ -8,13 +8,15 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-import { vendasAPI, produtosAPI, clientesAPI, vendedoresAPI, estoqueAPI, caixaAPI } from "@/lib/api";
+import { vendasAPI, produtosAPI, clientesAPI, vendedoresAPI, estoqueAPI, caixaAPI, contasPagarAPI, contasReceberAPI } from "@/lib/api";
 import { ComparacaoPeriodoDialog } from "@/components/ComparacaoPeriodoDialog";
 import { VendasPorCategoriaCard } from "@/components/VendasPorCategoriaCard";
 import { VendasEvolutionChart } from "@/components/VendasEvolutionChart";
 import { MargemLucroCard } from "@/components/MargemLucroCard";
 import { DashboardMovimentacoes } from "@/components/DashboardMovimentacoes";
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, LineChart, Line, Area, AreaChart } from "recharts";
+import { GlobalLoading } from "@/components/GlobalLoading";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Relatorios = () => {
   // Filtros para vendas
@@ -77,6 +79,15 @@ const Relatorios = () => {
     porTamanho: [],
     totalItens: 0,
     valorTotal: 0,
+  });
+  const [relatorioFinanceiro, setRelatorioFinanceiro] = useState<any>({
+    totalReceber: 0,
+    totalPagar: 0,
+    saldoRealizado: 0,
+    saldoPrevisto: 0,
+    fluxoPorMes: [],
+    contasPagar: [],
+    contasReceber: [],
   });
 
   useEffect(() => {
@@ -354,6 +365,54 @@ const Relatorios = () => {
         valorTotal: valorTotalEstoque,
       });
 
+      // Relatório Financeiro
+      const [contasPagar, contasReceber] = await Promise.all([
+        contasPagarAPI.getAll(),
+        contasReceberAPI.getAll(),
+      ]);
+
+      const totalPagar = contasPagar.reduce((acc: number, c: any) => acc + (c.valor || 0), 0);
+      const totalReceber = contasReceber.reduce((acc: number, c: any) => acc + (c.valor || 0), 0);
+      const pagoTotal = contasPagar.filter((c: any) => c.status === 'pago').reduce((acc: number, c: any) => acc + (c.valor || 0), 0);
+      const recebidoTotal = contasReceber.filter((c: any) => c.status === 'recebido').reduce((acc: number, c: any) => acc + (c.valor || 0), 0);
+
+      // Fluxo de caixa por mês
+      const fluxoPorMes: any = {};
+      
+      contasReceber.forEach((conta: any) => {
+        const data = new Date(conta.dataVencimento);
+        const mesAno = `${data.toLocaleString('pt-BR', { month: 'short' })}/${data.getFullYear().toString().substr(2)}`;
+        if (!fluxoPorMes[mesAno]) {
+          fluxoPorMes[mesAno] = { mes: mesAno, entradas: 0, saidas: 0, saldo: 0 };
+        }
+        fluxoPorMes[mesAno].entradas += conta.valor || 0;
+      });
+
+      contasPagar.forEach((conta: any) => {
+        const data = new Date(conta.dataVencimento);
+        const mesAno = `${data.toLocaleString('pt-BR', { month: 'short' })}/${data.getFullYear().toString().substr(2)}`;
+        if (!fluxoPorMes[mesAno]) {
+          fluxoPorMes[mesAno] = { mes: mesAno, entradas: 0, saidas: 0, saldo: 0 };
+        }
+        fluxoPorMes[mesAno].saidas += conta.valor || 0;
+      });
+
+      // Calcular saldo para cada mês
+      Object.keys(fluxoPorMes).forEach(mes => {
+        fluxoPorMes[mes].saldo = fluxoPorMes[mes].entradas - fluxoPorMes[mes].saidas;
+      });
+
+      setRelatorioFinanceiro({
+        totalReceber,
+        totalPagar,
+        saldoRealizado: recebidoTotal - pagoTotal,
+        saldoPrevisto: totalReceber - totalPagar,
+        fluxoPorMes: Object.values(fluxoPorMes).slice(-6),
+        contasPagar,
+        contasReceber,
+      });
+
+
     } catch (error) {
       console.error('Erro ao carregar relatórios:', error);
       toast.error('Erro ao carregar relatórios');
@@ -446,6 +505,10 @@ const Relatorios = () => {
     return acc + c.performance;
   }, 0);
 
+  if (loading) {
+    return <GlobalLoading message="Carregando relatórios..." />;
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -459,12 +522,13 @@ const Relatorios = () => {
       </div>
 
       <Tabs defaultValue="vendas" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="vendas">Vendas</TabsTrigger>
           <TabsTrigger value="produtos">Produtos</TabsTrigger>
           <TabsTrigger value="estoque">Estoque</TabsTrigger>
           <TabsTrigger value="clientes">Clientes</TabsTrigger>
           <TabsTrigger value="vendedores">Vendedores</TabsTrigger>
+          <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
           <TabsTrigger value="caixa">Caixa</TabsTrigger>
         </TabsList>
 
@@ -1486,6 +1550,189 @@ const Relatorios = () => {
             </div>
           </Card>
 
+        </TabsContent>
+
+        {/* Relatório Financeiro */}
+        <TabsContent value="financeiro" className="space-y-6">
+          <h2 className="text-2xl font-bold text-foreground">Relatório Financeiro</h2>
+
+          {/* Cards de Resumo */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <Card className="bg-gradient-to-br from-card via-card to-green-500/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Total a Receber
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <TrendingUp className="h-8 w-8 text-green-600" />
+                  <p className="text-3xl font-bold text-green-600">
+                    R$ {relatorioFinanceiro.totalReceber.toFixed(2)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-card via-card to-red-500/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Total a Pagar
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <TrendingDown className="h-8 w-8 text-red-600" />
+                  <p className="text-3xl font-bold text-red-600">
+                    R$ {relatorioFinanceiro.totalPagar.toFixed(2)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-card via-card to-blue-500/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Saldo Realizado
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <DollarSign className="h-8 w-8 text-blue-600" />
+                  <p className={`text-3xl font-bold ${relatorioFinanceiro.saldoRealizado >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    R$ {relatorioFinanceiro.saldoRealizado.toFixed(2)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-card via-card to-purple-500/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Saldo Previsto
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <Wallet className="h-8 w-8 text-purple-600" />
+                  <p className={`text-3xl font-bold ${relatorioFinanceiro.saldoPrevisto >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    R$ {relatorioFinanceiro.saldoPrevisto.toFixed(2)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Gráfico de Fluxo de Caixa */}
+          <Card className="p-6 shadow-card">
+            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              Fluxo de Caixa por Mês
+            </h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={relatorioFinanceiro.fluxoPorMes}>
+                <defs>
+                  <linearGradient id="colorEntradas" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorSaidas" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="mes" />
+                <YAxis />
+                <RechartsTooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload) return null;
+                    const entradas = Number(payload[0]?.value || 0);
+                    const saidas = Number(payload[1]?.value || 0);
+                    return (
+                      <div className="bg-background border rounded-lg p-3 shadow-lg">
+                        <p className="font-medium">{payload[0]?.payload.mes}</p>
+                        <p className="text-sm text-green-600">
+                          Entradas: R$ {entradas.toFixed(2)}
+                        </p>
+                        <p className="text-sm text-red-600">
+                          Saídas: R$ {saidas.toFixed(2)}
+                        </p>
+                        <p className="text-sm font-bold">
+                          Saldo: R$ {(entradas - saidas).toFixed(2)}
+                        </p>
+                      </div>
+                    );
+                  }}
+                />
+                <Area type="monotone" dataKey="entradas" stroke="hsl(var(--primary))" fillOpacity={1} fill="url(#colorEntradas)" />
+                <Area type="monotone" dataKey="saidas" stroke="#ef4444" fillOpacity={1} fill="url(#colorSaidas)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </Card>
+
+          {/* Contas por Status */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="p-6 shadow-card">
+              <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-green-600" />
+                Contas a Receber por Status
+              </h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'Recebido', value: relatorioFinanceiro.contasReceber.filter((c: any) => c.status === 'recebido').length },
+                      { name: 'Pendente', value: relatorioFinanceiro.contasReceber.filter((c: any) => c.status === 'pendente').length },
+                      { name: 'Vencido', value: relatorioFinanceiro.contasReceber.filter((c: any) => c.status === 'vencido').length },
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={(entry) => `${entry.name}: ${entry.value}`}
+                    outerRadius={80}
+                    fill="hsl(var(--primary))"
+                    dataKey="value"
+                  >
+                    <Cell fill="#22c55e" />
+                    <Cell fill="#f59e0b" />
+                    <Cell fill="#ef4444" />
+                  </Pie>
+                  <RechartsTooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </Card>
+
+            <Card className="p-6 shadow-card">
+              <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <TrendingDown className="h-5 w-5 text-red-600" />
+                Contas a Pagar por Status
+              </h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'Pago', value: relatorioFinanceiro.contasPagar.filter((c: any) => c.status === 'pago').length },
+                      { name: 'Pendente', value: relatorioFinanceiro.contasPagar.filter((c: any) => c.status === 'pendente').length },
+                      { name: 'Vencido', value: relatorioFinanceiro.contasPagar.filter((c: any) => c.status === 'vencido').length },
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={(entry) => `${entry.name}: ${entry.value}`}
+                    outerRadius={80}
+                    fill="hsl(var(--primary))"
+                    dataKey="value"
+                  >
+                    <Cell fill="#22c55e" />
+                    <Cell fill="#f59e0b" />
+                    <Cell fill="#ef4444" />
+                  </Pie>
+                  <RechartsTooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Relatório de Vendedores */}

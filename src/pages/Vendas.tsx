@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { vendasAPI } from "@/lib/api";
 import { toast } from "sonner";
+import { GlobalLoading } from "@/components/GlobalLoading";
 
 const Vendas = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -87,6 +88,10 @@ const Vendas = () => {
     const matchData = !filtroData || vendaData === filtroData;
     return matchSearch && matchData;
   });
+
+  if (loading) {
+    return <GlobalLoading message="Carregando vendas..." />;
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
