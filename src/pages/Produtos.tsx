@@ -538,7 +538,7 @@ const Produtos = () => {
         </Dialog>
       </div>
 
-      <Card className="p-6 shadow-card">
+      <Card className="p-4 md:p-6 shadow-card">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
           <Input

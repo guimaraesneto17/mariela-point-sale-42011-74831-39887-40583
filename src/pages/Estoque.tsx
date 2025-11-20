@@ -265,7 +265,7 @@ const Estoque = () => {
         </p>
       </div>
 
-      <Card className="p-6 shadow-card">
+      <Card className="p-4 md:p-6 shadow-card">
         <div className="space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -386,7 +386,7 @@ const Estoque = () => {
             const varianteSelecionada = getSelectedVariant(item);
 
             return (
-              <Card key={item.codigoProduto} className="p-6 shadow-card hover:shadow-lg transition-all">
+              <Card key={item.codigoProduto} className="p-4 md:p-6 shadow-card hover:shadow-lg transition-all">
                 <div className="flex flex-col gap-6">
                   {/* Header com imagem, nome e badges */}
                   <div className="flex items-start gap-4">

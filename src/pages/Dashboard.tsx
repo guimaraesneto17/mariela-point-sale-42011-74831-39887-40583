@@ -660,15 +660,15 @@ const Dashboard = () => {
                 )}
               </div>
               
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+                <div className="text-center p-3 md:p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
                   <p className="text-xs font-medium text-muted-foreground mb-2">Valor Inicial</p>
-                  <p className="text-xl font-bold text-blue-600">
+                  <p className="text-lg md:text-xl font-bold text-blue-600">
                     R$ {caixaAberto.valorInicial?.toFixed(2) || '0.00'}
                   </p>
                 </div>
                 
-                <div className="text-center p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                <div className="text-center p-3 md:p-4 rounded-lg bg-green-500/10 border border-green-500/20">
                   <p className="text-xs font-medium text-muted-foreground mb-2">Entradas</p>
                   <p className="text-xl font-bold text-green-600">
                     R$ {caixaAberto.entrada?.toFixed(2) || '0.00'}
