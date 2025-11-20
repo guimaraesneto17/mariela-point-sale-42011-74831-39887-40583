@@ -547,7 +547,7 @@ const Fornecedores = () => {
         </Dialog>
       </div>
       
-      <Card className="p-6 shadow-card">
+      <Card className="p-4 md:p-6 shadow-card">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
           <Input
@@ -561,7 +561,7 @@ const Fornecedores = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredFornecedores.map((fornecedor) => (
-          <Card key={fornecedor._id} className="p-6 bg-gradient-card hover:shadow-elegant transition-all">
+          <Card key={fornecedor._id} className="p-4 md:p-6 bg-gradient-card hover:shadow-elegant transition-all">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">

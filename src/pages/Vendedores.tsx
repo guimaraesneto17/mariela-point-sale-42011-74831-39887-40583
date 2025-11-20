@@ -507,7 +507,7 @@ const Vendedores = () => {
         </div>
       </div>
       
-      <Card className="p-6 shadow-card">
+      <Card className="p-4 md:p-6 shadow-card">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
@@ -521,7 +521,7 @@ const Vendedores = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredVendedores.map((vendedor) => (
-          <Card key={vendedor._id} className="p-6 bg-gradient-card hover:shadow-elegant transition-all">
+          <Card key={vendedor._id} className="p-4 md:p-6 bg-gradient-card hover:shadow-elegant transition-all">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-md">

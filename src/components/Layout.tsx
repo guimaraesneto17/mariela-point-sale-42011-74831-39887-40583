@@ -1,4 +1,5 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import {
   LayoutDashboard,
   Package,
@@ -11,7 +12,9 @@ import {
   FileText,
   LogOut,
   Wallet,
-  TrendingUp
+  TrendingUp,
+  Menu,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,10 +22,13 @@ import { toast } from "sonner";
 import logo from "@/logo.png";
 import { useAPIWakeup } from "@/hooks/useAPIWakeup";
 import { GlobalLoading } from "@/components/GlobalLoading";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Layout = () => {
   const navigate = useNavigate();
   const { isWakingUp } = useAPIWakeup();
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -32,6 +38,12 @@ const Layout = () => {
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
       toast.error("Erro ao fazer logout");
+    }
+  };
+
+  const handleNavClick = () => {
+    if (isMobile) {
+      setSidebarOpen(false);
     }
   };
 
@@ -51,24 +63,65 @@ const Layout = () => {
   return (
     <div className="min-h-screen bg-background">
       {isWakingUp && <GlobalLoading message="Iniciando sistema..." />}
-      <aside className="fixed left-0 top-0 h-full w-64 bg-[#7c3aed] shadow-xl flex flex-col">
-
-        {/* Header com logo */}
-        <div className="p-6 text-center border-b border-white/20">
-          <div className="w-24 h-24 mx-auto mb-3 rounded-full overflow-hidden shadow-lg shadow-[#6d28d9]/30">
-            <img src={logo} alt="Mariela PDV" className="w-full h-full object-cover" />
+      
+      {/* Mobile Header */}
+      {isMobile && (
+        <header className="fixed top-0 left-0 right-0 z-50 bg-[#7c3aed] shadow-lg">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <img src={logo} alt="Mariela PDV" className="w-10 h-10 rounded-full object-cover" />
+              <div>
+                <h1 className="text-white text-lg font-bold">Mariela PDV</h1>
+                <p className="text-white/90 text-xs">Moda Feminina</p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="text-white hover:bg-white/10"
+            >
+              {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </Button>
           </div>
-          <h1 className="text-white text-xl font-bold">Mariela PDV</h1>
-          <p className="text-white/90 text-sm">Moda Feminina</p>
-        </div>
+        </header>
+      )}
+      
+      {/* Overlay para mobile */}
+      {isMobile && sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      
+      {/* Sidebar */}
+      <aside className={`
+        fixed top-0 h-full bg-[#7c3aed] shadow-xl flex flex-col z-40 transition-transform duration-300
+        ${isMobile ? 'w-64' : 'w-64 left-0'}
+        ${isMobile && !sidebarOpen ? '-translate-x-full' : 'translate-x-0'}
+        ${isMobile ? 'left-0' : 'left-0'}
+      `}>
+
+        {/* Header com logo - apenas desktop */}
+        {!isMobile && (
+          <div className="p-6 text-center border-b border-white/20">
+            <div className="w-24 h-24 mx-auto mb-3 rounded-full overflow-hidden shadow-lg shadow-[#6d28d9]/30">
+              <img src={logo} alt="Mariela PDV" className="w-full h-full object-cover" />
+            </div>
+            <h1 className="text-white text-xl font-bold">Mariela PDV</h1>
+            <p className="text-white/90 text-sm">Moda Feminina</p>
+          </div>
+        )}
 
         {/* Navegação */}
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className={`flex-1 p-4 space-y-1 overflow-y-auto ${isMobile ? 'mt-4' : ''}`}>
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.to === "/"}
+              onClick={handleNavClick}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${isActive
                   ? "bg-[#c4b5fd] text-[#7c3aed] shadow-md font-semibold"
@@ -84,7 +137,10 @@ const Layout = () => {
           {/* Botão Nova Venda */}
           <Button
             className="w-full mt-4 bg-[#22c55e] hover:bg-[#16a34a] text-white font-semibold"
-            onClick={() => navigate("/vendas/nova")}
+            onClick={() => {
+              navigate("/vendas/nova");
+              handleNavClick();
+            }}
           >
             <Plus className="h-5 w-5 mr-2" />
             Nova Venda
@@ -105,8 +161,11 @@ const Layout = () => {
         </div>
       </aside>
 
-      <main className="ml-64 min-h-screen p-8">
-        <Outlet />
+      {/* Main Content */}
+      <main className={`${isMobile ? 'pt-16' : 'ml-64'} min-h-screen`}>
+        <div className="p-4 md:p-8">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

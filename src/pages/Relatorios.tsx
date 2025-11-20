@@ -32,6 +32,9 @@ const Relatorios = () => {
   // Filtros para caixa
   const [periodoCaixa, setPeriodoCaixa] = useState("mensal"); // hoje, ontem, semanal ou mensal
   
+  // Filtros para financeiro
+  const [periodoFinanceiro, setPeriodoFinanceiro] = useState("todos"); // 30, 90, 365, todos
+  
   const [loading, setLoading] = useState(true);
   const [vendedores, setVendedores] = useState<any[]>([]);
   const [relatorioVendas, setRelatorioVendas] = useState<any>({
@@ -94,7 +97,7 @@ const Relatorios = () => {
 
   useEffect(() => {
     loadRelatorios();
-  }, []);
+  }, [periodoFinanceiro]);
 
   const loadRelatorios = async () => {
     try {
@@ -367,11 +370,29 @@ const Relatorios = () => {
         valorTotal: valorTotalEstoque,
       });
 
-      // Relatório Financeiro
-      const [contasPagar, contasReceber] = await Promise.all([
+      // Relatório Financeiro - Contas a Pagar e Receber
+      let [contasPagar, contasReceber] = await Promise.all([
         contasPagarAPI.getAll(),
         contasReceberAPI.getAll(),
       ]);
+
+      // Filtrar por período financeiro
+      const hoje = new Date();
+      const filtrarPorPeriodo = (contas: any[]) => {
+        if (periodoFinanceiro === "todos") return contas;
+        
+        const diasFiltro = periodoFinanceiro === "30" ? 30 : periodoFinanceiro === "90" ? 90 : 365;
+        const dataLimite = new Date();
+        dataLimite.setDate(hoje.getDate() - diasFiltro);
+        
+        return contas.filter((conta: any) => {
+          const dataVencimento = new Date(conta.dataVencimento);
+          return dataVencimento >= dataLimite;
+        });
+      };
+
+      contasPagar = filtrarPorPeriodo(contasPagar);
+      contasReceber = filtrarPorPeriodo(contasReceber);
 
       const totalPagar = contasPagar.reduce((acc: number, c: any) => acc + (c.valor || 0), 0);
       const totalReceber = contasReceber.reduce((acc: number, c: any) => acc + (c.valor || 0), 0);
@@ -1612,10 +1633,28 @@ const Relatorios = () => {
 
         {/* Relatório Financeiro */}
         <TabsContent value="financeiro" className="space-y-6">
-          <h2 className="text-2xl font-bold text-foreground">Relatório Financeiro</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <h2 className="text-2xl font-bold text-foreground">Relatório Financeiro</h2>
+            
+            {/* Filtro de Período */}
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select value={periodoFinanceiro} onValueChange={setPeriodoFinanceiro}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Selecione o período" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="30">Últimos 30 dias</SelectItem>
+                  <SelectItem value="90">Últimos 90 dias</SelectItem>
+                  <SelectItem value="365">Último ano</SelectItem>
+                  <SelectItem value="todos">Todos os períodos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
           {/* Cards de Resumo */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             <Card className="bg-gradient-to-br from-card via-card to-green-500/5">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -1682,9 +1721,9 @@ const Relatorios = () => {
           </div>
 
           {/* Gráfico de Fluxo de Caixa */}
-          <Card className="p-6 shadow-card">
-            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-primary" />
+          <Card className="p-4 md:p-6 shadow-card">
+            <h3 className="text-base md:text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 md:h-5 md:w-5 text-primary" />
               Fluxo de Caixa por Mês
             </h3>
             <ResponsiveContainer width="100%" height={300}>
@@ -1729,11 +1768,11 @@ const Relatorios = () => {
             </ResponsiveContainer>
           </Card>
 
-          {/* Contas por Status */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="p-6 shadow-card">
-              <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-green-600" />
+          {/* Gráficos de Status */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+            <Card className="p-4 md:p-6 shadow-card">
+              <h3 className="text-base md:text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
                 Contas a Receber por Status
               </h3>
               <ResponsiveContainer width="100%" height={250}>
@@ -1761,9 +1800,9 @@ const Relatorios = () => {
               </ResponsiveContainer>
             </Card>
 
-            <Card className="p-6 shadow-card">
-              <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                <TrendingDown className="h-5 w-5 text-red-600" />
+            <Card className="p-4 md:p-6 shadow-card">
+              <h3 className="text-base md:text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <TrendingDown className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
                 Contas a Pagar por Status
               </h3>
               <ResponsiveContainer width="100%" height={250}>
@@ -1793,9 +1832,9 @@ const Relatorios = () => {
           </div>
           
           {/* Evolução de Contas a Pagar e Receber */}
-          <Card className="p-6 shadow-card">
-            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
+          <Card className="p-4 md:p-6 shadow-card">
+            <h3 className="text-base md:text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-primary" />
               Evolução de Contas a Pagar e Receber
             </h3>
             <ResponsiveContainer width="100%" height={300}>
@@ -1827,10 +1866,10 @@ const Relatorios = () => {
           </Card>
 
           {/* Top Fornecedores e Clientes */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="p-6 shadow-card">
-              <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                <Package className="h-5 w-5 text-red-600" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+            <Card className="p-4 md:p-6 shadow-card">
+              <h3 className="text-base md:text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <Package className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
                 Top 5 Fornecedores
               </h3>
               <div className="space-y-3">
@@ -1853,9 +1892,9 @@ const Relatorios = () => {
               </div>
             </Card>
 
-            <Card className="p-6 shadow-card">
-              <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                <Users className="h-5 w-5 text-green-600" />
+            <Card className="p-4 md:p-6 shadow-card">
+              <h3 className="text-base md:text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <Users className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
                 Top 5 Clientes (Receber)
               </h3>
               <div className="space-y-3">

@@ -102,8 +102,8 @@ const Vendas = () => {
         </p>
       </div>
 
-      <Card className="p-6 shadow-card">
-        <div className="grid grid-cols-2 gap-4">
+      <Card className="p-4 md:p-6 shadow-card">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
             <Input
@@ -126,7 +126,7 @@ const Vendas = () => {
 
       <div className="space-y-4">
         {filteredVendas.map((venda) => (
-          <Card key={venda.codigo || venda.codigoVenda || venda._id} className="p-6 bg-gradient-card">
+          <Card key={venda.codigo || venda.codigoVenda || venda._id} className="p-4 md:p-6 bg-gradient-card">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h3 className="text-xl font-bold">{venda.codigo || venda.codigoVenda || venda._id}</h3>
