@@ -51,7 +51,7 @@ const aggregateEstoqueByCodigo = (docs: any[]) => {
   if (!docs || docs.length === 0) return null;
   const acc: any = {
     codigoProduto: docs[0].codigoProduto,
-    variantes: [] as Array<{ cor: string; tamanho: string; quantidade: number; imagens?: string[] }>,
+    variantes: [] as Array<{ cor: string; tamanhos: string[]; quantidade: number; imagens?: string[] }>,
     emPromocao: false,
     isNovidade: false,
     precoPromocional: null as number | null,
@@ -80,26 +80,35 @@ const aggregateEstoqueByCodigo = (docs: any[]) => {
           const c = cores[0];
           const t = tamanhos[0];
           const q = Number(doc.quantidade) || 0;
-          return c && t ? [{ cor: c, tamanho: t, quantidade: q, imagens: [] }] : [];
+          return c && t ? [{ cor: c, tamanhos: [t], quantidade: q, imagens: [] }] : [];
         })();
 
     variantes.forEach((v: any) => {
-      const existing = acc.variantes.find((x: any) => x.cor === v.cor && x.tamanho === v.tamanho);
+      // Garantir que tamanhos é array
+      const vTamanhos = Array.isArray(v.tamanhos) ? v.tamanhos : (v.tamanho ? [v.tamanho] : []);
+      
+      const existing = acc.variantes.find((x: any) => x.cor === v.cor);
       if (existing) {
         existing.quantidade += Number(v.quantidade) || 0;
+        // Mesclar tamanhos únicos
+        vTamanhos.forEach((t: string) => {
+          if (!existing.tamanhos.includes(t)) {
+            existing.tamanhos.push(t);
+          }
+        });
         // Mesclar imagens se houver
         if (v.imagens && Array.isArray(v.imagens) && v.imagens.length > 0) {
           existing.imagens = existing.imagens || [];
           v.imagens.forEach((img: string) => {
-            if (!existing.imagens.includes(img)) {
-              existing.imagens.push(img);
+            if (!existing.imagens!.includes(img)) {
+              existing.imagens!.push(img);
             }
           });
         }
       } else {
         acc.variantes.push({ 
           cor: v.cor, 
-          tamanho: v.tamanho, 
+          tamanhos: vTamanhos,
           quantidade: Number(v.quantidade) || 0,
           imagens: v.imagens || []
         });

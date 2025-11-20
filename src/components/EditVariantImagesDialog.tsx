@@ -1,12 +1,13 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { X, Plus, Image as ImageIcon, GripVertical, Star, Upload, Link as LinkIcon } from "lucide-react";
+import { X, Plus, Image as ImageIcon, GripVertical, Star, Upload, Link as LinkIcon, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { estoqueAPI } from "@/lib/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ImageEditorDialog } from "@/components/ImageEditorDialog";
 import {
   DndContext,
   closestCenter,
@@ -40,7 +41,8 @@ function SortableImageItem({
   index, 
   isDestaque,
   onRemove,
-  onSetDestaque
+  onSetDestaque,
+  onEdit
 }: { 
   id: string; 
   img: string; 
@@ -48,6 +50,7 @@ function SortableImageItem({
   isDestaque: boolean;
   onRemove: () => void;
   onSetDestaque: () => void;
+  onEdit: () => void;
 }) {
   const {
     attributes,
@@ -109,6 +112,16 @@ function SortableImageItem({
         <Button
           type="button"
           size="icon"
+          variant="secondary"
+          className="h-7 w-7 bg-background/90 backdrop-blur-sm hover:bg-blue-500 hover:text-white transition-colors"
+          onClick={onEdit}
+          title="Editar imagem"
+        >
+          <Edit className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          type="button"
+          size="icon"
           variant="destructive"
           className="h-7 w-7"
           onClick={onRemove}
@@ -137,10 +150,14 @@ export function EditVariantImagesDialog({
   variante,
   onSuccess,
 }: EditVariantImagesDialogProps) {
-  const [imagens, setImagens] = useState<string[]>(variante?.imagens || []);
-  const [imagemURL, setImagemURL] = useState("");
+  const [imagens, setImagens] = useState<string[]>([]);
+  const [novaImagemUrl, setNovaImagemUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  const [uploadingUrl, setUploadingUrl] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [showImageEditor, setShowImageEditor] = useState(false);
+  const [imageToEdit, setImageToEdit] = useState<string>("");
+  const [editingIndex, setEditingIndex] = useState<number>(-1);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sensors = useSensors(
@@ -150,19 +167,39 @@ export function EditVariantImagesDialog({
     })
   );
 
-  const addImagemURL = () => {
-    if (!imagemURL.trim()) {
-      toast.error("Por favor, insira uma URL válida");
-      return;
+  useEffect(() => {
+    if (open && variante) {
+      setImagens(variante.imagens || []);
     }
-    
-    if (imagens.includes(imagemURL.trim())) {
-      toast.error("Esta imagem já foi adicionada");
+  }, [open, variante]);
+
+  const handleAddImagemUrl = async () => {
+    if (!novaImagemUrl.trim()) {
+      toast.error("Digite uma URL válida");
       return;
     }
 
-    setImagens([...imagens, imagemURL.trim()]);
-    setImagemURL("");
+    try {
+      setUploadingUrl(true);
+      
+      const testImg = new Image();
+      testImg.crossOrigin = "anonymous";
+      
+      await new Promise((resolve, reject) => {
+        testImg.onload = resolve;
+        testImg.onerror = () => reject(new Error("URL inválida ou inacessível"));
+        testImg.src = novaImagemUrl;
+      });
+
+      setImagens([...imagens, novaImagemUrl]);
+      setNovaImagemUrl("");
+      toast.success("Imagem adicionada!");
+    } catch (error) {
+      console.error("Erro ao validar URL:", error);
+      toast.error("Não foi possível carregar a imagem desta URL");
+    } finally {
+      setUploadingUrl(false);
+    }
   };
 
   const removeImage = (index: number) => {
@@ -185,43 +222,83 @@ export function EditVariantImagesDialog({
     toast.success("Imagem definida como destaque!");
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
+  const handleEditImage = (index: number) => {
+    setImageToEdit(imagens[index]);
+    setEditingIndex(index);
+    setShowImageEditor(true);
+  };
+
+  const handleSaveEditedImage = (blob: Blob) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      const novasImagens = [...imagens];
+      novasImagens[editingIndex] = base64;
+      setImagens(novasImagens);
+      toast.success("Imagem editada com sucesso!");
+    };
+    reader.readAsDataURL(blob);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    setUploadingFile(true);
-    const novasImagens: string[] = [];
-
     try {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        
-        // Validar tipo de arquivo
+      setUploadingFile(true);
+      const novasImagens: string[] = [];
+
+      for (const file of Array.from(files)) {
         if (!file.type.startsWith('image/')) {
           toast.error(`${file.name} não é uma imagem válida`);
           continue;
         }
 
-        // Validar tamanho (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
           toast.error(`${file.name} é muito grande. Máximo 5MB`);
           continue;
         }
 
-        // Converter para base64
-        const reader = new FileReader();
-        const base64 = await new Promise<string>((resolve, reject) => {
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
+        const img = new Image();
+        const imageUrl = URL.createObjectURL(file);
+        
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = imageUrl;
         });
 
-        novasImagens.push(base64);
+        const maxSize = 1200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = (height / width) * maxSize;
+            width = maxSize;
+          } else {
+            width = (width / height) * maxSize;
+            height = maxSize;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const base64 = canvas.toDataURL('image/jpeg', 0.85);
+          novasImagens.push(base64);
+        }
+
+        URL.revokeObjectURL(imageUrl);
       }
 
       if (novasImagens.length > 0) {
         setImagens([...imagens, ...novasImagens]);
-        toast.success(`${novasImagens.length} imagem(ns) adicionada(s)!`);
+        toast.success(`${novasImagens.length} imagem(ns) otimizada(s) e adicionada(s)!`);
       }
     } catch (error) {
       console.error('Erro ao fazer upload:', error);
@@ -278,7 +355,7 @@ export function EditVariantImagesDialog({
           </DialogTitle>
           <DialogDescription className="flex flex-col gap-1">
             <span className="font-semibold">{produto?.nomeProduto}</span>
-            <span className="text-sm">Cor: {variante?.cor} • Tamanho: {variante?.tamanho}</span>
+            <span className="text-sm">Cor: {variante?.cor}</span>
           </DialogDescription>
         </DialogHeader>
 
@@ -296,54 +373,48 @@ export function EditVariantImagesDialog({
 
           <TabsContent value="url" className="space-y-4 mt-4">
             <div className="space-y-2">
-              <Label>Adicionar Imagem via URL</Label>
+              <Label>URL da Imagem</Label>
               <div className="flex gap-2">
                 <Input
                   placeholder="https://exemplo.com/imagem.jpg"
-                  value={imagemURL}
-                  onChange={(e) => setImagemURL(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && addImagemURL()}
+                  value={novaImagemUrl}
+                  onChange={(e) => setNovaImagemUrl(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddImagemUrl()}
                 />
-                <Button type="button" onClick={addImagemURL} size="icon">
-                  <Plus className="h-4 w-4" />
+                <Button 
+                  onClick={handleAddImagemUrl}
+                  disabled={uploadingUrl}
+                  className="gap-2"
+                >
+                  {uploadingUrl ? "Validando..." : <><Plus className="h-4 w-4" /> Adicionar</>}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Cole o link de uma imagem hospedada em serviços como Imgur, Cloudinary, Google Drive, etc.
+                Cole a URL de uma imagem hospedada online
               </p>
             </div>
           </TabsContent>
 
           <TabsContent value="upload" className="space-y-4 mt-4">
             <div className="space-y-2">
-              <Label>Upload de Arquivos</Label>
-              <div className="flex flex-col gap-2">
-                <input
+              <Label>Selecionar Arquivos</Label>
+              <div className="flex items-center gap-2">
+                <Input
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
                   multiple
                   onChange={handleFileUpload}
-                  className="hidden"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full h-24 border-dashed"
-                  onClick={() => fileInputRef.current?.click()}
+                  className="cursor-pointer"
                   disabled={uploadingFile}
-                >
-                  <div className="flex flex-col items-center gap-2">
-                    <Upload className="h-8 w-8 text-muted-foreground" />
-                    <span className="text-sm font-medium">
-                      {uploadingFile ? 'Processando...' : 'Clique para selecionar imagens'}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      PNG, JPG, WEBP até 5MB cada
-                    </span>
-                  </div>
-                </Button>
+                />
+                {uploadingFile && (
+                  <span className="text-sm text-muted-foreground">Processando...</span>
+                )}
               </div>
+              <p className="text-xs text-muted-foreground">
+                Selecione uma ou mais imagens (máx 5MB cada). As imagens serão otimizadas automaticamente.
+              </p>
             </div>
           </TabsContent>
         </Tabs>
@@ -383,6 +454,7 @@ export function EditVariantImagesDialog({
                         isDestaque={index === 0}
                         onRemove={() => removeImage(index)}
                         onSetDestaque={() => setImagemDestaque(index)}
+                        onEdit={() => handleEditImage(index)}
                       />
                     ))}
                   </div>
@@ -418,6 +490,13 @@ export function EditVariantImagesDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <ImageEditorDialog
+        open={showImageEditor}
+        onOpenChange={setShowImageEditor}
+        imageUrl={imageToEdit}
+        onSave={handleSaveEditedImage}
+      />
     </Dialog>
   );
 }

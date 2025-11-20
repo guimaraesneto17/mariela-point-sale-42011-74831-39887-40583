@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History, Image as ImageIcon, Eye, ChevronDown, Star } from "lucide-react";
+import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History, Image as ImageIcon, ChevronDown, Star } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,8 @@ import { NovidadeDialog } from "@/components/NovidadeDialog";
 import { MovimentacaoDialog } from "@/components/MovimentacaoDialog";
 import { PromocaoHistoricoDialog } from "@/components/PromocaoHistoricoDialog";
 import { EditVariantImagesDialog } from "@/components/EditVariantImagesDialog";
-import { ImageGalleryDialog } from "@/components/ImageGalleryDialog";
+import { ImageGalleryLightbox } from "@/components/ImageGalleryLightbox";
+
 import { estoqueAPI } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
 import { getDefaultImageByCategory } from "@/lib/defaultImages";
@@ -30,7 +31,10 @@ const Estoque = () => {
   const [showMovimentacaoDialog, setShowMovimentacaoDialog] = useState(false);
   const [showPromocaoHistoricoDialog, setShowPromocaoHistoricoDialog] = useState(false);
   const [showEditImagesDialog, setShowEditImagesDialog] = useState(false);
-  const [showGalleryDialog, setShowGalleryDialog] = useState(false);
+  const [showLightbox, setShowLightbox] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [inventory, setInventory] = useState<any[]>([]);
@@ -71,7 +75,10 @@ const Estoque = () => {
       data.forEach((item: any) => {
         if (item.variantes && item.variantes.length > 0) {
           initialColors[item.codigoProduto] = item.variantes[0].cor;
-          initialSizes[item.codigoProduto] = item.variantes[0].tamanho;
+          const primeiroTamanho = Array.isArray(item.variantes[0].tamanhos) && item.variantes[0].tamanhos.length > 0
+            ? item.variantes[0].tamanhos[0]
+            : item.variantes[0].tamanho || '';
+          initialSizes[item.codigoProduto] = primeiroTamanho;
         }
       });
       
@@ -107,9 +114,12 @@ const Estoque = () => {
     const matchesCor = filterCor === "todas" || 
       (item.variantes && item.variantes.some((v: any) => v.cor === filterCor && v.quantidade > 0));
     
-    // Filtro de tamanho
+    // Filtro de tamanho - agora verifica o array de tamanhos
     const matchesTamanho = filterTamanho === "todos" || 
-      (item.variantes && item.variantes.some((v: any) => v.tamanho === filterTamanho && v.quantidade > 0));
+      (item.variantes && item.variantes.some((v: any) => {
+        const tamanhos = Array.isArray(v.tamanhos) ? v.tamanhos : (v.tamanho ? [v.tamanho] : []);
+        return tamanhos.includes(filterTamanho) && v.quantidade > 0;
+      }));
     
     return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria && matchesCor && matchesTamanho;
   });
@@ -168,9 +178,9 @@ const Estoque = () => {
   // Obter tamanhos disponíveis para uma cor específica (apenas com quantidade > 0)
   const getTamanhosDisponiveis = (item: any, cor: string) => {
     if (!item.variantes) return [];
-    return item.variantes
-      .filter((v: any) => v.cor === cor && v.quantidade > 0)
-      .map((v: any) => v.tamanho);
+    const variante = item.variantes.find((v: any) => v.cor === cor && v.quantidade > 0);
+    if (!variante) return [];
+    return Array.isArray(variante.tamanhos) ? variante.tamanhos : (variante.tamanho ? [variante.tamanho] : []);
   };
 
   // Obter variante atual selecionada
@@ -178,9 +188,10 @@ const Estoque = () => {
     const cor = selectedColorByItem[item.codigoProduto];
     const tamanho = selectedSizeByItem[item.codigoProduto];
     
-    if (!item.variantes || !cor || !tamanho) return null;
+    if (!item.variantes || !cor) return null;
     
-    return item.variantes.find((v: any) => v.cor === cor && v.tamanho === tamanho);
+    // Encontrar variante pela cor (já que agora cada cor tem um array de tamanhos)
+    return item.variantes.find((v: any) => v.cor === cor);
   };
 
   // Atualizar cor selecionada
@@ -218,7 +229,8 @@ const Estoque = () => {
     inventory.forEach((item) => {
       item.variantes?.forEach((v: any) => {
         if (v.quantidade > 0) {
-          tamanhos.add(v.tamanho);
+          const vTamanhos = Array.isArray(v.tamanhos) ? v.tamanhos : (v.tamanho ? [v.tamanho] : []);
+          vTamanhos.forEach((t: string) => tamanhos.add(t));
         }
       });
     });
@@ -242,11 +254,12 @@ const Estoque = () => {
     setShowEditImagesDialog(true);
   };
 
-  const openGalleryDialog = (item: any, variante: any) => {
-    setSelectedItem(item);
-    setSelectedVariant(variante);
-    setShowGalleryDialog(true);
+  const openLightbox = (images: string[], index: number = 0) => {
+    setLightboxImages(images);
+    setLightboxIndex(index);
+    setShowLightbox(true);
   };
+
 
   const handleImagesSuccess = () => {
     loadEstoque();
@@ -394,9 +407,8 @@ const Estoque = () => {
                       <div className="relative group">
                         <img
                           src={varianteSelecionada.imagens[0]}
-                          alt={`${item.nomeProduto} - ${selectedCor} ${selectedTamanho}`}
-                          className="w-20 h-20 object-cover rounded-lg border-2 border-primary/20 shadow-md group-hover:border-primary/40 transition-all cursor-pointer"
-                          onClick={() => openGalleryDialog(item, varianteSelecionada)}
+                          alt={`${item.nomeProduto} - ${selectedCor}`}
+                          className="w-20 h-20 object-cover rounded-lg border-2 border-primary/20 shadow-md transition-all"
                         />
                         {varianteSelecionada.imagens.length > 1 && (
                           <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border-2 border-background shadow-md">
@@ -567,24 +579,30 @@ const Estoque = () => {
                     <Button
                       size="sm"
                       variant={varianteSelecionada?.imagens?.length > 0 ? "default" : "outline"}
-                      onClick={() => openEditImagesDialog(item, varianteSelecionada)}
-                      className={`gap-2 ${varianteSelecionada?.imagens?.length > 0 ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                      onClick={() => {
+                        if (varianteSelecionada?.imagens?.length > 0) {
+                          openLightbox(varianteSelecionada.imagens);
+                        } else {
+                          openEditImagesDialog(item, varianteSelecionada);
+                        }
+                      }}
+                      className="gap-2"
                       disabled={!varianteSelecionada}
                     >
                       <ImageIcon className="h-4 w-4" />
                       {varianteSelecionada?.imagens?.length > 0 
-                        ? `Imagens (${varianteSelecionada.imagens.length})` 
+                        ? `Ver ${varianteSelecionada.imagens.length} Imagem${varianteSelecionada.imagens.length > 1 ? 'ns' : ''}`
                         : 'Adicionar Imagens'}
                     </Button>
-                    {varianteSelecionada && varianteSelecionada.imagens && varianteSelecionada.imagens.length > 0 && (
+                    {varianteSelecionada?.imagens?.length > 0 && (
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => openGalleryDialog(item, varianteSelecionada)}
+                        onClick={() => openEditImagesDialog(item, varianteSelecionada)}
                         className="gap-2"
                       >
-                        <Eye className="h-4 w-4" />
-                        Ver Galeria ({varianteSelecionada.imagens.length})
+                        <ImageIcon className="h-4 w-4" />
+                        Editar Imagens
                       </Button>
                     )}
                     <Button
@@ -789,15 +807,16 @@ const Estoque = () => {
             variante={selectedVariant}
             onSuccess={handleImagesSuccess}
           />
-
-          <ImageGalleryDialog
-            open={showGalleryDialog}
-            onOpenChange={setShowGalleryDialog}
-            images={selectedVariant.imagens || []}
-            title={`${selectedItem.nomeProduto} - ${selectedVariant.cor} / ${selectedVariant.tamanho}`}
-          />
         </>
       )}
+
+      <ImageGalleryLightbox
+        open={showLightbox}
+        onOpenChange={setShowLightbox}
+        images={lightboxImages}
+        initialIndex={lightboxIndex}
+        title={selectedItem?.nomeProduto}
+      />
     </div>
   );
 };

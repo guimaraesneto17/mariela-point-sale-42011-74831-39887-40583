@@ -78,11 +78,10 @@ const EstoqueSchema = new mongoose.Schema({
       required: true,
       trim: true
     },
-    tamanho: {
+    tamanhos: [{
       type: String,
-      required: true,
       trim: true
-    },
+    }],
     quantidade: {
       type: Number,
       required: true,
