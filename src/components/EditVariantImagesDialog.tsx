@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { X, Plus, Image as ImageIcon, GripVertical } from "lucide-react";
+import { X, Plus, Image as ImageIcon, GripVertical, Star, Upload, Link as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
 import { estoqueAPI } from "@/lib/api";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DndContext,
   closestCenter,
@@ -20,7 +21,7 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
-  verticalListSortingStrategy,
+  rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -32,17 +33,21 @@ interface EditVariantImagesDialogProps {
   onSuccess?: () => void;
 }
 
-// Componente para item arrastável
+// Componente para item arrastável com destaque
 function SortableImageItem({ 
   id, 
   img, 
   index, 
-  onRemove 
+  isDestaque,
+  onRemove,
+  onSetDestaque
 }: { 
   id: string; 
   img: string; 
   index: number; 
+  isDestaque: boolean;
   onRemove: () => void;
+  onSetDestaque: () => void;
 }) {
   const {
     attributes,
@@ -61,30 +66,65 @@ function SortableImageItem({
 
   return (
     <div ref={setNodeRef} style={style} className="relative group">
+      {/* Indicador de destaque */}
+      {isDestaque && (
+        <div className="absolute -top-2 -right-2 z-20 bg-yellow-500 text-white rounded-full p-1.5 shadow-lg border-2 border-background">
+          <Star className="h-3 w-3 fill-current" />
+        </div>
+      )}
+      
+      {/* Handle de arrastar */}
       <div className="absolute top-2 left-2 cursor-move z-10" {...attributes} {...listeners}>
-        <div className="bg-background/80 backdrop-blur-sm p-1 rounded-md border border-border shadow-sm">
+        <div className="bg-background/90 backdrop-blur-sm p-1 rounded-md border border-border shadow-md hover:bg-background transition-colors">
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
       </div>
+      
+      {/* Imagem */}
       <img
         src={img}
         alt={`Imagem ${index + 1}`}
-        className="w-full h-32 object-cover rounded-lg border border-border"
+        className={`w-full h-40 object-cover rounded-lg border-2 transition-all ${
+          isDestaque ? 'border-yellow-500 ring-2 ring-yellow-500/20' : 'border-border'
+        }`}
         onError={(e) => {
           e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%23ddd' width='100' height='100'/%3E%3Ctext fill='%23999' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3EErro%3C/text%3E%3C/svg%3E";
         }}
       />
-      <Button
-        type="button"
-        size="icon"
-        variant="destructive"
-        className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-        onClick={onRemove}
-      >
-        <X className="h-4 w-4" />
-      </Button>
-      <div className="absolute bottom-2 left-2 bg-background/80 backdrop-blur-sm px-2 py-0.5 rounded-md border border-border text-xs font-medium">
-        #{index + 1}
+      
+      {/* Botões de ação */}
+      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {!isDestaque && (
+          <Button
+            type="button"
+            size="icon"
+            variant="secondary"
+            className="h-7 w-7 bg-background/90 backdrop-blur-sm hover:bg-yellow-500 hover:text-white transition-colors"
+            onClick={onSetDestaque}
+            title="Definir como imagem destaque"
+          >
+            <Star className="h-3.5 w-3.5" />
+          </Button>
+        )}
+        <Button
+          type="button"
+          size="icon"
+          variant="destructive"
+          className="h-7 w-7"
+          onClick={onRemove}
+          title="Remover imagem"
+        >
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+      
+      {/* Número da posição */}
+      <div className={`absolute bottom-2 left-2 backdrop-blur-sm px-2 py-1 rounded-md border text-xs font-semibold ${
+        isDestaque 
+          ? 'bg-yellow-500/90 border-yellow-600 text-white' 
+          : 'bg-background/90 border-border text-foreground'
+      }`}>
+        {isDestaque ? 'DESTAQUE' : `#${index + 1}`}
       </div>
     </div>
   );
@@ -100,6 +140,8 @@ export function EditVariantImagesDialog({
   const [imagens, setImagens] = useState<string[]>(variante?.imagens || []);
   const [imagemURL, setImagemURL] = useState("");
   const [loading, setLoading] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -124,7 +166,72 @@ export function EditVariantImagesDialog({
   };
 
   const removeImage = (index: number) => {
+    const imagemRemovida = imagens[index];
     setImagens(imagens.filter((_, i) => i !== index));
+    
+    if (index === 0 && imagens.length > 1) {
+      toast.info("A próxima imagem se tornou a imagem destaque");
+    }
+  };
+
+  const setImagemDestaque = (index: number) => {
+    if (index === 0) return; // Já é destaque
+    
+    const novasImagens = [...imagens];
+    const [imagemDestaque] = novasImagens.splice(index, 1);
+    novasImagens.unshift(imagemDestaque);
+    setImagens(novasImagens);
+    
+    toast.success("Imagem definida como destaque!");
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingFile(true);
+    const novasImagens: string[] = [];
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Validar tipo de arquivo
+        if (!file.type.startsWith('image/')) {
+          toast.error(`${file.name} não é uma imagem válida`);
+          continue;
+        }
+
+        // Validar tamanho (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error(`${file.name} é muito grande. Máximo 5MB`);
+          continue;
+        }
+
+        // Converter para base64
+        const reader = new FileReader();
+        const base64 = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        novasImagens.push(base64);
+      }
+
+      if (novasImagens.length > 0) {
+        setImagens([...imagens, ...novasImagens]);
+        toast.success(`${novasImagens.length} imagem(ns) adicionada(s)!`);
+      }
+    } catch (error) {
+      console.error('Erro ao fazer upload:', error);
+      toast.error('Erro ao processar imagens');
+    } finally {
+      setUploadingFile(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -163,40 +270,99 @@ export function EditVariantImagesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Gerenciar Imagens da Variante</DialogTitle>
-          <DialogDescription>
-            {produto?.nomeProduto} - {variante?.cor} / {variante?.tamanho}
+          <DialogTitle className="flex items-center gap-2">
+            <ImageIcon className="h-5 w-5" />
+            Gerenciar Imagens da Variante
+          </DialogTitle>
+          <DialogDescription className="flex flex-col gap-1">
+            <span className="font-semibold">{produto?.nomeProduto}</span>
+            <span className="text-sm">Cor: {variante?.cor} • Tamanho: {variante?.tamanho}</span>
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Campo para adicionar URL de imagem */}
-          <div className="space-y-2">
-            <Label>Adicionar Imagem (URL)</Label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Cole o link da imagem aqui..."
-                value={imagemURL}
-                onChange={(e) => setImagemURL(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && addImagemURL()}
-              />
-              <Button type="button" onClick={addImagemURL} size="icon">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Você pode hospedar suas imagens em serviços como Imgur, Cloudinary, Google Drive, etc.
-            </p>
-          </div>
+        <Tabs defaultValue="url" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="url" className="flex items-center gap-2">
+              <LinkIcon className="h-4 w-4" />
+              URL da Imagem
+            </TabsTrigger>
+            <TabsTrigger value="upload" className="flex items-center gap-2">
+              <Upload className="h-4 w-4" />
+              Upload de Arquivo
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Grid de imagens com drag & drop */}
-          {imagens.length > 0 ? (
+          <TabsContent value="url" className="space-y-4 mt-4">
             <div className="space-y-2">
-              <Label>Imagens Adicionadas ({imagens.length})</Label>
-              <p className="text-xs text-muted-foreground mb-2">
-                Arraste as imagens para reordená-las. A primeira será a imagem principal.
+              <Label>Adicionar Imagem via URL</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="https://exemplo.com/imagem.jpg"
+                  value={imagemURL}
+                  onChange={(e) => setImagemURL(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addImagemURL()}
+                />
+                <Button type="button" onClick={addImagemURL} size="icon">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Cole o link de uma imagem hospedada em serviços como Imgur, Cloudinary, Google Drive, etc.
+              </p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="upload" className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label>Upload de Arquivos</Label>
+              <div className="flex flex-col gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-24 border-dashed"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingFile}
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                    <span className="text-sm font-medium">
+                      {uploadingFile ? 'Processando...' : 'Clique para selecionar imagens'}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      PNG, JPG, WEBP até 5MB cada
+                    </span>
+                  </div>
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* Grid de imagens com drag & drop */}
+        <div className="space-y-4 mt-6">
+          {imagens.length > 0 ? (
+            <>
+              <div className="flex items-center justify-between">
+                <Label className="text-base">
+                  Imagens ({imagens.length})
+                </Label>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
+                  <span>Primeira = Destaque</span>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Arraste para reordenar • Clique na estrela para definir como destaque • A primeira imagem é exibida como principal
               </p>
               <DndContext
                 sensors={sensors}
@@ -205,7 +371,7 @@ export function EditVariantImagesDialog({
               >
                 <SortableContext
                   items={imagens.map((_, i) => `image-${i}`)}
-                  strategy={verticalListSortingStrategy}
+                  strategy={rectSortingStrategy}
                 >
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {imagens.map((img, index) => (
@@ -214,27 +380,41 @@ export function EditVariantImagesDialog({
                         id={`image-${index}`}
                         img={img}
                         index={index}
+                        isDestaque={index === 0}
                         onRemove={() => removeImage(index)}
+                        onSetDestaque={() => setImagemDestaque(index)}
                       />
                     ))}
                   </div>
                 </SortableContext>
               </DndContext>
-            </div>
+            </>
           ) : (
-            <div className="text-center py-8 border border-dashed border-border rounded-lg">
-              <ImageIcon className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">Nenhuma imagem adicionada</p>
+            <div className="text-center py-12 border-2 border-dashed border-border rounded-lg bg-muted/20">
+              <ImageIcon className="h-16 w-16 text-muted-foreground mx-auto mb-3 opacity-50" />
+              <p className="text-sm font-medium text-foreground mb-1">Nenhuma imagem adicionada</p>
+              <p className="text-xs text-muted-foreground">
+                Use as abas acima para adicionar imagens via URL ou upload
+              </p>
             </div>
           )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+        <DialogFooter className="gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)} 
+            disabled={loading}
+            className="flex-1 sm:flex-none"
+          >
             Cancelar
           </Button>
-          <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? "Salvando..." : "Salvar Imagens"}
+          <Button 
+            onClick={handleSubmit} 
+            disabled={loading || imagens.length === 0}
+            className="flex-1 sm:flex-none"
+          >
+            {loading ? "Salvando..." : `Salvar ${imagens.length} Imagem(ns)`}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History, Image as ImageIcon, Eye, ChevronDown } from "lucide-react";
+import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History, Image as ImageIcon, Eye, ChevronDown, Star } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -391,20 +391,32 @@ const Estoque = () => {
                   {/* Header com imagem, nome e badges */}
                   <div className="flex items-start gap-4">
                     {varianteSelecionada && varianteSelecionada.imagens && varianteSelecionada.imagens.length > 0 ? (
-                      <img
-                        src={varianteSelecionada.imagens[0]}
-                        alt={`${item.nomeProduto} - ${selectedCor} ${selectedTamanho}`}
-                        className="w-16 h-16 object-cover rounded-lg"
-                      />
+                      <div className="relative group">
+                        <img
+                          src={varianteSelecionada.imagens[0]}
+                          alt={`${item.nomeProduto} - ${selectedCor} ${selectedTamanho}`}
+                          className="w-20 h-20 object-cover rounded-lg border-2 border-primary/20 shadow-md group-hover:border-primary/40 transition-all cursor-pointer"
+                          onClick={() => openGalleryDialog(item, varianteSelecionada)}
+                        />
+                        {varianteSelecionada.imagens.length > 1 && (
+                          <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border-2 border-background shadow-md">
+                            +{varianteSelecionada.imagens.length - 1}
+                          </div>
+                        )}
+                        <div className="absolute top-1 left-1 bg-yellow-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shadow-md">
+                          <Star className="h-2.5 w-2.5 fill-current" />
+                          <span>DEST</span>
+                        </div>
+                      </div>
                     ) : (
-                      <div className="w-16 h-16 bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg flex items-center justify-center">
+                      <div className="w-20 h-20 bg-gradient-to-br from-muted/50 to-muted/20 rounded-lg flex items-center justify-center border-2 border-dashed border-border">
                         <img 
                           src={getDefaultImageByCategory(item.categoria)} 
                           alt={`${item.categoria || 'Produto'} - Logo Mariela`}
-                          className="w-12 h-12 object-contain opacity-50"
+                          className="w-14 h-14 object-contain opacity-30"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
-                            e.currentTarget.parentElement!.innerHTML = '<svg class="h-8 w-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>';
+                            e.currentTarget.parentElement!.innerHTML = '<svg class="h-10 w-10 text-muted-foreground opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>';
                           }}
                         />
                       </div>
@@ -554,13 +566,15 @@ const Estoque = () => {
                     </Button>
                     <Button
                       size="sm"
-                      variant="outline"
+                      variant={varianteSelecionada?.imagens?.length > 0 ? "default" : "outline"}
                       onClick={() => openEditImagesDialog(item, varianteSelecionada)}
-                      className="gap-2"
+                      className={`gap-2 ${varianteSelecionada?.imagens?.length > 0 ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
                       disabled={!varianteSelecionada}
                     >
                       <ImageIcon className="h-4 w-4" />
-                      Gerenciar Imagens
+                      {varianteSelecionada?.imagens?.length > 0 
+                        ? `Imagens (${varianteSelecionada.imagens.length})` 
+                        : 'Adicionar Imagens'}
                     </Button>
                     {varianteSelecionada && varianteSelecionada.imagens && varianteSelecionada.imagens.length > 0 && (
                       <Button
