@@ -9,6 +9,7 @@ import { SingleSelectBadges } from "@/components/ui/single-select-badges";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Upload, Link as LinkIcon, X, GripVertical } from "lucide-react";
+import { useImageCompression } from "@/hooks/useImageCompression";
 import {
   DndContext,
   closestCenter,
@@ -44,8 +45,8 @@ export function AddToStockDialog({
   const [imagemURL, setImagemURL] = useState("");
   const [imagens, setImagens] = useState<string[]>([]);
   const [uploadingUrl, setUploadingUrl] = useState(false);
-  const [uploadingFile, setUploadingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { compressing, compressImages, validateImageUrl } = useImageCompression();
   
   // Opções disponíveis (podem ser expandidas)
   const [tamanhosDisponiveis, setTamanhosDisponiveis] = useState<string[]>([
@@ -107,16 +108,7 @@ export function AddToStockDialog({
 
     try {
       setUploadingUrl(true);
-      
-      const testImg = new Image();
-      testImg.crossOrigin = "anonymous";
-      
-      await new Promise((resolve, reject) => {
-        testImg.onload = resolve;
-        testImg.onerror = () => reject(new Error("URL inválida ou inacessível"));
-        testImg.src = imagemURL;
-      });
-
+      await validateImageUrl(imagemURL);
       setImagens([...imagens, imagemURL]);
       setImagemURL("");
       toast.success("Imagem adicionada!");
@@ -133,66 +125,16 @@ export function AddToStockDialog({
     if (!files || files.length === 0) return;
 
     try {
-      setUploadingFile(true);
-      const novasImagens: string[] = [];
-
-      for (const file of Array.from(files)) {
-        if (!file.type.startsWith('image/')) {
-          toast.error(`${file.name} não é uma imagem válida`);
-          continue;
-        }
-
-        if (file.size > 5 * 1024 * 1024) {
-          toast.error(`${file.name} é muito grande. Máximo 5MB`);
-          continue;
-        }
-
-        const img = new Image();
-        const imageUrl = URL.createObjectURL(file);
-        
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-          img.src = imageUrl;
-        });
-
-        const maxSize = 1200;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxSize || height > maxSize) {
-          if (width > height) {
-            height = (height / width) * maxSize;
-            width = maxSize;
-          } else {
-            width = (width / height) * maxSize;
-            height = maxSize;
-          }
-        }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
-          const base64 = canvas.toDataURL('image/jpeg', 0.85);
-          novasImagens.push(base64);
-        }
-
-        URL.revokeObjectURL(imageUrl);
-      }
-
-      if (novasImagens.length > 0) {
-        setImagens([...imagens, ...novasImagens]);
-        toast.success(`${novasImagens.length} imagem(ns) adicionada(s)!`);
+      const compressedImages = await compressImages(Array.from(files));
+      
+      if (compressedImages.length > 0) {
+        setImagens([...imagens, ...compressedImages]);
+        toast.success(`${compressedImages.length} imagem(ns) adicionada(s)!`);
       }
     } catch (error) {
       console.error('Erro ao fazer upload:', error);
       toast.error('Erro ao processar imagens');
     } finally {
-      setUploadingFile(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -403,9 +345,9 @@ export function AddToStockDialog({
                   multiple
                   onChange={handleFileUpload}
                   className="cursor-pointer"
-                  disabled={uploadingFile}
+                  disabled={compressing}
                 />
-                {uploadingFile && (
+                {compressing && (
                   <p className="text-sm text-muted-foreground">Processando imagens...</p>
                 )}
               </TabsContent>

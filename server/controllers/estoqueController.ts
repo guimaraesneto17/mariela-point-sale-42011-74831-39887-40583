@@ -573,14 +573,26 @@ export const registrarEntrada = async (req: Request, res: Response) => {
       estoque.ativo = true;
     }
 
-    // Encontrar a variante
-    const variante = estoque.variantes.find((v: any) => v.cor === cor && v.tamanho === tamanho);
+    // Novo modelo: encontrar variante pela cor (uma variante possui lista de tamanhos)
+    const variante = estoque.variantes.find((v: any) => v.cor === cor);
     
     if (!variante) {
-      return res.status(404).json({ error: 'Variante não encontrada no estoque' });
+      return res.status(404).json({ 
+        error: 'Variante não encontrada no estoque',
+        message: `Não foi encontrada variante com a cor "${cor}"`
+      });
     }
 
-    // Atualizar quantidade
+    // Verificar se o tamanho existe na lista de tamanhos da variante
+    const tamanhos = Array.isArray(variante.tamanhos) ? variante.tamanhos : [];
+    if (!tamanhos.includes(tamanho)) {
+      return res.status(404).json({ 
+        error: 'Tamanho não encontrado',
+        message: `O tamanho "${tamanho}" não está disponível para a cor "${cor}". Tamanhos disponíveis: ${tamanhos.join(', ')}`
+      });
+    }
+
+    // Atualizar quantidade da variante
     variante.quantidade += quantidade;
     
     // Recalcular quantidade total
@@ -603,7 +615,7 @@ export const registrarEntrada = async (req: Request, res: Response) => {
     }
     estoque.logMovimentacao.push(logEntry);
 
-    console.log(`✅ Log de entrada registrado para ${codigoProduto}:`, logEntry);
+    console.log(`✅ Log de entrada registrado para ${codigoProduto} - ${cor} (${tamanho}):`, logEntry);
 
     // Se estava inativo e agora tem estoque, marcar como ativo
     if (!estoque.ativo && estoque.quantidade > 0) {
@@ -640,18 +652,30 @@ export const registrarSaida = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Produto não encontrado no estoque' });
     }
 
-    // Encontrar a variante
-    const variante = estoque.variantes.find((v: any) => v.cor === cor && v.tamanho === tamanho);
+    // Novo modelo: encontrar variante pela cor (uma variante possui lista de tamanhos)
+    const variante = estoque.variantes.find((v: any) => v.cor === cor);
     
     if (!variante) {
-      return res.status(404).json({ error: 'Variante não encontrada no estoque' });
+      return res.status(404).json({ 
+        error: 'Variante não encontrada no estoque',
+        message: `Não foi encontrada variante com a cor "${cor}"`
+      });
+    }
+
+    // Verificar se o tamanho existe na lista de tamanhos da variante
+    const tamanhos = Array.isArray(variante.tamanhos) ? variante.tamanhos : [];
+    if (!tamanhos.includes(tamanho)) {
+      return res.status(404).json({ 
+        error: 'Tamanho não encontrado',
+        message: `O tamanho "${tamanho}" não está disponível para a cor "${cor}". Tamanhos disponíveis: ${tamanhos.join(', ')}`
+      });
     }
 
     // Verificar se há quantidade suficiente
     if (variante.quantidade < quantidade) {
       return res.status(400).json({ 
         error: 'Quantidade insuficiente',
-        message: `Há apenas ${variante.quantidade} unidades disponíveis para ${cor} - ${tamanho}`
+        message: `Há apenas ${variante.quantidade} unidades disponíveis para ${cor} (todos os tamanhos)`
       });
     }
 
@@ -676,13 +700,11 @@ export const registrarSaida = async (req: Request, res: Response) => {
     }
     estoque.logMovimentacao.push(logEntry);
     
-    console.log(`✅ Log de saída registrado para ${codigoProduto}:`, logEntry);
+    console.log(`✅ Log de saída registrado para ${codigoProduto} - ${cor} (${tamanho}):`, logEntry);
 
     // Se a variante ficou com quantidade 0, remove ela do array
     if (variante.quantidade === 0) {
-      estoque.variantes = estoque.variantes.filter(
-        (v: any) => !(v.cor === cor && v.tamanho === tamanho)
-      );
+      estoque.variantes = estoque.variantes.filter((v: any) => v.cor !== cor);
     }
     
     // Recalcular quantidade total
