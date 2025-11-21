@@ -404,17 +404,21 @@ const Estoque = () => {
                   {/* Header com imagem, nome e badges */}
                   <div className="flex items-start gap-4">
                     {varianteSelecionada && varianteSelecionada.imagens && varianteSelecionada.imagens.length > 0 ? (
-                      <div className="relative group">
+                      <div 
+                        className="relative group cursor-pointer" 
+                        onClick={() => openLightbox(varianteSelecionada.imagens)}
+                        title="Clique para ver todas as imagens"
+                      >
                         <img
                           src={varianteSelecionada.imagens[0]}
                           alt={`${item.nomeProduto} - ${selectedCor}`}
-                          className="w-20 h-20 object-cover rounded-lg border-2 border-primary/20 shadow-md transition-all"
+                          className="w-20 h-20 object-cover rounded-lg border-2 border-primary/20 shadow-md transition-all group-hover:border-primary group-hover:scale-105"
                         />
-                        {varianteSelecionada.imagens.length > 1 && (
-                          <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border-2 border-background shadow-md">
-                            +{varianteSelecionada.imagens.length - 1}
-                          </div>
-                        )}
+                        {/* Badge com ícone de imagem e quantidade */}
+                        <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-1.5 shadow-lg border-2 border-background flex items-center justify-center gap-1 min-w-[28px]">
+                          <ImageIcon className="h-3 w-3" />
+                          <span className="text-xs font-bold">{varianteSelecionada.imagens.length}</span>
+                        </div>
                         <div className="absolute top-1 left-1 bg-yellow-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shadow-md">
                           <Star className="h-2.5 w-2.5 fill-current" />
                           <span>DEST</span>
@@ -578,33 +582,14 @@ const Estoque = () => {
                     </Button>
                     <Button
                       size="sm"
-                      variant={varianteSelecionada?.imagens?.length > 0 ? "default" : "outline"}
-                      onClick={() => {
-                        if (varianteSelecionada?.imagens?.length > 0) {
-                          openLightbox(varianteSelecionada.imagens);
-                        } else {
-                          openEditImagesDialog(item, varianteSelecionada);
-                        }
-                      }}
+                      variant="outline"
+                      onClick={() => openEditImagesDialog(item, varianteSelecionada)}
                       className="gap-2"
                       disabled={!varianteSelecionada}
                     >
                       <ImageIcon className="h-4 w-4" />
-                      {varianteSelecionada?.imagens?.length > 0 
-                        ? `Ver ${varianteSelecionada.imagens.length} Imagem${varianteSelecionada.imagens.length > 1 ? 'ns' : ''}`
-                        : 'Adicionar Imagens'}
+                      Gerenciar Imagens
                     </Button>
-                    {varianteSelecionada?.imagens?.length > 0 && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openEditImagesDialog(item, varianteSelecionada)}
-                        className="gap-2"
-                      >
-                        <ImageIcon className="h-4 w-4" />
-                        Editar Imagens
-                      </Button>
-                    )}
                     <Button
                       size="sm"
                       variant="outline"
