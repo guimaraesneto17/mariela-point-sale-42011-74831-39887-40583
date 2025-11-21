@@ -121,8 +121,15 @@ const Estoque = () => {
     // Filtro de tamanho - agora verifica o array de tamanhos
     const matchesTamanho = filterTamanho === "todos" || 
       (item.variantes && item.variantes.some((v: any) => {
-        const tamanhos = Array.isArray(v.tamanhos) ? v.tamanhos : (v.tamanho ? [v.tamanho] : []);
-        return tamanhos.includes(filterTamanho) && v.quantidade > 0;
+        if (!Array.isArray(v.tamanhos) || v.tamanhos.length === 0) {
+          return v.tamanho === filterTamanho && v.quantidade > 0;
+        }
+        // Nova estrutura: array de objetos {tamanho, quantidade}
+        if (typeof v.tamanhos[0] === 'object' && v.tamanhos[0].tamanho) {
+          return v.tamanhos.some((t: any) => t.tamanho === filterTamanho) && v.quantidade > 0;
+        }
+        // Estrutura antiga: array de strings
+        return v.tamanhos.includes(filterTamanho) && v.quantidade > 0;
       }));
     
     // Filtro de quantidade
@@ -245,8 +252,19 @@ const Estoque = () => {
     inventory.forEach((item) => {
       item.variantes?.forEach((v: any) => {
         if (v.quantidade > 0) {
-          const vTamanhos = Array.isArray(v.tamanhos) ? v.tamanhos : (v.tamanho ? [v.tamanho] : []);
-          vTamanhos.forEach((t: string) => tamanhos.add(t));
+          // Nova estrutura: tamanhos é array de objetos {tamanho, quantidade}
+          if (Array.isArray(v.tamanhos) && v.tamanhos.length > 0) {
+            if (typeof v.tamanhos[0] === 'object' && v.tamanhos[0].tamanho) {
+              // Nova estrutura
+              v.tamanhos.forEach((t: any) => tamanhos.add(t.tamanho));
+            } else {
+              // Estrutura antiga (array de strings)
+              v.tamanhos.forEach((t: string) => tamanhos.add(t));
+            }
+          } else if (v.tamanho) {
+            // Fallback para estrutura muito antiga
+            tamanhos.add(v.tamanho);
+          }
         }
       });
     });
