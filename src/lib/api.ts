@@ -97,7 +97,7 @@ export const estoqueAPI = {
       body: JSON.stringify(body),
     });
   },
-  updateVariantImages: (codigoProduto: string, data: { cor: string; tamanho: string; imagens: string[] }) => 
+  updateVariantImages: (codigoProduto: string, data: { cor: string; tamanho?: string; imagens: string[] }) => 
     fetchAPI(`/estoque/variante/imagens/${codigoProduto}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
