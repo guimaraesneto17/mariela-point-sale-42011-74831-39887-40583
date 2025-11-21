@@ -154,12 +154,16 @@ export const estoqueSchema = z.object({
     .optional(),
   variantes: z.array(z.object({
     cor: z.string().min(1, "Cor é obrigatória"),
-    tamanho: z.enum(["PP", "P", "M", "G", "GG", "U"], {
-      errorMap: () => ({ message: "Tamanho é obrigatório" }),
-    }),
     quantidade: z.number()
       .int("Quantidade deve ser um número inteiro")
       .min(0, "Quantidade deve ser maior ou igual a 0"),
+    tamanhos: z.array(z.object({
+      tamanho: z.string().min(1, "Tamanho é obrigatório"),
+      quantidade: z.number()
+        .int("Quantidade deve ser um número inteiro")
+        .min(0, "Quantidade deve ser maior ou igual a 0"),
+    })).min(1, "Deve ter pelo menos um tamanho"),
+    imagens: z.array(z.string()).optional(),
   })).optional(),
   logMovimentacao: z.array(z.object({
     tipo: z.enum(["entrada", "saida"]),

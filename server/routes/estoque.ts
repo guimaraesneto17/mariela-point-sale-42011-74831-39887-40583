@@ -91,49 +91,47 @@ router.post('/', estoqueController.createEstoque);
  *             type: object
  *             required:
  *               - codigoProduto
+ *               - cor
+ *               - tamanho
  *               - quantidade
+ *               - origem
  *             properties:
  *               codigoProduto:
  *                 type: string
+ *                 example: P101
+ *                 description: Código do produto
+ *               cor:
+ *                 type: string
+ *                 example: Azul
+ *                 description: Cor da variante
  *               tamanho:
  *                 type: string
+ *                 example: M
+ *                 description: Tamanho específico
  *               quantidade:
  *                 type: number
+ *                 example: 10
+ *                 description: Quantidade a ser adicionada
+ *               origem:
+ *                 type: string
+ *                 enum: [venda, compra, entrada, baixa no estoque]
+ *                 example: compra
+ *                 description: Origem da entrada
  *               fornecedor:
  *                 type: string
- *               valorUnitario:
- *                 type: number
+ *                 example: F001
+ *                 description: Código do fornecedor (opcional)
  *               observacao:
  *                 type: string
+ *                 example: Compra mensal
+ *                 description: Observação sobre a entrada (opcional)
  *     responses:
  *       200:
  *         description: Entrada registrada com sucesso
  *       404:
- *         description: Produto não encontrado no estoque
+ *         description: Produto ou variante não encontrada no estoque
  *       400:
  *         description: Erro ao registrar entrada ou campos obrigatórios faltando
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: "Erro de validação"
- *                 message:
- *                   type: string
- *                   example: "Campos obrigatórios não preenchidos"
- *                 fields:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       field:
- *                         type: string
- *                         example: "codigoProduto"
- *                       message:
- *                         type: string
- *                         example: "Código do produto é obrigatório"
  */
 router.post('/entrada', estoqueController.registrarEntrada);
 
@@ -151,50 +149,42 @@ router.post('/entrada', estoqueController.registrarEntrada);
  *             type: object
  *             required:
  *               - codigoProduto
+ *               - cor
+ *               - tamanho
  *               - quantidade
+ *               - motivo
  *             properties:
  *               codigoProduto:
  *                 type: string
+ *                 example: P101
+ *                 description: Código do produto
+ *               cor:
+ *                 type: string
+ *                 example: Azul
+ *                 description: Cor da variante
  *               tamanho:
  *                 type: string
+ *                 example: M
+ *                 description: Tamanho específico
  *               quantidade:
  *                 type: number
+ *                 example: 5
+ *                 description: Quantidade a ser removida
  *               motivo:
  *                 type: string
+ *                 example: Produto danificado
+ *                 description: Motivo da saída
  *               observacao:
  *                 type: string
+ *                 example: Dano durante transporte
+ *                 description: Observação adicional (opcional)
  *     responses:
  *       200:
  *         description: Saída registrada com sucesso
  *       404:
- *         description: Produto não encontrado no estoque
+ *         description: Produto ou variante não encontrada no estoque
  *       400:
  *         description: Erro ao registrar saída, campos faltando ou quantidade insuficiente
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: "Erro de validação"
- *                 message:
- *                   type: string
- *                   example: "Quantidade insuficiente em estoque"
- *                 fields:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       field:
- *                         type: string
- *                         example: "quantidade"
- *                       message:
- *                         type: string
- *                         example: "Quantidade disponível: 5"
- *                       value:
- *                         type: number
- *                         example: 10
  */
 router.post('/saida', estoqueController.registrarSaida);
 

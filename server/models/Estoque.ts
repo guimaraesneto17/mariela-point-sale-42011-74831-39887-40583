@@ -78,6 +78,12 @@ const EstoqueSchema = new mongoose.Schema({
       required: true,
       trim: true
     },
+    quantidade: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0
+    },
     tamanhos: [{
       tamanho: {
         type: String,
@@ -91,12 +97,6 @@ const EstoqueSchema = new mongoose.Schema({
         default: 0
       }
     }],
-    quantidade: {
-      type: Number,
-      required: true,
-      min: 0,
-      default: 0
-    },
     imagens: [{
       type: String,
       trim: true

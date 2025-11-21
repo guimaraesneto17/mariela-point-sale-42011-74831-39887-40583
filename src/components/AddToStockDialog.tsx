@@ -39,8 +39,10 @@ export function AddToStockDialog({
   produto,
   onSuccess
 }: AddToStockDialogProps) {
-  const [tamanhos, setTamanhos] = useState<string[]>([]);
-  const [cor, setCor] = useState<string>("");
+  const [selectedVariants, setSelectedVariants] = useState<Array<{ cor: string; tamanho: string; quantidade: number }>>([]);
+  const [currentCor, setCurrentCor] = useState<string>("");
+  const [currentTamanho, setCurrentTamanho] = useState<string>("");
+  const [currentQuantidade, setCurrentQuantidade] = useState<number>(1);
   const [loading, setLoading] = useState(false);
   const [imagemURL, setImagemURL] = useState("");
   const [imagens, setImagens] = useState<string[]>([]);
@@ -157,50 +159,119 @@ export function AddToStockDialog({
     }
   };
 
-  const handleSubmit = async () => {
-    if (!cor) {
+  const handleAddVariant = () => {
+    if (!currentCor) {
       toast.error("Selecione uma cor");
       return;
     }
-    if (tamanhos.length === 0) {
-      toast.error("Selecione pelo menos um tamanho");
+    if (!currentTamanho) {
+      toast.error("Selecione um tamanho");
+      return;
+    }
+    if (currentQuantidade <= 0) {
+      toast.error("Quantidade deve ser maior que zero");
+      return;
+    }
+
+    // Verificar se já existe essa combinação
+    const exists = selectedVariants.find(
+      v => v.cor === currentCor && v.tamanho === currentTamanho
+    );
+
+    if (exists) {
+      toast.error("Esta combinação de cor e tamanho já foi adicionada");
+      return;
+    }
+
+    setSelectedVariants([...selectedVariants, {
+      cor: currentCor,
+      tamanho: currentTamanho,
+      quantidade: currentQuantidade
+    }]);
+
+    toast.success(`Adicionado: ${currentCor} - ${currentTamanho} (${currentQuantidade} un.)`);
+    
+    // Reset apenas tamanho e quantidade
+    setCurrentTamanho("");
+    setCurrentQuantidade(1);
+  };
+
+  const handleRemoveVariant = (index: number) => {
+    setSelectedVariants(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async () => {
+    if (selectedVariants.length === 0) {
+      toast.error("Adicione pelo menos uma variante (cor + tamanho + quantidade)");
       return;
     }
 
     try {
       setLoading(true);
+
+      // Agrupar variantes por cor
+      const variantesPorCor = selectedVariants.reduce((acc, item) => {
+        if (!acc[item.cor]) {
+          acc[item.cor] = [];
+        }
+        acc[item.cor].push({
+          tamanho: item.tamanho,
+          quantidade: item.quantidade
+        });
+        return acc;
+      }, {} as Record<string, Array<{ tamanho: string; quantidade: number }>>);
+
+      // Criar array de variantes no formato esperado pelo backend
+      const variantes = Object.entries(variantesPorCor).map(([cor, tamanhos]) => {
+        const quantidadeTotal = tamanhos.reduce((sum, t) => sum + t.quantidade, 0);
+        return {
+          cor,
+          quantidade: quantidadeTotal,
+          tamanhos,
+          imagens
+        };
+      });
+
+      // Calcular quantidade total
+      const quantidadeTotal = selectedVariants.reduce((sum, v) => sum + v.quantidade, 0);
+
       const estoqueData = {
         codigoProduto: produto.codigoProduto,
-        variantes: [{
-          cor: cor,
-          tamanhos: tamanhos,
-          quantidade: 1,
-          imagens: imagens
-        }],
+        quantidade: quantidadeTotal,
+        variantes,
         emPromocao: false,
         isNovidade: false,
-        logMovimentacao: [{
+        logMovimentacao: selectedVariants.map(v => ({
           tipo: 'entrada',
-          cor: cor,
-          tamanho: tamanhos.join(', '),
-          quantidade: 1,
+          cor: v.cor,
+          tamanho: v.tamanho,
+          quantidade: v.quantidade,
           data: new Date().toISOString().split('.')[0] + 'Z',
           origem: 'entrada',
           observacao: 'Entrada inicial automática - criação da variante'
-        }]
+        }))
       };
+
+      console.log('Enviando dados para o backend:', JSON.stringify(estoqueData, null, 2));
+
       await estoqueAPI.create(estoqueData);
+      
       toast.success(`${produto.nome} adicionado ao estoque!`, {
-        description: `Cor: ${cor} | Tamanhos: ${tamanhos.join(', ')}`
+        description: `${selectedVariants.length} variante(s) adicionada(s)`
       });
+      
       onOpenChange(false);
       onSuccess?.();
+      
       // Reset
-      setTamanhos([]);
-      setCor("");
+      setSelectedVariants([]);
+      setCurrentCor("");
+      setCurrentTamanho("");
+      setCurrentQuantidade(1);
       setImagens([]);
       setImagemURL("");
     } catch (error: any) {
+      console.error('Erro ao adicionar estoque:', error);
       const errorMessage = error.response?.data?.message || error.message || "Tente novamente";
       if (errorMessage.includes("Já existe")) {
         toast.error("Estoque duplicado", {
@@ -267,34 +338,74 @@ export function AddToStockDialog({
         
         <div className="space-y-6">
           <div className="space-y-4">
-            <div>
-              <Label>Cor *</Label>
-              <SingleSelectBadges
-                value={cor}
-                onChange={setCor}
-                options={coresDisponiveis}
-                placeholder="Digite uma nova cor"
-                onCreateOption={handleCreateCor}
-                onDeleteOption={handleDeleteCor}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Cada cor terá sua própria variante
-              </p>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-1">
+                <Label>Cor *</Label>
+                <SingleSelectBadges
+                  value={currentCor}
+                  onChange={setCurrentCor}
+                  options={coresDisponiveis}
+                  placeholder="Selecione cor"
+                  onCreateOption={handleCreateCor}
+                  onDeleteOption={handleDeleteCor}
+                />
+              </div>
+
+              <div className="col-span-1">
+                <Label>Tamanho *</Label>
+                <SingleSelectBadges
+                  value={currentTamanho}
+                  onChange={setCurrentTamanho}
+                  options={tamanhosDisponiveis}
+                  placeholder="Selecione tamanho"
+                  onCreateOption={handleCreateTamanho}
+                  onDeleteOption={handleDeleteTamanho}
+                />
+              </div>
+
+              <div className="col-span-1">
+                <Label>Quantidade *</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={currentQuantidade}
+                  onChange={(e) => setCurrentQuantidade(parseInt(e.target.value) || 1)}
+                />
+              </div>
             </div>
 
-            <div>
-              <Label>Tamanhos * (múltipla seleção)</Label>
-              <MultiSelect
-                value={tamanhos}
-                onChange={setTamanhos}
-                options={tamanhosDisponiveis}
-                placeholder="Selecione os tamanhos disponíveis"
-                onCreateOption={handleCreateTamanho}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Selecione todos os tamanhos disponíveis para esta cor
-              </p>
-            </div>
+            <Button
+              type="button"
+              onClick={handleAddVariant}
+              className="w-full"
+              variant="outline"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Adicionar Variante
+            </Button>
+
+            {/* Lista de variantes adicionadas */}
+            {selectedVariants.length > 0 && (
+              <div className="border rounded-lg p-3 space-y-2">
+                <Label className="text-sm font-semibold">Variantes Adicionadas ({selectedVariants.length})</Label>
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {selectedVariants.map((v, idx) => (
+                    <div key={idx} className="flex items-center justify-between bg-muted p-2 rounded text-sm">
+                      <span><strong>{v.cor}</strong> - {v.tamanho} ({v.quantidade} un.)</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => handleRemoveVariant(idx)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="text-sm text-muted-foreground bg-muted p-3 rounded">
