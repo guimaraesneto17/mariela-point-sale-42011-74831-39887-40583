@@ -11,9 +11,14 @@ import { Plus, Upload, Link as LinkIcon, X, Trash2, Image as ImageIcon } from "l
 import { useImageCompression } from "@/hooks/useImageCompression";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+interface Tamanho {
+  tamanho: string;
+  quantidade: number;
+}
+
 interface Variante {
   cor: string;
-  tamanhos: string[];
+  tamanhos: Tamanho[];
   imagens: string[];
 }
 
@@ -114,14 +119,14 @@ export function AddMultipleVariantsDialog({
     }
   };
 
-  const adicionarTamanho = (varianteIndex: number) => {
+  const adicionarTamanho = (varianteIndex: number, quantidade: number = 1) => {
     if (!novoTamanho.trim()) {
       toast.error("Digite um tamanho");
       return;
     }
 
     const variante = variantes[varianteIndex];
-    if (variante.tamanhos.includes(novoTamanho)) {
+    if (variante.tamanhos.find(t => t.tamanho === novoTamanho)) {
       toast.error("Este tamanho já foi adicionado nesta variante");
       return;
     }
@@ -134,26 +139,37 @@ export function AddMultipleVariantsDialog({
     }
 
     const novasVariantes = [...variantes];
-    novasVariantes[varianteIndex].tamanhos.push(novoTamanho);
+    novasVariantes[varianteIndex].tamanhos.push({ tamanho: novoTamanho, quantidade });
     setVariantes(novasVariantes);
     setNovoTamanho("");
   };
 
   const removerTamanho = (varianteIndex: number, tamanho: string) => {
     const novasVariantes = [...variantes];
-    novasVariantes[varianteIndex].tamanhos = novasVariantes[varianteIndex].tamanhos.filter(t => t !== tamanho);
+    novasVariantes[varianteIndex].tamanhos = novasVariantes[varianteIndex].tamanhos.filter(t => t.tamanho !== tamanho);
     setVariantes(novasVariantes);
   };
 
-  const adicionarTamanhoRapido = (varianteIndex: number, tamanho: string) => {
+  const adicionarTamanhoRapido = (varianteIndex: number, tamanho: string, quantidade: number = 1) => {
     const variante = variantes[varianteIndex];
-    if (variante.tamanhos.includes(tamanho)) {
+    const tamanhoExistente = variante.tamanhos.find(t => t.tamanho === tamanho);
+    
+    if (tamanhoExistente) {
       // Remover se já existe
       removerTamanho(varianteIndex, tamanho);
     } else {
       // Adicionar se não existe
       const novasVariantes = [...variantes];
-      novasVariantes[varianteIndex].tamanhos.push(tamanho);
+      novasVariantes[varianteIndex].tamanhos.push({ tamanho, quantidade });
+      setVariantes(novasVariantes);
+    }
+  };
+
+  const atualizarQuantidadeTamanho = (varianteIndex: number, tamanho: string, novaQuantidade: number) => {
+    const novasVariantes = [...variantes];
+    const tamanhoObj = novasVariantes[varianteIndex].tamanhos.find(t => t.tamanho === tamanho);
+    if (tamanhoObj) {
+      tamanhoObj.quantidade = Math.max(1, novaQuantidade);
       setVariantes(novasVariantes);
     }
   };
@@ -235,12 +251,15 @@ export function AddMultipleVariantsDialog({
 
       // Criar registros de estoque para cada variante
       for (const variante of variantes) {
+        // Calcular quantidade total da variante
+        const quantidadeTotal = variante.tamanhos.reduce((total, t) => total + t.quantidade, 0);
+        
         const estoqueData = {
           codigoProduto: produtoSelecionado.codigoProduto,
           variantes: [{
             cor: variante.cor,
             tamanhos: variante.tamanhos,
-            quantidade: 1,
+            quantidade: quantidadeTotal,
             imagens: variante.imagens
           }],
           emPromocao: false,
@@ -248,8 +267,8 @@ export function AddMultipleVariantsDialog({
           logMovimentacao: [{
             tipo: 'entrada',
             cor: variante.cor,
-            tamanho: variante.tamanhos.join(', '),
-            quantidade: 1,
+            tamanho: variante.tamanhos.map(t => t.tamanho).join(', '),
+            quantidade: quantidadeTotal,
             data: new Date().toISOString().split('.')[0] + 'Z',
             origem: 'entrada',
             observacao: 'Entrada inicial automática - criação da variante'
@@ -400,14 +419,14 @@ export function AddMultipleVariantsDialog({
 
                       <div className="flex flex-wrap gap-1 mb-2">
                         {variante.tamanhos.length > 0 ? (
-                          variante.tamanhos.map((tamanho) => (
-                            <Badge key={tamanho} variant="secondary" className="text-xs">
-                              {tamanho}
+                          variante.tamanhos.map((tamObj) => (
+                            <Badge key={tamObj.tamanho} variant="secondary" className="text-xs">
+                              {tamObj.tamanho} ({tamObj.quantidade})
                               <X
                                 className="h-3 w-3 ml-1 cursor-pointer hover:text-destructive"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  removerTamanho(index, tamanho);
+                                  removerTamanho(index, tamObj.tamanho);
                                 }}
                               />
                             </Badge>
@@ -422,11 +441,11 @@ export function AddMultipleVariantsDialog({
                         {tamanhosDisponiveis.map((tam) => (
                           <Badge
                             key={tam}
-                            variant={variante.tamanhos.includes(tam) ? "default" : "outline"}
+                            variant={variante.tamanhos.find(t => t.tamanho === tam) ? "default" : "outline"}
                             className="text-xs cursor-pointer"
                             onClick={(e) => {
                               e.stopPropagation();
-                              adicionarTamanhoRapido(index, tam);
+                              adicionarTamanhoRapido(index, tam, 1);
                             }}
                           >
                             {tam}

@@ -191,6 +191,11 @@ const Estoque = () => {
     if (!item.variantes) return [];
     const variante = item.variantes.find((v: any) => v.cor === cor && v.quantidade > 0);
     if (!variante) return [];
+    // Nova estrutura: tamanhos é array de objetos {tamanho, quantidade}
+    if (Array.isArray(variante.tamanhos) && variante.tamanhos.length > 0 && typeof variante.tamanhos[0] === 'object') {
+      return variante.tamanhos.map((t: any) => t.tamanho);
+    }
+    // Estrutura antiga: tamanhos é array de strings
     return Array.isArray(variante.tamanhos) ? variante.tamanhos : (variante.tamanho ? [variante.tamanho] : []);
   };
 

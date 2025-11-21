@@ -46,6 +46,36 @@ const FORNECEDOR_RE = /^F\d{3}$/;
 
 type FieldIssue = { field: string; message: string; value?: any };
 
+// Helper para converter estrutura antiga (tamanhos como array de strings) para nova (tamanhos com quantidade)
+const converterTamanhosParaNovaEstrutura = (variantes: any[], quantidadePorTamanho?: number): any[] => {
+  return variantes.map(v => {
+    if (!Array.isArray(v.tamanhos)) {
+      return v;
+    }
+    
+    // Se já está na nova estrutura (objetos com tamanho e quantidade), retorna como está
+    if (v.tamanhos.length > 0 && typeof v.tamanhos[0] === 'object' && 'tamanho' in v.tamanhos[0]) {
+      return v;
+    }
+    
+    // Converter de array de strings para array de objetos
+    const qtdTotal = v.quantidade || 0;
+    const qtdPorTam = quantidadePorTamanho || Math.floor(qtdTotal / v.tamanhos.length);
+    const tamanhosConvertidos = v.tamanhos.map((tam: string, idx: number) => ({
+      tamanho: tam,
+      quantidade: idx === v.tamanhos.length - 1 
+        ? qtdTotal - (qtdPorTam * (v.tamanhos.length - 1)) // Último tamanho recebe o resto
+        : qtdPorTam
+    }));
+    
+    return {
+      ...v,
+      tamanhos: tamanhosConvertidos,
+      quantidade: qtdTotal
+    };
+  });
+};
+
 // Agrega múltiplos documentos (legado) de um mesmo produto em um único registro com variantes
 const aggregateEstoqueByCodigo = (docs: any[]) => {
   if (!docs || docs.length === 0) return null;
@@ -155,13 +185,17 @@ const validateEstoquePayload = (payload: any): FieldIssue[] => {
         issues.push({ field: `variantes[${idx}].cor`, message: 'Cor é obrigatória', value: v.cor });
       }
 
-      // Novo modelo: cada variante possui UMA cor e UMA lista de tamanhos
+      // Nova estrutura: cada variante possui uma lista de tamanhos com quantidade individual
       if (!v.tamanhos || !Array.isArray(v.tamanhos) || v.tamanhos.length === 0) {
         issues.push({ field: `variantes[${idx}].tamanhos`, message: 'Deve informar ao menos um tamanho', value: v.tamanhos });
       } else {
         v.tamanhos.forEach((t: any, tIdx: number) => {
-          if (typeof t !== 'string' || !t.trim()) {
-            issues.push({ field: `variantes[${idx}].tamanhos[${tIdx}]`, message: 'Cada tamanho deve ser uma string não vazia', value: t });
+          if (!t.tamanho || typeof t.tamanho !== 'string' || !t.tamanho.trim()) {
+            issues.push({ field: `variantes[${idx}].tamanhos[${tIdx}].tamanho`, message: 'Tamanho deve ser uma string não vazia', value: t.tamanho });
+          }
+          const qtd = Number(t.quantidade);
+          if (!Number.isInteger(qtd) || qtd < 0) {
+            issues.push({ field: `variantes[${idx}].tamanhos[${tIdx}].quantidade`, message: 'Quantidade deve ser inteiro >= 0', value: t.quantidade });
           }
         });
       }
@@ -170,6 +204,7 @@ const validateEstoquePayload = (payload: any): FieldIssue[] => {
       if (!Number.isInteger(q) || q < 0) {
         issues.push({ field: `variantes[${idx}].quantidade`, message: 'Deve ser inteiro >= 0', value: v.quantidade });
       }
+      
       // Validar imagens se fornecidas
       if (v.imagens !== undefined) {
         if (!Array.isArray(v.imagens)) {
@@ -334,17 +369,31 @@ export const createEstoque = async (req: Request, res: Response) => {
     const primeiraVariante = variantesPayload[0] || {};
 
     const cor = req.body.cor ?? primeiraVariante.cor;
-    const tamanhos: string[] = Array.isArray(primeiraVariante.tamanhos)
-      ? primeiraVariante.tamanhos
-      : primeiraVariante.tamanho
-        ? [primeiraVariante.tamanho]
-        : req.body.tamanho
-          ? [req.body.tamanho]
-          : [];
-
-    const quantidadeVariante = Number(
-      primeiraVariante.quantidade ?? req.body.quantidade ?? 1
-    );
+    
+    // Processar tamanhos - pode ser array de strings ou array de objetos
+    let tamanhosProcessados: any[] = [];
+    const quantidadeVariante = Number(primeiraVariante.quantidade ?? req.body.quantidade ?? 1);
+    
+    if (Array.isArray(primeiraVariante.tamanhos) && primeiraVariante.tamanhos.length > 0) {
+      // Verificar se já está na nova estrutura
+      if (typeof primeiraVariante.tamanhos[0] === 'object' && 'tamanho' in primeiraVariante.tamanhos[0]) {
+        tamanhosProcessados = primeiraVariante.tamanhos;
+      } else {
+        // Converter array de strings para array de objetos
+        const qtdPorTamanho = Math.floor(quantidadeVariante / primeiraVariante.tamanhos.length);
+        tamanhosProcessados = primeiraVariante.tamanhos.map((t: string, idx: number) => ({
+          tamanho: t,
+          quantidade: idx === primeiraVariante.tamanhos.length - 1
+            ? quantidadeVariante - (qtdPorTamanho * (primeiraVariante.tamanhos.length - 1))
+            : qtdPorTamanho
+        }));
+      }
+    } else if (primeiraVariante.tamanho) {
+      tamanhosProcessados = [{ tamanho: primeiraVariante.tamanho, quantidade: quantidadeVariante }];
+    } else if (req.body.tamanho) {
+      tamanhosProcessados = [{ tamanho: req.body.tamanho, quantidade: quantidadeVariante }];
+    }
+    
     const imagens = primeiraVariante.imagens ?? req.body.imagens ?? [];
     const { codigoProduto } = req.body;
 
@@ -352,29 +401,32 @@ export const createEstoque = async (req: Request, res: Response) => {
     let estoque = await Estoque.findOne({ codigoProduto });
 
     if (estoque) {
-      // Remover variantes com quantidade <= 0 (legado)
-      const originalLen = Array.isArray(estoque.variantes) ? estoque.variantes.length : 0;
+      // Remover variantes com quantidade <= 0
       estoque.variantes = (estoque.variantes || []).filter((v: any) => Number(v.quantidade) > 0);
-      const cleaned = originalLen !== estoque.variantes.length;
 
-      // Novo modelo: uma variante por cor, com lista de tamanhos
-      const varianteExistente = estoque.variantes.find(
-        (v: any) => v.cor === cor
-      );
+      // Procurar variante existente pela cor
+      const varianteExistente = estoque.variantes.find((v: any) => v.cor === cor);
 
       if (varianteExistente) {
-        // Mesclar tamanhos (evita duplicados)
+        // Mesclar tamanhos
         if (!Array.isArray(varianteExistente.tamanhos)) {
           varianteExistente.tamanhos = [];
         }
-        tamanhos.forEach((t) => {
-          if (t && !varianteExistente.tamanhos.includes(t)) {
-            varianteExistente.tamanhos.push(t);
+        
+        tamanhosProcessados.forEach((novoTam: any) => {
+          const tamExistente = varianteExistente.tamanhos.find((t: any) => t.tamanho === novoTam.tamanho);
+          if (tamExistente) {
+            tamExistente.quantidade += novoTam.quantidade;
+          } else {
+            varianteExistente.tamanhos.push(novoTam);
           }
         });
 
-        // Somar quantidade
-        varianteExistente.quantidade = Number(varianteExistente.quantidade || 0) + (quantidadeVariante || 0);
+        // Recalcular quantidade total da variante
+        varianteExistente.quantidade = varianteExistente.tamanhos.reduce(
+          (total: number, t: any) => total + (t.quantidade || 0),
+          0
+        );
 
         // Mesclar imagens
         if (!Array.isArray(varianteExistente.imagens)) {
@@ -386,7 +438,14 @@ export const createEstoque = async (req: Request, res: Response) => {
           }
         });
       } else {
-        estoque.variantes.push({ cor, tamanhos, quantidade: quantidadeVariante, imagens });
+        // Adicionar nova variante
+        const novaQuantidade = tamanhosProcessados.reduce((total: number, t: any) => total + (t.quantidade || 0), 0);
+        estoque.variantes.push({ 
+          cor, 
+          tamanhos: tamanhosProcessados, 
+          quantidade: novaQuantidade, 
+          imagens 
+        });
       }
 
       // Atualizar quantidade total com base nas variantes
@@ -400,10 +459,11 @@ export const createEstoque = async (req: Request, res: Response) => {
     }
 
     // Criar novo registro de estoque
+    const quantidadeTotal = tamanhosProcessados.reduce((total: number, t: any) => total + (t.quantidade || 0), 0);
     const cleanData: any = {
       codigoProduto,
-      quantidade: quantidadeVariante || 0,
-      variantes: [{ cor, tamanhos, quantidade: quantidadeVariante, imagens }],
+      quantidade: quantidadeTotal,
+      variantes: [{ cor, tamanhos: tamanhosProcessados, quantidade: quantidadeTotal, imagens }],
       emPromocao: req.body.emPromocao || false,
       isNovidade: req.body.isNovidade || false,
       dataCadastro: isoSeconds(),
@@ -573,7 +633,7 @@ export const registrarEntrada = async (req: Request, res: Response) => {
       estoque.ativo = true;
     }
 
-    // Novo modelo: encontrar variante pela cor (uma variante possui lista de tamanhos)
+    // Encontrar variante pela cor
     const variante = estoque.variantes.find((v: any) => v.cor === cor);
     
     if (!variante) {
@@ -583,19 +643,27 @@ export const registrarEntrada = async (req: Request, res: Response) => {
       });
     }
 
-    // Verificar se o tamanho existe na lista de tamanhos da variante
-    const tamanhos = Array.isArray(variante.tamanhos) ? variante.tamanhos : [];
-    if (!tamanhos.includes(tamanho)) {
-      return res.status(404).json({ 
-        error: 'Tamanho não encontrado',
-        message: `O tamanho "${tamanho}" não está disponível para a cor "${cor}". Tamanhos disponíveis: ${tamanhos.join(', ')}`
-      });
+    // Garantir que tamanhos seja um array de objetos com a nova estrutura
+    if (!Array.isArray(variante.tamanhos)) {
+      variante.tamanhos = [];
     }
 
-    // Atualizar quantidade da variante
-    variante.quantidade += quantidade;
+    // Buscar o tamanho específico na lista de tamanhos
+    let tamanhoObj = variante.tamanhos.find((t: any) => t.tamanho === tamanho);
     
-    // Recalcular quantidade total
+    if (!tamanhoObj) {
+      // Se o tamanho não existe, criar novo
+      tamanhoObj = { tamanho, quantidade: 0 };
+      variante.tamanhos.push(tamanhoObj);
+    }
+
+    // Atualizar quantidade do tamanho específico
+    tamanhoObj.quantidade += quantidade;
+    
+    // Recalcular quantidade total da variante (soma de todos os tamanhos)
+    variante.quantidade = variante.tamanhos.reduce((total: number, t: any) => total + (t.quantidade || 0), 0);
+    
+    // Recalcular quantidade total do estoque
     estoque.quantidade = estoque.variantes.reduce((total: number, v: any) => total + (v.quantidade || 0), 0);
 
     // Adicionar log de movimentação
@@ -652,7 +720,7 @@ export const registrarSaida = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Produto não encontrado no estoque' });
     }
 
-    // Novo modelo: encontrar variante pela cor (uma variante possui lista de tamanhos)
+    // Encontrar variante pela cor
     const variante = estoque.variantes.find((v: any) => v.cor === cor);
     
     if (!variante) {
@@ -662,25 +730,30 @@ export const registrarSaida = async (req: Request, res: Response) => {
       });
     }
 
-    // Verificar se o tamanho existe na lista de tamanhos da variante
-    const tamanhos = Array.isArray(variante.tamanhos) ? variante.tamanhos : [];
-    if (!tamanhos.includes(tamanho)) {
+    // Buscar o tamanho específico na lista de tamanhos
+    if (!Array.isArray(variante.tamanhos)) {
+      variante.tamanhos = [];
+    }
+    
+    const tamanhoObj = variante.tamanhos.find((t: any) => t.tamanho === tamanho);
+    
+    if (!tamanhoObj) {
       return res.status(404).json({ 
         error: 'Tamanho não encontrado',
-        message: `O tamanho "${tamanho}" não está disponível para a cor "${cor}". Tamanhos disponíveis: ${tamanhos.join(', ')}`
+        message: `O tamanho "${tamanho}" não está disponível para a cor "${cor}"`
       });
     }
 
-    // Verificar se há quantidade suficiente
-    if (variante.quantidade < quantidade) {
+    // Verificar se há quantidade suficiente no tamanho específico
+    if (tamanhoObj.quantidade < quantidade) {
       return res.status(400).json({ 
         error: 'Quantidade insuficiente',
-        message: `Há apenas ${variante.quantidade} unidades disponíveis para ${cor} (todos os tamanhos)`
+        message: `Há apenas ${tamanhoObj.quantidade} unidade(s) disponível(eis) para ${cor} - ${tamanho}`
       });
     }
 
-    // Atualizar quantidade
-    variante.quantidade -= quantidade;
+    // Atualizar quantidade do tamanho específico
+    tamanhoObj.quantidade -= quantidade;
     
     // Adicionar log de movimentação ANTES de remover a variante
     const logEntry: any = {
@@ -702,12 +775,20 @@ export const registrarSaida = async (req: Request, res: Response) => {
     
     console.log(`✅ Log de saída registrado para ${codigoProduto} - ${cor} (${tamanho}):`, logEntry);
 
-    // Se a variante ficou com quantidade 0, remove ela do array
-    if (variante.quantidade === 0) {
+    // Se o tamanho ficou com quantidade 0, remove do array
+    if (tamanhoObj.quantidade === 0) {
+      variante.tamanhos = variante.tamanhos.filter((t: any) => t.tamanho !== tamanho);
+    }
+    
+    // Recalcular quantidade total da variante
+    variante.quantidade = variante.tamanhos.reduce((total: number, t: any) => total + (t.quantidade || 0), 0);
+    
+    // Se a variante ficou sem tamanhos, remove ela do array
+    if (variante.tamanhos.length === 0 || variante.quantidade === 0) {
       estoque.variantes = estoque.variantes.filter((v: any) => v.cor !== cor);
     }
     
-    // Recalcular quantidade total
+    // Recalcular quantidade total do estoque
     estoque.quantidade = estoque.variantes.reduce((total: number, v: any) => total + (v.quantidade || 0), 0);
 
     // Se não há mais variantes ou quantidade zerou, marcar como inativo ao invés de deletar

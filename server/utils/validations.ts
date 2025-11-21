@@ -198,6 +198,28 @@ const Validations = {
     if (data.precoPromocional !== null && data.precoPromocional !== undefined && data.precoPromocional < 0)
       erros.push('precoPromocional deve ser >= 0.');
 
+    // Validar variantes
+    if (data.variantes && Array.isArray(data.variantes)) {
+      data.variantes.forEach((variante: any, vIdx: number) => {
+        if (!variante.cor || typeof variante.cor !== 'string')
+          erros.push(`variantes[${vIdx}]: cor é obrigatória.`);
+        
+        if (!variante.tamanhos || !Array.isArray(variante.tamanhos) || variante.tamanhos.length === 0)
+          erros.push(`variantes[${vIdx}]: tamanhos é obrigatório e deve ter ao menos um tamanho.`);
+        else {
+          variante.tamanhos.forEach((tam: any, tIdx: number) => {
+            if (!tam.tamanho || typeof tam.tamanho !== 'string')
+              erros.push(`variantes[${vIdx}].tamanhos[${tIdx}]: tamanho é obrigatório.`);
+            if (tam.quantidade === undefined || tam.quantidade === null || tam.quantidade < 0)
+              erros.push(`variantes[${vIdx}].tamanhos[${tIdx}]: quantidade deve ser >= 0.`);
+          });
+        }
+        
+        if (variante.quantidade === undefined || variante.quantidade === null || variante.quantidade < 0)
+          erros.push(`variantes[${vIdx}]: quantidade é obrigatória e deve ser >= 0.`);
+      });
+    }
+
     // Validar logPromocao se existir
     if (data.logPromocao && Array.isArray(data.logPromocao)) {
       data.logPromocao.forEach((log: any, idx: number) => {
