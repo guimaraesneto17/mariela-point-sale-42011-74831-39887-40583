@@ -5,10 +5,11 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { estoqueAPI } from "@/lib/api";
+import { estoqueAPI, produtosAPI } from "@/lib/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Upload, Link as LinkIcon, X, Trash2, Image as ImageIcon } from "lucide-react";
 import { useImageCompression } from "@/hooks/useImageCompression";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Variante {
   cor: string;
@@ -19,14 +20,14 @@ interface Variante {
 interface AddMultipleVariantsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  produto: any;
+  produto?: any;
   onSuccess?: () => void;
 }
 
 export function AddMultipleVariantsDialog({
   open,
   onOpenChange,
-  produto,
+  produto: produtoInicial,
   onSuccess
 }: AddMultipleVariantsDialogProps) {
   const [loading, setLoading] = useState(false);
@@ -36,8 +37,34 @@ export function AddMultipleVariantsDialog({
   const [varianteSelecionada, setVarianteSelecionada] = useState<number | null>(null);
   const [imagemURL, setImagemURL] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [produtos, setProdutos] = useState<any[]>([]);
+  const [produtoSelecionado, setProdutoSelecionado] = useState<any>(produtoInicial || null);
+  const [loadingProdutos, setLoadingProdutos] = useState(false);
 
   const { compressing, compressImages, validateImageUrl } = useImageCompression();
+
+  // Carregar produtos quando o dialog abre e não há produto inicial
+  useEffect(() => {
+    if (open && !produtoInicial) {
+      loadProdutos();
+    }
+    if (produtoInicial) {
+      setProdutoSelecionado(produtoInicial);
+    }
+  }, [open, produtoInicial]);
+
+  const loadProdutos = async () => {
+    try {
+      setLoadingProdutos(true);
+      const data = await produtosAPI.getAll();
+      setProdutos(data);
+    } catch (error) {
+      console.error("Erro ao carregar produtos:", error);
+      toast.error("Erro ao carregar lista de produtos");
+    } finally {
+      setLoadingProdutos(false);
+    }
+  };
 
   // Opções disponíveis
   const [coresDisponiveis, setCoresDisponiveis] = useState<string[]>([
@@ -209,7 +236,7 @@ export function AddMultipleVariantsDialog({
       // Criar registros de estoque para cada variante
       for (const variante of variantes) {
         const estoqueData = {
-          codigoProduto: produto.codigoProduto,
+          codigoProduto: produtoSelecionado.codigoProduto,
           variantes: [{
             cor: variante.cor,
             tamanhos: variante.tamanhos,
@@ -233,7 +260,7 @@ export function AddMultipleVariantsDialog({
       }
 
       toast.success(`${variantes.length} variante(s) adicionada(s) ao estoque!`, {
-        description: `${produto.nome}`
+        description: `${produtoSelecionado.nome}`
       });
 
       onOpenChange(false);
@@ -261,11 +288,38 @@ export function AddMultipleVariantsDialog({
         <DialogHeader>
           <DialogTitle>Adicionar Múltiplas Variantes ao Estoque</DialogTitle>
           <DialogDescription>
-            {produto?.nome} ({produto?.codigoProduto})
+            {produtoSelecionado ? `${produtoSelecionado.nome} (${produtoSelecionado.codigoProduto})` : "Selecione um produto"}
           </DialogDescription>
         </DialogHeader>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {!produtoSelecionado && !produtoInicial ? (
+          <div className="space-y-4">
+            <Label>Selecione o Produto</Label>
+            <Select
+              value={produtoSelecionado?.codigoProduto || ""}
+              onValueChange={(codigo) => {
+                const produto = produtos.find(p => p.codigoProduto === codigo);
+                setProdutoSelecionado(produto);
+              }}
+              disabled={loadingProdutos}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={loadingProdutos ? "Carregando produtos..." : "Selecione um produto"} />
+              </SelectTrigger>
+              <SelectContent>
+                {produtos.map((produto) => (
+                  <SelectItem key={produto.codigoProduto} value={produto.codigoProduto}>
+                    {produto.nome} - {produto.codigoProduto}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : null}
+        
+        {produtoSelecionado && (
+          <>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Painel Esquerdo - Adicionar Variantes */}
           <div className="space-y-4">
             <div className="border rounded-lg p-4 bg-muted/30">
@@ -491,9 +545,9 @@ export function AddMultipleVariantsDialog({
 
         {/* Informações do Produto */}
         <div className="text-sm text-muted-foreground bg-muted p-3 rounded">
-          <p><strong>Preço de Custo:</strong> R$ {produto?.precoCusto?.toFixed(2)}</p>
-          <p><strong>Preço de Venda:</strong> R$ {produto?.precoVenda?.toFixed(2)}</p>
-          <p><strong>Margem de Lucro:</strong> {produto?.margemDeLucro?.toFixed(2)}%</p>
+          <p><strong>Preço de Custo:</strong> R$ {produtoSelecionado?.precoCusto?.toFixed(2)}</p>
+          <p><strong>Preço de Venda:</strong> R$ {produtoSelecionado?.precoVenda?.toFixed(2)}</p>
+          <p><strong>Margem de Lucro:</strong> {produtoSelecionado?.margemDeLucro?.toFixed(2)}%</p>
         </div>
 
         {/* Botões de Ação */}
@@ -509,6 +563,8 @@ export function AddMultipleVariantsDialog({
             {loading ? "Adicionando..." : `Adicionar ${variantes.length} Variante(s)`}
           </Button>
         </div>
+        </>
+      )}
       </DialogContent>
     </Dialog>
   );

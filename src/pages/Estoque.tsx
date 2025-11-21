@@ -16,6 +16,7 @@ import { MovimentacaoDialog } from "@/components/MovimentacaoDialog";
 import { PromocaoHistoricoDialog } from "@/components/PromocaoHistoricoDialog";
 import { EditVariantImagesDialog } from "@/components/EditVariantImagesDialog";
 import { ImageGalleryLightbox } from "@/components/ImageGalleryLightbox";
+import { AddMultipleVariantsDialog } from "@/components/AddMultipleVariantsDialog";
 
 import { estoqueAPI } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
@@ -34,6 +35,7 @@ const Estoque = () => {
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [showMultipleVariantsDialog, setShowMultipleVariantsDialog] = useState(false);
   
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
@@ -44,6 +46,8 @@ const Estoque = () => {
   const [filterCor, setFilterCor] = useState<string>("todas");
   const [filterTamanho, setFilterTamanho] = useState<string>("todos");
   const [filterCategoria, setFilterCategoria] = useState<string>("todas");
+  const [filterQuantidade, setFilterQuantidade] = useState<string>("todas");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   
   // State para selecionar cor/tamanho por item
   const [selectedColorByItem, setSelectedColorByItem] = useState<{[key: string]: string}>({});
@@ -121,7 +125,14 @@ const Estoque = () => {
         return tamanhos.includes(filterTamanho) && v.quantidade > 0;
       }));
     
-    return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria && matchesCor && matchesTamanho;
+    // Filtro de quantidade
+    const quantidadeTotal = item.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0;
+    const matchesQuantidade = filterQuantidade === "todas" ||
+      (filterQuantidade === "baixo" && quantidadeTotal > 0 && quantidadeTotal <= 10) ||
+      (filterQuantidade === "zerado" && quantidadeTotal === 0) ||
+      (filterQuantidade === "disponivel" && quantidadeTotal > 10);
+    
+    return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria && matchesCor && matchesTamanho && matchesQuantidade;
   });
 
   const openEntryDialog = (item: any, variante: any) => {
@@ -271,11 +282,21 @@ const Estoque = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-foreground mb-2">Estoque</h1>
-        <p className="text-muted-foreground">
-          Controle de inventário e movimentações
-        </p>
+      <div className="flex items-center justify-between">
+        <div className="text-center flex-1">
+          <h1 className="text-4xl font-bold text-foreground mb-2">Estoque</h1>
+          <p className="text-muted-foreground">
+            Controle de inventário e movimentações
+          </p>
+        </div>
+        <Button
+          size="lg"
+          onClick={() => setShowMultipleVariantsDialog(true)}
+          className="gap-2"
+        >
+          <Plus className="h-5 w-5" />
+          Adicionar Variantes em Massa
+        </Button>
       </div>
 
       <Card className="p-4 md:p-6 shadow-card">
@@ -290,7 +311,7 @@ const Estoque = () => {
             />
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
               <Label className="text-sm font-medium text-muted-foreground mb-2 block">Filtrar por Categoria</Label>
               <Select value={filterCategoria} onValueChange={setFilterCategoria}>
@@ -335,6 +356,45 @@ const Estoque = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground mb-2 block">Filtrar por Quantidade</Label>
+              <Select value={filterQuantidade} onValueChange={setFilterQuantidade}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas</SelectItem>
+                  <SelectItem value="disponivel">Disponível (&gt; 10)</SelectItem>
+                  <SelectItem value="baixo">Estoque Baixo (1-10)</SelectItem>
+                  <SelectItem value="zerado">Zerado (0)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground mb-2 block">Modo de Visualização</Label>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant={viewMode === "list" ? "default" : "outline"}
+                  onClick={() => setViewMode("list")}
+                  className="flex-1"
+                >
+                  <List className="h-4 w-4 mr-2" />
+                  Lista
+                </Button>
+                <Button
+                  size="sm"
+                  variant={viewMode === "grid" ? "default" : "outline"}
+                  onClick={() => setViewMode("grid")}
+                  className="flex-1"
+                >
+                  <Package className="h-4 w-4 mr-2" />
+                  Grade
+                </Button>
+              </div>
+            </div>
           </div>
           
           <div className="flex gap-2 flex-wrap">
@@ -358,7 +418,7 @@ const Estoque = () => {
               Novidades
             </Button>
             
-            {(filterPromocao !== null || filterNovidade !== null || filterCategoria !== "todas" || filterCor !== "todas" || filterTamanho !== "todos") && (
+            {(filterPromocao !== null || filterNovidade !== null || filterCategoria !== "todas" || filterCor !== "todas" || filterTamanho !== "todos" || filterQuantidade !== "todas") && (
               <Button
                 size="sm"
                 variant="ghost"
@@ -368,6 +428,7 @@ const Estoque = () => {
                   setFilterCategoria("todas");
                   setFilterCor("todas");
                   setFilterTamanho("todos");
+                  setFilterQuantidade("todas");
                 }}
               >
                 Limpar Filtros
@@ -389,6 +450,149 @@ const Estoque = () => {
             Adicione produtos ao estoque através da página de Produtos
           </p>
         </Card>
+      ) : viewMode === "grid" ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredInventory.map((item) => {
+            const quantidadeTotal = item.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0;
+            
+            return (
+              <Card key={item.codigoProduto} className="p-4 shadow-card hover:shadow-lg transition-all">
+                <div className="space-y-4">
+                  {/* Imagem principal */}
+                  <div className="relative aspect-square rounded-lg overflow-hidden bg-muted">
+                    {item.variantes?.[0]?.imagens?.[0] ? (
+                      <img
+                        src={item.variantes[0].imagens[0]}
+                        alt={item.nomeProduto}
+                        className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => {
+                          if (item.variantes[0].imagens.length > 0) {
+                            openLightbox(item.variantes[0].imagens);
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <img 
+                          src={getDefaultImageByCategory(item.categoria)} 
+                          alt={item.categoria}
+                          className="w-20 h-20 object-contain opacity-30"
+                        />
+                      </div>
+                    )}
+                    {item.emPromocao && (
+                      <Badge className="absolute top-2 left-2 bg-accent text-accent-foreground">
+                        <Tag className="h-3 w-3 mr-1" />
+                        Promoção
+                      </Badge>
+                    )}
+                    {item.isNovidade && (
+                      <Badge className="absolute top-2 right-2 bg-green-600 text-white">
+                        <Sparkles className="h-3 w-3 mr-1" />
+                        Novo
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Informações do produto */}
+                  <div>
+                    <h3 className="font-bold text-lg truncate">{item.nomeProduto}</h3>
+                    <p className="text-sm text-muted-foreground">{item.categoria}</p>
+                    <div className="mt-2">
+                      {item.emPromocao && item.precoPromocional ? (
+                        <>
+                          <span className="text-sm text-muted-foreground line-through mr-2">
+                            R$ {item.precoVenda?.toFixed(2)}
+                          </span>
+                          <span className="text-lg font-bold text-accent">
+                            R$ {item.precoPromocional.toFixed(2)}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-lg font-bold">
+                          R$ {item.precoVenda?.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Estoque total */}
+                  <div className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded">
+                    <span className="text-sm font-medium">Estoque Total</span>
+                    <span className={`text-lg font-bold ${
+                      quantidadeTotal === 0 ? 'text-destructive' : 
+                      quantidadeTotal <= 10 ? 'text-yellow-600' : 
+                      'text-primary'
+                    }`}>
+                      {quantidadeTotal} un.
+                    </span>
+                  </div>
+
+                  {/* Variantes em grid */}
+                  <div>
+                    <Label className="text-xs font-semibold text-muted-foreground mb-2 block">
+                      Variantes Disponíveis
+                    </Label>
+                    <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                      {item.variantes?.filter((v: any) => v.quantidade > 0).map((variante: any, idx: number) => (
+                        <div 
+                          key={idx}
+                          className="p-2 bg-background border border-border rounded text-xs hover:border-primary transition-colors cursor-pointer"
+                          onClick={() => {
+                            setSelectedItem(item);
+                            setSelectedVariant(variante);
+                            setShowEntryDialog(true);
+                          }}
+                        >
+                          <div className="font-medium truncate">{variante.cor}</div>
+                          <div className="text-muted-foreground text-[10px]">
+                            {Array.isArray(variante.tamanhos) 
+                              ? variante.tamanhos.join(', ') 
+                              : variante.tamanho}
+                          </div>
+                          <div className="font-bold text-primary mt-1">
+                            {variante.quantidade} un.
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Ações */}
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={() => {
+                        setSelectedItem(item);
+                        setSelectedVariant(item.variantes?.[0]);
+                        setShowEntryDialog(true);
+                      }}
+                      className="flex-1 gap-1"
+                    >
+                      <Plus className="h-3 w-3" />
+                      Entrada
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedItem(item);
+                        setSelectedVariant(item.variantes?.[0]);
+                        setShowExitDialog(true);
+                      }}
+                      className="flex-1 gap-1"
+                      disabled={quantidadeTotal === 0}
+                    >
+                      <Minus className="h-3 w-3" />
+                      Saída
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
       ) : (
         <div className="space-y-6">
           {filteredInventory.map((item) => {
@@ -801,6 +1005,12 @@ const Estoque = () => {
         images={lightboxImages}
         initialIndex={lightboxIndex}
         title={selectedItem?.nomeProduto}
+      />
+      
+      <AddMultipleVariantsDialog
+        open={showMultipleVariantsDialog}
+        onOpenChange={setShowMultipleVariantsDialog}
+        onSuccess={loadEstoque}
       />
     </div>
   );
