@@ -327,10 +327,9 @@ export function EditVariantImagesDialog({
   const handleSubmit = async () => {
     try {
       setLoading(true);
-      
+
       await estoqueAPI.updateVariantImages(produto.codigoProduto, {
         cor: variante.cor,
-        tamanho: variante.tamanho,
         imagens: imagens,
       });
 

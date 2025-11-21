@@ -154,9 +154,18 @@ const validateEstoquePayload = (payload: any): FieldIssue[] => {
       if (!v.cor || typeof v.cor !== 'string') {
         issues.push({ field: `variantes[${idx}].cor`, message: 'Cor é obrigatória', value: v.cor });
       }
-      if (!v.tamanho || typeof v.tamanho !== 'string') {
-        issues.push({ field: `variantes[${idx}].tamanho`, message: 'Tamanho é obrigatório', value: v.tamanho });
+
+      // Novo modelo: cada variante possui UMA cor e UMA lista de tamanhos
+      if (!v.tamanhos || !Array.isArray(v.tamanhos) || v.tamanhos.length === 0) {
+        issues.push({ field: `variantes[${idx}].tamanhos`, message: 'Deve informar ao menos um tamanho', value: v.tamanhos });
+      } else {
+        v.tamanhos.forEach((t: any, tIdx: number) => {
+          if (typeof t !== 'string' || !t.trim()) {
+            issues.push({ field: `variantes[${idx}].tamanhos[${tIdx}]`, message: 'Cada tamanho deve ser uma string não vazia', value: t });
+          }
+        });
       }
+
       const q = Number(v.quantidade);
       if (!Number.isInteger(q) || q < 0) {
         issues.push({ field: `variantes[${idx}].quantidade`, message: 'Deve ser inteiro >= 0', value: v.quantidade });
@@ -319,48 +328,85 @@ export const getEstoqueByCodigo = async (req: Request, res: Response) => {
 export const createEstoque = async (req: Request, res: Response) => {
   try {
     console.log('Dados recebidos para criar estoque:', JSON.stringify(req.body, null, 2));
-    
-    const { codigoProduto, cor, tamanho, quantidade = 1, imagens = [] } = req.body;
-    
+
+    // Suporta tanto o formato antigo (cor/tamanho) quanto o novo (variantes[])
+    const variantesPayload = Array.isArray(req.body.variantes) ? req.body.variantes : [];
+    const primeiraVariante = variantesPayload[0] || {};
+
+    const cor = req.body.cor ?? primeiraVariante.cor;
+    const tamanhos: string[] = Array.isArray(primeiraVariante.tamanhos)
+      ? primeiraVariante.tamanhos
+      : primeiraVariante.tamanho
+        ? [primeiraVariante.tamanho]
+        : req.body.tamanho
+          ? [req.body.tamanho]
+          : [];
+
+    const quantidadeVariante = Number(
+      primeiraVariante.quantidade ?? req.body.quantidade ?? 1
+    );
+    const imagens = primeiraVariante.imagens ?? req.body.imagens ?? [];
+    const { codigoProduto } = req.body;
+
     // Verificar se já existe estoque para este produto
     let estoque = await Estoque.findOne({ codigoProduto });
 
     if (estoque) {
-      // Remover variantes com quantidade <= 0 (legado) antes de validar duplicidade
+      // Remover variantes com quantidade <= 0 (legado)
       const originalLen = Array.isArray(estoque.variantes) ? estoque.variantes.length : 0;
       estoque.variantes = (estoque.variantes || []).filter((v: any) => Number(v.quantidade) > 0);
       const cleaned = originalLen !== estoque.variantes.length;
 
-      // Verificar se já existe essa variante (apenas variantes com estoque)
+      // Novo modelo: uma variante por cor, com lista de tamanhos
       const varianteExistente = estoque.variantes.find(
-        (v: any) => v.cor === cor && v.tamanho === tamanho
+        (v: any) => v.cor === cor
       );
-      
+
       if (varianteExistente) {
-        return res.status(400).json({
-          error: 'Estoque duplicado',
-          message: 'Já existe estoque para essa cor e tamanho deste produto'
+        // Mesclar tamanhos (evita duplicados)
+        if (!Array.isArray(varianteExistente.tamanhos)) {
+          varianteExistente.tamanhos = [];
+        }
+        tamanhos.forEach((t) => {
+          if (t && !varianteExistente.tamanhos.includes(t)) {
+            varianteExistente.tamanhos.push(t);
+          }
         });
+
+        // Somar quantidade
+        varianteExistente.quantidade = Number(varianteExistente.quantidade || 0) + (quantidadeVariante || 0);
+
+        // Mesclar imagens
+        if (!Array.isArray(varianteExistente.imagens)) {
+          varianteExistente.imagens = [];
+        }
+        (imagens as string[]).forEach((img) => {
+          if (img && !varianteExistente.imagens!.includes(img)) {
+            varianteExistente.imagens!.push(img);
+          }
+        });
+      } else {
+        estoque.variantes.push({ cor, tamanhos, quantidade: quantidadeVariante, imagens });
       }
-      
-      // Adicionar nova variante
-      estoque.variantes.push({ cor, tamanho, quantidade, imagens });
-      
-      // Atualizar quantidade total
-      estoque.quantidade = estoque.variantes.reduce((total: number, v: any) => total + (Number(v.quantidade) || 0), 0);
-      
+
+      // Atualizar quantidade total com base nas variantes
+      estoque.quantidade = estoque.variantes.reduce(
+        (total: number, v: any) => total + (Number(v.quantidade) || 0),
+        0
+      );
+
       await estoque.save();
       return res.status(201).json(estoque);
     }
-    
+
     // Criar novo registro de estoque
     const cleanData: any = {
       codigoProduto,
-      quantidade: quantidade || 0,
-      variantes: [{ cor, tamanho, quantidade, imagens }],
+      quantidade: quantidadeVariante || 0,
+      variantes: [{ cor, tamanhos, quantidade: quantidadeVariante, imagens }],
       emPromocao: req.body.emPromocao || false,
       isNovidade: req.body.isNovidade || false,
-      dataCadastro: isoSeconds()
+      dataCadastro: isoSeconds(),
     };
 
     if (req.body.precoPromocional !== undefined && req.body.precoPromocional !== null) {
@@ -373,7 +419,7 @@ export const createEstoque = async (req: Request, res: Response) => {
       return res.status(400).json({
         error: 'Erro de validação',
         message: 'Um ou mais campos estão inválidos',
-        fields: issues
+        fields: issues,
       });
     }
 
@@ -383,36 +429,40 @@ export const createEstoque = async (req: Request, res: Response) => {
     await estoque.save();
     res.status(201).json(estoque);
   } catch (error: any) {
-    console.error('Erro completo ao criar estoque:', JSON.stringify({
-      name: error.name,
-      message: error.message,
-      code: error.code,
-      errors: error.errors
-    }, null, 2));
-    
+    console.error('Erro completo ao criar estoque:', JSON.stringify(
+      {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        errors: error.errors,
+      },
+      null,
+      2
+    ));
+
     if (error.name === 'ValidationError') {
-      const errors = Object.keys(error.errors).map(key => ({
+      const errors = Object.keys(error.errors).map((key) => ({
         field: key,
         message: error.errors[key].message,
-        value: error.errors[key].value
+        value: error.errors[key].value,
       }));
       return res.status(400).json({
         error: 'Erro de validação',
         message: 'Um ou mais campos estão inválidos',
-        fields: errors
+        fields: errors,
       });
     }
-    
+
     if (error.code === 11000) {
       return res.status(400).json({
         error: 'Erro de duplicação',
-        message: 'Produto já existe no estoque'
+        message: 'Produto já existe no estoque',
       });
     }
-    
+
     res.status(400).json({
       error: 'Erro ao processar requisição',
-      message: error.message || 'Erro desconhecido'
+      message: error.message || 'Erro desconhecido',
     });
   }
 };
@@ -772,18 +822,18 @@ export const updateVariantImages = async (req: Request, res: Response) => {
     const { codigo } = req.params;
     const { cor, tamanho, imagens } = req.body;
 
-    // Validar campos obrigatórios
-    if (!cor || !tamanho) {
+    // Novo comportamento: cor é obrigatória, tamanho é opcional
+    if (!cor) {
       return res.status(400).json({
         error: 'Campos obrigatórios faltando',
-        message: 'Os campos cor e tamanho são obrigatórios'
+        message: 'O campo cor é obrigatório',
       });
     }
 
     if (!Array.isArray(imagens)) {
       return res.status(400).json({
         error: 'Formato inválido',
-        message: 'O campo imagens deve ser um array'
+        message: 'O campo imagens deve ser um array',
       });
     }
 
@@ -794,15 +844,21 @@ export const updateVariantImages = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Produto não encontrado no estoque' });
     }
 
-    // Buscar a variante específica
-    const varianteIndex = estoque.variantes?.findIndex(
-      (v: any) => v.cor === cor && v.tamanho === tamanho
-    );
+    // Buscar a variante pela cor (modelo novo) ou cor+tamanho (modelo legado)
+    let varianteIndex = estoque.variantes?.findIndex((v: any) => v.cor === cor);
+
+    if ((varianteIndex === -1 || varianteIndex === undefined) && tamanho) {
+      varianteIndex = estoque.variantes?.findIndex(
+        (v: any) => v.cor === cor && (v as any).tamanho === tamanho
+      );
+    }
 
     if (varianteIndex === -1 || varianteIndex === undefined) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         error: 'Variante não encontrada',
-        message: `Variante com cor "${cor}" e tamanho "${tamanho}" não foi encontrada`
+        message: tamanho
+          ? `Variante com cor "${cor}" e tamanho "${tamanho}" não foi encontrada`
+          : `Variante com cor "${cor}" não foi encontrada`,
       });
     }
 
@@ -811,13 +867,12 @@ export const updateVariantImages = async (req: Request, res: Response) => {
       estoque.variantes[varianteIndex].imagens = imagens;
     }
 
-    // Salvar as alterações
     await estoque.save();
 
     res.json({
       message: 'Imagens da variante atualizadas com sucesso',
       estoque,
-      variante: estoque.variantes?.[varianteIndex]
+      variante: estoque.variantes?.[varianteIndex],
     });
   } catch (error) {
     console.error('Erro ao atualizar imagens da variante:', error);
