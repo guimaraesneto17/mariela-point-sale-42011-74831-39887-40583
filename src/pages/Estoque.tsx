@@ -79,9 +79,19 @@ const Estoque = () => {
       data.forEach((item: any) => {
         if (item.variantes && item.variantes.length > 0) {
           initialColors[item.codigoProduto] = item.variantes[0].cor;
-          const primeiroTamanho = Array.isArray(item.variantes[0].tamanhos) && item.variantes[0].tamanhos.length > 0
-            ? item.variantes[0].tamanhos[0]
-            : item.variantes[0].tamanho || '';
+          const tamanhosVariante0 = item.variantes[0].tamanhos;
+          let primeiroTamanho = '';
+          if (Array.isArray(tamanhosVariante0) && tamanhosVariante0.length > 0) {
+            // Nova estrutura: array de objetos {tamanho, quantidade}
+            if (typeof tamanhosVariante0[0] === 'object' && tamanhosVariante0[0].tamanho) {
+              primeiroTamanho = tamanhosVariante0[0].tamanho;
+            } else {
+              // Estrutura antiga: array de strings
+              primeiroTamanho = tamanhosVariante0[0];
+            }
+          } else if (item.variantes[0].tamanho) {
+            primeiroTamanho = item.variantes[0].tamanho;
+          }
           initialSizes[item.codigoProduto] = primeiroTamanho;
         }
       });
