@@ -569,8 +569,11 @@ const Estoque = () => {
                         >
                           <div className="font-medium truncate">{variante.cor}</div>
                           <div className="text-muted-foreground text-[10px]">
-                            {Array.isArray(variante.tamanhos) 
-                              ? variante.tamanhos.join(', ') 
+                            {Array.isArray(variante.tamanhos) && variante.tamanhos.length > 0
+                              ? (typeof variante.tamanhos[0] === 'object' && variante.tamanhos[0].tamanho
+                                  ? variante.tamanhos.map((t: any) => t.tamanho).join(', ')
+                                  : variante.tamanhos.join(', ')
+                                )
                               : variante.tamanho}
                           </div>
                           <div className="font-bold text-primary mt-1">
