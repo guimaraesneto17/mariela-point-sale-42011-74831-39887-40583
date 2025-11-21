@@ -227,6 +227,29 @@ const Estoque = () => {
     return item.variantes.find((v: any) => v.cor === cor);
   };
 
+  // Obter quantidade disponível para um tamanho específico
+  const getQuantidadeByTamanho = (item: any, cor: string, tamanho: string): number => {
+    if (!item.variantes) return 0;
+    const variante = item.variantes.find((v: any) => v.cor === cor);
+    if (!variante) return 0;
+    
+    // Nova estrutura: tamanhos é array de objetos {tamanho, quantidade}
+    if (Array.isArray(variante.tamanhos) && variante.tamanhos.length > 0 && typeof variante.tamanhos[0] === 'object') {
+      const tamanhoObj = variante.tamanhos.find((t: any) => t.tamanho === tamanho);
+      return tamanhoObj ? tamanhoObj.quantidade : 0;
+    }
+    
+    // Estrutura antiga: retorna quantidade total da variante se o tamanho bater
+    if (Array.isArray(variante.tamanhos) && variante.tamanhos.includes(tamanho)) {
+      return variante.quantidade || 0;
+    }
+    if (variante.tamanho === tamanho) {
+      return variante.quantidade || 0;
+    }
+    
+    return 0;
+  };
+
   // Atualizar cor selecionada
   const handleColorChange = (codigoProduto: string, cor: string, item: any) => {
     setSelectedColorByItem(prev => ({ ...prev, [codigoProduto]: cor }));
@@ -708,10 +731,10 @@ const Estoque = () => {
                         Quantidade Disponível
                       </label>
                       <div className="text-3xl font-bold text-primary">
-                        {varianteSelecionada ? varianteSelecionada.quantidade : 0} un.
+                        {getQuantidadeByTamanho(item, selectedCor, selectedTamanho)} un.
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">
-                        {selectedCor} - {selectedTamanho}
+                        {selectedCor} - {selectedTamanho} ({getQuantidadeByTamanho(item, selectedCor, selectedTamanho)} un.)
                       </div>
                     </div>
 
@@ -746,16 +769,23 @@ const Estoque = () => {
                     <div>
                       <label className="text-sm font-semibold text-muted-foreground mb-2 block">Tamanhos</label>
                       <div className="flex flex-wrap gap-2">
-                        {tamanhosDisponiveis.map((tamanho: string) => (
-                          <Badge
-                            key={tamanho}
-                            variant={selectedTamanho === tamanho ? "default" : "outline"}
-                            className="cursor-pointer hover:bg-primary/90"
-                            onClick={() => handleSizeChange(item.codigoProduto, tamanho)}
-                          >
-                            {tamanho}
-                          </Badge>
-                        ))}
+                        {tamanhosDisponiveis.map((tamanho: string) => {
+                          const qtd = getQuantidadeByTamanho(item, selectedCor, tamanho);
+                          const isSelected = selectedTamanho === tamanho;
+                          return (
+                            <Badge
+                              key={tamanho}
+                              variant={isSelected ? "default" : "outline"}
+                              className={`cursor-pointer hover:bg-primary/90 transition-all ${isSelected ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+                              onClick={() => handleSizeChange(item.codigoProduto, tamanho)}
+                            >
+                              <span className="font-semibold">{tamanho}</span>
+                              <span className={`ml-1.5 text-xs ${isSelected ? 'opacity-100' : 'opacity-70'}`}>
+                                ({qtd})
+                              </span>
+                            </Badge>
+                          );
+                        })}
                       </div>
                     </div>
 
@@ -785,7 +815,11 @@ const Estoque = () => {
                     <Button
                       size="sm"
                       variant="default"
-                      onClick={() => openEntryDialog(item, varianteSelecionada)}
+                      onClick={() => {
+                        if (varianteSelecionada) {
+                          openEntryDialog(item, { ...varianteSelecionada, tamanho: selectedTamanho });
+                        }
+                      }}
                       className="gap-2"
                       disabled={!varianteSelecionada}
                     >
@@ -795,9 +829,14 @@ const Estoque = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => openExitDialog(item, varianteSelecionada)}
+                      onClick={() => {
+                        if (varianteSelecionada) {
+                          const qtdDisponivel = getQuantidadeByTamanho(item, selectedCor, selectedTamanho);
+                          openExitDialog(item, { ...varianteSelecionada, tamanho: selectedTamanho, quantidadeDisponivel: qtdDisponivel });
+                        }
+                      }}
                       className="gap-2"
-                      disabled={!varianteSelecionada || varianteSelecionada.quantidade === 0}
+                      disabled={!varianteSelecionada || getQuantidadeByTamanho(item, selectedCor, selectedTamanho) === 0}
                     >
                       <Minus className="h-4 w-4" />
                       Saída
@@ -976,7 +1015,7 @@ const Estoque = () => {
             nomeProduto={selectedItem.nomeProduto}
             cor={selectedVariant.cor}
             tamanho={selectedVariant.tamanho}
-            quantidadeDisponivel={selectedVariant.quantidade}
+            quantidadeDisponivel={selectedVariant.quantidadeDisponivel || selectedVariant.quantidade}
             onSuccess={handleExitSuccess}
           />
         </>
