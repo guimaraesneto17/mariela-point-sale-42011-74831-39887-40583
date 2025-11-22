@@ -3,126 +3,156 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { estoqueAPI } from "@/lib/api";
-import { SingleSelectBadges } from "@/components/ui/single-select-badges";
-import { MultiSelect } from "@/components/ui/multi-select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Upload, Link as LinkIcon, X, GripVertical } from "lucide-react";
+import { Plus, Upload, Link as LinkIcon, X, Trash2, Image as ImageIcon } from "lucide-react";
 import { useImageCompression } from "@/hooks/useImageCompression";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  rectSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+
+interface Tamanho {
+  tamanho: string;
+  quantidade: number;
+}
+
+interface Variante {
+  cor: string;
+  tamanhos: Tamanho[];
+  imagens: string[];
+}
+
 interface AddToStockDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   produto: any;
   onSuccess?: () => void;
 }
+
 export function AddToStockDialog({
   open,
   onOpenChange,
   produto,
   onSuccess
 }: AddToStockDialogProps) {
-  const [selectedVariants, setSelectedVariants] = useState<Array<{ cor: string; tamanho: string; quantidade: number }>>([]);
-  const [currentCor, setCurrentCor] = useState<string>("");
-  const [currentTamanho, setCurrentTamanho] = useState<string>("");
-  const [currentQuantidade, setCurrentQuantidade] = useState<number>(1);
   const [loading, setLoading] = useState(false);
+  const [variantes, setVariantes] = useState<Variante[]>([]);
+  const [novaCor, setNovaCor] = useState("");
+  const [varianteSelecionada, setVarianteSelecionada] = useState<number | null>(null);
   const [imagemURL, setImagemURL] = useState("");
-  const [imagens, setImagens] = useState<string[]>([]);
-  const [uploadingUrl, setUploadingUrl] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
   const { compressing, compressImages, validateImageUrl } = useImageCompression();
-  
-  // Opções disponíveis (podem ser expandidas)
-  const [tamanhosDisponiveis, setTamanhosDisponiveis] = useState<string[]>([
-    "PP", "P", "M", "G", "GG", "XG", "U"
-  ]);
+
+  // Opções disponíveis
   const [coresDisponiveis, setCoresDisponiveis] = useState<string[]>([
     "Preto", "Branco", "Azul", "Vermelho", "Verde", "Amarelo", "Rosa", "Cinza"
   ]);
+  const [tamanhosDisponiveis, setTamanhosDisponiveis] = useState<string[]>([
+    "PP", "P", "M", "G", "GG", "XG", "U"
+  ]);
 
-  // Carregar opções salvas do localStorage
+  // Carregar opções do localStorage
   useEffect(() => {
-    const savedTamanhos = localStorage.getItem('mariela-tamanhos-options');
     const savedCores = localStorage.getItem('mariela-cores-options');
+    const savedTamanhos = localStorage.getItem('mariela-tamanhos-options');
     
-    if (savedTamanhos) {
-      setTamanhosDisponiveis(JSON.parse(savedTamanhos));
-    }
-    if (savedCores) {
-      setCoresDisponiveis(JSON.parse(savedCores));
-    }
+    if (savedCores) setCoresDisponiveis(JSON.parse(savedCores));
+    if (savedTamanhos) setTamanhosDisponiveis(JSON.parse(savedTamanhos));
   }, []);
 
-  const handleCreateTamanho = (novoTamanho: string) => {
-    const updated = [...tamanhosDisponiveis, novoTamanho];
-    setTamanhosDisponiveis(updated);
-    localStorage.setItem('mariela-tamanhos-options', JSON.stringify(updated));
+  const adicionarCor = () => {
+    if (!novaCor.trim()) {
+      toast.error("Digite uma cor");
+      return;
+    }
+
+    // Verificar se já existe uma variante com essa cor
+    if (variantes.some(v => v.cor.toLowerCase() === novaCor.toLowerCase())) {
+      toast.error("Já existe uma variante com essa cor");
+      return;
+    }
+
+    // Adicionar cor às opções se não existir
+    if (!coresDisponiveis.includes(novaCor)) {
+      const updated = [...coresDisponiveis, novaCor];
+      setCoresDisponiveis(updated);
+      localStorage.setItem('mariela-cores-options', JSON.stringify(updated));
+    }
+
+    const novaVariante = { cor: novaCor, tamanhos: [], imagens: [] };
+    setVariantes([...variantes, novaVariante]);
+    setVarianteSelecionada(variantes.length); // Selecionar automaticamente
+    setNovaCor("");
+    toast.success(`Cor "${novaCor}" adicionada`);
   };
 
-  const handleCreateCor = (novaCor: string) => {
-    const updated = [...coresDisponiveis, novaCor];
-    setCoresDisponiveis(updated);
-    localStorage.setItem('mariela-cores-options', JSON.stringify(updated));
+  const removerVariante = (index: number) => {
+    setVariantes(variantes.filter((_, i) => i !== index));
+    if (varianteSelecionada === index) {
+      setVarianteSelecionada(null);
+    }
   };
 
-  const handleDeleteTamanho = (tamanho: string) => {
-    const updated = tamanhosDisponiveis.filter(t => t !== tamanho);
-    setTamanhosDisponiveis(updated);
-    localStorage.setItem('mariela-tamanhos-options', JSON.stringify(updated));
+  const adicionarTamanhoRapido = (varianteIndex: number, tamanho: string) => {
+    const variante = variantes[varianteIndex];
+    const tamanhoExistente = variante.tamanhos.find(t => t.tamanho === tamanho);
+    
+    if (tamanhoExistente) {
+      // Remover se já existe
+      removerTamanho(varianteIndex, tamanho);
+    } else {
+      // Adicionar se não existe com quantidade padrão 1
+      const novasVariantes = [...variantes];
+      novasVariantes[varianteIndex].tamanhos.push({ tamanho, quantidade: 1 });
+      setVariantes(novasVariantes);
+      toast.success(`${tamanho} adicionado! Edite a quantidade se necessário.`);
+    }
   };
 
-  const handleDeleteCor = (cor: string) => {
-    const updated = coresDisponiveis.filter(c => c !== cor);
-    setCoresDisponiveis(updated);
-    localStorage.setItem('mariela-cores-options', JSON.stringify(updated));
+  const removerTamanho = (varianteIndex: number, tamanho: string) => {
+    const novasVariantes = [...variantes];
+    novasVariantes[varianteIndex].tamanhos = novasVariantes[varianteIndex].tamanhos.filter(t => t.tamanho !== tamanho);
+    setVariantes(novasVariantes);
   };
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  const atualizarQuantidadeTamanho = (varianteIndex: number, tamanho: string, novaQuantidade: number) => {
+    const novasVariantes = [...variantes];
+    const tamanhoObj = novasVariantes[varianteIndex].tamanhos.find(t => t.tamanho === tamanho);
+    if (tamanhoObj) {
+      tamanhoObj.quantidade = Math.max(1, novaQuantidade);
+      setVariantes(novasVariantes);
+    }
+  };
 
   const handleAddImagemUrl = async () => {
+    if (varianteSelecionada === null) {
+      toast.error("Selecione uma variante para adicionar imagens");
+      return;
+    }
+
     if (!imagemURL.trim()) {
       toast.error("Digite uma URL válida");
       return;
     }
 
     try {
-      setUploadingUrl(true);
       await validateImageUrl(imagemURL);
-      setImagens([...imagens, imagemURL]);
+      const novasVariantes = [...variantes];
+      novasVariantes[varianteSelecionada].imagens.push(imagemURL);
+      setVariantes(novasVariantes);
       setImagemURL("");
       toast.success("Imagem adicionada!");
     } catch (error) {
-      console.error("Erro ao validar URL:", error);
       toast.error("Não foi possível carregar a imagem desta URL");
-    } finally {
-      setUploadingUrl(false);
     }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (varianteSelecionada === null) {
+      toast.error("Selecione uma variante para adicionar imagens");
+      return;
+    }
+
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -130,7 +160,9 @@ export function AddToStockDialog({
       const compressedImages = await compressImages(Array.from(files));
       
       if (compressedImages.length > 0) {
-        setImagens([...imagens, ...compressedImages]);
+        const novasVariantes = [...variantes];
+        novasVariantes[varianteSelecionada].imagens.push(...compressedImages);
+        setVariantes(novasVariantes);
         toast.success(`${compressedImages.length} imagem(ns) adicionada(s)!`);
       }
     } catch (error) {
@@ -143,192 +175,84 @@ export function AddToStockDialog({
     }
   };
 
-  const removeImage = (index: number) => {
-    setImagens(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      setImagens((items) => {
-        const oldIndex = items.findIndex((_, i) => `image-${i}` === active.id);
-        const newIndex = items.findIndex((_, i) => `image-${i}` === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  };
-
-  const handleAddVariant = () => {
-    if (!currentCor) {
-      toast.error("Selecione uma cor");
-      return;
-    }
-    if (!currentTamanho) {
-      toast.error("Selecione um tamanho");
-      return;
-    }
-    if (currentQuantidade <= 0) {
-      toast.error("Quantidade deve ser maior que zero");
-      return;
-    }
-
-    // Verificar se já existe essa combinação
-    const exists = selectedVariants.find(
-      v => v.cor === currentCor && v.tamanho === currentTamanho
-    );
-
-    if (exists) {
-      toast.error("Esta combinação de cor e tamanho já foi adicionada");
-      return;
-    }
-
-    setSelectedVariants([...selectedVariants, {
-      cor: currentCor,
-      tamanho: currentTamanho,
-      quantidade: currentQuantidade
-    }]);
-
-    toast.success(`Adicionado: ${currentCor} - ${currentTamanho} (${currentQuantidade} un.)`);
-    
-    // Reset apenas tamanho e quantidade
-    setCurrentTamanho("");
-    setCurrentQuantidade(1);
-  };
-
-  const handleRemoveVariant = (index: number) => {
-    setSelectedVariants(prev => prev.filter((_, i) => i !== index));
+  const removerImagem = (varianteIndex: number, imagemIndex: number) => {
+    const novasVariantes = [...variantes];
+    novasVariantes[varianteIndex].imagens = novasVariantes[varianteIndex].imagens.filter((_, i) => i !== imagemIndex);
+    setVariantes(novasVariantes);
   };
 
   const handleSubmit = async () => {
-    if (selectedVariants.length === 0) {
-      toast.error("Adicione pelo menos uma variante (cor + tamanho + quantidade)");
+    if (variantes.length === 0) {
+      toast.error("Adicione pelo menos uma variante");
+      return;
+    }
+
+    // Validar que todas as variantes têm pelo menos um tamanho
+    const variantesSemTamanho = variantes.filter(v => v.tamanhos.length === 0);
+    if (variantesSemTamanho.length > 0) {
+      toast.error("Todas as variantes devem ter pelo menos um tamanho", {
+        description: `Cores sem tamanho: ${variantesSemTamanho.map(v => v.cor).join(', ')}`
+      });
       return;
     }
 
     try {
       setLoading(true);
 
-      // Agrupar variantes por cor
-      const variantesPorCor = selectedVariants.reduce((acc, item) => {
-        if (!acc[item.cor]) {
-          acc[item.cor] = [];
-        }
-        acc[item.cor].push({
-          tamanho: item.tamanho,
-          quantidade: item.quantidade
-        });
-        return acc;
-      }, {} as Record<string, Array<{ tamanho: string; quantidade: number }>>);
-
-      // Criar array de variantes no formato esperado pelo backend
-      const variantes = Object.entries(variantesPorCor).map(([cor, tamanhos]) => {
-        const quantidadeTotal = tamanhos.reduce((sum, t) => sum + t.quantidade, 0);
-        return {
-          cor,
-          quantidade: quantidadeTotal,
-          tamanhos,
-          imagens
+      // Criar registros de estoque para cada variante
+      for (const variante of variantes) {
+        // Calcular quantidade total da variante
+        const quantidadeTotal = variante.tamanhos.reduce((total, t) => total + t.quantidade, 0);
+        
+        const estoqueData = {
+          codigoProduto: produto.codigoProduto,
+          variantes: [{
+            cor: variante.cor,
+            tamanhos: variante.tamanhos,
+            quantidade: quantidadeTotal,
+            imagens: variante.imagens
+          }],
+          emPromocao: false,
+          isNovidade: false,
+          logMovimentacao: [{
+            tipo: 'entrada',
+            cor: variante.cor,
+            tamanho: variante.tamanhos.map(t => t.tamanho).join(', '),
+            quantidade: quantidadeTotal,
+            data: new Date().toISOString().split('.')[0] + 'Z',
+            origem: 'entrada',
+            observacao: 'Entrada inicial automática - criação da variante'
+          }]
         };
+
+        await estoqueAPI.create(estoqueData);
+      }
+
+      toast.success(`${variantes.length} variante(s) adicionada(s) ao estoque!`, {
+        description: `${produto.nome}`
       });
 
-      // Calcular quantidade total
-      const quantidadeTotal = selectedVariants.reduce((sum, v) => sum + v.quantidade, 0);
-
-      const estoqueData = {
-        codigoProduto: produto.codigoProduto,
-        quantidade: quantidadeTotal,
-        variantes,
-        emPromocao: false,
-        isNovidade: false,
-        logMovimentacao: selectedVariants.map(v => ({
-          tipo: 'entrada',
-          cor: v.cor,
-          tamanho: v.tamanho,
-          quantidade: v.quantidade,
-          data: new Date().toISOString().split('.')[0] + 'Z',
-          origem: 'entrada',
-          observacao: 'Entrada inicial automática - criação da variante'
-        }))
-      };
-
-      console.log('Enviando dados para o backend:', JSON.stringify(estoqueData, null, 2));
-
-      await estoqueAPI.create(estoqueData);
-      
-      toast.success(`${produto.nome} adicionado ao estoque!`, {
-        description: `${selectedVariants.length} variante(s) adicionada(s)`
-      });
-      
       onOpenChange(false);
       onSuccess?.();
       
       // Reset
-      setSelectedVariants([]);
-      setCurrentCor("");
-      setCurrentTamanho("");
-      setCurrentQuantidade(1);
-      setImagens([]);
+      setVariantes([]);
+      setVarianteSelecionada(null);
+      setNovaCor("");
       setImagemURL("");
     } catch (error: any) {
-      console.error('Erro ao adicionar estoque:', error);
       const errorMessage = error.response?.data?.message || error.message || "Tente novamente";
-      if (errorMessage.includes("Já existe")) {
-        toast.error("Estoque duplicado", {
-          description: "Já existe uma variante com essa cor."
-        });
-      } else {
-        toast.error("Erro ao adicionar ao estoque", {
-          description: errorMessage
-        });
-      }
+      toast.error("Erro ao adicionar variantes", {
+        description: errorMessage
+      });
     } finally {
       setLoading(false);
     }
   };
-  // Componente para item arrastável
-  function SortableImageItem({ id, img, index, onRemove }: { id: string; img: string; index: number; onRemove: () => void }) {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
-    const style = {
-      transform: CSS.Transform.toString(transform),
-      transition,
-      opacity: isDragging ? 0.5 : 1,
-    };
-
-    return (
-      <div ref={setNodeRef} style={style} className="relative group">
-        <div className="absolute top-1 left-1 cursor-move z-10" {...attributes} {...listeners}>
-          <div className="bg-background/90 backdrop-blur-sm p-1 rounded-md border border-border shadow-md">
-            <GripVertical className="h-3 w-3 text-muted-foreground" />
-          </div>
-        </div>
-        <img 
-          src={img} 
-          alt={`Preview ${index + 1}`}
-          className="w-full h-24 object-cover rounded-lg border-2 border-border"
-          onError={(e) => {
-            e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%23ddd' width='100' height='100'/%3E%3Ctext fill='%23999' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3EErro%3C/text%3E%3C/svg%3E";
-          }}
-        />
-        <Button
-          type="button"
-          variant="destructive"
-          size="icon"
-          className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={onRemove}
-        >
-          <X className="h-3 w-3" />
-        </Button>
-        <div className="absolute bottom-1 left-1 bg-background/90 backdrop-blur-sm px-2 py-0.5 rounded text-xs font-semibold border border-border">
-          #{index + 1}
-        </div>
-      </div>
-    );
-  }
-
-  return <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Adicionar ao Estoque</DialogTitle>
           <DialogDescription>
@@ -336,71 +260,108 @@ export function AddToStockDialog({
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Painel Esquerdo - Adicionar Variantes */}
           <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-1">
-                <Label>Cor *</Label>
-                <SingleSelectBadges
-                  value={currentCor}
-                  onChange={setCurrentCor}
-                  options={coresDisponiveis}
-                  placeholder="Selecione cor"
-                  onCreateOption={handleCreateCor}
-                  onDeleteOption={handleDeleteCor}
-                />
-              </div>
-
-              <div className="col-span-1">
-                <Label>Tamanho *</Label>
-                <SingleSelectBadges
-                  value={currentTamanho}
-                  onChange={setCurrentTamanho}
-                  options={tamanhosDisponiveis}
-                  placeholder="Selecione tamanho"
-                  onCreateOption={handleCreateTamanho}
-                  onDeleteOption={handleDeleteTamanho}
-                />
-              </div>
-
-              <div className="col-span-1">
-                <Label>Quantidade *</Label>
+            <div className="border rounded-lg p-4 bg-muted/30">
+              <Label className="text-base font-semibold">1. Adicionar Cores</Label>
+              <p className="text-xs text-muted-foreground mb-3">
+                Cada cor será uma variante separada
+              </p>
+              
+              <div className="flex gap-2 mb-3">
                 <Input
-                  type="number"
-                  min="1"
-                  value={currentQuantidade}
-                  onChange={(e) => setCurrentQuantidade(parseInt(e.target.value) || 1)}
+                  placeholder="Digite uma cor (ex: Azul Marinho)"
+                  value={novaCor}
+                  onChange={(e) => setNovaCor(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && adicionarCor()}
                 />
+                <Button onClick={adicionarCor} className="shrink-0">
+                  <Plus className="h-4 w-4 mr-1" /> Adicionar
+                </Button>
+              </div>
+
+              {/* Cores sugeridas */}
+              <div className="flex flex-wrap gap-2">
+                {coresDisponiveis.map((cor) => (
+                  <Badge
+                    key={cor}
+                    variant="outline"
+                    className="cursor-pointer hover:bg-primary hover:text-primary-foreground"
+                    onClick={() => {
+                      setNovaCor(cor);
+                      adicionarCor();
+                    }}
+                  >
+                    {cor}
+                  </Badge>
+                ))}
               </div>
             </div>
 
-            <Button
-              type="button"
-              onClick={handleAddVariant}
-              className="w-full"
-              variant="outline"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar Variante
-            </Button>
+            {/* Lista de Variantes Adicionadas */}
+            {variantes.length > 0 && (
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">Variantes Adicionadas ({variantes.length})</Label>
+                
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {variantes.map((variante, index) => (
+                    <div
+                      key={index}
+                      className={`border rounded-lg p-3 cursor-pointer transition-all ${
+                        varianteSelecionada === index
+                          ? 'bg-primary/10 border-primary'
+                          : 'hover:bg-muted/50'
+                      }`}
+                      onClick={() => setVarianteSelecionada(index)}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 rounded-full bg-primary" />
+                          <span className="font-semibold">{variante.cor}</span>
+                          {variante.imagens.length > 0 && (
+                            <Badge variant="secondary" className="text-xs">
+                              <ImageIcon className="h-3 w-3 mr-1" />
+                              {variante.imagens.length}
+                            </Badge>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removerVariante(index);
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
 
-            {/* Lista de variantes adicionadas */}
-            {selectedVariants.length > 0 && (
-              <div className="border rounded-lg p-3 space-y-2">
-                <Label className="text-sm font-semibold">Variantes Adicionadas ({selectedVariants.length})</Label>
-                <div className="space-y-1 max-h-32 overflow-y-auto">
-                  {selectedVariants.map((v, idx) => (
-                    <div key={idx} className="flex items-center justify-between bg-muted p-2 rounded text-sm">
-                      <span><strong>{v.cor}</strong> - {v.tamanho} ({v.quantidade} un.)</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => handleRemoveVariant(idx)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {variante.tamanhos.length > 0 ? (
+                          variante.tamanhos.map((tamObj) => (
+                            <Badge key={tamObj.tamanho} variant="secondary" className="text-xs">
+                              {tamObj.tamanho} ({tamObj.quantidade})
+                              <X
+                                className="h-3 w-3 ml-1 cursor-pointer hover:text-destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removerTamanho(index, tamObj.tamanho);
+                                }}
+                              />
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">Nenhum tamanho adicionado</span>
+                        )}
+                      </div>
+
+                      {/* Total da variante */}
+                      <div className="text-xs text-muted-foreground">
+                        Total: {variante.tamanhos.reduce((sum, t) => sum + t.quantidade, 0)} un.
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -408,103 +369,176 @@ export function AddToStockDialog({
             )}
           </div>
 
-          <div className="text-sm text-muted-foreground bg-muted p-3 rounded">
-            <p><strong>Preço de Custo:</strong> R$ {produto?.precoCusto?.toFixed(2)}</p>
-            <p><strong>Preço de Venda:</strong> R$ {produto?.precoVenda?.toFixed(2)}</p>
-            <p><strong>Margem de Lucro:</strong> {produto?.margemDeLucro?.toFixed(2)}%</p>
-          </div>
+          {/* Painel Direito - Editar Variante Selecionada */}
+          <div className="space-y-4">
+            {varianteSelecionada !== null ? (
+              <>
+                <div className="border rounded-lg p-4 bg-primary/5">
+                  <Label className="text-base font-semibold mb-3 block">
+                    2. Editando: {variantes[varianteSelecionada].cor}
+                  </Label>
 
-          <div className="space-y-3">
-            <Label>Imagens da Variante (Opcional)</Label>
-            
-            <Tabs defaultValue="url" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="url" className="flex items-center gap-2">
-                  <LinkIcon className="h-4 w-4" />
-                  URL da Imagem
-                </TabsTrigger>
-                <TabsTrigger value="upload" className="flex items-center gap-2">
-                  <Upload className="h-4 w-4" />
-                  Upload de Arquivo
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="url" className="space-y-3 mt-3">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="https://exemplo.com/imagem.jpg"
-                    value={imagemURL}
-                    onChange={(e) => setImagemURL(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleAddImagemUrl()}
-                  />
-                  <Button
-                    type="button"
-                    onClick={handleAddImagemUrl}
-                    disabled={uploadingUrl}
-                    className="gap-2 shrink-0"
-                  >
-                    {uploadingUrl ? "Validando..." : <><Plus className="h-4 w-4" /> Adicionar</>}
-                  </Button>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="upload" className="space-y-3 mt-3">
-                <Input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleFileUpload}
-                  className="cursor-pointer"
-                  disabled={compressing}
-                />
-                {compressing && (
-                  <p className="text-sm text-muted-foreground">Processando imagens...</p>
-                )}
-              </TabsContent>
-            </Tabs>
-
-            {/* Preview das Imagens com drag & drop */}
-            {imagens.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  Arraste para reordenar • Primeira imagem = Destaque ({imagens.length} {imagens.length === 1 ? 'imagem' : 'imagens'})
-                </p>
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext
-                    items={imagens.map((_, i) => `image-${i}`)}
-                    strategy={rectSortingStrategy}
-                  >
-                    <div className="grid grid-cols-3 gap-3">
-                      {imagens.map((img, index) => (
-                        <SortableImageItem
-                          key={`image-${index}`}
-                          id={`image-${index}`}
-                          img={img}
-                          index={index}
-                          onRemove={() => removeImage(index)}
-                        />
-                      ))}
+                  {/* Tamanhos com quantidade */}
+                  <div className="space-y-3">
+                    <Label className="text-sm">Selecione os Tamanhos e Quantidades</Label>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                      {tamanhosDisponiveis.map((tam) => {
+                        const tamanhoObj = variantes[varianteSelecionada].tamanhos.find(t => t.tamanho === tam);
+                        const isSelected = !!tamanhoObj;
+                        
+                        return (
+                          <div key={tam} className="space-y-1">
+                            <Button
+                              type="button"
+                              variant={isSelected ? "default" : "outline"}
+                              size="sm"
+                              className="w-full"
+                              onClick={() => adicionarTamanhoRapido(varianteSelecionada, tam)}
+                            >
+                              {tam}
+                            </Button>
+                            {isSelected && (
+                              <Input
+                                type="number"
+                                min="1"
+                                value={tamanhoObj.quantidade}
+                                onChange={(e) => atualizarQuantidadeTamanho(
+                                  varianteSelecionada,
+                                  tam,
+                                  parseInt(e.target.value) || 1
+                                )}
+                                className="h-8 text-xs"
+                                placeholder="Qtd"
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                  </SortableContext>
-                </DndContext>
+                  </div>
+                </div>
+
+                {/* Imagens */}
+                <div className="border rounded-lg p-4">
+                  <Label className="text-sm font-semibold mb-3 block">Imagens da Variante</Label>
+                  
+                  <Tabs defaultValue="url" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 mb-3">
+                      <TabsTrigger value="url" className="text-xs">
+                        <LinkIcon className="h-3 w-3 mr-1" />
+                        URL
+                      </TabsTrigger>
+                      <TabsTrigger value="upload" className="text-xs">
+                        <Upload className="h-3 w-3 mr-1" />
+                        Upload
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="url" className="space-y-2">
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="https://exemplo.com/imagem.jpg"
+                          value={imagemURL}
+                          onChange={(e) => setImagemURL(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && handleAddImagemUrl()}
+                          className="text-sm"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={handleAddImagemUrl}
+                          className="shrink-0"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="upload" className="space-y-2">
+                      <Input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleFileUpload}
+                        className="cursor-pointer text-sm"
+                        disabled={compressing}
+                      />
+                      {compressing && (
+                        <p className="text-xs text-muted-foreground">Processando imagens...</p>
+                      )}
+                    </TabsContent>
+                  </Tabs>
+
+                  {/* Preview das imagens */}
+                  {variantes[varianteSelecionada].imagens.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <Label className="text-xs text-muted-foreground">
+                        {variantes[varianteSelecionada].imagens.length} imagem(ns)
+                      </Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {variantes[varianteSelecionada].imagens.map((img, imgIndex) => (
+                          <div key={imgIndex} className="relative group">
+                            <img
+                              src={img}
+                              alt={`Preview ${imgIndex + 1}`}
+                              className="w-full h-20 object-cover rounded border"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="icon"
+                              className="absolute top-0.5 right-0.5 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => removerImagem(varianteSelecionada, imgIndex)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                            <div className="absolute bottom-0.5 left-0.5 bg-background/80 px-1 rounded text-xs">
+                              #{imgIndex + 1}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="border rounded-lg p-8 text-center text-muted-foreground">
+                <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Selecione uma variante para editar</p>
               </div>
             )}
           </div>
+        </div>
 
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button className="flex-1" onClick={handleSubmit} disabled={loading}>
-              {loading ? "Adicionando..." : "Adicionar ao Estoque"}
-            </Button>
-          </div>
+        {/* Informações do Produto */}
+        <div className="text-sm text-muted-foreground bg-muted p-3 rounded">
+          <p><strong>Preço de Custo:</strong> R$ {produto?.precoCusto?.toFixed(2)}</p>
+          <p><strong>Preço de Venda:</strong> R$ {produto?.precoVenda?.toFixed(2)}</p>
+          <p><strong>Margem de Lucro:</strong> {produto?.margemDeLucro?.toFixed(2)}%</p>
+        </div>
+
+        {/* Botões de ação */}
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="flex-1"
+            disabled={loading}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            className="flex-1"
+            disabled={loading || variantes.length === 0}
+          >
+            {loading ? "Salvando..." : `Adicionar ${variantes.length} Variante(s)`}
+          </Button>
         </div>
       </DialogContent>
-    </Dialog>;
+    </Dialog>
+  );
 }

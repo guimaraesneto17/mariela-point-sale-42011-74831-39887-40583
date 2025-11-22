@@ -25,6 +25,7 @@ export function SelectClientDialog({ open, onOpenChange, clientes, onSelect, onC
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [newClientNome, setNewClientNome] = useState("");
   const [newClientTelefone, setNewClientTelefone] = useState("");
+  const [newClientDataNascimento, setNewClientDataNascimento] = useState("");
   const [saving, setSaving] = useState(false);
 
   const filteredClientes = clientes.filter(c => 
@@ -51,6 +52,7 @@ export function SelectClientDialog({ open, onOpenChange, clientes, onSelect, onC
         codigoCliente: generateNextCode(),
         nome: newClientNome.trim(),
         telefone: newClientTelefone.trim() || undefined,
+        dataNascimento: newClientDataNascimento || undefined,
       };
 
       await clientesAPI.create(newClient);
@@ -66,6 +68,7 @@ export function SelectClientDialog({ open, onOpenChange, clientes, onSelect, onC
       // Resetar form
       setNewClientNome("");
       setNewClientTelefone("");
+      setNewClientDataNascimento("");
       setShowNewClientForm(false);
       setSearchTerm("");
       onOpenChange(false);
@@ -85,6 +88,7 @@ export function SelectClientDialog({ open, onOpenChange, clientes, onSelect, onC
         setShowNewClientForm(false);
         setNewClientNome("");
         setNewClientTelefone("");
+        setNewClientDataNascimento("");
         setSearchTerm("");
       }
     }}>
@@ -120,6 +124,16 @@ export function SelectClientDialog({ open, onOpenChange, clientes, onSelect, onC
               />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="dataNascimento">Data de Nascimento (Opcional)</Label>
+              <Input
+                id="dataNascimento"
+                type="date"
+                value={newClientDataNascimento}
+                onChange={(e) => setNewClientDataNascimento(e.target.value)}
+              />
+            </div>
+
             <div className="flex gap-2 pt-2">
               <Button
                 variant="outline"
@@ -128,6 +142,7 @@ export function SelectClientDialog({ open, onOpenChange, clientes, onSelect, onC
                   setShowNewClientForm(false);
                   setNewClientNome("");
                   setNewClientTelefone("");
+                  setNewClientDataNascimento("");
                 }}
               >
                 Cancelar
