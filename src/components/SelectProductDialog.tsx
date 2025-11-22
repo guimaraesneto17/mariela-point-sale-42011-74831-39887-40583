@@ -9,8 +9,10 @@ import { Label } from "@/components/ui/label";
 
 interface Variante {
   cor: string;
-  tamanho: string;
+  tamanhos?: Array<{tamanho: string, quantidade: number}>;
+  tamanho?: string; // Para compatibilidade com estrutura antiga
   quantidade: number;
+  imagens?: string[];
 }
 
 interface ProdutoEstoque {
@@ -65,9 +67,31 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect }: S
 
   // Tamanhos disponíveis para a cor selecionada
   const tamanhosDisponiveis = produtoSelecionado && corSelecionada
-    ? produtoSelecionado.variantes
-        .filter(v => v.cor === corSelecionada && v.quantidade > 0)
-        .map(v => ({ tamanho: v.tamanho, quantidade: v.quantidade }))
+    ? (() => {
+        // Encontrar variante com a cor selecionada
+        const varianteDaCor = produtoSelecionado.variantes.find((v: Variante) => v.cor === corSelecionada);
+        if (!varianteDaCor) return [];
+        
+        // Verificar se tem array de tamanhos (estrutura nova)
+        if (Array.isArray(varianteDaCor.tamanhos) && varianteDaCor.tamanhos.length > 0) {
+          // Filtrar apenas tamanhos com quantidade disponível
+          return varianteDaCor.tamanhos
+            .filter(t => t.quantidade > 0)
+            .map(t => ({
+              tamanho: String(t.tamanho),
+              quantidade: t.quantidade
+            }));
+        } 
+        // Fallback para estrutura antiga (campo tamanho único)
+        else if (varianteDaCor.tamanho && varianteDaCor.quantidade > 0) {
+          return [{ 
+            tamanho: String(varianteDaCor.tamanho), 
+            quantidade: varianteDaCor.quantidade 
+          }];
+        }
+        
+        return [];
+      })()
     : [];
 
   const handleSelecionarProduto = (produto: ProdutoEstoque) => {
@@ -85,31 +109,42 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect }: S
   const handleConfirmar = () => {
     if (!produtoSelecionado || !corSelecionada || !tamanhoSelecionado) return;
     
-    const varianteSelecionada = produtoSelecionado.variantes.find(
-      v => v.cor === corSelecionada && v.tamanho === tamanhoSelecionado
+    // Encontrar a variante e quantidade do tamanho específico
+    const varianteDaCor = produtoSelecionado.variantes.find(
+      (v: Variante) => v.cor === corSelecionada
     );
     
-    if (varianteSelecionada) {
-      const itemSelecionado: ItemSelecionado = {
-        codigoProduto: produtoSelecionado.codigoProduto,
-        nomeProduto: produtoSelecionado.nomeProduto,
-        precoVenda: produtoSelecionado.precoVenda,
-        precoPromocional: produtoSelecionado.emPromocao ? produtoSelecionado.precoPromocional : undefined,
-        cor: varianteSelecionada.cor,
-        tamanho: varianteSelecionada.tamanho,
-        quantidade: varianteSelecionada.quantidade,
-        categoria: produtoSelecionado.categoria,
-        emPromocao: produtoSelecionado.emPromocao,
-        isNovidade: produtoSelecionado.isNovidade,
-      };
-      
-      onSelect(itemSelecionado);
-      onOpenChange(false);
-      setProdutoSelecionado(null);
-      setCorSelecionada("");
-      setTamanhoSelecionado("");
-      setSearchTerm("");
+    if (!varianteDaCor) return;
+    
+    // Buscar quantidade do tamanho específico
+    let quantidadeDisponivel = 0;
+    
+    if (Array.isArray(varianteDaCor.tamanhos)) {
+      const tamanhoObj = varianteDaCor.tamanhos.find(t => String(t.tamanho) === tamanhoSelecionado);
+      quantidadeDisponivel = tamanhoObj?.quantidade || 0;
+    } else if (varianteDaCor.tamanho === tamanhoSelecionado) {
+      quantidadeDisponivel = varianteDaCor.quantidade;
     }
+    
+    const itemSelecionado: ItemSelecionado = {
+      codigoProduto: produtoSelecionado.codigoProduto,
+      nomeProduto: produtoSelecionado.nomeProduto,
+      precoVenda: produtoSelecionado.precoVenda,
+      precoPromocional: produtoSelecionado.emPromocao ? produtoSelecionado.precoPromocional : undefined,
+      cor: corSelecionada,
+      tamanho: tamanhoSelecionado,
+      quantidade: quantidadeDisponivel,
+      categoria: produtoSelecionado.categoria,
+      emPromocao: produtoSelecionado.emPromocao,
+      isNovidade: produtoSelecionado.isNovidade,
+    };
+    
+    onSelect(itemSelecionado);
+    onOpenChange(false);
+    setProdutoSelecionado(null);
+    setCorSelecionada("");
+    setTamanhoSelecionado("");
+    setSearchTerm("");
   };
 
   return (
@@ -239,17 +274,23 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect }: S
                 <Label className="text-base font-medium">Selecione o Tamanho *</Label>
                 <RadioGroup value={tamanhoSelecionado} onValueChange={setTamanhoSelecionado}>
                   <div className="grid grid-cols-2 gap-2">
-                    {tamanhosDisponiveis.map(({ tamanho, quantidade }) => (
-                      <div key={tamanho} className="flex items-center space-x-2 border rounded-lg p-3 hover:bg-primary/5">
-                        <RadioGroupItem value={tamanho} id={`tamanho-${tamanho}`} />
-                        <Label htmlFor={`tamanho-${tamanho}`} className="flex-1 cursor-pointer">
-                          <div className="flex justify-between items-center">
-                            <span className="font-medium">{tamanho}</span>
-                            <span className="text-xs text-muted-foreground">{quantidade} un.</span>
-                          </div>
-                        </Label>
-                      </div>
-                    ))}
+                    {tamanhosDisponiveis.length === 0 ? (
+                      <p className="text-sm text-muted-foreground col-span-2 text-center py-4">
+                        Nenhum tamanho disponível para esta cor
+                      </p>
+                    ) : (
+                      tamanhosDisponiveis.map(({ tamanho, quantidade }) => (
+                        <div key={tamanho} className="flex items-center space-x-2 border rounded-lg p-3 hover:bg-primary/5">
+                          <RadioGroupItem value={tamanho} id={`tamanho-${tamanho}`} />
+                          <Label htmlFor={`tamanho-${tamanho}`} className="flex-1 cursor-pointer">
+                            <div className="flex justify-between items-center">
+                              <span className="font-medium">{tamanho}</span>
+                              <span className="text-xs text-muted-foreground">{quantidade} un.</span>
+                            </div>
+                          </Label>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </RadioGroup>
               </div>

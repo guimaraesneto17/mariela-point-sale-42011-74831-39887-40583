@@ -797,6 +797,7 @@ const NovaVenda = () => {
         onOpenChange={setShowClientDialog}
         clientes={clientes}
         onSelect={setClienteSelecionado}
+        onClienteAdded={loadData}
       />
       
       <SelectVendedorDialog 
