@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, Tag, TrendingDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -164,48 +164,111 @@ const Vendas = () => {
                 const temDesconto = descontoAplicado > 0 && !temPromocao;
                 const mostrarPrecoOriginal = temPromocao || temDesconto;
                 
+                // Calcular economia em promoção
+                const economia = temPromocao ? precoOriginal - precoFinal : 0;
+                const percentualEconomia = temPromocao && precoOriginal > 0 ? ((economia / precoOriginal) * 100) : 0;
+                
                 return (
                   <div 
                     key={idx} 
-                    className={`flex justify-between items-center text-sm p-3 rounded-lg transition-all ${
+                    className={`flex flex-col gap-2 p-3 rounded-lg transition-all ${
                       temPromocao 
-                        ? 'bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 border-2 border-red-200 dark:border-red-800' 
+                        ? 'bg-gradient-to-r from-red-50 via-orange-50 to-red-50 dark:from-red-950/30 dark:via-orange-950/20 dark:to-red-950/30 border-2 border-red-300 dark:border-red-700 shadow-lg shadow-red-100 dark:shadow-red-950/30' 
                         : temDesconto
                         ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border border-green-200 dark:border-green-800'
-                        : 'bg-background/50'
+                        : 'bg-background/50 border border-border/50'
                     }`}
                   >
-                    <div className="flex items-center gap-2 flex-1">
-                      <span className="font-medium">{item.nome || item.nomeProduto} (x{item.quantidade || 1})</span>
-                      {temPromocao && (
-                        <span className="text-xs font-bold text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded-full">
-                          🔥 Promoção
-                        </span>
-                      )}
-                      {temDesconto && (
-                        <span className="text-xs font-bold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full">
-                          💰 Desconto: {descontoAplicado.toFixed(0)}%
-                        </span>
-                      )}
-                      <div className="flex gap-1">
+                    {/* Linha superior: Nome e badges */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-1">
+                        <span className="font-medium">{item.nome || item.nomeProduto}</span>
+                        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">x{item.quantidade || 1}</span>
+                        {temPromocao && (
+                          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-md">
+                            <Tag className="h-3 w-3" />
+                            <span className="text-xs font-bold">PROMOÇÃO</span>
+                          </div>
+                        )}
+                        {temDesconto && (
+                          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-md">
+                            <TrendingDown className="h-3 w-3" />
+                            <span className="text-xs font-bold">DESCONTO {descontoAplicado.toFixed(0)}%</span>
+                          </div>
+                        )}
                         {item.novidade && (
-                          <Badge variant="default" className="text-xs bg-accent font-bold">
+                          <Badge variant="default" className="text-xs bg-gradient-to-r from-purple-600 to-pink-600 border-0 shadow-md text-white">
                             ✨ Novidade
                           </Badge>
                         )}
                       </div>
                     </div>
-                    <div className="flex flex-col items-end">
-                      {mostrarPrecoOriginal && (
-                        <span className="text-xs text-muted-foreground line-through mb-0.5">
-                          {formatCurrency(precoOriginal)}
-                        </span>
+                    
+                    {/* Linha inferior: Preços */}
+                    <div className="flex items-center justify-between">
+                      {temPromocao ? (
+                        <div className="flex items-center gap-2">
+                          <div className="flex flex-col">
+                            <span className="text-[10px] uppercase font-bold text-red-600 dark:text-red-400 tracking-wide">
+                              Preço Promocional
+                            </span>
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-xs text-muted-foreground line-through">
+                                {formatCurrency(precoOriginal)}
+                              </span>
+                              <span className="font-bold text-lg text-red-600 dark:text-red-400">
+                                {formatCurrency(precoFinal)}
+                              </span>
+                            </div>
+                          </div>
+                          {economia > 0 && (
+                            <div className="flex items-center gap-1 bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded-md">
+                              <TrendingDown className="h-3 w-3 text-red-600 dark:text-red-400" />
+                              <span className="text-xs font-bold text-red-600 dark:text-red-400">
+                                Economia: {formatCurrency(economia * (item.quantidade || 1))}
+                                {percentualEconomia > 0 && ` (${percentualEconomia.toFixed(0)}%)`}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ) : temDesconto ? (
+                        <div className="flex items-center gap-2">
+                          <div className="flex flex-col">
+                            <span className="text-[10px] uppercase font-bold text-green-600 dark:text-green-400 tracking-wide">
+                              Com Desconto
+                            </span>
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-xs text-muted-foreground line-through">
+                                {formatCurrency(precoOriginal)}
+                              </span>
+                              <span className="font-bold text-lg text-green-600 dark:text-green-400">
+                                {formatCurrency(precoFinal)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col">
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wide">
+                            Preço de Venda
+                          </span>
+                          <span className="font-bold text-lg">
+                            {formatCurrency(precoFinal)}
+                          </span>
+                        </div>
                       )}
-                      <span className={`font-bold text-base ${
-                        temPromocao ? 'text-red-600 dark:text-red-400' : temDesconto ? 'text-green-600 dark:text-green-400' : ''
-                      }`}>
-                        {formatCurrency(precoFinal)}
-                      </span>
+                      
+                      {/* Subtotal do item */}
+                      <div className="flex flex-col items-end">
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wide">
+                          Subtotal
+                        </span>
+                        <span className={`font-bold text-lg ${
+                          temPromocao ? 'text-red-600 dark:text-red-400' : temDesconto ? 'text-green-600 dark:text-green-400' : ''
+                        }`}>
+                          {formatCurrency(precoFinal * (item.quantidade || 1))}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );
