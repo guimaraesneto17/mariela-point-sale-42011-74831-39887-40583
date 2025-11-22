@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { estoqueAPI } from "@/lib/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageEditorDialog } from "@/components/ImageEditorDialog";
+import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import {
   DndContext,
   closestCenter,
@@ -158,6 +159,8 @@ export function EditVariantImagesDialog({
   const [showImageEditor, setShowImageEditor] = useState(false);
   const [imageToEdit, setImageToEdit] = useState<string>("");
   const [editingIndex, setEditingIndex] = useState<number>(-1);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [imageToDeleteIndex, setImageToDeleteIndex] = useState<number>(-1);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sensors = useSensors(
@@ -202,12 +205,39 @@ export function EditVariantImagesDialog({
     }
   };
 
-  const removeImage = (index: number) => {
-    const imagemRemovida = imagens[index];
-    setImagens(imagens.filter((_, i) => i !== index));
-    
-    if (index === 0 && imagens.length > 1) {
-      toast.info("A próxima imagem se tornou a imagem destaque");
+  const handleDeleteImageClick = (index: number) => {
+    setImageToDeleteIndex(index);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteImage = async () => {
+    if (imageToDeleteIndex === -1) return;
+
+    try {
+      // Remover da lista local
+      const novasImagens = imagens.filter((_, i) => i !== imageToDeleteIndex);
+      setImagens(novasImagens);
+
+      // Atualizar no backend imediatamente
+      await estoqueAPI.updateVariantImages(produto.codigoProduto, {
+        cor: variante.cor,
+        imagens: novasImagens,
+      });
+
+      if (imageToDeleteIndex === 0 && imagens.length > 1) {
+        toast.info("A próxima imagem se tornou a imagem destaque");
+      }
+      
+      toast.success("Imagem excluída com sucesso!");
+      onSuccess?.();
+    } catch (error) {
+      console.error("Erro ao excluir imagem:", error);
+      toast.error("Erro ao excluir imagem");
+      // Reverter se houver erro
+      setImagens(imagens);
+    } finally {
+      setShowDeleteDialog(false);
+      setImageToDeleteIndex(-1);
     }
   };
 
@@ -451,7 +481,7 @@ export function EditVariantImagesDialog({
                         img={img}
                         index={index}
                         isDestaque={index === 0}
-                        onRemove={() => removeImage(index)}
+                        onRemove={() => handleDeleteImageClick(index)}
                         onSetDestaque={() => setImagemDestaque(index)}
                         onEdit={() => handleEditImage(index)}
                       />
@@ -495,6 +525,15 @@ export function EditVariantImagesDialog({
         onOpenChange={setShowImageEditor}
         imageUrl={imageToEdit}
         onSave={handleSaveEditedImage}
+      />
+
+      <AlertDeleteDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onConfirm={confirmDeleteImage}
+        title="Excluir Imagem?"
+        description="Esta ação excluirá a imagem permanentemente do banco de dados."
+        itemName={imageToDeleteIndex === 0 ? "Imagem Destaque" : `Imagem #${imageToDeleteIndex + 1}`}
       />
     </Dialog>
   );

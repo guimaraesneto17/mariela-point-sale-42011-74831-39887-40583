@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { estoqueAPI, produtosAPI } from "@/lib/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Upload, Link as LinkIcon, X, Trash2, Image as ImageIcon } from "lucide-react";
+import { Plus, Upload, Link as LinkIcon, X, Trash2, Image as ImageIcon, ChevronDown } from "lucide-react";
 import { useImageCompression } from "@/hooks/useImageCompression";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -39,12 +39,14 @@ export function AddMultipleVariantsDialog({
   const [variantes, setVariantes] = useState<Variante[]>([]);
   const [novaCor, setNovaCor] = useState("");
   const [novoTamanho, setNovoTamanho] = useState("");
+  const [novaQuantidadeTamanho, setNovaQuantidadeTamanho] = useState(1);
   const [varianteSelecionada, setVarianteSelecionada] = useState<number | null>(null);
   const [imagemURL, setImagemURL] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [produtos, setProdutos] = useState<any[]>([]);
   const [produtoSelecionado, setProdutoSelecionado] = useState<any>(produtoInicial || null);
   const [loadingProdutos, setLoadingProdutos] = useState(false);
+  const [etapa, setEtapa] = useState<'selecao-produto' | 'edicao-variantes'>(produtoInicial ? 'edicao-variantes' : 'selecao-produto');
 
   const { compressing, compressImages, validateImageUrl } = useImageCompression();
 
@@ -119,9 +121,14 @@ export function AddMultipleVariantsDialog({
     }
   };
 
-  const adicionarTamanho = (varianteIndex: number, quantidade: number = 1) => {
+  const adicionarTamanho = (varianteIndex: number) => {
     if (!novoTamanho.trim()) {
       toast.error("Digite um tamanho");
+      return;
+    }
+
+    if (novaQuantidadeTamanho <= 0) {
+      toast.error("Quantidade deve ser maior que zero");
       return;
     }
 
@@ -139,9 +146,10 @@ export function AddMultipleVariantsDialog({
     }
 
     const novasVariantes = [...variantes];
-    novasVariantes[varianteIndex].tamanhos.push({ tamanho: novoTamanho, quantidade });
+    novasVariantes[varianteIndex].tamanhos.push({ tamanho: novoTamanho, quantidade: novaQuantidadeTamanho });
     setVariantes(novasVariantes);
     setNovoTamanho("");
+    setNovaQuantidadeTamanho(1);
   };
 
   const removerTamanho = (varianteIndex: number, tamanho: string) => {
@@ -150,7 +158,7 @@ export function AddMultipleVariantsDialog({
     setVariantes(novasVariantes);
   };
 
-  const adicionarTamanhoRapido = (varianteIndex: number, tamanho: string, quantidade: number = 1) => {
+  const adicionarTamanhoRapido = (varianteIndex: number, tamanho: string) => {
     const variante = variantes[varianteIndex];
     const tamanhoExistente = variante.tamanhos.find(t => t.tamanho === tamanho);
     
@@ -158,10 +166,11 @@ export function AddMultipleVariantsDialog({
       // Remover se já existe
       removerTamanho(varianteIndex, tamanho);
     } else {
-      // Adicionar se não existe
+      // Adicionar se não existe com quantidade padrão 1
       const novasVariantes = [...variantes];
-      novasVariantes[varianteIndex].tamanhos.push({ tamanho, quantidade });
+      novasVariantes[varianteIndex].tamanhos.push({ tamanho, quantidade: 1 });
       setVariantes(novasVariantes);
+      toast.success(`${tamanho} adicionado! Edite a quantidade se necessário.`);
     }
   };
 
@@ -305,13 +314,32 @@ export function AddMultipleVariantsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Adicionar Múltiplas Variantes ao Estoque</DialogTitle>
-          <DialogDescription>
-            {produtoSelecionado ? `${produtoSelecionado.nome} (${produtoSelecionado.codigoProduto})` : "Selecione um produto"}
-          </DialogDescription>
+          <div className="flex items-center gap-3">
+            {etapa === 'edicao-variantes' && !produtoInicial && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setEtapa('selecao-produto');
+                  setProdutoSelecionado(null);
+                  setVariantes([]);
+                }}
+                className="h-8 w-8 hover:bg-muted"
+                title="Voltar para seleção de produto"
+              >
+                <ChevronDown className="h-5 w-5 rotate-90" />
+              </Button>
+            )}
+            <div className="flex-1">
+              <DialogTitle>Adicionar Múltiplas Variantes ao Estoque</DialogTitle>
+              <DialogDescription>
+                {produtoSelecionado ? `${produtoSelecionado.nome} (${produtoSelecionado.codigoProduto})` : "Selecione um produto"}
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
         
-        {!produtoSelecionado && !produtoInicial ? (
+        {etapa === 'selecao-produto' ? (
           <div className="space-y-4">
             <Label>Selecione o Produto</Label>
             <Select
@@ -319,6 +347,7 @@ export function AddMultipleVariantsDialog({
               onValueChange={(codigo) => {
                 const produto = produtos.find(p => p.codigoProduto === codigo);
                 setProdutoSelecionado(produto);
+                setEtapa('edicao-variantes');
               }}
               disabled={loadingProdutos}
             >
@@ -445,7 +474,7 @@ export function AddMultipleVariantsDialog({
                             className="text-xs cursor-pointer"
                             onClick={(e) => {
                               e.stopPropagation();
-                              adicionarTamanhoRapido(index, tam, 1);
+                              adicionarTamanhoRapido(index, tam);
                             }}
                           >
                             {tam}
@@ -469,18 +498,30 @@ export function AddMultipleVariantsDialog({
                     Adicione tamanhos e imagens para esta variante
                   </p>
 
-                  {/* Adicionar tamanho personalizado */}
+                  {/* Adicionar tamanho personalizado com quantidade */}
                   <div className="flex gap-2 mb-3">
                     <Input
-                      placeholder="Tamanho personalizado (ex: 42)"
+                      placeholder="Tamanho (ex: 42)"
                       value={novoTamanho}
                       onChange={(e) => setNovoTamanho(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && adicionarTamanho(varianteSelecionada)}
+                      onKeyPress={(e) => e.key === 'Enter' && adicionarTamanho(varianteSelecionada!)}
+                      className="flex-1"
                     />
-                    <Button onClick={() => adicionarTamanho(varianteSelecionada)} className="shrink-0">
+                    <Input
+                      type="number"
+                      min="1"
+                      placeholder="Qtd"
+                      value={novaQuantidadeTamanho}
+                      onChange={(e) => setNovaQuantidadeTamanho(parseInt(e.target.value) || 1)}
+                      className="w-20"
+                    />
+                    <Button onClick={() => adicionarTamanho(varianteSelecionada!)} className="shrink-0">
                       <Plus className="h-4 w-4 mr-1" /> Adicionar
                     </Button>
                   </div>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Ou clique nos tamanhos abaixo (qtd padrão = 1):
+                  </p>
                 </div>
 
                 {/* Upload de Imagens */}

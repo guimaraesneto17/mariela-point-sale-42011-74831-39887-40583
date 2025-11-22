@@ -109,31 +109,39 @@ export function ImageGalleryLightbox({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-background/98 backdrop-blur-sm border-border">
+      <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-gradient-to-br from-background via-background/95 to-muted/30 backdrop-blur-xl border-2 border-border/50 shadow-2xl">
         <div className="relative w-full h-full flex flex-col">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-border bg-card">
+          {/* Header Modernizado */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-gradient-to-r from-card/50 to-card/30 backdrop-blur-sm">
             <div className="flex-1">
               {title && (
-                <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+                <h3 className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  {title}
+                </h3>
               )}
-              <p className="text-sm text-muted-foreground">
-                Imagem {currentIndex + 1} de {images.length}
-              </p>
+              <div className="flex items-center gap-3 mt-1">
+                <span className="text-sm font-semibold text-primary">
+                  {currentIndex + 1} / {images.length}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Use ← → para navegar • +/- para zoom • ESC para fechar
+                </span>
+              </div>
             </div>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => onOpenChange(false)}
-              className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+              className="h-10 w-10 rounded-full hover:bg-destructive/20 hover:text-destructive hover:scale-110 transition-all shadow-lg border border-border/30"
+              title="Fechar (ESC)"
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5" />
             </Button>
           </div>
 
-          {/* Área da imagem com zoom e pan */}
+          {/* Área da imagem com zoom e pan - Modernizada */}
           <div 
-            className="flex-1 relative flex items-center justify-center p-8 min-h-[60vh] bg-muted/5 overflow-hidden"
+            className="flex-1 relative flex items-center justify-center p-8 min-h-[60vh] bg-gradient-to-br from-muted/10 via-transparent to-muted/5 overflow-hidden"
             onWheel={handleWheel}
           >
             <div
@@ -159,8 +167,8 @@ export function ImageGalleryLightbox({
               />
             </div>
 
-            {/* Controles de zoom */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-background/90 backdrop-blur-sm p-2 rounded-lg border border-border shadow-xl">
+            {/* Controles de zoom - Modernizados */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 bg-gradient-to-r from-background/95 via-background/90 to-background/95 backdrop-blur-xl p-2.5 rounded-2xl border-2 border-border/50 shadow-2xl">
               <Button
                 variant="ghost"
                 size="icon"
@@ -220,9 +228,9 @@ export function ImageGalleryLightbox({
             )}
           </div>
 
-          {/* Miniaturas */}
+          {/* Miniaturas - Modernizadas */}
           {images.length > 1 && (
-            <div className="p-4 border-t border-border bg-card">
+            <div className="p-4 border-t border-border/50 bg-gradient-to-r from-card/50 to-card/30 backdrop-blur-sm">
               <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
                 {images.map((img, index) => (
                   <button

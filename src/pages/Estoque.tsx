@@ -510,23 +510,31 @@ const Estoque = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredInventory.map((item) => {
             const quantidadeTotal = item.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0;
+            const coresDisponiveis = getCoresDisponiveis(item);
+            const selectedCor = selectedColorByItem[item.codigoProduto] || coresDisponiveis[0] || '';
+            const varianteSelecionada = getSelectedVariant(item);
             
             return (
               <Card key={item.codigoProduto} className="p-4 shadow-card hover:shadow-lg transition-all">
-                <div className="space-y-4">
-                  {/* Imagem principal */}
-                  <div className="relative aspect-square rounded-lg overflow-hidden bg-muted">
-                    {item.variantes?.[0]?.imagens?.[0] ? (
-                      <img
-                        src={item.variantes[0].imagens[0]}
-                        alt={item.nomeProduto}
-                        className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform"
-                        onClick={() => {
-                          if (item.variantes[0].imagens.length > 0) {
-                            openLightbox(item.variantes[0].imagens);
-                          }
-                        }}
-                      />
+                <div className="space-y-3">
+                  {/* Imagem principal com clique */}
+                  <div className="relative aspect-square rounded-lg overflow-hidden bg-muted group">
+                    {varianteSelecionada?.imagens?.[0] ? (
+                      <div 
+                        className="relative w-full h-full cursor-pointer" 
+                        onClick={() => openLightbox(varianteSelecionada.imagens)}
+                      >
+                        <img
+                          src={varianteSelecionada.imagens[0]}
+                          alt={item.nomeProduto}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        />
+                        {/* Badge de imagens */}
+                        <div className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground rounded-full p-1.5 shadow-lg border-2 border-background flex items-center gap-0.5 text-xs font-bold">
+                          <ImageIcon className="h-3 w-3" />
+                          {varianteSelecionada.imagens.length}
+                        </div>
+                      </div>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <img 
@@ -539,7 +547,7 @@ const Estoque = () => {
                     {item.emPromocao && (
                       <Badge className="absolute top-2 left-2 bg-accent text-accent-foreground">
                         <Tag className="h-3 w-3 mr-1" />
-                        Promoção
+                        Promo
                       </Badge>
                     )}
                     {item.isNovidade && (
@@ -552,82 +560,75 @@ const Estoque = () => {
 
                   {/* Informações do produto */}
                   <div>
-                    <h3 className="font-bold text-lg truncate">{item.nomeProduto}</h3>
-                    <p className="text-sm text-muted-foreground">{item.categoria}</p>
-                    <div className="mt-2">
+                    <h3 className="font-bold text-base truncate">{item.nomeProduto}</h3>
+                    <p className="text-xs text-muted-foreground">{item.codigoProduto} • {item.categoria}</p>
+                    <div className="mt-1.5">
                       {item.emPromocao && item.precoPromocional ? (
                         <>
-                          <span className="text-sm text-muted-foreground line-through mr-2">
+                          <span className="text-xs text-muted-foreground line-through mr-1">
                             R$ {item.precoVenda?.toFixed(2)}
                           </span>
-                          <span className="text-lg font-bold text-accent">
+                          <span className="text-base font-bold text-accent">
                             R$ {item.precoPromocional.toFixed(2)}
                           </span>
                         </>
                       ) : (
-                        <span className="text-lg font-bold">
+                        <span className="text-base font-bold">
                           R$ {item.precoVenda?.toFixed(2)}
                         </span>
                       )}
                     </div>
                   </div>
 
-                  {/* Estoque total */}
-                  <div className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded">
-                    <span className="text-sm font-medium">Estoque Total</span>
-                    <span className={`text-lg font-bold ${
-                      quantidadeTotal === 0 ? 'text-destructive' : 
-                      quantidadeTotal <= 10 ? 'text-yellow-600' : 
-                      'text-primary'
-                    }`}>
-                      {quantidadeTotal} un.
-                    </span>
-                  </div>
-
-                  {/* Variantes em grid */}
-                  <div>
-                    <Label className="text-xs font-semibold text-muted-foreground mb-2 block">
-                      Variantes Disponíveis
-                    </Label>
-                    <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-                      {item.variantes?.filter((v: any) => v.quantidade > 0).map((variante: any, idx: number) => (
-                        <div 
-                          key={idx}
-                          className="p-2 bg-background border border-border rounded text-xs hover:border-primary transition-colors cursor-pointer"
-                          onClick={() => {
-                            setSelectedItem(item);
-                            setSelectedVariant(variante);
-                            setShowEntryDialog(true);
-                          }}
-                        >
-                          <div className="font-medium truncate">{variante.cor}</div>
-                          <div className="text-muted-foreground text-[10px]">
-                            {Array.isArray(variante.tamanhos) && variante.tamanhos.length > 0
-                              ? (typeof variante.tamanhos[0] === 'object' && variante.tamanhos[0].tamanho
-                                  ? variante.tamanhos.map((t: any) => t.tamanho).join(', ')
-                                  : variante.tamanhos.join(', ')
-                                )
-                              : variante.tamanho}
-                          </div>
-                          <div className="font-bold text-primary mt-1">
-                            {variante.quantidade} un.
-                          </div>
-                        </div>
-                      ))}
+                  {/* Quantidades compactas */}
+                  <div className="grid grid-cols-3 gap-1.5 text-center">
+                    <div className="bg-primary/10 rounded p-1.5 border border-primary/20">
+                      <div className="text-xs font-bold text-primary">{varianteSelecionada?.quantidade || 0}</div>
+                      <div className="text-[9px] text-muted-foreground truncate">Cor</div>
+                    </div>
+                    <div className="bg-blue-500/10 rounded p-1.5 border border-blue-500/20">
+                      <div className="text-xs font-bold text-blue-600">{quantidadeTotal}</div>
+                      <div className="text-[9px] text-muted-foreground truncate">Total</div>
+                    </div>
+                    <div className="bg-secondary/10 rounded p-1.5 border border-secondary/20">
+                      <div className="text-xs font-bold text-secondary">{coresDisponiveis.length}</div>
+                      <div className="text-[9px] text-muted-foreground truncate">Cores</div>
                     </div>
                   </div>
 
-                  {/* Ações */}
-                  <div className="flex gap-2">
+                  {/* Seleção de cores */}
+                  <div>
+                    <Label className="text-[10px] font-semibold text-muted-foreground mb-1.5 block uppercase">Cores</Label>
+                    <div className="flex flex-wrap gap-1">
+                      {coresDisponiveis.slice(0, 4).map((cor: string) => (
+                        <Badge
+                          key={cor}
+                          variant={selectedCor === cor ? "default" : "outline"}
+                          className="text-[10px] px-1.5 py-0.5 cursor-pointer h-5"
+                          onClick={() => handleColorChange(item.codigoProduto, cor, item)}
+                        >
+                          {cor}
+                        </Badge>
+                      ))}
+                      {coresDisponiveis.length > 4 && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 h-5">
+                          +{coresDisponiveis.length - 4}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Ações principais */}
+                  <div className="grid grid-cols-2 gap-1.5">
                     <Button
                       size="sm"
                       variant="default"
                       onClick={() => {
                         setSelectedItem(item);
-                        setSelectedVariant(item.variantes?.[0]);
+                        setSelectedVariant(varianteSelecionada);
                         setShowEntryDialog(true);
                       }}
-                      className="flex-1 gap-1"
+                      className="h-8 text-xs gap-1"
                     >
                       <Plus className="h-3 w-3" />
                       Entrada
@@ -637,16 +638,70 @@ const Estoque = () => {
                       variant="outline"
                       onClick={() => {
                         setSelectedItem(item);
-                        setSelectedVariant(item.variantes?.[0]);
+                        setSelectedVariant(varianteSelecionada);
                         setShowExitDialog(true);
                       }}
-                      className="flex-1 gap-1"
+                      className="h-8 text-xs gap-1"
                       disabled={quantidadeTotal === 0}
                     >
                       <Minus className="h-3 w-3" />
                       Saída
                     </Button>
                   </div>
+
+                  {/* Menu de ações adicionais */}
+                  <Collapsible>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="sm" className="w-full h-7 text-xs">
+                        <ChevronDown className="h-3 w-3 mr-1" />
+                        Mais ações
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-1.5 pt-2">
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedItem(item);
+                            setSelectedVariant(varianteSelecionada);
+                            setShowEditImagesDialog(true);
+                          }}
+                          className="h-7 text-xs gap-1"
+                        >
+                          <ImageIcon className="h-3 w-3" />
+                          Imagens
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openPromotionDialog(item)}
+                          className="h-7 text-xs gap-1"
+                        >
+                          <Tag className="h-3 w-3" />
+                          Promoção
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openNovidadeDialog(item)}
+                          className="h-7 text-xs gap-1"
+                        >
+                          <Sparkles className="h-3 w-3" />
+                          Novidade
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openMovimentacaoDialog(item)}
+                          className="h-7 text-xs gap-1"
+                        >
+                          <History className="h-3 w-3" />
+                          Histórico
+                        </Button>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </div>
               </Card>
             );
@@ -725,27 +780,39 @@ const Estoque = () => {
                   </div>
 
                   {/* Seletores de Cor e Tamanho */}
-                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                    <div>
-                      <label className="text-sm font-semibold text-muted-foreground mb-2 block">
-                        Quantidade Disponível
+                  <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+                    <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg p-3 border-2 border-primary/20">
+                      <label className="text-xs font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">
+                        Disponível Cor/Tamanho
                       </label>
-                      <div className="text-3xl font-bold text-primary">
-                        {getQuantidadeByTamanho(item, selectedCor, selectedTamanho)} un.
+                      <div className="text-2xl font-bold text-primary">
+                        {getQuantidadeByTamanho(item, selectedCor, selectedTamanho)}
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {selectedCor} - {selectedTamanho} ({getQuantidadeByTamanho(item, selectedCor, selectedTamanho)} un.)
+                      <div className="text-[10px] text-muted-foreground mt-0.5 font-medium">
+                        {selectedCor} - {selectedTamanho}
                       </div>
                     </div>
 
-                    <div>
-                      <label className="text-sm font-semibold text-muted-foreground mb-2 block">
-                        Quantidade Total
+                    <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-lg p-3 border-2 border-blue-500/20">
+                      <label className="text-xs font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">
+                        Disponível Cor
                       </label>
-                      <div className="text-3xl font-bold text-secondary">
-                        {item.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0} un.
+                      <div className="text-2xl font-bold text-blue-600">
+                        {varianteSelecionada?.quantidade || 0}
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1">
+                      <div className="text-[10px] text-muted-foreground mt-0.5 font-medium">
+                        Todas os tamanhos - {selectedCor}
+                      </div>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-lg p-3 border-2 border-secondary/20">
+                      <label className="text-xs font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">
+                        Total Geral
+                      </label>
+                      <div className="text-2xl font-bold text-secondary">
+                        {item.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5 font-medium">
                         Todas as variantes
                       </div>
                     </div>
