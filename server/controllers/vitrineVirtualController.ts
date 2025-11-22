@@ -10,7 +10,6 @@ const buildVitrineView = async () => {
     const estoques = await Estoque.find();
     
     const vitrineView: any[] = [];
-    let idCounter = 1;
     
     for (const produto of produtos) {
       const estoquesProduto = estoques.filter(e => e.codigoProduto === produto.codigoProduto);
@@ -21,8 +20,7 @@ const buildVitrineView = async () => {
       let isOnSale = false;
       let isNew = false;
       let precoPromocional: number | null = null;
-      const variants: any[] = [];
-      const allImages: string[] = [];
+      const variantes: any[] = [];
       
       estoquesProduto.forEach((estoque: any) => {
         isOnSale = isOnSale || !!estoque.emPromocao;
@@ -31,23 +29,20 @@ const buildVitrineView = async () => {
           precoPromocional = estoque.precoPromocional;
         }
         
-        // Agregar variantes e imagens
+        // Agregar variantes com nova estrutura
         if (estoque.variantes && estoque.variantes.length > 0) {
           estoque.variantes.forEach((v: any) => {
-            variants.push({
-              color: v.cor,
-              size: v.tamanho,
-              available: Number(v.quantidade) || 0
+            variantes.push({
+              cor: v.cor,
+              quantidade: v.quantidade || 0,
+              tamanhos: v.tamanhos || [],
+              imagens: v.imagens || []
             });
-            // Coletar imagens das variantes
-            if (v.imagens && v.imagens.length > 0) {
-              allImages.push(...v.imagens);
-            }
           });
         }
       });
       
-      const totalAvailable = variants.reduce((sum, v) => sum + v.available, 0);
+      const totalAvailable = variantes.reduce((sum, v) => sum + (v.quantidade || 0), 0);
       
       let statusProduct = 'Disponível';
       if (totalAvailable === 0) {
@@ -56,23 +51,20 @@ const buildVitrineView = async () => {
         statusProduct = 'Últimas unidades';
       }
       
-      // Estrutura conforme especificação
+      // Estrutura conforme novo schema
       vitrineView.push({
+        _id: produto._id,
+        codigoProduto: produto.codigoProduto,
+        nome: produto.nome,
+        descricao: produto.descricao || '',
+        categoria: produto.categoria,
+        precoVenda: produto.precoVenda,
+        precoPromocional: precoPromocional,
+        variantes,
+        statusProduct,
+        totalAvailable,
         isOnSale,
         isNew,
-        variants,
-        totalAvailable,
-        statusProduct,
-        id: idCounter++,
-        code: produto.codigoProduto,
-        image: allImages.length > 0 ? allImages : ['default.jpg'],
-        title: produto.nome,
-        description: produto.descricao || '',
-        price: isOnSale && precoPromocional ? `R$ ${precoPromocional}` : `R$ ${produto.precoVenda.toFixed(2)}`,
-        priceValue: isOnSale && precoPromocional ? precoPromocional : produto.precoVenda,
-        originalPrice: isOnSale && precoPromocional ? `R$ ${produto.precoVenda.toFixed(2)}` : null,
-        originalPriceValue: isOnSale && precoPromocional ? produto.precoVenda : null,
-        category: produto.categoria,
         updatedAt: produto.dataAtualizacao || produto.dataCadastro
       });
     }
@@ -97,7 +89,7 @@ export const getAllVitrineVirtual = async (req: Request, res: Response) => {
 export const getVitrineVirtualById = async (req: Request, res: Response) => {
   try {
     const vitrineView = await buildVitrineView();
-    const produto = vitrineView.find(p => p.id === parseInt(req.params.id));
+    const produto = vitrineView.find(p => p._id.toString() === req.params.id);
     if (!produto) {
       return res.status(404).json({ error: 'Produto da vitrine não encontrado' });
     }
@@ -133,7 +125,7 @@ export const getPromocoes = async (req: Request, res: Response) => {
 export const getVitrineVirtualByCodigo = async (req: Request, res: Response) => {
   try {
     const vitrineView = await buildVitrineView();
-    const produto = vitrineView.find(p => p.code === req.params.codigo);
+    const produto = vitrineView.find(p => p.codigoProduto === req.params.codigo);
     if (!produto) {
       return res.status(404).json({ error: 'Produto da vitrine não encontrado' });
     }

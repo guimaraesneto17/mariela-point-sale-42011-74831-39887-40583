@@ -516,111 +516,130 @@ const options: swaggerJsdoc.Options = {
         VitrineVirtual: {
           type: 'object',
           description: 'View agregada de Produto + Estoque formatada para exibição na vitrine virtual',
+          required: ['codigoProduto', 'nome', 'categoria', 'precoVenda', 'variantes', 'statusProduct', 'totalAvailable', 'isOnSale', 'isNew'],
           properties: {
-            isOnSale: {
-              type: 'boolean',
-              description: 'Se o produto está em promoção (agregado de estoque.emPromocao)',
-              example: true
+            _id: {
+              type: 'string',
+              description: 'ID único do produto no MongoDB',
+              example: '690eaeca920edfaa6e738b82'
             },
-            isNew: {
-              type: 'boolean',
-              description: 'Se o produto é novidade (agregado de estoque.isNovidade)',
-              example: false
+            codigoProduto: {
+              type: 'string',
+              pattern: '^P\\d{3}$',
+              description: 'Código do produto',
+              example: 'P002'
             },
-            variants: {
+            nome: {
+              type: 'string',
+              description: 'Nome do produto',
+              example: 'Camisa'
+            },
+            descricao: {
+              type: 'string',
+              description: 'Descrição do produto',
+              example: 'produto teste, descrição teste'
+            },
+            categoria: {
+              type: 'string',
+              description: 'Categoria do produto',
+              example: 'Blusa'
+            },
+            precoVenda: {
+              type: 'number',
+              format: 'float',
+              description: 'Preço de venda do produto',
+              example: 102.00
+            },
+            precoPromocional: {
+              type: 'number',
+              format: 'float',
+              nullable: true,
+              description: 'Preço promocional quando em promoção',
+              example: null
+            },
+            variantes: {
               type: 'array',
-              description: 'Variantes do produto com cores, tamanhos e disponibilidade',
+              description: 'Lista de variantes do produto (cor, tamanhos, quantidade, imagens)',
               items: {
                 type: 'object',
-                required: ['color', 'size', 'available'],
+                required: ['cor', 'quantidade', 'tamanhos'],
                 properties: {
-                  color: {
+                  _id: {
+                    type: 'string',
+                    description: 'ID único da variante',
+                    example: '691ffe3b461fede890022835'
+                  },
+                  cor: {
                     type: 'string',
                     description: 'Cor da variante',
-                    example: 'Azul'
+                    example: 'Amarelo'
                   },
-                  size: {
-                    type: 'string',
-                    description: 'Tamanho da variante',
-                    example: 'G'
-                  },
-                  available: {
+                  quantidade: {
                     type: 'number',
-                    description: 'Quantidade disponível desta variante',
-                    example: 2
+                    description: 'Quantidade total da cor (soma de todos os tamanhos)',
+                    example: 5
+                  },
+                  tamanhos: {
+                    type: 'array',
+                    description: 'Lista de tamanhos disponíveis para esta cor',
+                    items: {
+                      type: 'object',
+                      required: ['tamanho', 'quantidade'],
+                      properties: {
+                        _id: {
+                          type: 'string',
+                          example: '691ffe3b461fede890022836'
+                        },
+                        tamanho: {
+                          type: 'string',
+                          description: 'Tamanho',
+                          example: 'U'
+                        },
+                        quantidade: {
+                          type: 'number',
+                          description: 'Quantidade disponível deste tamanho',
+                          example: 5
+                        }
+                      }
+                    }
+                  },
+                  imagens: {
+                    type: 'array',
+                    description: 'URLs das imagens desta variante',
+                    items: {
+                      type: 'string'
+                    },
+                    example: []
                   }
                 }
               }
             },
-            totalAvailable: {
-              type: 'number',
-              description: 'Total disponível somando todas as variantes',
-              example: 5
-            },
             statusProduct: {
               type: 'string',
               enum: ['Disponível', 'Últimas unidades', 'Esgotado'],
-              description: 'Status calculado baseado na disponibilidade',
+              description: 'Status calculado baseado na disponibilidade total',
               example: 'Disponível'
             },
-            id: {
-              type: 'integer',
-              description: 'ID sequencial gerado automaticamente para a view',
-              example: 1
-            },
-            code: {
-              type: 'string',
-              pattern: '^P\\d{3}$',
-              description: 'Código do produto (produto.codigoProduto)',
-              example: 'P002'
-            },
-            image: {
-              type: 'array',
-              items: {
-                type: 'string'
-              },
-              description: 'Array de URLs das imagens do produto',
-              example: ['default.jpg']
-            },
-            title: {
-              type: 'string',
-              description: 'Nome do produto (produto.nome)',
-              example: 'Vestido Floral'
-            },
-            price: {
-              type: 'string',
-              description: 'Preço formatado para exibição (R$ XX,XX)',
-              example: 'R$ 100,00'
-            },
-            priceValue: {
+            totalAvailable: {
               type: 'number',
-              format: 'float',
-              description: 'Valor numérico do preço (produto.precoVenda ou precoPromocional)',
-              example: 100.00
+              description: 'Total disponível somando todas as variantes e tamanhos',
+              example: 8
             },
-            originalPrice: {
-              type: 'string',
-              nullable: true,
-              description: 'Preço original formatado quando em promoção',
-              example: 'R$ 150,00'
+            isOnSale: {
+              type: 'boolean',
+              description: 'Se o produto está em promoção',
+              example: false
             },
-            originalPriceValue: {
-              type: 'number',
-              format: 'float',
-              nullable: true,
-              description: 'Valor numérico do preço original quando em promoção',
-              example: 150.00
-            },
-            category: {
-              type: 'string',
-              description: 'Categoria do produto (produto.categoria)',
-              example: 'Vestido'
+            isNew: {
+              type: 'boolean',
+              description: 'Se o produto é novidade',
+              example: false
             },
             updatedAt: {
               type: 'string',
               format: 'date-time',
               description: 'Data da última atualização',
-              example: '2025-11-06T04:56:00.467Z'
+              example: '2025-11-21T05:55:52.845Z'
             }
           }
         }
