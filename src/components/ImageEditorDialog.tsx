@@ -76,22 +76,32 @@ export function ImageEditorDialog({
   };
 
   const handleCropStart = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!cropping) return;
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
+    if (!cropping || !canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const canvas = canvasRef.current;
+    
+    // Calcular a escala real entre o canvas e o elemento renderizado
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
     setCropStart({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
     });
   };
 
   const handleCropMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!cropping || !cropStart) return;
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
+    if (!cropping || !cropStart || !canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const canvas = canvasRef.current;
+    
+    // Calcular a escala real entre o canvas e o elemento renderizado
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
     setCropEnd({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
     });
   };
 
@@ -167,25 +177,34 @@ export function ImageEditorDialog({
 
         <div className="space-y-4">
           {/* Canvas */}
-          <div className="relative border border-border rounded-lg overflow-hidden bg-muted/10">
-            <canvas
-              ref={canvasRef}
-              className="max-w-full max-h-[50vh] mx-auto cursor-crosshair"
-              onMouseDown={handleCropStart}
-              onMouseMove={handleCropMove}
-              onMouseUp={handleCropEnd}
-            />
-            {cropping && cropStart && cropEnd && (
-              <div
-                className="absolute border-2 border-primary bg-primary/10"
-                style={{
-                  left: Math.min(cropStart.x, cropEnd.x),
-                  top: Math.min(cropStart.y, cropEnd.y),
-                  width: Math.abs(cropEnd.x - cropStart.x),
-                  height: Math.abs(cropEnd.y - cropStart.y),
-                }}
+          <div className="relative border border-border rounded-lg overflow-hidden bg-muted/10 flex items-center justify-center">
+            <div className="relative inline-block">
+              <canvas
+                ref={canvasRef}
+                className="max-w-full max-h-[50vh] cursor-crosshair"
+                onMouseDown={handleCropStart}
+                onMouseMove={handleCropMove}
+                onMouseUp={handleCropEnd}
               />
-            )}
+              {cropping && cropStart && cropEnd && canvasRef.current && (() => {
+                const canvas = canvasRef.current;
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = rect.width / canvas.width;
+                const scaleY = rect.height / canvas.height;
+                
+                return (
+                  <div
+                    className="absolute border-2 border-primary bg-primary/10 pointer-events-none"
+                    style={{
+                      left: Math.min(cropStart.x, cropEnd.x) * scaleX,
+                      top: Math.min(cropStart.y, cropEnd.y) * scaleY,
+                      width: Math.abs(cropEnd.x - cropStart.x) * scaleX,
+                      height: Math.abs(cropEnd.y - cropStart.y) * scaleY,
+                    }}
+                  />
+                );
+              })()}
+            </div>
           </div>
 
           {/* Controles */}

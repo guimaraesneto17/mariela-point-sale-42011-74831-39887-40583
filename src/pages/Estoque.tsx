@@ -204,16 +204,16 @@ const Estoque = () => {
   };
 
   // Obter tamanhos disponíveis para uma cor específica (apenas com quantidade > 0)
-  const getTamanhosDisponiveis = (item: any, cor: string) => {
+  const getTamanhosDisponiveis = (item: any, cor: string): string[] => {
     if (!item.variantes) return [];
     const variante = item.variantes.find((v: any) => v.cor === cor && v.quantidade > 0);
     if (!variante) return [];
     // Nova estrutura: tamanhos é array de objetos {tamanho, quantidade}
     if (Array.isArray(variante.tamanhos) && variante.tamanhos.length > 0 && typeof variante.tamanhos[0] === 'object') {
-      return variante.tamanhos.map((t: any) => t.tamanho);
+      return variante.tamanhos.map((t: any) => String(t.tamanho));
     }
     // Estrutura antiga: tamanhos é array de strings
-    return Array.isArray(variante.tamanhos) ? variante.tamanhos : (variante.tamanho ? [variante.tamanho] : []);
+    return Array.isArray(variante.tamanhos) ? variante.tamanhos.map(String) : (variante.tamanho ? [String(variante.tamanho)] : []);
   };
 
   // Obter variante atual selecionada
@@ -511,8 +511,22 @@ const Estoque = () => {
           {filteredInventory.map((item) => {
             const quantidadeTotal = item.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0;
             const coresDisponiveis = getCoresDisponiveis(item);
-            const selectedCor = selectedColorByItem[item.codigoProduto] || coresDisponiveis[0] || '';
+            const selectedCor = String(selectedColorByItem[item.codigoProduto] || coresDisponiveis[0] || '');
+            const selectedTamanho = String(selectedSizeByItem[item.codigoProduto] || '');
             const varianteSelecionada = getSelectedVariant(item);
+            const tamanhosDisponiveis = getTamanhosDisponiveis(item, selectedCor);
+            
+            // Calcular quantidade da cor-tamanho selecionada
+            let quantidadeCorTamanho = 0;
+            if (varianteSelecionada && selectedTamanho) {
+              const tamanhoObj = varianteSelecionada.tamanhos?.find((t: any) => {
+                const tamanhoStr = typeof t === 'string' ? t : t.tamanho;
+                return tamanhoStr === selectedTamanho;
+              });
+              if (tamanhoObj) {
+                quantidadeCorTamanho = typeof tamanhoObj === 'object' ? tamanhoObj.quantidade : 1;
+              }
+            }
             
             return (
               <Card key={item.codigoProduto} className="p-4 shadow-card hover:shadow-lg transition-all">
@@ -580,11 +594,15 @@ const Estoque = () => {
                     </div>
                   </div>
 
-                  {/* Quantidades compactas */}
-                  <div className="grid grid-cols-3 gap-1.5 text-center">
+                  {/* Quantidades compactas com Cor-Tamanho */}
+                  <div className="grid grid-cols-4 gap-1.5 text-center">
                     <div className="bg-primary/10 rounded p-1.5 border border-primary/20">
                       <div className="text-xs font-bold text-primary">{varianteSelecionada?.quantidade || 0}</div>
                       <div className="text-[9px] text-muted-foreground truncate">Cor</div>
+                    </div>
+                    <div className="bg-orange-500/10 rounded p-1.5 border border-orange-500/20">
+                      <div className="text-xs font-bold text-orange-600">{quantidadeCorTamanho}</div>
+                      <div className="text-[9px] text-muted-foreground truncate">C-T</div>
                     </div>
                     <div className="bg-blue-500/10 rounded p-1.5 border border-blue-500/20">
                       <div className="text-xs font-bold text-blue-600">{quantidadeTotal}</div>
@@ -617,6 +635,30 @@ const Estoque = () => {
                       )}
                     </div>
                   </div>
+
+                  {/* Seleção de tamanhos */}
+                  {tamanhosDisponiveis.length > 0 && (
+                    <div>
+                      <Label className="text-[10px] font-semibold text-muted-foreground mb-1.5 block uppercase">Tamanhos</Label>
+                      <div className="flex flex-wrap gap-1">
+                        {tamanhosDisponiveis.map((tamanho: any) => {
+                          const tamanhoStr = typeof tamanho === 'string' ? tamanho : tamanho.tamanho;
+                          const qtd = typeof tamanho === 'object' ? tamanho.quantidade : 0;
+                          return (
+                            <Badge
+                              key={tamanhoStr}
+                              variant={selectedTamanho === tamanhoStr ? "default" : "outline"}
+                              className="text-[10px] px-1.5 py-0.5 cursor-pointer h-5 gap-0.5"
+                              onClick={() => handleSizeChange(item.codigoProduto, tamanhoStr)}
+                            >
+                              {tamanhoStr}
+                              {qtd > 0 && <span className="opacity-70">({qtd})</span>}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Ações principais */}
                   <div className="grid grid-cols-2 gap-1.5">
@@ -935,15 +977,6 @@ const Estoque = () => {
                     >
                       <ImageIcon className="h-4 w-4" />
                       Gerenciar Imagens
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => openMovimentacaoDialog(item)}
-                      className="gap-2"
-                    >
-                      <List className="h-4 w-4" />
-                      Ver Movimentações
                     </Button>
                   </div>
 
