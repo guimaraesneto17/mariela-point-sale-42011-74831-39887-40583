@@ -35,6 +35,9 @@ const Relatorios = () => {
   const [dataInicioFinanceiro, setDataInicioFinanceiro] = useState("");
   const [dataFimFinanceiro, setDataFimFinanceiro] = useState("");
   const [periodoFinanceiro, setPeriodoFinanceiro] = useState("todos");
+  const [dataInicioVencimento, setDataInicioVencimento] = useState("");
+  const [dataFimVencimento, setDataFimVencimento] = useState("");
+  const [periodoVencimento, setPeriodoVencimento] = useState("todos");
   const [vendedorSelecionado, setVendedorSelecionado] = useState("todos");
   const [clienteSelecionado, setClienteSelecionado] = useState("todos");
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("todos");
@@ -538,16 +541,34 @@ const Relatorios = () => {
 
       const hoje = new Date();
       
-      // Filtrar contas a pagar
+      // Filtrar contas a pagar por data de emissão/lançamento
       contasPagar = contasPagar.filter((conta: any) => {
-        const dataVencimento = new Date(conta.dataVencimento);
-        return filtrarPorPeriodo(dataVencimento, dataInicioFinanceiro, dataFimFinanceiro, periodoFinanceiro);
+        const dataEmissao = new Date(conta.dataEmissao || conta.createdAt);
+        const passaPeriodoEmissao = filtrarPorPeriodo(dataEmissao, dataInicioFinanceiro, dataFimFinanceiro, periodoFinanceiro);
+        
+        // Filtrar por vencimento se filtros de vencimento estiverem definidos
+        if (periodoVencimento !== "todos" || dataInicioVencimento || dataFimVencimento) {
+          const dataVencimento = new Date(conta.dataVencimento);
+          const passaPeriodoVencimento = filtrarPorPeriodo(dataVencimento, dataInicioVencimento, dataFimVencimento, periodoVencimento);
+          return passaPeriodoEmissao && passaPeriodoVencimento;
+        }
+        
+        return passaPeriodoEmissao;
       });
 
-      // Filtrar contas a receber
+      // Filtrar contas a receber por data de emissão/lançamento
       contasReceber = contasReceber.filter((conta: any) => {
-        const dataVencimento = new Date(conta.dataVencimento);
-        return filtrarPorPeriodo(dataVencimento, dataInicioFinanceiro, dataFimFinanceiro, periodoFinanceiro);
+        const dataEmissao = new Date(conta.dataEmissao || conta.createdAt);
+        const passaPeriodoEmissao = filtrarPorPeriodo(dataEmissao, dataInicioFinanceiro, dataFimFinanceiro, periodoFinanceiro);
+        
+        // Filtrar por vencimento se filtros de vencimento estiverem definidos
+        if (periodoVencimento !== "todos" || dataInicioVencimento || dataFimVencimento) {
+          const dataVencimento = new Date(conta.dataVencimento);
+          const passaPeriodoVencimento = filtrarPorPeriodo(dataVencimento, dataInicioVencimento, dataFimVencimento, periodoVencimento);
+          return passaPeriodoEmissao && passaPeriodoVencimento;
+        }
+        
+        return passaPeriodoEmissao;
       });
 
       const totalPagar = contasPagar.reduce((acc: number, c: any) => acc + (c.valor || 0), 0);
@@ -866,9 +887,12 @@ const Relatorios = () => {
 
         {/* Tab Financeiro com Top Categorias e Próximos Vencimentos */}
         <TabsContent value="financeiro" className="space-y-4">
-          {/* Filtros de Período */}
+          {/* Filtros de Período de Emissão */}
           <Card className="bg-gradient-to-br from-primary/5 to-background">
-            <CardContent className="pt-6">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Filtros por Data de Emissão</CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <Label className="text-sm font-medium mb-2 block">Período</Label>
@@ -901,7 +925,52 @@ const Relatorios = () => {
                     onChange={(e) => setDataFimFinanceiro(e.target.value)}
                   />
                 </div>
-                <div className="flex items-end gap-2">
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Filtros de Período de Vencimento */}
+          <Card className="bg-gradient-to-br from-amber-500/5 to-background border-amber-200 dark:border-amber-900">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-amber-600" />
+                Filtros por Data de Vencimento
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Período</Label>
+                  <Select value={periodoVencimento} onValueChange={setPeriodoVencimento}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="7">Próximos 7 dias</SelectItem>
+                      <SelectItem value="30">Próximos 30 dias</SelectItem>
+                      <SelectItem value="90">Próximos 90 dias</SelectItem>
+                      <SelectItem value="365">Próximo ano</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Vencimento Início</Label>
+                  <Input
+                    type="date"
+                    value={dataInicioVencimento}
+                    onChange={(e) => setDataInicioVencimento(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Vencimento Fim</Label>
+                  <Input
+                    type="date"
+                    value={dataFimVencimento}
+                    onChange={(e) => setDataFimVencimento(e.target.value)}
+                  />
+                </div>
+                <div className="md:col-span-2 flex items-end gap-2">
                   <Button
                     variant="default"
                     className="flex-1"
@@ -910,7 +979,7 @@ const Relatorios = () => {
                     <Filter className="h-4 w-4 mr-2" />
                     Aplicar Filtros
                   </Button>
-                  {(periodoFinanceiro !== "todos" || dataInicioFinanceiro || dataFimFinanceiro) && (
+                  {(periodoFinanceiro !== "todos" || dataInicioFinanceiro || dataFimFinanceiro || periodoVencimento !== "todos" || dataInicioVencimento || dataFimVencimento) && (
                     <Button
                       variant="outline"
                       className="flex-1"
@@ -918,6 +987,9 @@ const Relatorios = () => {
                         setPeriodoFinanceiro("todos");
                         setDataInicioFinanceiro("");
                         setDataFimFinanceiro("");
+                        setPeriodoVencimento("todos");
+                        setDataInicioVencimento("");
+                        setDataFimVencimento("");
                         loadRelatorios();
                       }}
                     >
