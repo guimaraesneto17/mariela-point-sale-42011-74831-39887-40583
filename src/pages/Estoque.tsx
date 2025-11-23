@@ -305,10 +305,50 @@ const Estoque = () => {
     setSelectedSizeByItem(prev => ({ ...prev, [codigoProduto]: tamanho }));
   };
 
-  // Obter todas as cores únicas disponíveis no estoque
+  // Obter todas as cores únicas disponíveis no estoque filtrado
   const getAllCores = () => {
     const cores = new Set<string>();
-    inventory.forEach((item) => {
+    // Criar lista de produtos a considerar (filtrados por categoria, busca, etc, mas não por cor)
+    const inventoryParaCores = inventory.filter(item => {
+      const nomeProduto = item.nomeProduto || '';
+      const codigoProduto = item.codigoProduto || '';
+      const categoria = item.categoria || '';
+      
+      const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesPromocao = filterPromocao === null || item.emPromocao === filterPromocao;
+      const matchesNovidade = filterNovidade === null || item.isNovidade === filterNovidade;
+      const matchesCategoria = filterCategoria === "todas" || categoria === filterCategoria;
+      const matchesQuantidade = filterQuantidade === "todas" || (() => {
+        const quantidadeTotal = item.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0;
+        return (filterQuantidade === "baixo" && quantidadeTotal > 0 && quantidadeTotal <= 10) ||
+               (filterQuantidade === "zerado" && quantidadeTotal === 0) ||
+               (filterQuantidade === "disponivel" && quantidadeTotal > 10);
+      })();
+      
+      const precoVenda = item.precoPromocional || item.precoVenda || 0;
+      const matchesPrecoMin = !filterPrecoMin || precoVenda >= parseFloat(filterPrecoMin);
+      const matchesPrecoMax = !filterPrecoMax || precoVenda <= parseFloat(filterPrecoMax);
+      const matchesFornecedor = filterFornecedor === "todos" || item.fornecedor?.codigoFornecedor === filterFornecedor;
+      const matchesDataEntrada = filterDataEntrada === "todas" || (() => {
+        if (!item.variantes || item.variantes.length === 0) return false;
+        const hoje = new Date();
+        return item.variantes.some((v: any) => {
+          if (!v.dataEntrada) return false;
+          const dataEntradaVariante = new Date(v.dataEntrada);
+          const diffDias = Math.floor((hoje.getTime() - dataEntradaVariante.getTime()) / (1000 * 60 * 60 * 24));
+          if (filterDataEntrada === "ultimos7dias") return diffDias <= 7;
+          if (filterDataEntrada === "ultimos30dias") return diffDias <= 30;
+          if (filterDataEntrada === "ultimos90dias") return diffDias <= 90;
+          return false;
+        });
+      })();
+      
+      return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria && 
+             matchesQuantidade && matchesPrecoMin && matchesPrecoMax && matchesFornecedor && matchesDataEntrada;
+    });
+    
+    inventoryParaCores.forEach((item) => {
       item.variantes?.forEach((v: any) => {
         if (v.quantidade > 0) {
           cores.add(v.cor);
@@ -318,11 +358,57 @@ const Estoque = () => {
     return Array.from(cores).sort();
   };
 
-  // Obter todos os tamanhos únicos disponíveis no estoque
+  // Obter todos os tamanhos únicos disponíveis no estoque filtrado
   const getAllTamanhos = () => {
     const tamanhos = new Set<string>();
-    inventory.forEach((item) => {
+    // Criar lista de produtos a considerar (filtrados por categoria, busca, cor, etc, mas não por tamanho)
+    const inventoryParaTamanhos = inventory.filter(item => {
+      const nomeProduto = item.nomeProduto || '';
+      const codigoProduto = item.codigoProduto || '';
+      const categoria = item.categoria || '';
+      
+      const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesPromocao = filterPromocao === null || item.emPromocao === filterPromocao;
+      const matchesNovidade = filterNovidade === null || item.isNovidade === filterNovidade;
+      const matchesCategoria = filterCategoria === "todas" || categoria === filterCategoria;
+      const matchesCor = filterCor === "todas" || 
+        (item.variantes && item.variantes.some((v: any) => v.cor === filterCor && v.quantidade > 0));
+      const matchesQuantidade = filterQuantidade === "todas" || (() => {
+        const quantidadeTotal = item.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0;
+        return (filterQuantidade === "baixo" && quantidadeTotal > 0 && quantidadeTotal <= 10) ||
+               (filterQuantidade === "zerado" && quantidadeTotal === 0) ||
+               (filterQuantidade === "disponivel" && quantidadeTotal > 10);
+      })();
+      
+      const precoVenda = item.precoPromocional || item.precoVenda || 0;
+      const matchesPrecoMin = !filterPrecoMin || precoVenda >= parseFloat(filterPrecoMin);
+      const matchesPrecoMax = !filterPrecoMax || precoVenda <= parseFloat(filterPrecoMax);
+      const matchesFornecedor = filterFornecedor === "todos" || item.fornecedor?.codigoFornecedor === filterFornecedor;
+      const matchesDataEntrada = filterDataEntrada === "todas" || (() => {
+        if (!item.variantes || item.variantes.length === 0) return false;
+        const hoje = new Date();
+        return item.variantes.some((v: any) => {
+          if (!v.dataEntrada) return false;
+          const dataEntradaVariante = new Date(v.dataEntrada);
+          const diffDias = Math.floor((hoje.getTime() - dataEntradaVariante.getTime()) / (1000 * 60 * 60 * 24));
+          if (filterDataEntrada === "ultimos7dias") return diffDias <= 7;
+          if (filterDataEntrada === "ultimos30dias") return diffDias <= 30;
+          if (filterDataEntrada === "ultimos90dias") return diffDias <= 90;
+          return false;
+        });
+      })();
+      
+      return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria && 
+             matchesCor && matchesQuantidade && matchesPrecoMin && matchesPrecoMax && 
+             matchesFornecedor && matchesDataEntrada;
+    });
+    
+    inventoryParaTamanhos.forEach((item) => {
       item.variantes?.forEach((v: any) => {
+        // Filtrar pela cor se houver filtro de cor ativo
+        if (filterCor !== "todas" && v.cor !== filterCor) return;
+        
         if (v.quantidade > 0) {
           // Nova estrutura: tamanhos é array de objetos {tamanho, quantidade}
           if (Array.isArray(v.tamanhos) && v.tamanhos.length > 0) {
