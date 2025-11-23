@@ -9,6 +9,7 @@ import { estoqueAPI } from "@/lib/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Upload, Link as LinkIcon, X, Trash2, Image as ImageIcon } from "lucide-react";
 import { useImageCompression } from "@/hooks/useImageCompression";
+import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 
 interface Tamanho {
   tamanho: string;
@@ -41,6 +42,7 @@ export function AddToStockDialog({
   const [varianteSelecionada, setVarianteSelecionada] = useState<number | null>(null);
   const [imagemURL, setImagemURL] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; type: 'cor' | 'tamanho'; item: string } | null>(null);
 
   const { compressing, compressImages, validateImageUrl } = useImageCompression();
 
@@ -350,9 +352,7 @@ export function AddToStockDialog({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (window.confirm(`Deseja excluir a cor "${cor}" das opções?`)) {
-                            removerOpcaoCor(cor);
-                          }
+                          setDeleteDialog({ open: true, type: 'cor', item: cor });
                         }}
                         className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                       >
@@ -483,9 +483,7 @@ export function AddToStockDialog({
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (window.confirm(`Deseja excluir o tamanho "${tam}" das opções?`)) {
-                                  removerOpcaoTamanho(tam);
-                                }
+                                setDeleteDialog({ open: true, type: 'tamanho', item: tam });
                               }}
                               className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                             >
@@ -632,6 +630,24 @@ export function AddToStockDialog({
           </Button>
         </div>
       </DialogContent>
+
+      <AlertDeleteDialog
+        open={deleteDialog?.open || false}
+        onOpenChange={(open) => !open && setDeleteDialog(null)}
+        onConfirm={() => {
+          if (deleteDialog) {
+            if (deleteDialog.type === 'cor') {
+              removerOpcaoCor(deleteDialog.item);
+            } else {
+              removerOpcaoTamanho(deleteDialog.item);
+            }
+            setDeleteDialog(null);
+          }
+        }}
+        title={`Excluir ${deleteDialog?.type === 'cor' ? 'Cor' : 'Tamanho'}`}
+        description={`Tem certeza que deseja excluir ${deleteDialog?.type === 'cor' ? 'a cor' : 'o tamanho'} "${deleteDialog?.item}" das opções? Esta ação não pode ser desfeita.`}
+        itemName={deleteDialog?.item}
+      />
     </Dialog>
   );
 }

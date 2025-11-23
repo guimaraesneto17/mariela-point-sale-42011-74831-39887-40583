@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Upload, Link as LinkIcon, X, Trash2, Image as ImageIcon, ChevronDown } from "lucide-react";
 import { useImageCompression } from "@/hooks/useImageCompression";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 
 interface Tamanho {
   tamanho: string;
@@ -47,6 +48,7 @@ export function AddMultipleVariantsDialog({
   const [produtoSelecionado, setProdutoSelecionado] = useState<any>(produtoInicial || null);
   const [loadingProdutos, setLoadingProdutos] = useState(false);
   const [etapa, setEtapa] = useState<'selecao-produto' | 'edicao-variantes'>(produtoInicial ? 'edicao-variantes' : 'selecao-produto');
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; type: 'cor' | 'tamanho'; item: string } | null>(null);
 
   const { compressing, compressImages, validateImageUrl } = useImageCompression();
 
@@ -431,12 +433,7 @@ export function AddMultipleVariantsDialog({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (window.confirm(`Deseja excluir a cor "${cor}" das opções?`)) {
-                            const updated = coresDisponiveis.filter(c => c !== cor);
-                            setCoresDisponiveis(updated);
-                            localStorage.setItem('mariela-cores-options', JSON.stringify(updated));
-                            toast.success(`Cor "${cor}" removida das opções`);
-                          }
+                          setDeleteDialog({ open: true, type: 'cor', item: cor });
                         }}
                         className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                       >
@@ -534,83 +531,90 @@ export function AddMultipleVariantsDialog({
           <div className="space-y-4">
             {varianteSelecionada !== null ? (
               <>
-                <div className="border rounded-lg p-4 bg-muted/30">
-                  <Label className="text-base font-semibold">2. Editando: {variantes[varianteSelecionada].cor}</Label>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Adicione tamanhos e imagens para esta variante
-                  </p>
+                <div className="border rounded-lg p-4 bg-primary/5">
+                  <Label className="text-base font-semibold mb-3 block">
+                    2. Editando: {variantes[varianteSelecionada].cor}
+                  </Label>
 
-                  {/* Adicionar tamanho personalizado com quantidade */}
-                  <div className="flex gap-2 mb-3">
-                    <Input
-                      placeholder="Tamanho (ex: 42)"
-                      value={novoTamanho}
-                      onChange={(e) => setNovoTamanho(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && adicionarTamanho(varianteSelecionada!)}
-                      className="flex-1"
-                    />
-                    <Input
-                      type="number"
-                      min="1"
-                      placeholder="Qtd"
-                      value={novaQuantidadeTamanho}
-                      onChange={(e) => setNovaQuantidadeTamanho(parseInt(e.target.value) || 1)}
-                      className="w-20"
-                    />
-                    <Button onClick={() => adicionarTamanho(varianteSelecionada!)} className="shrink-0">
-                      <Plus className="h-4 w-4 mr-1" /> Adicionar
-                    </Button>
+                  {/* Campo para adicionar tamanho personalizado */}
+                  <div className="space-y-3 mb-4">
+                    <Label className="text-sm font-semibold">Adicionar Tamanho Personalizado</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Ex: 44, GG, XL"
+                        value={novoTamanho}
+                        onChange={(e) => setNovoTamanho(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && adicionarTamanho(varianteSelecionada!)}
+                      />
+                      <Button onClick={() => adicionarTamanho(varianteSelecionada!)} className="shrink-0">
+                        <Plus className="h-4 w-4 mr-1" /> Adicionar
+                      </Button>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Ou clique nos tamanhos abaixo (qtd padrão = 1). Passe o mouse para excluir:
-                  </p>
 
-                  {/* Tamanhos disponíveis com opção de excluir */}
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {tamanhosDisponiveis.map((tam) => (
-                      <div key={tam} className="relative group">
-                        <Badge
-                          variant={variantes[varianteSelecionada].tamanhos.find(t => t.tamanho === tam) ? "default" : "outline"}
-                          className="text-xs cursor-pointer pr-6"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            adicionarTamanhoRapido(varianteSelecionada, tam);
-                          }}
-                        >
-                          {tam}
-                        </Badge>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (window.confirm(`Deseja excluir o tamanho "${tam}" das opções?`)) {
-                              const updated = tamanhosDisponiveis.filter(t => t !== tam);
-                              setTamanhosDisponiveis(updated);
-                              localStorage.setItem('mariela-tamanhos-options', JSON.stringify(updated));
-                              toast.success(`Tamanho "${tam}" removido das opções`);
-                            }
-                          }}
-                          className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                        >
-                          <X className="h-2.5 w-2.5" />
-                        </button>
-                      </div>
-                    ))}
+                  {/* Tamanhos com quantidade e opção de excluir */}
+                  <div className="space-y-3">
+                    <Label className="text-sm">Selecione os Tamanhos e Quantidades</Label>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                      {tamanhosDisponiveis.map((tam) => {
+                        const tamanhoObj = variantes[varianteSelecionada].tamanhos.find(t => t.tamanho === tam);
+                        const isSelected = !!tamanhoObj;
+                        
+                        return (
+                          <div key={tam} className="space-y-1 relative group">
+                            <Button
+                              type="button"
+                              variant={isSelected ? "default" : "outline"}
+                              size="sm"
+                              className="w-full"
+                              onClick={() => adicionarTamanhoRapido(varianteSelecionada, tam)}
+                            >
+                              {tam}
+                            </Button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteDialog({ open: true, type: 'tamanho', item: tam });
+                              }}
+                              className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                            {isSelected && (
+                              <Input
+                                type="number"
+                                min="1"
+                                value={tamanhoObj.quantidade}
+                                onChange={(e) => atualizarQuantidadeTamanho(
+                                  varianteSelecionada,
+                                  tam,
+                                  parseInt(e.target.value) || 1
+                                )}
+                                className="h-8 text-xs"
+                                placeholder="Qtd"
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 
-                {/* Upload de Imagens */}
+                {/* Imagens */}
                 <div className="border rounded-lg p-4">
-                  <Label className="text-base font-semibold mb-3 block">3. Imagens (Opcional)</Label>
+                  <Label className="text-sm font-semibold mb-3 block">Imagens da Variante</Label>
                   
                   <Tabs defaultValue="url" className="w-full">
                     <TabsList className="grid w-full grid-cols-2 mb-3">
-                      <TabsTrigger value="url" className="flex items-center gap-2">
-                        <LinkIcon className="h-4 w-4" />
+                      <TabsTrigger value="url" className="text-xs">
+                        <LinkIcon className="h-3 w-3 mr-1" />
                         URL
                       </TabsTrigger>
-                      <TabsTrigger value="upload" className="flex items-center gap-2">
-                        <Upload className="h-4 w-4" />
+                      <TabsTrigger value="upload" className="text-xs">
+                        <Upload className="h-3 w-3 mr-1" />
                         Upload
                       </TabsTrigger>
                     </TabsList>
@@ -622,49 +626,64 @@ export function AddMultipleVariantsDialog({
                           value={imagemURL}
                           onChange={(e) => setImagemURL(e.target.value)}
                           onKeyPress={(e) => e.key === 'Enter' && handleAddImagemUrl()}
+                          className="text-sm"
                         />
-                        <Button onClick={handleAddImagemUrl} className="shrink-0">
-                          <Plus className="h-4 w-4" />
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={handleAddImagemUrl}
+                          className="shrink-0"
+                        >
+                          <Plus className="h-3 w-3" />
                         </Button>
                       </div>
                     </TabsContent>
 
-                    <TabsContent value="upload">
+                    <TabsContent value="upload" className="space-y-2">
                       <Input
                         ref={fileInputRef}
                         type="file"
                         accept="image/*"
                         multiple
                         onChange={handleFileUpload}
-                        className="cursor-pointer"
+                        className="cursor-pointer text-sm"
                         disabled={compressing}
                       />
                       {compressing && (
-                        <p className="text-sm text-muted-foreground mt-2">Processando imagens...</p>
+                        <p className="text-xs text-muted-foreground">Processando imagens...</p>
                       )}
                     </TabsContent>
                   </Tabs>
 
                   {/* Preview das imagens */}
                   {variantes[varianteSelecionada].imagens.length > 0 && (
-                    <div className="grid grid-cols-3 gap-2 mt-3">
-                      {variantes[varianteSelecionada].imagens.map((img, imgIndex) => (
-                        <div key={imgIndex} className="relative group">
-                          <img
-                            src={img}
-                            alt={`Preview ${imgIndex + 1}`}
-                            className="w-full h-20 object-cover rounded-lg border-2 border-border"
-                          />
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => removerImagem(varianteSelecionada, imgIndex)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ))}
+                    <div className="mt-3 space-y-2">
+                      <Label className="text-xs text-muted-foreground">
+                        {variantes[varianteSelecionada].imagens.length} imagem(ns)
+                      </Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {variantes[varianteSelecionada].imagens.map((img, imgIndex) => (
+                          <div key={imgIndex} className="relative group">
+                            <img
+                              src={img}
+                              alt={`Preview ${imgIndex + 1}`}
+                              className="w-full h-20 object-cover rounded border"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="icon"
+                              className="absolute top-0.5 right-0.5 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => removerImagem(varianteSelecionada, imgIndex)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                            <div className="absolute bottom-0.5 left-0.5 bg-background/80 px-1 rounded text-xs">
+                              #{imgIndex + 1}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -701,6 +720,30 @@ export function AddMultipleVariantsDialog({
         </>
       )}
       </DialogContent>
+
+      <AlertDeleteDialog
+        open={deleteDialog?.open || false}
+        onOpenChange={(open) => !open && setDeleteDialog(null)}
+        onConfirm={() => {
+          if (deleteDialog) {
+            if (deleteDialog.type === 'cor') {
+              const updated = coresDisponiveis.filter(c => c !== deleteDialog.item);
+              setCoresDisponiveis(updated);
+              localStorage.setItem('mariela-cores-options', JSON.stringify(updated));
+              toast.success(`Cor "${deleteDialog.item}" removida das opções`);
+            } else {
+              const updated = tamanhosDisponiveis.filter(t => t !== deleteDialog.item);
+              setTamanhosDisponiveis(updated);
+              localStorage.setItem('mariela-tamanhos-options', JSON.stringify(updated));
+              toast.success(`Tamanho "${deleteDialog.item}" removido das opções`);
+            }
+            setDeleteDialog(null);
+          }
+        }}
+        title={`Excluir ${deleteDialog?.type === 'cor' ? 'Cor' : 'Tamanho'}`}
+        description={`Tem certeza que deseja excluir ${deleteDialog?.type === 'cor' ? 'a cor' : 'o tamanho'} "${deleteDialog?.item}" das opções? Esta ação não pode ser desfeita.`}
+        itemName={deleteDialog?.item}
+      />
     </Dialog>
   );
 }
