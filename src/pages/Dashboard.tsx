@@ -264,22 +264,30 @@ const Dashboard = () => {
       const vendasPorMesArray = Object.values(vendasPorMesMap).slice(-6); // últimos 6 meses
       setVendasPorMes(vendasPorMesArray);
 
-      // Calcular contas a vencer e a receber nos próximos 7 dias
+      // Calcular contas a vencer e a receber nos próximos 7 dias (APENAS PENDENTES)
       const dataHoje = new Date();
+      dataHoje.setHours(0, 0, 0, 0); // Zerar horas para comparação correta
       const daquiA7Dias = addDays(dataHoje, 7);
       
+      // Filtrar apenas contas PENDENTES (não pagas) a vencer nos próximos 7 dias
       const contasAVencer = contasPagar.filter((conta: any) => {
-        if (conta.status === 'pago') return false;
+        const statusLower = (conta.status || '').toLowerCase();
+        if (statusLower === 'pago' || statusLower === 'paga') return false;
         const dataVencimento = new Date(conta.dataVencimento);
+        dataVencimento.setHours(0, 0, 0, 0);
         return dataVencimento >= dataHoje && dataVencimento <= daquiA7Dias;
       });
       
+      // Filtrar apenas contas PENDENTES (não recebidas) a receber nos próximos 7 dias
       const contasAReceber = contasReceber.filter((conta: any) => {
-        if (conta.status === 'recebido') return false;
+        const statusLower = (conta.status || '').toLowerCase();
+        if (statusLower === 'recebido' || statusLower === 'recebida') return false;
         const dataVencimento = new Date(conta.dataVencimento);
+        dataVencimento.setHours(0, 0, 0, 0);
         return dataVencimento >= dataHoje && dataVencimento <= daquiA7Dias;
       });
 
+      // Calcular APENAS o valor das contas PENDENTES
       const valorContasAVencer = contasAVencer.reduce((acc: number, c: any) => acc + (c.valor || 0), 0);
       const valorContasAReceber = contasAReceber.reduce((acc: number, c: any) => acc + (c.valor || 0), 0);
 
