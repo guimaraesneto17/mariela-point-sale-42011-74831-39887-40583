@@ -35,9 +35,12 @@ const Relatorios = () => {
   const [dataInicioFinanceiro, setDataInicioFinanceiro] = useState("");
   const [dataFimFinanceiro, setDataFimFinanceiro] = useState("");
   const [periodoFinanceiro, setPeriodoFinanceiro] = useState("todos");
+  const [vendedorSelecionado, setVendedorSelecionado] = useState("todos");
+  const [clienteSelecionado, setClienteSelecionado] = useState("todos");
   
   const [loading, setLoading] = useState(true);
   const [vendedores, setVendedores] = useState<any[]>([]);
+  const [clientes, setClientes] = useState<any[]>([]);
   const [relatorioVendas, setRelatorioVendas] = useState<any>({
     totalVendas: 0,
     faturamentoTotal: 0,
@@ -163,12 +166,15 @@ const Relatorios = () => {
       ]);
 
       setVendedores(vendedoresList);
+      setClientes(clientes);
       setEstoque(estoqueData);
 
-      // Relatório de Vendas com filtros de período
+      // Relatório de Vendas com filtros de período e vendedor
       const vendasFiltradas = vendas.filter((venda: any) => {
         const dataVenda = new Date(venda.data || venda.dataVenda);
-        return filtrarPorPeriodo(dataVenda, dataInicioVendas, dataFimVendas, periodoVendas);
+        const passaPeriodo = filtrarPorPeriodo(dataVenda, dataInicioVendas, dataFimVendas, periodoVendas);
+        const passaVendedor = vendedorSelecionado === "todos" || venda.vendedor?.codigoVendedor === vendedorSelecionado;
+        return passaPeriodo && passaVendedor;
       });
 
       const vendasPorCategoria: any = {};
@@ -318,21 +324,30 @@ const Relatorios = () => {
         giroEstoque: giroComTaxa.sort((a: any, b: any) => parseFloat(a.taxaGiro) - parseFloat(b.taxaGiro)),
       });
 
-      // Relatório de Clientes - Adicionar aniversariantes do mês
-      const totalClientes = clientes.length;
+      // Relatório de Clientes com filtro por cliente específico
+      const clientesFiltrados = clienteSelecionado === "todos" 
+        ? clientes 
+        : clientes.filter((c: any) => c.codigoCliente === clienteSelecionado);
+      
+      const totalClientes = clientesFiltrados.length;
       const clientesCompras: any = {};
       
       vendas.forEach((venda: any) => {
         const codigoCliente = venda.cliente?.codigoCliente;
-        if (!clientesCompras[codigoCliente]) {
-          clientesCompras[codigoCliente] = {
-            nome: venda.cliente?.nome,
-            compras: 0,
-            valorTotal: 0
-          };
+        // Filtrar vendas apenas dos clientes selecionados
+        const clienteValido = clienteSelecionado === "todos" || codigoCliente === clienteSelecionado;
+        
+        if (clienteValido) {
+          if (!clientesCompras[codigoCliente]) {
+            clientesCompras[codigoCliente] = {
+              nome: venda.cliente?.nome,
+              compras: 0,
+              valorTotal: 0
+            };
+          }
+          clientesCompras[codigoCliente].compras += 1;
+          clientesCompras[codigoCliente].valorTotal += venda.total || 0;
         }
-        clientesCompras[codigoCliente].compras += 1;
-        clientesCompras[codigoCliente].valorTotal += venda.total || 0;
       });
 
       const topClientesArray = Object.values(clientesCompras)
@@ -345,13 +360,13 @@ const Relatorios = () => {
 
       const mesAtual = new Date().getMonth();
       const anoAtual = new Date().getFullYear();
-      const clientesNovos = clientes.filter((c: any) => {
+      const clientesNovos = clientesFiltrados.filter((c: any) => {
         const dataCadastro = new Date(c.dataCadastro);
         return dataCadastro.getMonth() === mesAtual && dataCadastro.getFullYear() === anoAtual;
       }).length;
 
-      // Aniversariantes do mês
-      const aniversariantes = clientes.filter((c: any) => {
+      // Aniversariantes do mês filtrados
+      const aniversariantes = clientesFiltrados.filter((c: any) => {
         if (!c.dataNascimento) return false;
         const dataNasc = new Date(c.dataNascimento);
         return dataNasc.getMonth() === mesAtual;
@@ -662,6 +677,56 @@ const Relatorios = () => {
 
         {/* Tab Clientes com Aniversariantes */}
         <TabsContent value="clientes" className="space-y-4">
+          {/* Filtro por Cliente */}
+          <Card className="bg-gradient-to-br from-primary/5 to-background">
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Filtrar por Cliente</Label>
+                  <Select value={clienteSelecionado} onValueChange={setClienteSelecionado}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um cliente" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos os Clientes</SelectItem>
+                      {clientes.map((cliente: any) => (
+                        <SelectItem key={cliente.codigoCliente} value={cliente.codigoCliente}>
+                          {cliente.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end gap-2">
+                  <Button
+                    variant="default"
+                    className="flex-1"
+                    onClick={() => {
+                      loadRelatorios();
+                      toast.success("Filtros aplicados!");
+                    }}
+                  >
+                    <Filter className="h-4 w-4 mr-2" />
+                    Aplicar Filtros
+                  </Button>
+                  {clienteSelecionado !== "todos" && (
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        setClienteSelecionado("todos");
+                        loadRelatorios();
+                      }}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Limpar
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
               <CardHeader className="pb-3">
@@ -1019,7 +1084,7 @@ const Relatorios = () => {
           {/* Filtros de Período */}
           <Card className="bg-gradient-to-br from-primary/5 to-background">
             <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div>
                   <Label className="text-sm font-medium mb-2 block">Período</Label>
                   <Select value={periodoVendas} onValueChange={setPeriodoVendas}>
@@ -1051,6 +1116,22 @@ const Relatorios = () => {
                     onChange={(e) => setDataFimVendas(e.target.value)}
                   />
                 </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Vendedor</Label>
+                  <Select value={vendedorSelecionado} onValueChange={setVendedorSelecionado}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos os Vendedores</SelectItem>
+                      {vendedores.map((vendedor: any) => (
+                        <SelectItem key={vendedor.codigoVendedor} value={vendedor.codigoVendedor}>
+                          {vendedor.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="flex items-end gap-2">
                   <Button
                     variant="default"
@@ -1060,7 +1141,7 @@ const Relatorios = () => {
                     <Filter className="h-4 w-4 mr-2" />
                     Aplicar Filtros
                   </Button>
-                  {(periodoVendas !== "todos" || dataInicioVendas || dataFimVendas) && (
+                  {(periodoVendas !== "todos" || dataInicioVendas || dataFimVendas || vendedorSelecionado !== "todos") && (
                     <Button
                       variant="outline"
                       className="flex-1"
@@ -1068,6 +1149,7 @@ const Relatorios = () => {
                         setPeriodoVendas("todos");
                         setDataInicioVendas("");
                         setDataFimVendas("");
+                        setVendedorSelecionado("todos");
                         loadRelatorios();
                       }}
                     >
