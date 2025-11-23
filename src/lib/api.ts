@@ -201,7 +201,8 @@ export const contasPagarAPI = {
     dataPagamento?: string; 
     formaPagamento: string; 
     observacoes?: string; 
-    registrarNoCaixa?: boolean 
+    registrarNoCaixa?: boolean;
+    numeroParcela?: number;
   }) => {
     console.log('📤 [FRONTEND] Enviando pagamento:', { numero, data });
     return fetchAPI(`/contas-pagar/${numero}/pagar`, {
@@ -236,7 +237,8 @@ export const contasReceberAPI = {
     dataRecebimento?: string; 
     formaPagamento: string; 
     observacoes?: string; 
-    registrarNoCaixa?: boolean 
+    registrarNoCaixa?: boolean;
+    numeroParcela?: number;
   }) => {
     console.log('📤 [FRONTEND] Enviando recebimento:', { numero, data });
     return fetchAPI(`/contas-receber/${numero}/receber`, {

@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, TrendingUp, TrendingDown, AlertCircle, Plus, CreditCard, Calendar, Split, BarChart3, Edit, Trash2, Filter } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, AlertCircle, Plus, CreditCard, Calendar, Split, BarChart3, Edit, Trash2, Filter, Eye, Link as LinkIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import { contasPagarAPI, contasReceberAPI } from "@/lib/api";
@@ -14,6 +14,7 @@ import { ContaPagarDialog } from "@/components/ContaPagarDialog";
 import { ContaReceberDialog } from "@/components/ContaReceberDialog";
 import { FinanceNotifications } from "@/components/FinanceNotifications";
 import { RegistrarPagamentoDialog } from "@/components/RegistrarPagamentoDialog";
+import { DetalhesParcelamentoDialog } from "@/components/DetalhesParcelamentoDialog";
 import { useNavigate } from "react-router-dom";
 
 const Financeiro = () => {
@@ -35,6 +36,9 @@ const Financeiro = () => {
   const [filtroStatusReceber, setFiltroStatusReceber] = useState<string>("todos");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contaToDelete, setContaToDelete] = useState<{tipo: 'pagar'|'receber', numeroDocumento: string, descricao: string} | null>(null);
+  const [detalhesParcelamentoOpen, setDetalhesParcelamentoOpen] = useState(false);
+  const [contaParcelamentoSelecionada, setContaParcelamentoSelecionada] = useState<any | null>(null);
+  const [tipoParcelamento, setTipoParcelamento] = useState<'pagar'|'receber'>("pagar");
 
   useEffect(() => {
     loadData();
@@ -257,6 +261,18 @@ const Financeiro = () => {
                       <div className="flex items-center gap-2">
                         <h3 className="text-lg font-bold text-foreground">{conta.descricao}</h3>
                         {getStatusBadge(conta.status)}
+                        {conta.tipoCriacao === 'Parcelamento' && (
+                          <Badge variant="outline" className="gap-1">
+                            <Split className="h-3 w-3" />
+                            Parcelado
+                          </Badge>
+                        )}
+                        {conta.replicaDe && (
+                          <Badge variant="outline" className="gap-1">
+                            <LinkIcon className="h-3 w-3" />
+                            Réplica
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-sm text-muted-foreground">
                         Doc: {conta.numeroDocumento} • {conta.categoria}
@@ -273,16 +289,21 @@ const Financeiro = () => {
                             Venc: {format(new Date(conta.dataVencimento), 'dd/MM/yyyy', { locale: ptBR })}
                           </span>
                         </div>
-                        {conta.formaPagamento && (
+                        {conta.pagamento?.formaPagamento && (
                           <div className="flex items-center gap-1">
                             <CreditCard className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">{conta.formaPagamento}</span>
+                            <span className="text-muted-foreground">{conta.pagamento.formaPagamento}</span>
                           </div>
                         )}
                       </div>
-                      {Array.isArray(conta.historicoPagamentos) && conta.historicoPagamentos.length > 0 && (
+                      {conta.tipoCriacao === 'Parcelamento' && conta.parcelas && (
                         <div className="mt-2 text-xs text-muted-foreground">
-                          Histórico: {conta.historicoPagamentos.slice(-2).map((h: any) => `${format(new Date(h.data), 'dd/MM')} ${formatCurrency(h.valor)}`).join(' • ')}
+                          Parcelas: {conta.parcelas.filter((p: any) => p.status === 'Pago').length}/{conta.parcelas.length} pagas
+                        </div>
+                      )}
+                      {conta.replicaDe && (
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          Réplica de: {conta.replicaDe}
                         </div>
                       )}
                     </div>
@@ -290,12 +311,31 @@ const Financeiro = () => {
                       <div className="text-2xl font-bold text-foreground">
                         {formatCurrency(conta.valor)}
                       </div>
-                      {conta.valorPago > 0 && (
+                      {conta.tipoCriacao === 'Parcelamento' && conta.parcelas && (
                         <div className="text-sm text-green-600">
-                          Pago: {formatCurrency(conta.valorPago)}
+                          Pago: {formatCurrency(conta.parcelas.reduce((sum: number, p: any) => sum + (p.pagamento?.valor || 0), 0))}
                         </div>
                       )}
-                      <div className="flex gap-2">
+                      {conta.tipoCriacao === 'Unica' && conta.pagamento?.valor > 0 && (
+                        <div className="text-sm text-green-600">
+                          Pago: {formatCurrency(conta.pagamento.valor)}
+                        </div>
+                      )}
+                      <div className="flex gap-2 flex-wrap justify-end">
+                        {conta.tipoCriacao === 'Parcelamento' && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => {
+                              setContaParcelamentoSelecionada(conta);
+                              setTipoParcelamento('pagar');
+                              setDetalhesParcelamentoOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Ver Parcelas
+                          </Button>
+                        )}
                         <Button 
                           size="sm" 
                           variant="ghost"
@@ -303,9 +343,9 @@ const Financeiro = () => {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        {conta.status === 'Pendente' || conta.status === 'Parcial' ? (
+                        {conta.tipoCriacao === 'Unica' && (conta.status === 'Pendente' || conta.status === 'Parcial') && (
                           <Button size="sm" variant="outline" onClick={() => { setRegistroTipo('pagar'); setRegistroConta(conta); setRegistroDialogOpen(true); }}>Registrar Pagamento</Button>
-                        ) : null}
+                        )}
                         <Button 
                           size="sm" 
                           variant="ghost" 
@@ -355,6 +395,18 @@ const Financeiro = () => {
                       <div className="flex items-center gap-2">
                         <h3 className="text-lg font-bold text-foreground">{conta.descricao}</h3>
                         {getStatusBadge(conta.status)}
+                        {conta.tipoCriacao === 'Parcelamento' && (
+                          <Badge variant="outline" className="gap-1">
+                            <Split className="h-3 w-3" />
+                            Parcelado
+                          </Badge>
+                        )}
+                        {conta.replicaDe && (
+                          <Badge variant="outline" className="gap-1">
+                            <LinkIcon className="h-3 w-3" />
+                            Réplica
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-sm text-muted-foreground">
                         Doc: {conta.numeroDocumento} • {conta.categoria}
@@ -371,16 +423,21 @@ const Financeiro = () => {
                             Venc: {format(new Date(conta.dataVencimento), 'dd/MM/yyyy', { locale: ptBR })}
                           </span>
                         </div>
-                        {conta.formaPagamento && (
+                        {conta.recebimento?.formaPagamento && (
                           <div className="flex items-center gap-1">
                             <CreditCard className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">{conta.formaPagamento}</span>
+                            <span className="text-muted-foreground">{conta.recebimento.formaPagamento}</span>
                           </div>
                         )}
                       </div>
-                      {Array.isArray(conta.historicoRecebimentos) && conta.historicoRecebimentos.length > 0 && (
+                      {conta.tipoCriacao === 'Parcelamento' && conta.parcelas && (
                         <div className="mt-2 text-xs text-muted-foreground">
-                          Histórico: {conta.historicoRecebimentos.slice(-2).map((h: any) => `${format(new Date(h.data), 'dd/MM')} ${formatCurrency(h.valor)}`).join(' • ')}
+                          Parcelas: {conta.parcelas.filter((p: any) => p.status === 'Recebido').length}/{conta.parcelas.length} recebidas
+                        </div>
+                      )}
+                      {conta.replicaDe && (
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          Réplica de: {conta.replicaDe}
                         </div>
                       )}
                     </div>
@@ -388,12 +445,31 @@ const Financeiro = () => {
                       <div className="text-2xl font-bold text-foreground">
                         {formatCurrency(conta.valor)}
                       </div>
-                      {conta.valorRecebido > 0 && (
+                      {conta.tipoCriacao === 'Parcelamento' && conta.parcelas && (
                         <div className="text-sm text-green-600">
-                          Recebido: {formatCurrency(conta.valorRecebido)}
+                          Recebido: {formatCurrency(conta.parcelas.reduce((sum: number, p: any) => sum + (p.recebimento?.valor || 0), 0))}
                         </div>
                       )}
-                      <div className="flex gap-2">
+                      {conta.tipoCriacao === 'Unica' && conta.recebimento?.valor > 0 && (
+                        <div className="text-sm text-green-600">
+                          Recebido: {formatCurrency(conta.recebimento.valor)}
+                        </div>
+                      )}
+                      <div className="flex gap-2 flex-wrap justify-end">
+                        {conta.tipoCriacao === 'Parcelamento' && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => {
+                              setContaParcelamentoSelecionada(conta);
+                              setTipoParcelamento('receber');
+                              setDetalhesParcelamentoOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Ver Parcelas
+                          </Button>
+                        )}
                         <Button 
                           size="sm" 
                           variant="ghost"
@@ -401,9 +477,9 @@ const Financeiro = () => {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        {conta.status === 'Pendente' || conta.status === 'Parcial' ? (
+                        {conta.tipoCriacao === 'Unica' && (conta.status === 'Pendente' || conta.status === 'Parcial') && (
                           <Button size="sm" variant="outline" onClick={() => { setRegistroTipo('receber'); setRegistroConta(conta); setRegistroDialogOpen(true); }}>Registrar Recebimento</Button>
-                        ) : null}
+                        )}
                         <Button 
                           size="sm" 
                           variant="ghost" 
@@ -445,6 +521,14 @@ const Financeiro = () => {
         onOpenChange={(o)=>{ setRegistroDialogOpen(o); if(!o){ setRegistroConta(null);} }}
         tipo={registroTipo}
         conta={registroConta}
+        onSuccess={loadData}
+      />
+
+      <DetalhesParcelamentoDialog
+        open={detalhesParcelamentoOpen}
+        onOpenChange={setDetalhesParcelamentoOpen}
+        conta={contaParcelamentoSelecionada}
+        tipo={tipoParcelamento}
         onSuccess={loadData}
       />
 
