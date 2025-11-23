@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FileText, Calendar, Filter, Download, TrendingUp, TrendingDown, Package, Users, DollarSign, ShoppingBag, Sparkles, Tag, Crown, UserCheck, Wallet, BarChart3, Boxes, Gift, MessageSquare, Send, Calendar as CalendarDays, Bell, X } from "lucide-react";
+import { FileText, Calendar, Filter, Download, TrendingUp, TrendingDown, Package, Users, DollarSign, ShoppingBag, Sparkles, Tag, Crown, UserCheck, Wallet, BarChart3, Boxes, Gift, MessageSquare, Send, Calendar as CalendarDays, Bell, X, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,8 @@ import { VendasPorCategoriaCard } from "@/components/VendasPorCategoriaCard";
 import { VendasEvolutionChart } from "@/components/VendasEvolutionChart";
 import { MargemLucroCard } from "@/components/MargemLucroCard";
 import { DashboardMovimentacoes } from "@/components/DashboardMovimentacoes";
+import { EstoqueAlertasDialog } from "@/components/EstoqueAlertasDialog";
+import { PromocoesEfetividadeDialog } from "@/components/PromocoesEfetividadeDialog";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, LineChart, Line, Area, AreaChart } from "recharts";
 import { GlobalLoading } from "@/components/GlobalLoading";
 import { format, addDays } from "date-fns";
@@ -99,6 +101,8 @@ const Relatorios = () => {
     proximosVencimentosPagar: [],
     proximosVencimentosReceber: [],
   });
+  const [estoqueAlertasOpen, setEstoqueAlertasOpen] = useState(false);
+  const [promocoesEfetividadeOpen, setPromocoesEfetividadeOpen] = useState(false);
 
   useEffect(() => {
     loadRelatorios();
@@ -1252,6 +1256,18 @@ const Relatorios = () => {
             </Card>
           </div>
 
+          {/* Botões de Ação */}
+          <div className="flex gap-2">
+            <Button variant="outline" className="gap-2" onClick={() => setEstoqueAlertasOpen(true)}>
+              <AlertTriangle className="h-4 w-4" />
+              Alertas de Estoque
+            </Button>
+            <Button variant="outline" className="gap-2" onClick={() => setPromocoesEfetividadeOpen(true)}>
+              <TrendingUp className="h-4 w-4" />
+              Efetividade de Promoções
+            </Button>
+          </div>
+
           {/* Produtos Mais Vendidos */}
           {relatorioProdutos.produtosMaisVendidos && relatorioProdutos.produtosMaisVendidos.length > 0 && (
             <Card>
@@ -1652,6 +1668,17 @@ const Relatorios = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Diálogos */}
+      <EstoqueAlertasDialog 
+        open={estoqueAlertasOpen}
+        onOpenChange={setEstoqueAlertasOpen}
+      />
+      
+      <PromocoesEfetividadeDialog 
+        open={promocoesEfetividadeOpen}
+        onOpenChange={setPromocoesEfetividadeOpen}
+      />
     </div>
   );
 };
