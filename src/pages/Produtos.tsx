@@ -323,7 +323,7 @@ const Produtos = () => {
                           <FormControl>
                             <Textarea 
                               {...field}
-                              placeholder="Descrição detalhada do produto (mínimo 10 caracteres)"
+                              placeholder="Descrição detalhada do produto (opcional)"
                               rows={3}
                               className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
                             />

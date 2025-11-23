@@ -386,54 +386,65 @@ export function AddMultipleVariantsDialog({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Painel Esquerdo - Adicionar Variantes */}
           <div className="space-y-4">
-            <div className="border rounded-lg p-4 bg-muted/30">
-              <Label className="text-base font-semibold">1. Adicionar Cores</Label>
+            <div className="border rounded-lg p-4 bg-primary/5">
+              <Label className="text-base font-semibold mb-2 block">1. Adicionar Cores</Label>
               <p className="text-xs text-muted-foreground mb-3">
                 Cada cor será uma variante separada
               </p>
               
-              <div className="flex gap-2 mb-3">
-                <Input
-                  placeholder="Digite uma cor (ex: Azul Marinho)"
-                  value={novaCor}
-                  onChange={(e) => setNovaCor(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && adicionarCor()}
-                />
-                <Button onClick={adicionarCor} className="shrink-0">
-                  <Plus className="h-4 w-4 mr-1" /> Adicionar
-                </Button>
+              {/* Campo para adicionar cor personalizada */}
+              <div className="space-y-3 mb-4">
+                <Label className="text-sm font-semibold">Adicionar Cor Personalizada</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Ex: Azul Marinho, Verde Oliva"
+                    value={novaCor}
+                    onChange={(e) => setNovaCor(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && adicionarCor()}
+                  />
+                  <Button onClick={adicionarCor} className="shrink-0">
+                    <Plus className="h-4 w-4 mr-1" /> Adicionar
+                  </Button>
+                </div>
               </div>
 
-              {/* Cores sugeridas com opção de excluir */}
-              <div className="flex flex-wrap gap-2">
-                {coresDisponiveis.map((cor) => (
-                  <Badge
-                    key={cor}
-                    variant="outline"
-                    className="cursor-pointer hover:bg-primary hover:text-primary-foreground group relative pr-6"
-                    onClick={() => {
-                      setNovaCor(cor);
-                      adicionarCor();
-                    }}
-                  >
-                    {cor}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (window.confirm(`Deseja excluir a cor "${cor}" das opções?`)) {
-                          const updated = coresDisponiveis.filter(c => c !== cor);
-                          setCoresDisponiveis(updated);
-                          localStorage.setItem('mariela-cores-options', JSON.stringify(updated));
-                          toast.success(`Cor "${cor}" removida das opções`);
-                        }
-                      }}
-                      className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="h-3 w-3 text-destructive hover:text-destructive/80" />
-                    </button>
-                  </Badge>
-                ))}
+              {/* Cores disponíveis com opção de excluir */}
+              <div className="space-y-3">
+                <Label className="text-sm">Selecione as Cores Disponíveis</Label>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  {coresDisponiveis.map((cor) => (
+                    <div key={cor} className="relative group">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full hover:bg-primary hover:text-primary-foreground"
+                        onClick={() => {
+                          setNovaCor(cor);
+                          adicionarCor();
+                        }}
+                      >
+                        {cor}
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`Deseja excluir a cor "${cor}" das opções?`)) {
+                            const updated = coresDisponiveis.filter(c => c !== cor);
+                            setCoresDisponiveis(updated);
+                            localStorage.setItem('mariela-cores-options', JSON.stringify(updated));
+                            toast.success(`Cor "${cor}" removida das opções`);
+                          }
+                        }}
+                        className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
