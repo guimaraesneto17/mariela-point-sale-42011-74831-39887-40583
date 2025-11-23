@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Plus, User, CheckCircle2, AlertCircle, Edit, Trash2, X, ShoppingCart, DollarSign, Calendar, RefreshCw } from "lucide-react";
+import { Search, Plus, User, CheckCircle2, AlertCircle, Edit, Trash2, X, ShoppingCart, DollarSign, Calendar, RefreshCw, Cake } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import { z } from "zod";
 import { clientesAPI, recalculoAPI } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
+import { AniversariantesDialog } from "@/components/AniversariantesDialog";
 
 type ClienteFormData = z.infer<typeof clienteSchema>;
 
@@ -26,6 +27,7 @@ const Clientes = () => {
   const [manualCode, setManualCode] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [clienteToDelete, setClienteToDelete] = useState<string | null>(null);
+  const [aniversariantesDialogOpen, setAniversariantesDialogOpen] = useState(false);
   
   const form = useForm<ClienteFormData>({
     resolver: zodResolver(clienteSchema),
@@ -202,6 +204,14 @@ const Clientes = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            className="gap-2 bg-gradient-to-br from-background to-primary/5 border-primary/20 hover:border-primary/40" 
+            onClick={() => setAniversariantesDialogOpen(true)}
+          >
+            <Cake className="h-4 w-4" />
+            Mensagens de Aniversário
+          </Button>
           <Button 
             variant="outline" 
             className="gap-2" 
@@ -578,6 +588,12 @@ const Clientes = () => {
         onConfirm={confirmDelete}
         title="Confirmar exclusão de cliente"
         description="Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita."
+      />
+
+      <AniversariantesDialog
+        open={aniversariantesDialogOpen}
+        onOpenChange={setAniversariantesDialogOpen}
+        clientes={clientes}
       />
     </div>
   );

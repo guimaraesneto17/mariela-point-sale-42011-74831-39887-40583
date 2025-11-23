@@ -383,31 +383,47 @@ const Estoque = () => {
               </Select>
             </div>
 
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground mb-2 block">Filtrar por Cor</Label>
+            <div className="relative overflow-hidden">
+              <Label className="text-sm font-bold text-primary mb-2 block uppercase tracking-wide flex items-center gap-2">
+                <div className="h-3 w-3 rounded-full bg-gradient-to-r from-primary to-accent animate-pulse-glow"></div>
+                Filtrar por Cor
+              </Label>
               <Select value={filterCor} onValueChange={setFilterCor}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-gradient-to-br from-background to-primary/5 border-2 border-primary/20 hover:border-primary/40 transition-all shadow-sm hover:shadow-md">
                   <SelectValue placeholder="Todas as cores" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas as cores</SelectItem>
+                <SelectContent className="bg-gradient-to-br from-background to-primary/5">
+                  <SelectItem value="todas" className="font-semibold">🎨 Todas as cores</SelectItem>
                   {getAllCores().map((cor) => (
-                    <SelectItem key={cor} value={cor}>{cor}</SelectItem>
+                    <SelectItem key={cor} value={cor} className="hover:bg-primary/10">
+                      <span className="flex items-center gap-2">
+                        <span className="h-3 w-3 rounded-full bg-gradient-to-r from-primary to-accent"></span>
+                        {cor}
+                      </span>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground mb-2 block">Filtrar por Tamanho</Label>
+            <div className="relative overflow-hidden">
+              <Label className="text-sm font-bold text-accent mb-2 block uppercase tracking-wide flex items-center gap-2">
+                <div className="h-3 w-3 rounded-full bg-gradient-to-r from-accent to-primary animate-pulse-glow"></div>
+                Filtrar por Tamanho
+              </Label>
               <Select value={filterTamanho} onValueChange={setFilterTamanho}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-gradient-to-br from-background to-accent/5 border-2 border-accent/20 hover:border-accent/40 transition-all shadow-sm hover:shadow-md">
                   <SelectValue placeholder="Todos os tamanhos" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os tamanhos</SelectItem>
+                <SelectContent className="bg-gradient-to-br from-background to-accent/5">
+                  <SelectItem value="todos" className="font-semibold">📏 Todos os tamanhos</SelectItem>
                   {getAllTamanhos().map((tamanho) => (
-                    <SelectItem key={tamanho} value={tamanho}>{tamanho}</SelectItem>
+                    <SelectItem key={tamanho} value={tamanho} className="hover:bg-accent/10">
+                      <span className="flex items-center gap-2">
+                        <span className="h-3 w-3 rounded-full bg-gradient-to-r from-accent to-primary"></span>
+                        {tamanho}
+                      </span>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -614,46 +630,60 @@ const Estoque = () => {
                     </div>
                   </div>
 
-                  {/* Seleção de cores */}
+                  {/* Seleção de cores com gradiente moderno */}
                   <div>
-                    <Label className="text-[10px] font-semibold text-muted-foreground mb-1.5 block uppercase">Cores</Label>
-                    <div className="flex flex-wrap gap-1">
+                    <Label className="text-[10px] font-bold text-primary mb-2 block uppercase tracking-wider">Cores Disponíveis</Label>
+                    <div className="flex flex-wrap gap-1.5">
                       {coresDisponiveis.slice(0, 4).map((cor: string) => (
-                        <Badge
+                        <button
                           key={cor}
-                          variant={selectedCor === cor ? "default" : "outline"}
-                          className="text-[10px] px-1.5 py-0.5 cursor-pointer h-5"
                           onClick={() => handleColorChange(item.codigoProduto, cor, item)}
+                          className={`relative px-3 py-1.5 text-[10px] font-bold rounded-full transition-all duration-300 ${
+                            selectedCor === cor 
+                              ? 'bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] animate-pulse-glow text-primary-foreground shadow-lg scale-105' 
+                              : 'bg-gradient-to-br from-muted to-muted/50 text-muted-foreground hover:from-primary/10 hover:to-accent/10 hover:text-primary hover:scale-105 border border-border'
+                          }`}
                         >
                           {cor}
-                        </Badge>
+                          {selectedCor === cor && (
+                            <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-green-500 rounded-full animate-bounce-soft shadow-md"></span>
+                          )}
+                        </button>
                       ))}
                       {coresDisponiveis.length > 4 && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 h-5">
+                        <button className="px-3 py-1.5 text-[10px] font-bold rounded-full bg-gradient-to-br from-secondary to-secondary/70 text-secondary-foreground border border-border">
                           +{coresDisponiveis.length - 4}
-                        </Badge>
+                        </button>
                       )}
                     </div>
                   </div>
 
-                  {/* Seleção de tamanhos */}
+                  {/* Seleção de tamanhos com gradiente moderno */}
                   {tamanhosDisponiveis.length > 0 && (
                     <div>
-                      <Label className="text-[10px] font-semibold text-muted-foreground mb-1.5 block uppercase">Tamanhos</Label>
-                      <div className="flex flex-wrap gap-1">
+                      <Label className="text-[10px] font-bold text-accent mb-2 block uppercase tracking-wider">Tamanhos Disponíveis</Label>
+                      <div className="flex flex-wrap gap-1.5">
                         {tamanhosDisponiveis.map((tamanho: any) => {
                           const tamanhoStr = typeof tamanho === 'string' ? tamanho : tamanho.tamanho;
                           const qtd = typeof tamanho === 'object' ? tamanho.quantidade : 0;
                           return (
-                            <Badge
+                            <button
                               key={tamanhoStr}
-                              variant={selectedTamanho === tamanhoStr ? "default" : "outline"}
-                              className="text-[10px] px-1.5 py-0.5 cursor-pointer h-5 gap-0.5"
                               onClick={() => handleSizeChange(item.codigoProduto, tamanhoStr)}
+                              className={`relative px-3 py-1.5 text-[10px] font-bold rounded-full transition-all duration-300 ${
+                                selectedTamanho === tamanhoStr 
+                                  ? 'bg-gradient-to-r from-accent via-primary to-accent bg-[length:200%_auto] animate-pulse-glow text-accent-foreground shadow-lg scale-105' 
+                                  : 'bg-gradient-to-br from-muted to-muted/50 text-muted-foreground hover:from-accent/10 hover:to-primary/10 hover:text-accent hover:scale-105 border border-border'
+                              }`}
                             >
-                              {tamanhoStr}
-                              {qtd > 0 && <span className="opacity-70">({qtd})</span>}
-                            </Badge>
+                              <span className="flex items-center gap-1">
+                                {tamanhoStr}
+                                {qtd > 0 && <span className="text-[8px] opacity-80">({qtd})</span>}
+                              </span>
+                              {selectedTamanho === tamanhoStr && (
+                                <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-blue-500 rounded-full animate-bounce-soft shadow-md"></span>
+                              )}
+                            </button>
                           );
                         })}
                       </div>

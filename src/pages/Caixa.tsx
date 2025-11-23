@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { FecharCaixaDialog } from "@/components/FecharCaixaDialog";
 
 interface Movimento {
   tipo: 'entrada' | 'saida';
@@ -685,13 +686,12 @@ const Caixa = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Alert Dialog - Confirmar Fechamento de Caixa */}
-      <AlertDeleteDialog
+      {/* Dialog - Confirmar Fechamento de Caixa com Resumo */}
+      <FecharCaixaDialog
         open={fecharCaixaDialog}
         onOpenChange={setFecharCaixaDialog}
         onConfirm={handleFecharCaixa}
-        title="Confirmar Fechamento de Caixa"
-        description="Tem certeza que deseja fechar o caixa? Esta ação não pode ser desfeita. Certifique-se de que todas as movimentações foram registradas corretamente."
+        caixa={caixaAberto}
       />
 
       {/* Alert Dialog - Confirmar Exclusão de Movimentação */}

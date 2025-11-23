@@ -133,6 +133,13 @@ export default {
         "gradient-primary": "var(--gradient-primary)",
         "gradient-card": "var(--gradient-card)",
         "gradient-accent": "var(--gradient-accent)",
+        "gradient-button": "var(--gradient-button)",
+        "gradient-button-hover": "var(--gradient-button-hover)",
+      },
+      boxShadow: {
+        'elegant': 'var(--shadow-elegant)',
+        'card': 'var(--shadow-card)',
+        'glow': 'var(--shadow-glow)',
       },
     },
   },
