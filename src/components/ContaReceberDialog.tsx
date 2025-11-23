@@ -184,7 +184,6 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
       const payload: any = {
         descricao: data.descricao.trim(),
         categoria: data.categoria,
-        valor: parseFloat(data.valor),
         dataEmissao: new Date(),
         dataVencimento: new Date(data.dataVencimento),
         tipoCriacao: data.tipoCriacao,
@@ -198,11 +197,21 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
         payload.observacoes = data.observacoes.trim();
       }
 
+      // Adicionar campos específicos por tipo
       if (data.tipoCriacao === "Parcelamento") {
+        payload.valorTotal = parseFloat(data.valor);
         payload.quantidadeParcelas = parseInt(data.quantidadeParcelas || "2");
+        payload.dataInicio = new Date(data.dataVencimento);
       } else if (data.tipoCriacao === "Replica") {
+        payload.valor = parseFloat(data.valor);
         payload.quantidadeReplicas = parseInt(data.quantidadeReplicas || "2");
+        payload.dataInicio = new Date(data.dataVencimento);
+      } else {
+        // Unica
+        payload.valor = parseFloat(data.valor);
       }
+
+      console.log('📤 Payload enviado:', payload);
 
       if (conta) {
         await contasReceberAPI.update(conta.numeroDocumento, payload);
