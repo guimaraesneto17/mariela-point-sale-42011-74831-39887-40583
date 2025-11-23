@@ -186,6 +186,21 @@ const Vendas = () => {
                       <div className="flex items-center gap-2 flex-1">
                         <span className="font-medium">{item.nome || item.nomeProduto}</span>
                         <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">x{item.quantidade || 1}</span>
+                        {/* Exibir cor e tamanho */}
+                        {(item.cor || item.tamanho) && (
+                          <div className="flex items-center gap-1">
+                            {item.cor && (
+                              <Badge variant="outline" className="text-xs">
+                                {item.cor}
+                              </Badge>
+                            )}
+                            {item.tamanho && (
+                              <Badge variant="outline" className="text-xs">
+                                {item.tamanho}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
                         {temPromocao && (
                           <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-md">
                             <Tag className="h-3 w-3" />

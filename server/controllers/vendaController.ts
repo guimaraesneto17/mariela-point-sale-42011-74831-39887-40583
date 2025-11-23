@@ -75,32 +75,63 @@ export const createVenda = async (req: Request, res: Response) => {
     // Processar baixa no estoque para cada item da venda
     for (const item of venda.itens) {
       try {
-        // Buscar estoque pela combinação de produto, cor e tamanho
+        // Buscar estoque pelo código do produto
         const estoque = await Estoque.findOne({ 
           codigoProduto: item.codigoProduto
         });
         
         if (estoque && estoque.variantes && estoque.variantes.length > 0) {
-          // Buscar a variante específica (cor e tamanho)
+          // Buscar a variante específica pela cor
           const varianteIndex = estoque.variantes.findIndex(
-            (v: any) => v.cor === item.cor && v.tamanho === item.tamanho
+            (v: any) => v.cor === item.cor
           );
           
           if (varianteIndex !== -1) {
             const variante = estoque.variantes[varianteIndex];
             
-            // Verificar se há quantidade suficiente na variante
-            if (variante.quantidade < item.quantidade) {
-              return res.status(400).json({
-                error: 'Quantidade insuficiente no estoque',
-                message: `Produto ${item.nomeProduto} (${item.cor} - ${item.tamanho}) possui apenas ${variante.quantidade} unidades disponíveis`,
-                produto: item.codigoProduto,
-                variante: { cor: item.cor, tamanho: item.tamanho }
-              });
+            // Verificar se a variante tem array de tamanhos
+            if (Array.isArray(variante.tamanhos) && variante.tamanhos.length > 0) {
+              // Nova estrutura: array de objetos {tamanho, quantidade}
+              if (typeof variante.tamanhos[0] === 'object' && variante.tamanhos[0].tamanho) {
+                const tamanhoIndex = variante.tamanhos.findIndex((t: any) => String(t.tamanho) === String(item.tamanho));
+                
+                if (tamanhoIndex !== -1) {
+                  const tamanhoObj = variante.tamanhos[tamanhoIndex];
+                  
+                  // Verificar quantidade suficiente
+                  if (tamanhoObj.quantidade < item.quantidade) {
+                    return res.status(400).json({
+                      error: 'Quantidade insuficiente no estoque',
+                      message: `Produto ${item.nomeProduto} (${item.cor} - ${item.tamanho}) possui apenas ${tamanhoObj.quantidade} unidades disponíveis`,
+                      produto: item.codigoProduto,
+                      variante: { cor: item.cor, tamanho: item.tamanho }
+                    });
+                  }
+                  
+                  // Dar baixa no tamanho específico
+                  estoque.variantes[varianteIndex].tamanhos[tamanhoIndex].quantidade -= item.quantidade;
+                  
+                  // Atualizar quantidade total da variante (cor)
+                  estoque.variantes[varianteIndex].quantidade = variante.tamanhos.reduce(
+                    (total: number, t: any) => total + (t.quantidade || 0),
+                    0
+                  );
+                }
+              }
+            } else if (variante.tamanho === item.tamanho) {
+              // Estrutura antiga: tamanho direto na variante
+              if (variante.quantidade < item.quantidade) {
+                return res.status(400).json({
+                  error: 'Quantidade insuficiente no estoque',
+                  message: `Produto ${item.nomeProduto} (${item.cor} - ${item.tamanho}) possui apenas ${variante.quantidade} unidades disponíveis`,
+                  produto: item.codigoProduto,
+                  variante: { cor: item.cor, tamanho: item.tamanho }
+                });
+              }
+              
+              // Dar baixa na variante
+              estoque.variantes[varianteIndex].quantidade -= item.quantidade;
             }
-            
-            // Dar baixa na variante específica
-            estoque.variantes[varianteIndex].quantidade -= item.quantidade;
             
             // Atualizar quantidade total do estoque
             estoque.quantidade = estoque.variantes.reduce(
@@ -120,7 +151,7 @@ export const createVenda = async (req: Request, res: Response) => {
             
             await estoque.save();
           } else {
-            console.warn(`Variante não encontrada: ${item.codigoProduto} - ${item.cor} - ${item.tamanho}`);
+            console.warn(`Variante cor não encontrada: ${item.codigoProduto} - ${item.cor}`);
           }
         }
       } catch (estoqueError) {

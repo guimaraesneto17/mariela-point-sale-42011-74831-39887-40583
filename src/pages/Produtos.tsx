@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, Plus, CheckCircle2, AlertCircle, Package, Edit, Trash2, X, PackagePlus, Building } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { produtoSchema } from "@/lib/validationSchemas";
 import { z } from "zod";
-import { produtosAPI, fornecedoresAPI } from "@/lib/api";
+import { produtosAPI, fornecedoresAPI, estoqueAPI } from "@/lib/api";
 import { AddToStockDialog } from "@/components/AddToStockDialog";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import { CurrencyInput } from "@/components/ui/currency-input";
@@ -22,6 +23,7 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 type ProdutoFormData = z.infer<typeof produtoSchema>;
 
 const Produtos = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -48,11 +50,13 @@ const Produtos = () => {
 
   const [produtos, setProdutos] = useState<any[]>([]);
   const [fornecedores, setFornecedores] = useState<any[]>([]);
+  const [estoque, setEstoque] = useState<any[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
   useEffect(() => {
     loadProdutos();
     loadFornecedores();
+    loadEstoque();
   }, []);
 
   const loadProdutos = async () => {
@@ -75,6 +79,15 @@ const Produtos = () => {
       setFornecedores(data);
     } catch (error) {
       console.error("Erro ao carregar fornecedores", error);
+    }
+  };
+
+  const loadEstoque = async () => {
+    try {
+      const data = await estoqueAPI.getAll();
+      setEstoque(data);
+    } catch (error) {
+      console.error("Erro ao carregar estoque", error);
     }
   };
 
@@ -649,6 +662,25 @@ const Produtos = () => {
                   <PackagePlus className="h-4 w-4" />
                   Adicionar ao Estoque
                 </Button>
+                {/* Botão para ver no estoque - só aparece se tem estoque */}
+                {(() => {
+                  const estoqueItem = estoque.find((e: any) => e.codigoProduto === produto.codigoProduto);
+                  const quantidadeTotal = estoqueItem?.quantidade || 0;
+                  if (quantidadeTotal > 0) {
+                    return (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="flex-1 gap-2"
+                        onClick={() => navigate(`/estoque?produto=${produto.codigoProduto}`)}
+                      >
+                        <Package className="h-4 w-4" />
+                        Ver no Estoque
+                      </Button>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             </CardContent>
           </Card>

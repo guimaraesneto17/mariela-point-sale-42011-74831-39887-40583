@@ -13,6 +13,7 @@ import { SelectProductDialog } from "@/components/SelectProductDialog";
 import { SelectClientDialog } from "@/components/SelectClientDialog";
 import { SelectVendedorDialog } from "@/components/SelectVendedorDialog";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
+import { ConfirmacaoVendaDialog } from "@/components/ConfirmacaoVendaDialog";
 import { clientesAPI, vendedoresAPI, estoqueAPI, vendasAPI } from "@/lib/api";
 import { formatInTimeZone } from "date-fns-tz";
 import { startOfDay, endOfDay } from "date-fns";
@@ -40,6 +41,7 @@ const NovaVenda = () => {
   const [showClientDialog, setShowClientDialog] = useState(false);
   const [showVendedorDialog, setShowVendedorDialog] = useState(false);
   const [showProductDialog, setShowProductDialog] = useState(false);
+  const [showConfirmacaoDialog, setShowConfirmacaoDialog] = useState(false);
   
   // Estados
   const [clienteSelecionado, setClienteSelecionado] = useState<{ codigo: string; nome: string } | null>(null);
@@ -414,7 +416,7 @@ const NovaVenda = () => {
     }
   };
 
-  const handleFinalizarVenda = async () => {
+  const handleIniciarFinalizacao = () => {
     if (!clienteSelecionado) {
       toast.error("Selecione um cliente!");
       return;
@@ -431,6 +433,12 @@ const NovaVenda = () => {
       toast.error("Selecione a forma de pagamento!");
       return;
     }
+
+    // Abrir dialog de confirmação
+    setShowConfirmacaoDialog(true);
+  };
+
+  const handleFinalizarVenda = async () => {
 
     // Validação de estoque em tempo real antes de finalizar
     try {
@@ -1042,7 +1050,7 @@ const NovaVenda = () => {
               </div>
 
               <Button
-                onClick={handleFinalizarVenda} 
+                onClick={handleIniciarFinalizacao} 
                 className="w-full h-12 text-lg gap-2"
                 disabled={itensVenda.length === 0 || !clienteSelecionado || !vendedorSelecionado}
               >
@@ -1085,6 +1093,23 @@ const NovaVenda = () => {
         title="Remover item da venda?"
         description="Este item será removido da venda. Esta ação não pode ser desfeita."
         itemName={itemToDeleteIndex !== null ? `${itensVenda[itemToDeleteIndex]?.nomeProduto} (${itensVenda[itemToDeleteIndex]?.cor} - ${itensVenda[itemToDeleteIndex]?.tamanho})` : undefined}
+      />
+
+      <ConfirmacaoVendaDialog
+        open={showConfirmacaoDialog}
+        onOpenChange={setShowConfirmacaoDialog}
+        onConfirm={handleFinalizarVenda}
+        clienteSelecionado={clienteSelecionado}
+        vendedorSelecionado={vendedorSelecionado}
+        formaPagamento={formaPagamento}
+        itensVenda={itensVenda}
+        subtotalItens={subtotalItens}
+        valorDescontoTotal={valorDescontoTotal}
+        totalFinal={totalFinal}
+        taxaMaquininha={taxaMaquininha}
+        valorTaxaMaquininha={valorTaxaMaquininha}
+        valorRecebidoLojista={valorRecebidoLojista}
+        parcelas={parcelas}
       />
     </div>
   );

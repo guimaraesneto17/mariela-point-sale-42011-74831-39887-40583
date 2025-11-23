@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History, Image as ImageIcon, ChevronDown, Star, X, ArrowUpDown, Package2, Grid3X3, Bell } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +28,7 @@ import { GlobalLoading } from "@/components/GlobalLoading";
 import { EstoqueAnalyticsCard } from "@/components/EstoqueAnalyticsCard";
 
 const Estoque = () => {
+  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [showEntryDialog, setShowEntryDialog] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
@@ -72,7 +74,14 @@ const Estoque = () => {
 
   useEffect(() => {
     loadEstoque();
-  }, []);
+    
+    // Verificar se tem filtro de produto na URL
+    const params = new URLSearchParams(location.search);
+    const produtoParam = params.get('produto');
+    if (produtoParam) {
+      setSearchTerm(produtoParam);
+    }
+  }, [location.search]);
 
   const loadEstoque = async () => {
     try {
