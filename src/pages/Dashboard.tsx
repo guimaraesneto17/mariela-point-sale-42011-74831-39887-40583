@@ -27,7 +27,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card } from "@/components/ui/card";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { clientesAPI, vendasAPI, produtosAPI, estoqueAPI, vendedoresAPI, caixaAPI } from "@/lib/api";
+import { addDays } from "date-fns";
+import { clientesAPI, vendasAPI, produtosAPI, estoqueAPI, vendedoresAPI, caixaAPI, contasPagarAPI, contasReceberAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { formatDateTime, safeDate } from "@/lib/utils";
 import { ComparacaoPeriodoDialog } from "@/components/ComparacaoPeriodoDialog";
@@ -52,6 +53,8 @@ const Dashboard = () => {
     crescimentoMensal: 0,
     valorEstoqueCusto: 0,
     valorEstoqueVenda: 0,
+    contasAVencer7Dias: 0,
+    contasAReceber7Dias: 0,
   });
   const [statsPeriodoAnterior, setStatsPeriodoAnterior] = useState<any>(null);
   
@@ -65,6 +68,8 @@ const Dashboard = () => {
     { id: "valor-estoque-venda", label: "Valor Estoque (Venda)", category: "Estoque", visible: true },
     { id: "margem-lucro", label: "Margem de Lucro Real", category: "Financeiro", visible: true },
     { id: "crescimento-mensal", label: "Crescimento Mensal", category: "Financeiro", visible: true },
+    { id: "contas-vencer-7dias", label: "Contas a Vencer (7 dias)", category: "Financeiro", visible: true },
+    { id: "contas-receber-7dias", label: "Contas a Receber (7 dias)", category: "Financeiro", visible: true },
   ];
   
   const [widgetConfig, setWidgetConfig] = useState<WidgetConfig[]>(() => {
@@ -95,12 +100,14 @@ const Dashboard = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const [vendasAll, clientes, produtos, estoque, vendedores] = await Promise.all([
+      const [vendasAll, clientes, produtos, estoque, vendedores, contasPagar, contasReceber] = await Promise.all([
         vendasAPI.getAll(),
         clientesAPI.getAll(),
         produtosAPI.getAll(),
         estoqueAPI.getAll(),
         vendedoresAPI.getAll(),
+        contasPagarAPI.getAll(),
+        contasReceberAPI.getAll(),
       ]);
 
       // Filtrar vendas por período se datas foram selecionadas
@@ -257,6 +264,25 @@ const Dashboard = () => {
       const vendasPorMesArray = Object.values(vendasPorMesMap).slice(-6); // últimos 6 meses
       setVendasPorMes(vendasPorMesArray);
 
+      // Calcular contas a vencer e a receber nos próximos 7 dias
+      const dataHoje = new Date();
+      const daquiA7Dias = addDays(dataHoje, 7);
+      
+      const contasAVencer = contasPagar.filter((conta: any) => {
+        if (conta.status === 'pago') return false;
+        const dataVencimento = new Date(conta.dataVencimento);
+        return dataVencimento >= dataHoje && dataVencimento <= daquiA7Dias;
+      });
+      
+      const contasAReceber = contasReceber.filter((conta: any) => {
+        if (conta.status === 'recebido') return false;
+        const dataVencimento = new Date(conta.dataVencimento);
+        return dataVencimento >= dataHoje && dataVencimento <= daquiA7Dias;
+      });
+
+      const valorContasAVencer = contasAVencer.reduce((acc: number, c: any) => acc + (c.valor || 0), 0);
+      const valorContasAReceber = contasAReceber.reduce((acc: number, c: any) => acc + (c.valor || 0), 0);
+
       // Calcular estatísticas do período anterior
       const faturamentoPeriodoAnterior = vendasPeriodoAnterior.reduce((acc: number, v: any) => acc + (v.total || 0), 0);
       const ticketMedioPeriodoAnterior = vendasPeriodoAnterior.length > 0 
@@ -284,6 +310,8 @@ const Dashboard = () => {
         crescimentoMensal,
         valorEstoqueCusto,
         valorEstoqueVenda,
+        contasAVencer7Dias: valorContasAVencer,
+        contasAReceber7Dias: valorContasAReceber,
       });
 
       // Calcular top produtos baseado nas vendas reais
@@ -505,6 +533,28 @@ const Dashboard = () => {
           icon={<ArrowUpDown className="h-5 w-5 text-accent" />}
           iconBgColor="bg-accent/10"
           valueColor={stats.crescimentoMensal >= 0 ? "text-green-600" : "text-red-600"}
+        />
+      ),
+      "contas-vencer-7dias": (
+        <DashboardWidgetCard
+          id={widget.id}
+          title="Contas a Vencer"
+          subtitle="Próximos 7 dias"
+          value={`R$ ${stats.contasAVencer7Dias.toFixed(2)}`}
+          icon={<TrendingDown className="h-5 w-5 text-red-600" />}
+          iconBgColor="bg-red-500/10"
+          valueColor="text-red-600"
+        />
+      ),
+      "contas-receber-7dias": (
+        <DashboardWidgetCard
+          id={widget.id}
+          title="Contas a Receber"
+          subtitle="Próximos 7 dias"
+          value={`R$ ${stats.contasAReceber7Dias.toFixed(2)}`}
+          icon={<TrendingUp className="h-5 w-5 text-green-600" />}
+          iconBgColor="bg-green-500/10"
+          valueColor="text-green-600"
         />
       ),
     };

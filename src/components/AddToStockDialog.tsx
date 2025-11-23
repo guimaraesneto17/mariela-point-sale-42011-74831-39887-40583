@@ -37,6 +37,7 @@ export function AddToStockDialog({
   const [loading, setLoading] = useState(false);
   const [variantes, setVariantes] = useState<Variante[]>([]);
   const [novaCor, setNovaCor] = useState("");
+  const [novoTamanho, setNovoTamanho] = useState("");
   const [varianteSelecionada, setVarianteSelecionada] = useState<number | null>(null);
   const [imagemURL, setImagemURL] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -59,6 +60,17 @@ export function AddToStockDialog({
     if (savedCores) setCoresDisponiveis(JSON.parse(savedCores));
     if (savedTamanhos) setTamanhosDisponiveis(JSON.parse(savedTamanhos));
   }, []);
+
+  // Resetar ao fechar o dialog
+  useEffect(() => {
+    if (!open) {
+      setVariantes([]);
+      setNovaCor("");
+      setNovoTamanho("");
+      setVarianteSelecionada(null);
+      setImagemURL("");
+    }
+  }, [open]);
 
   const adicionarCor = () => {
     if (!novaCor.trim()) {
@@ -91,6 +103,36 @@ export function AddToStockDialog({
     if (varianteSelecionada === index) {
       setVarianteSelecionada(null);
     }
+  };
+
+  const adicionarTamanho = () => {
+    if (!novoTamanho.trim()) {
+      toast.error("Digite um tamanho");
+      return;
+    }
+
+    // Adicionar tamanho às opções se não existir
+    if (!tamanhosDisponiveis.includes(novoTamanho)) {
+      const updated = [...tamanhosDisponiveis, novoTamanho];
+      setTamanhosDisponiveis(updated);
+      localStorage.setItem('mariela-tamanhos-options', JSON.stringify(updated));
+      toast.success(`Tamanho "${novoTamanho}" adicionado às opções!`);
+    }
+    setNovoTamanho("");
+  };
+
+  const removerOpcaoTamanho = (tamanho: string) => {
+    const updated = tamanhosDisponiveis.filter(t => t !== tamanho);
+    setTamanhosDisponiveis(updated);
+    localStorage.setItem('mariela-tamanhos-options', JSON.stringify(updated));
+    toast.success(`Tamanho "${tamanho}" removido das opções`);
+  };
+
+  const removerOpcaoCor = (cor: string) => {
+    const updated = coresDisponiveis.filter(c => c !== cor);
+    setCoresDisponiveis(updated);
+    localStorage.setItem('mariela-cores-options', JSON.stringify(updated));
+    toast.success(`Cor "${cor}" removida das opções`);
   };
 
   const adicionarTamanhoRapido = (varianteIndex: number, tamanho: string) => {
@@ -281,19 +323,31 @@ export function AddToStockDialog({
                 </Button>
               </div>
 
-              {/* Cores sugeridas */}
+              {/* Cores sugeridas com opção de excluir */}
               <div className="flex flex-wrap gap-2">
                 {coresDisponiveis.map((cor) => (
                   <Badge
                     key={cor}
                     variant="outline"
-                    className="cursor-pointer hover:bg-primary hover:text-primary-foreground"
+                    className="cursor-pointer hover:bg-primary hover:text-primary-foreground group relative pr-6"
                     onClick={() => {
                       setNovaCor(cor);
                       adicionarCor();
                     }}
                   >
                     {cor}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Deseja excluir a cor "${cor}" das opções?`)) {
+                          removerOpcaoCor(cor);
+                        }
+                      }}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-3 w-3 text-destructive hover:text-destructive/80" />
+                    </button>
                   </Badge>
                 ))}
               </div>
@@ -378,7 +432,23 @@ export function AddToStockDialog({
                     2. Editando: {variantes[varianteSelecionada].cor}
                   </Label>
 
-                  {/* Tamanhos com quantidade */}
+                  {/* Campo para adicionar tamanho personalizado */}
+                  <div className="space-y-3 mb-4">
+                    <Label className="text-sm font-semibold">Adicionar Tamanho Personalizado</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Ex: 44, GG, XL"
+                        value={novoTamanho}
+                        onChange={(e) => setNovoTamanho(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && adicionarTamanho()}
+                      />
+                      <Button onClick={adicionarTamanho} className="shrink-0">
+                        <Plus className="h-4 w-4 mr-1" /> Adicionar
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Tamanhos com quantidade e opção de excluir */}
                   <div className="space-y-3">
                     <Label className="text-sm">Selecione os Tamanhos e Quantidades</Label>
                     
@@ -388,7 +458,7 @@ export function AddToStockDialog({
                         const isSelected = !!tamanhoObj;
                         
                         return (
-                          <div key={tam} className="space-y-1">
+                          <div key={tam} className="space-y-1 relative group">
                             <Button
                               type="button"
                               variant={isSelected ? "default" : "outline"}
@@ -398,6 +468,18 @@ export function AddToStockDialog({
                             >
                               {tam}
                             </Button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm(`Deseja excluir o tamanho "${tam}" das opções?`)) {
+                                  removerOpcaoTamanho(tam);
+                                }
+                              }}
+                              className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
                             {isSelected && (
                               <Input
                                 type="number"

@@ -60,6 +60,22 @@ export function AddMultipleVariantsDialog({
     }
   }, [open, produtoInicial]);
 
+  // Resetar ao fechar o dialog
+  useEffect(() => {
+    if (!open) {
+      setVariantes([]);
+      setNovaCor("");
+      setNovoTamanho("");
+      setNovaQuantidadeTamanho(1);
+      setVarianteSelecionada(null);
+      setImagemURL("");
+      if (!produtoInicial) {
+        setProdutoSelecionado(null);
+        setEtapa('selecao-produto');
+      }
+    }
+  }, [open, produtoInicial]);
+
   const loadProdutos = async () => {
     try {
       setLoadingProdutos(true);
@@ -388,19 +404,34 @@ export function AddMultipleVariantsDialog({
                 </Button>
               </div>
 
-              {/* Cores sugeridas */}
+              {/* Cores sugeridas com opção de excluir */}
               <div className="flex flex-wrap gap-2">
                 {coresDisponiveis.map((cor) => (
                   <Badge
                     key={cor}
                     variant="outline"
-                    className="cursor-pointer hover:bg-primary hover:text-primary-foreground"
+                    className="cursor-pointer hover:bg-primary hover:text-primary-foreground group relative pr-6"
                     onClick={() => {
                       setNovaCor(cor);
                       adicionarCor();
                     }}
                   >
                     {cor}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Deseja excluir a cor "${cor}" das opções?`)) {
+                          const updated = coresDisponiveis.filter(c => c !== cor);
+                          setCoresDisponiveis(updated);
+                          localStorage.setItem('mariela-cores-options', JSON.stringify(updated));
+                          toast.success(`Cor "${cor}" removida das opções`);
+                        }
+                      }}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-3 w-3 text-destructive hover:text-destructive/80" />
+                    </button>
                   </Badge>
                 ))}
               </div>
@@ -520,8 +551,41 @@ export function AddMultipleVariantsDialog({
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground mb-2">
-                    Ou clique nos tamanhos abaixo (qtd padrão = 1):
+                    Ou clique nos tamanhos abaixo (qtd padrão = 1). Passe o mouse para excluir:
                   </p>
+
+                  {/* Tamanhos disponíveis com opção de excluir */}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {tamanhosDisponiveis.map((tam) => (
+                      <div key={tam} className="relative group">
+                        <Badge
+                          variant={variantes[varianteSelecionada].tamanhos.find(t => t.tamanho === tam) ? "default" : "outline"}
+                          className="text-xs cursor-pointer pr-6"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            adicionarTamanhoRapido(varianteSelecionada, tam);
+                          }}
+                        >
+                          {tam}
+                        </Badge>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm(`Deseja excluir o tamanho "${tam}" das opções?`)) {
+                              const updated = tamanhosDisponiveis.filter(t => t !== tam);
+                              setTamanhosDisponiveis(updated);
+                              localStorage.setItem('mariela-tamanhos-options', JSON.stringify(updated));
+                              toast.success(`Tamanho "${tam}" removido das opções`);
+                            }
+                          }}
+                          className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Upload de Imagens */}

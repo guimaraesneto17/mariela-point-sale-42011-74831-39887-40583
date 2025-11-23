@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Send, Users, Cake, MessageCircle, CheckCircle2, Clock } from "lucide-react";
+import { Calendar, Send, Users, Cake, MessageCircle, CheckCircle2, Clock, Calendar as CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { format, isSameDay, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -32,7 +32,7 @@ export function AniversariantesDialog({ open, onOpenChange, clientes }: Aniversa
     "🎉 Feliz Aniversário! 🎂\n\nA Mariela PDV deseja um dia maravilhoso repleto de alegrias e conquistas! ✨\n\nComo presente especial, você ganhou 10% de desconto na sua próxima compra! 🎁\n\nVenha nos visitar! 💜"
   );
   const [clientesSelecionados, setClientesSelecionados] = useState<Set<string>>(new Set());
-  const [agendamento, setAgendamento] = useState<'hoje' | 'amanha' | 'semana'>('hoje');
+  const [agendamento, setAgendamento] = useState<'hoje' | 'amanha' | 'semana' | 'mes'>('hoje');
   const [enviando, setEnviando] = useState(false);
 
   // Filtrar aniversariantes com base no agendamento
@@ -40,6 +40,7 @@ export function AniversariantesDialog({ open, onOpenChange, clientes }: Aniversa
     const hoje = new Date();
     const amanha = addDays(hoje, 1);
     const fimSemana = addDays(hoje, 7);
+    const fimMes = addDays(hoje, 30);
 
     return clientes.filter((cliente) => {
       if (!cliente.dataNascimento || !cliente.telefone) return false;
@@ -57,8 +58,10 @@ export function AniversariantesDialog({ open, onOpenChange, clientes }: Aniversa
         return isSameDay(dataAtual, hoje);
       } else if (agendamento === 'amanha') {
         return isSameDay(dataAtual, amanha);
-      } else {
+      } else if (agendamento === 'semana') {
         return dataAtual >= hoje && dataAtual <= fimSemana;
+      } else {
+        return dataAtual >= hoje && dataAtual <= fimMes;
       }
     });
   };
@@ -164,11 +167,11 @@ export function AniversariantesDialog({ open, onOpenChange, clientes }: Aniversa
 
         <div className="flex-1 overflow-hidden flex flex-col gap-4 py-4">
           {/* Seletor de período */}
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <Button
               variant={agendamento === 'hoje' ? 'default' : 'outline'}
               onClick={() => setAgendamento('hoje')}
-              className="flex-1 gap-2"
+              className="gap-2"
             >
               <Calendar className="h-4 w-4" />
               Hoje ({clientes.filter(c => {
@@ -181,7 +184,7 @@ export function AniversariantesDialog({ open, onOpenChange, clientes }: Aniversa
             <Button
               variant={agendamento === 'amanha' ? 'default' : 'outline'}
               onClick={() => setAgendamento('amanha')}
-              className="flex-1 gap-2"
+              className="gap-2"
             >
               <Clock className="h-4 w-4" />
               Amanhã ({clientes.filter(c => {
@@ -194,10 +197,28 @@ export function AniversariantesDialog({ open, onOpenChange, clientes }: Aniversa
             <Button
               variant={agendamento === 'semana' ? 'default' : 'outline'}
               onClick={() => setAgendamento('semana')}
-              className="flex-1 gap-2"
+              className="gap-2"
             >
               <Users className="h-4 w-4" />
-              Próximos 7 dias
+              7 dias
+            </Button>
+            <Button
+              variant={agendamento === 'mes' ? 'default' : 'outline'}
+              onClick={() => setAgendamento('mes')}
+              className="gap-2"
+            >
+              <CalendarIcon className="h-4 w-4" />
+              Mês ({clientes.filter(c => {
+                if (!c.dataNascimento) return false;
+                const dataNasc = new Date(c.dataNascimento);
+                const hoje = new Date();
+                const fimMes = addDays(hoje, 30);
+                const dataAtual = new Date();
+                dataAtual.setFullYear(hoje.getFullYear());
+                dataAtual.setMonth(dataNasc.getMonth());
+                dataAtual.setDate(dataNasc.getDate());
+                return dataAtual >= hoje && dataAtual <= fimMes;
+              }).length})
             </Button>
           </div>
 

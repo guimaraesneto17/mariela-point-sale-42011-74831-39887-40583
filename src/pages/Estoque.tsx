@@ -630,39 +630,47 @@ const Estoque = () => {
                     </div>
                   </div>
 
-                  {/* Seleção de cores com gradiente moderno */}
+                  {/* Seleção de cores com gradiente moderno - UX Melhorada */}
                   <div>
-                    <Label className="text-[10px] font-bold text-primary mb-2 block uppercase tracking-wider">Cores Disponíveis</Label>
-                    <div className="flex flex-wrap gap-1.5">
+                    <Label className="text-xs font-bold text-primary mb-3 block uppercase tracking-wider flex items-center gap-2">
+                      <div className="h-3 w-3 rounded-full bg-primary animate-pulse"></div>
+                      Cores Disponíveis
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
                       {coresDisponiveis.slice(0, 4).map((cor: string) => (
                         <button
                           key={cor}
                           onClick={() => handleColorChange(item.codigoProduto, cor, item)}
-                          className={`relative px-3 py-1.5 text-[10px] font-bold rounded-full transition-all duration-300 ${
+                          className={`relative px-4 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 min-w-[70px] ${
                             selectedCor === cor 
-                              ? 'bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] animate-pulse-glow text-primary-foreground shadow-lg scale-105' 
-                              : 'bg-gradient-to-br from-muted to-muted/50 text-muted-foreground hover:from-primary/10 hover:to-accent/10 hover:text-primary hover:scale-105 border border-border'
+                              ? 'bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] animate-pulse-glow text-primary-foreground shadow-xl scale-105 border-2 border-primary' 
+                              : 'bg-gradient-to-br from-muted to-muted/50 text-foreground hover:from-primary/20 hover:to-accent/20 hover:text-primary hover:scale-105 border-2 border-border hover:border-primary/50 hover:shadow-lg'
                           }`}
                         >
                           {cor}
                           {selectedCor === cor && (
-                            <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-green-500 rounded-full animate-bounce-soft shadow-md"></span>
+                            <span className="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 bg-green-500 rounded-full animate-bounce shadow-lg flex items-center justify-center">
+                              <span className="h-2 w-2 bg-white rounded-full"></span>
+                            </span>
                           )}
                         </button>
                       ))}
                       {coresDisponiveis.length > 4 && (
-                        <button className="px-3 py-1.5 text-[10px] font-bold rounded-full bg-gradient-to-br from-secondary to-secondary/70 text-secondary-foreground border border-border">
+                        <button className="px-4 py-2.5 text-xs font-bold rounded-lg bg-gradient-to-br from-secondary to-secondary/70 text-secondary-foreground border-2 border-border hover:border-secondary hover:scale-105 transition-all">
                           +{coresDisponiveis.length - 4}
                         </button>
                       )}
                     </div>
                   </div>
 
-                  {/* Seleção de tamanhos com gradiente moderno */}
+                  {/* Seleção de tamanhos com gradiente moderno - UX Melhorada */}
                   {tamanhosDisponiveis.length > 0 && (
                     <div>
-                      <Label className="text-[10px] font-bold text-accent mb-2 block uppercase tracking-wider">Tamanhos Disponíveis</Label>
-                      <div className="flex flex-wrap gap-1.5">
+                      <Label className="text-xs font-bold text-accent mb-3 block uppercase tracking-wider flex items-center gap-2">
+                        <div className="h-3 w-3 rounded-full bg-accent animate-pulse"></div>
+                        Tamanhos Disponíveis
+                      </Label>
+                      <div className="flex flex-wrap gap-2">
                         {tamanhosDisponiveis.map((tamanho: any) => {
                           const tamanhoStr = typeof tamanho === 'string' ? tamanho : tamanho.tamanho;
                           const qtd = typeof tamanho === 'object' ? tamanho.quantidade : 0;
@@ -670,18 +678,20 @@ const Estoque = () => {
                             <button
                               key={tamanhoStr}
                               onClick={() => handleSizeChange(item.codigoProduto, tamanhoStr)}
-                              className={`relative px-3 py-1.5 text-[10px] font-bold rounded-full transition-all duration-300 ${
+                              className={`relative px-4 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 min-w-[65px] ${
                                 selectedTamanho === tamanhoStr 
-                                  ? 'bg-gradient-to-r from-accent via-primary to-accent bg-[length:200%_auto] animate-pulse-glow text-accent-foreground shadow-lg scale-105' 
-                                  : 'bg-gradient-to-br from-muted to-muted/50 text-muted-foreground hover:from-accent/10 hover:to-primary/10 hover:text-accent hover:scale-105 border border-border'
+                                  ? 'bg-gradient-to-r from-accent via-primary to-accent bg-[length:200%_auto] animate-pulse-glow text-accent-foreground shadow-xl scale-105 border-2 border-accent' 
+                                  : 'bg-gradient-to-br from-muted to-muted/50 text-foreground hover:from-accent/20 hover:to-primary/20 hover:text-accent hover:scale-105 border-2 border-border hover:border-accent/50 hover:shadow-lg'
                               }`}
                             >
-                              <span className="flex items-center gap-1">
-                                {tamanhoStr}
-                                {qtd > 0 && <span className="text-[8px] opacity-80">({qtd})</span>}
+                              <span className="flex flex-col items-center gap-0.5">
+                                <span className="font-bold">{tamanhoStr}</span>
+                                {qtd > 0 && <span className="text-[9px] opacity-80 font-normal">({qtd} un)</span>}
                               </span>
                               {selectedTamanho === tamanhoStr && (
-                                <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-blue-500 rounded-full animate-bounce-soft shadow-md"></span>
+                                <span className="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 bg-blue-500 rounded-full animate-bounce shadow-lg flex items-center justify-center">
+                                  <span className="h-2 w-2 bg-white rounded-full"></span>
+                                </span>
                               )}
                             </button>
                           );
