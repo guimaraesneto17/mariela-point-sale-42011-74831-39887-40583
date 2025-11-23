@@ -7,6 +7,8 @@ import { GlobalLoading } from "@/components/GlobalLoading";
 import { useReportsData } from "@/hooks/useReportsData";
 import { SalesReport } from "@/components/reports/SalesReport";
 import { ProductsReport } from "@/components/reports/ProductsReport";
+import { ClientsReport } from "@/components/reports/ClientsReport";
+import { FinancialReport } from "@/components/reports/FinancialReport";
 import { toast } from "sonner";
 
 const Relatorios = () => {
@@ -78,13 +80,13 @@ const Relatorios = () => {
             <FileText className="h-4 w-4" />
             Produtos
           </TabsTrigger>
-          <TabsTrigger value="clientes" className="gap-2" disabled>
+          <TabsTrigger value="clientes" className="gap-2">
+            <FileText className="h-4 w-4" />
             Clientes
-            <Badge variant="secondary" className="ml-1 text-xs">Em breve</Badge>
           </TabsTrigger>
-          <TabsTrigger value="financeiro" className="gap-2" disabled>
+          <TabsTrigger value="financeiro" className="gap-2">
+            <FileText className="h-4 w-4" />
             Financeiro
-            <Badge variant="secondary" className="ml-1 text-xs">Em breve</Badge>
           </TabsTrigger>
         </TabsList>
 
@@ -105,26 +107,20 @@ const Relatorios = () => {
           />
         </TabsContent>
 
-        <TabsContent value="clientes">
-          <Card>
-            <CardHeader>
-              <CardTitle>Relatório de Clientes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Funcionalidade em desenvolvimento...</p>
-            </CardContent>
-          </Card>
+        <TabsContent value="clientes" className="space-y-6">
+          <ClientsReport
+            clientes={data.clientes}
+            vendas={data.vendas}
+          />
         </TabsContent>
 
-        <TabsContent value="financeiro">
-          <Card>
-            <CardHeader>
-              <CardTitle>Relatório Financeiro</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Funcionalidade em desenvolvimento...</p>
-            </CardContent>
-          </Card>
+        <TabsContent value="financeiro" className="space-y-6">
+          <FinancialReport
+            contasPagar={data.contasPagar}
+            contasReceber={data.contasReceber}
+            vendas={data.vendas}
+            caixas={data.caixas}
+          />
         </TabsContent>
       </Tabs>
     </div>

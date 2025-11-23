@@ -20,6 +20,23 @@ export const ProductsReport = ({ produtos, estoque, vendas }: ProductsReportProp
   const [fornecedorSelecionado, setFornecedorSelecionado] = useState("todos");
   const [tipoMovimentacao, setTipoMovimentacao] = useState("todos");
 
+  // Verificar se os dados estão disponíveis
+  if (!produtos || !estoque || !vendas) {
+    return (
+      <Card className="p-6">
+        <div className="text-center py-8">
+          <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-bold text-foreground mb-2">
+            Carregando dados...
+          </h3>
+          <p className="text-muted-foreground">
+            Aguarde enquanto os dados são carregados
+          </p>
+        </div>
+      </Card>
+    );
+  }
+
   const categorias = useMemo(() => {
     return Array.from(new Set(produtos.map((p: any) => p.categoria).filter(Boolean)));
   }, [produtos]);
