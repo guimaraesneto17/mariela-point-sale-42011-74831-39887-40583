@@ -169,19 +169,11 @@ const Financeiro = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-4xl font-bold text-foreground mb-2">Financeiro</h1>
-          <p className="text-muted-foreground">Controle de contas a pagar e receber</p>
-        </div>
-        <Button
-          onClick={() => navigate('/relatorios')}
-          variant="outline"
-          className="gap-2"
-        >
-          <BarChart3 className="h-4 w-4" />
-          Ver Relatórios
-        </Button>
+      <div>
+        <h1 className="text-4xl font-bold text-foreground mb-2">Financeiro</h1>
+        <p className="text-muted-foreground">Controle de contas a pagar e receber</p>
       </div>
+    </div>
 
       {/* Notificações de Vencimento */}
       <FinanceNotifications />

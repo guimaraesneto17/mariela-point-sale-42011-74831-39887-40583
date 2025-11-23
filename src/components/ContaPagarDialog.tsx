@@ -10,14 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { CalendarIcon, Loader2, Settings } from "lucide-react";
-import { format } from "date-fns";
+import { format, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { cn } from "@/lib/utils";
 import { contasPagarAPI, fornecedoresAPI, categoriasFinanceirasAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { CategoriasFinanceirasManager } from "@/components/CategoriasFinanceirasManager";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const contaPagarSchema = z.object({
   descricao: z.string().min(3, "Descrição deve ter no mínimo 3 caracteres"),
@@ -31,6 +32,9 @@ const contaPagarSchema = z.object({
   dataVencimento: z.date({ required_error: "Data de vencimento é obrigatória" }),
   fornecedorCodigo: z.string().optional(),
   observacoes: z.string().optional(),
+  tipoCriacao: z.enum(["Unica", "Parcelamento", "Replica"]),
+  quantidadeParcelas: z.string().optional(),
+  quantidadeReplicas: z.string().optional(),
 });
 
 type ContaPagarFormData = z.infer<typeof contaPagarSchema>;
@@ -49,6 +53,8 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
   const [showCategoriesManager, setShowCategoriesManager] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [dataVencimentoInput, setDataVencimentoInput] = useState("");
+  const [parcelasPreview, setParcelasPreview] = useState<any[]>([]);
+  const [replicasPreview, setReplicasPreview] = useState<any[]>([]);
 
   const form = useForm<ContaPagarFormData>({
     resolver: zodResolver(contaPagarSchema),
@@ -58,8 +64,17 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
       categoria: "",
       fornecedorCodigo: "",
       observacoes: "",
+      tipoCriacao: "Unica",
+      quantidadeParcelas: "2",
+      quantidadeReplicas: "2",
     }
   });
+
+  const tipoCriacao = form.watch("tipoCriacao");
+  const valor = form.watch("valor");
+  const quantidadeParcelas = form.watch("quantidadeParcelas");
+  const quantidadeReplicas = form.watch("quantidadeReplicas");
+  const dataVencimento = form.watch("dataVencimento");
 
   useEffect(() => {
     loadFornecedores();
@@ -69,7 +84,6 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
   useEffect(() => {
     if (conta) {
       const vencimento = conta.dataVencimento ? new Date(conta.dataVencimento) : undefined;
-
       form.reset({
         descricao: conta.descricao || "",
         valor: conta.valor?.toString() || "",
@@ -77,8 +91,10 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
         dataVencimento: vencimento,
         fornecedorCodigo: conta.fornecedorCodigo || "",
         observacoes: conta.observacoes || "",
+        tipoCriacao: "Unica",
+        quantidadeParcelas: "2",
+        quantidadeReplicas: "2",
       });
-
       setDataVencimentoInput(
         vencimento ? format(vencimento, "dd/MM/yyyy", { locale: ptBR }) : ""
       );
@@ -89,10 +105,59 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
         categoria: "",
         fornecedorCodigo: "",
         observacoes: "",
+        tipoCriacao: "Unica",
+        quantidadeParcelas: "2",
+        quantidadeReplicas: "2",
       });
       setDataVencimentoInput("");
     }
   }, [conta, open]);
+
+  useEffect(() => {
+    if (tipoCriacao === "Parcelamento" && valor && quantidadeParcelas && dataVencimento) {
+      calcularParcelas();
+    } else if (tipoCriacao === "Replica" && valor && quantidadeReplicas && dataVencimento) {
+      calcularReplicas();
+    }
+  }, [tipoCriacao, valor, quantidadeParcelas, quantidadeReplicas, dataVencimento]);
+
+  const calcularParcelas = () => {
+    const valorTotal = parseFloat(valor);
+    const qtd = parseInt(quantidadeParcelas || "2");
+    const valorParcela = valorTotal / qtd;
+
+    const parcelas = [];
+    for (let i = 0; i < qtd; i++) {
+      parcelas.push({
+        numero: i + 1,
+        valor: valorParcela,
+        dataVencimento: addMonths(dataVencimento, i),
+      });
+    }
+    setParcelasPreview(parcelas);
+  };
+
+  const calcularReplicas = () => {
+    const valorTotal = parseFloat(valor);
+    const qtd = parseInt(quantidadeReplicas || "2");
+
+    const replicas = [];
+    for (let i = 0; i < qtd; i++) {
+      replicas.push({
+        numero: i + 1,
+        valor: valorTotal,
+        dataVencimento: addMonths(dataVencimento, i),
+      });
+    }
+    setReplicasPreview(replicas);
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
 
   const loadFornecedores = async () => {
     try {
@@ -116,20 +181,15 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
     try {
       setLoading(true);
       
-      console.log('📝 [FRONTEND] Iniciando criação/edição de conta a pagar');
-      console.log('📝 [FRONTEND] Dados do formulário:', data);
-      
-      // Construir payload com dados formatados corretamente
       const payload: any = {
         descricao: data.descricao.trim(),
         categoria: data.categoria,
         valor: parseFloat(data.valor),
         dataEmissao: new Date(),
         dataVencimento: new Date(data.dataVencimento),
-        status: 'Pendente'
+        tipoCriacao: data.tipoCriacao,
       };
 
-      // Adicionar campos opcionais apenas se tiverem valor
       if (data.fornecedorCodigo && data.fornecedorCodigo.trim()) {
         payload.fornecedorCodigo = data.fornecedorCodigo.trim();
       }
@@ -138,26 +198,25 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
         payload.observacoes = data.observacoes.trim();
       }
 
-      console.log('📤 [FRONTEND] Payload preparado:', JSON.stringify(payload, null, 2));
+      if (data.tipoCriacao === "Parcelamento") {
+        payload.quantidadeParcelas = parseInt(data.quantidadeParcelas || "2");
+      } else if (data.tipoCriacao === "Replica") {
+        payload.quantidadeReplicas = parseInt(data.quantidadeReplicas || "2");
+      }
 
       if (conta) {
-        console.log('📝 [FRONTEND] Atualizando conta existente:', conta.numeroDocumento);
         await contasPagarAPI.update(conta.numeroDocumento, payload);
         toast.success("Conta a pagar atualizada com sucesso!");
       } else {
-        console.log('📝 [FRONTEND] Criando nova conta');
         await contasPagarAPI.create(payload);
         toast.success("Conta a pagar criada com sucesso!");
       }
 
-      console.log('✅ [FRONTEND] Conta salva com sucesso');
       onSuccess();
       onOpenChange(false);
       form.reset();
     } catch (error: any) {
-      console.error('❌ [FRONTEND] Erro ao salvar conta:', error);
-      console.error('❌ [FRONTEND] Mensagem:', error.message);
-      console.error('❌ [FRONTEND] Stack:', error.stack);
+      console.error('Erro ao salvar conta:', error);
       toast.error(error.message || "Erro ao salvar conta a pagar");
     } finally {
       setLoading(false);
@@ -166,7 +225,7 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{conta ? "Editar" : "Nova"} Conta a Pagar</DialogTitle>
           <DialogDescription>
@@ -176,18 +235,32 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            
             <FormField
               control={form.control}
-              name="valor"
+              name="tipoCriacao"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Valor*</FormLabel>
+                  <FormLabel>Tipo de Criação*</FormLabel>
                   <FormControl>
-                    <CurrencyInput 
-                      {...field} 
-                      placeholder="R$ 0,00"
+                    <RadioGroup
                       onValueChange={field.onChange}
-                    />
+                      value={field.value}
+                      className="flex gap-4"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Unica" id="unica-pagar" />
+                        <label htmlFor="unica-pagar" className="cursor-pointer">Única</label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Parcelamento" id="parcelamento-pagar" />
+                        <label htmlFor="parcelamento-pagar" className="cursor-pointer">Parcelamento</label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Replica" id="replica-pagar" />
+                        <label htmlFor="replica-pagar" className="cursor-pointer">Réplica</label>
+                      </div>
+                    </RadioGroup>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -209,6 +282,24 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
             />
 
             <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="valor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Valor Total*</FormLabel>
+                    <FormControl>
+                      <CurrencyInput 
+                        {...field} 
+                        placeholder="R$ 0,00"
+                        onValueChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="categoria"
@@ -243,13 +334,19 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
                   </FormItem>
                 )}
               />
+            </div>
 
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="dataVencimento"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Data de Vencimento*</FormLabel>
+                    <FormLabel>
+                      {tipoCriacao === "Parcelamento" ? "Data do 1º Vencimento*" : 
+                       tipoCriacao === "Replica" ? "Data do 1º Vencimento*" : 
+                       "Data de Vencimento*"}
+                    </FormLabel>
                     <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -309,34 +406,64 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
                   </FormItem>
                 )}
               />
+
+              {tipoCriacao === "Parcelamento" && (
+                <FormField
+                  control={form.control}
+                  name="quantidadeParcelas"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Quantidade de Parcelas*</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="number" min="2" placeholder="Ex: 3" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {tipoCriacao === "Replica" && (
+                <FormField
+                  control={form.control}
+                  name="quantidadeReplicas"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Quantidade de Réplicas*</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="number" min="2" placeholder="Ex: 12" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="fornecedorCodigo"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Fornecedor</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione (opcional)" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="bg-background z-50">
-                        {fornecedores.map((forn) => (
-                          <SelectItem key={forn.codigo} value={forn.codigo}>
-                            {forn.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="fornecedorCodigo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Fornecedor</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione (opcional)" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="bg-background z-50">
+                      {fornecedores.map((forn) => (
+                        <SelectItem key={forn.codigo} value={forn.codigo}>
+                          {forn.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
@@ -351,6 +478,58 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
                 </FormItem>
               )}
             />
+
+            {tipoCriacao === "Parcelamento" && parcelasPreview.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Pré-visualização das Parcelas</h3>
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Parcela</TableHead>
+                        <TableHead>Valor</TableHead>
+                        <TableHead>Vencimento</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {parcelasPreview.map((parcela) => (
+                        <TableRow key={parcela.numero}>
+                          <TableCell>{parcela.numero}/{parcelasPreview.length}</TableCell>
+                          <TableCell>{formatCurrency(parcela.valor)}</TableCell>
+                          <TableCell>{format(parcela.dataVencimento, "dd/MM/yyyy", { locale: ptBR })}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+
+            {tipoCriacao === "Replica" && replicasPreview.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Pré-visualização das Réplicas</h3>
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Réplica</TableHead>
+                        <TableHead>Valor</TableHead>
+                        <TableHead>Vencimento</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {replicasPreview.map((replica) => (
+                        <TableRow key={replica.numero}>
+                          <TableCell>{replica.numero}/{replicasPreview.length}</TableCell>
+                          <TableCell>{formatCurrency(replica.valor)}</TableCell>
+                          <TableCell>{format(replica.dataVencimento, "dd/MM/yyyy", { locale: ptBR })}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-end gap-2 pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -369,7 +548,7 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
           onOpenChange={(open) => {
             setShowCategoriesManager(open);
             if (!open) {
-              loadCategorias(); // Recarrega categorias quando fecha o dialog
+              loadCategorias();
             }
           }}
           tipo="pagar"
