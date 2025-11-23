@@ -50,7 +50,6 @@ const Estoque = () => {
   const [filterCor, setFilterCor] = useState<string>("todas");
   const [filterTamanho, setFilterTamanho] = useState<string>("todos");
   const [filterCategoria, setFilterCategoria] = useState<string>("todas");
-  const [filterQuantidade, setFilterQuantidade] = useState<string>("todas");
   const [filterQuantidadeRange, setFilterQuantidadeRange] = useState<string>("todos");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [sortBy, setSortBy] = useState<string>("nome"); // nome, preco-asc, preco-desc, quantidade-asc, quantidade-desc, data-entrada
@@ -218,14 +217,8 @@ const Estoque = () => {
         return v.tamanhos.includes(filterTamanho) && v.quantidade > 0;
       }));
     
-    // Filtro de quantidade (básico)
-    const quantidadeTotal = item.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0;
-    const matchesQuantidade = filterQuantidade === "todas" ||
-      (filterQuantidade === "baixo" && quantidadeTotal > 0 && quantidadeTotal <= 10) ||
-      (filterQuantidade === "zerado" && quantidadeTotal === 0) ||
-      (filterQuantidade === "disponivel" && quantidadeTotal > 10);
-    
     // Filtro de quantidade por range personalizado
+    const quantidadeTotal = item.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0;
     const matchesQuantidadeRange = filterQuantidadeRange === "todos" ||
       (filterQuantidadeRange === "0-5" && quantidadeTotal >= 0 && quantidadeTotal <= 5) ||
       (filterQuantidadeRange === "6-10" && quantidadeTotal >= 6 && quantidadeTotal <= 10) ||
@@ -262,7 +255,7 @@ const Estoque = () => {
     })();
     
     return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria && 
-           matchesCor && matchesTamanho && matchesQuantidade && matchesQuantidadeRange &&
+           matchesCor && matchesTamanho && matchesQuantidadeRange &&
            matchesPrecoMin && matchesPrecoMax && matchesFornecedor && matchesDataEntrada;
   });
 
@@ -428,12 +421,6 @@ const Estoque = () => {
       const matchesPromocao = filterPromocao === null || item.emPromocao === filterPromocao;
       const matchesNovidade = filterNovidade === null || item.isNovidade === filterNovidade;
       const matchesCategoria = filterCategoria === "todas" || categoria === filterCategoria;
-      const matchesQuantidade = filterQuantidade === "todas" || (() => {
-        const quantidadeTotal = item.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0;
-        return (filterQuantidade === "baixo" && quantidadeTotal > 0 && quantidadeTotal <= 10) ||
-               (filterQuantidade === "zerado" && quantidadeTotal === 0) ||
-               (filterQuantidade === "disponivel" && quantidadeTotal > 10);
-      })();
       
       const precoVenda = item.precoPromocional || item.precoVenda || 0;
       const matchesPrecoMin = !filterPrecoMin || precoVenda >= parseFloat(filterPrecoMin);
@@ -454,7 +441,7 @@ const Estoque = () => {
       })();
       
       return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria && 
-             matchesQuantidade && matchesPrecoMin && matchesPrecoMax && matchesFornecedor && matchesDataEntrada;
+             matchesPrecoMin && matchesPrecoMax && matchesFornecedor && matchesDataEntrada;
     });
     
     inventoryParaCores.forEach((item) => {
@@ -483,12 +470,6 @@ const Estoque = () => {
       const matchesCategoria = filterCategoria === "todas" || categoria === filterCategoria;
       const matchesCor = filterCor === "todas" || 
         (item.variantes && item.variantes.some((v: any) => v.cor === filterCor && v.quantidade > 0));
-      const matchesQuantidade = filterQuantidade === "todas" || (() => {
-        const quantidadeTotal = item.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0;
-        return (filterQuantidade === "baixo" && quantidadeTotal > 0 && quantidadeTotal <= 10) ||
-               (filterQuantidade === "zerado" && quantidadeTotal === 0) ||
-               (filterQuantidade === "disponivel" && quantidadeTotal > 10);
-      })();
       
       const precoVenda = item.precoPromocional || item.precoVenda || 0;
       const matchesPrecoMin = !filterPrecoMin || precoVenda >= parseFloat(filterPrecoMin);
@@ -509,7 +490,7 @@ const Estoque = () => {
       })();
       
       return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria && 
-             matchesCor && matchesQuantidade && matchesPrecoMin && matchesPrecoMax && 
+             matchesCor && matchesPrecoMin && matchesPrecoMax && 
              matchesFornecedor && matchesDataEntrada;
     });
     
@@ -716,21 +697,6 @@ const Estoque = () => {
             </div>
 
             <div>
-              <Label className="text-sm font-medium text-muted-foreground mb-2 block">Status do Estoque</Label>
-              <Select value={filterQuantidade} onValueChange={setFilterQuantidade}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas</SelectItem>
-                  <SelectItem value="disponivel">Disponível (&gt; 10)</SelectItem>
-                  <SelectItem value="baixo">Baixo Estoque (≤ 10)</SelectItem>
-                  <SelectItem value="zerado">Zerado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
               <Label className="text-sm font-medium text-muted-foreground mb-2 block">Faixa de Quantidade</Label>
               <Select value={filterQuantidadeRange} onValueChange={setFilterQuantidadeRange}>
                 <SelectTrigger>
@@ -915,7 +881,7 @@ const Estoque = () => {
             {(filterPrecoMin || filterPrecoMax || filterFornecedor !== "todos" || 
               filterDataEntrada !== "todas" || filterCategoria !== "todas" || 
               filterCor !== "todas" || filterTamanho !== "todos" || 
-              filterQuantidade !== "todas" || filterQuantidadeRange !== "todos" ||
+              filterQuantidadeRange !== "todos" ||
               filterPromocao !== null || filterNovidade !== null) && (
               <div className="flex items-end">
                 <Button
@@ -929,7 +895,6 @@ const Estoque = () => {
                     setFilterCategoria("todas");
                     setFilterCor("todas");
                     setFilterTamanho("todos");
-                    setFilterQuantidade("todas");
                     setFilterQuantidadeRange("todos");
                     setFilterPromocao(null);
                     setFilterNovidade(null);
