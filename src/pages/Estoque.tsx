@@ -1008,39 +1008,71 @@ const Estoque = () => {
                     </div>
 
                     <div>
-                      <label className="text-sm font-semibold text-muted-foreground mb-2 block">Cores</label>
-                      <div className="flex flex-wrap gap-2">
+                      <label className="text-sm font-bold text-primary mb-3 block uppercase tracking-wide flex items-center gap-2">
+                        <div className="h-3 w-3 rounded-full bg-gradient-to-r from-primary to-accent animate-pulse-glow"></div>
+                        Cores Disponíveis
+                      </label>
+                      <div className="flex flex-wrap gap-2.5">
                         {coresDisponiveis.map((cor: string) => (
-                          <Badge
+                          <button
                             key={cor}
-                            variant={selectedCor === cor ? "default" : "outline"}
-                            className="cursor-pointer hover:bg-primary/90"
                             onClick={() => handleColorChange(item.codigoProduto, cor, item)}
+                            className={`
+                              relative px-5 py-2.5 rounded-lg font-semibold text-sm
+                              transition-all duration-300 ease-out
+                              border-2 shadow-sm
+                              hover:scale-105 hover:shadow-lg
+                              active:scale-95
+                              ${selectedCor === cor 
+                                ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-primary shadow-primary/30 ring-2 ring-primary ring-offset-2' 
+                                : 'bg-background text-foreground border-primary/30 hover:border-primary/60 hover:bg-primary/5'
+                              }
+                            `}
                           >
-                            {cor}
-                          </Badge>
+                            <span className="relative z-10">{cor}</span>
+                            {selectedCor === cor && (
+                              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg animate-pulse-glow"></div>
+                            )}
+                          </button>
                         ))}
                       </div>
                     </div>
 
                     <div>
-                      <label className="text-sm font-semibold text-muted-foreground mb-2 block">Tamanhos</label>
-                      <div className="flex flex-wrap gap-2">
+                      <label className="text-sm font-bold text-accent mb-3 block uppercase tracking-wide flex items-center gap-2">
+                        <div className="h-3 w-3 rounded-full bg-gradient-to-r from-accent to-primary animate-pulse-glow"></div>
+                        Tamanhos Disponíveis
+                      </label>
+                      <div className="flex flex-wrap gap-2.5">
                         {tamanhosDisponiveis.map((tamanho: string) => {
                           const qtd = getQuantidadeByTamanho(item, selectedCor, tamanho);
                           const isSelected = selectedTamanho === tamanho;
                           return (
-                            <Badge
+                            <button
                               key={tamanho}
-                              variant={isSelected ? "default" : "outline"}
-                              className={`cursor-pointer hover:bg-primary/90 transition-all ${isSelected ? 'ring-2 ring-primary ring-offset-2' : ''}`}
                               onClick={() => handleSizeChange(item.codigoProduto, tamanho)}
+                              className={`
+                                relative px-5 py-2.5 rounded-lg font-semibold text-sm
+                                transition-all duration-300 ease-out
+                                border-2 shadow-sm
+                                hover:scale-105 hover:shadow-lg
+                                active:scale-95
+                                ${isSelected 
+                                  ? 'bg-gradient-to-br from-accent to-accent/80 text-accent-foreground border-accent shadow-accent/30 ring-2 ring-accent ring-offset-2' 
+                                  : 'bg-background text-foreground border-accent/30 hover:border-accent/60 hover:bg-accent/5'
+                                }
+                              `}
                             >
-                              <span className="font-semibold">{tamanho}</span>
-                              <span className={`ml-1.5 text-xs ${isSelected ? 'opacity-100' : 'opacity-70'}`}>
-                                ({qtd})
+                              <span className="relative z-10 flex items-center gap-1.5">
+                                <span className="font-bold">{tamanho}</span>
+                                <span className={`text-xs ${isSelected ? 'opacity-100 font-semibold' : 'opacity-70'}`}>
+                                  ({qtd})
+                                </span>
                               </span>
-                            </Badge>
+                              {isSelected && (
+                                <div className="absolute inset-0 bg-gradient-to-br from-accent/20 to-primary/20 rounded-lg animate-pulse-glow"></div>
+                              )}
+                            </button>
                           );
                         })}
                       </div>
