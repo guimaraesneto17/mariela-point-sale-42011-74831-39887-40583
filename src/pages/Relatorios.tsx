@@ -859,20 +859,422 @@ const Relatorios = () => {
           )}
         </TabsContent>
 
+        {/* Tab Vendas */}
         <TabsContent value="vendas" className="space-y-4">
-          <p className="text-muted-foreground">Relatório de vendas mantido como estava anteriormente</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <ShoppingBag className="h-4 w-4" />
+                  Total de Vendas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-foreground">{relatorioVendas.totalVendas}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  Faturamento Total
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-green-600">{formatCurrency(relatorioVendas.faturamentoTotal)}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Ticket Médio</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-primary">{formatCurrency(relatorioVendas.ticketMedio)}</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Vendas por Categoria */}
+          {relatorioVendas.vendasPorCategoria && relatorioVendas.vendasPorCategoria.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-primary" />
+                  Vendas por Categoria
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={relatorioVendas.vendasPorCategoria}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="categoria" />
+                    <YAxis />
+                    <RechartsTooltip 
+                      formatter={(value: any) => formatCurrency(value)}
+                      contentStyle={{ background: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }}
+                    />
+                    <Legend />
+                    <Bar dataKey="valor" fill="hsl(var(--primary))" name="Valor Vendido" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Evolução de Vendas por Mês */}
+          {relatorioVendas.vendasPorMes && relatorioVendas.vendasPorMes.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-green-600" />
+                  Evolução Mensal
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={relatorioVendas.vendasPorMes}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="mes" />
+                    <YAxis />
+                    <RechartsTooltip 
+                      formatter={(value: any) => formatCurrency(value)}
+                      contentStyle={{ background: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }}
+                    />
+                    <Legend />
+                    <Line type="monotone" dataKey="valor" stroke="hsl(var(--primary))" strokeWidth={2} name="Faturamento" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
+        {/* Tab Produtos */}
         <TabsContent value="produtos" className="space-y-4">
-          <p className="text-muted-foreground">Relatório de produtos mantido como estava anteriormente</p>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  Total de Produtos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-foreground">{relatorioProdutos.totalProdutos}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <Boxes className="h-4 w-4" />
+                  Em Estoque
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-primary">{relatorioProdutos.emEstoque} un</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  Novidades
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-amber-600">{relatorioProdutos.novidades}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <Tag className="h-4 w-4" />
+                  Em Promoção
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-red-600">{relatorioProdutos.emPromocao}</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Valor Total (Custo)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600">{formatCurrency(relatorioProdutos.valorEstoqueCusto)}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Valor Total (Venda)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">{formatCurrency(relatorioProdutos.valorEstoqueVenda)}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Lucro potencial: {formatCurrency(relatorioProdutos.valorEstoqueVenda - relatorioProdutos.valorEstoqueCusto)}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Produtos Mais Vendidos */}
+          {relatorioProdutos.produtosMaisVendidos && relatorioProdutos.produtosMaisVendidos.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-green-600" />
+                  Top 5 Produtos Mais Vendidos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {relatorioProdutos.produtosMaisVendidos.map((produto: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold ${
+                          index === 0 ? 'bg-amber-500 text-white' :
+                          index === 1 ? 'bg-gray-400 text-white' :
+                          index === 2 ? 'bg-amber-700 text-white' :
+                          'bg-muted text-muted-foreground'
+                        }`}>
+                          {index + 1}
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">{produto.produto}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {produto.vendas} unidades vendidas | Estoque: {produto.estoque}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="font-bold text-green-600">{formatCurrency(produto.valor)}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Estoque Mínimo */}
+          {relatorioProdutos.estoqueMinimo && relatorioProdutos.estoqueMinimo.length > 0 && (
+            <Card className="border-amber-200 dark:border-amber-900">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-500">
+                  <Bell className="h-5 w-5" />
+                  Alerta: Estoque Baixo (menos de 10 unidades)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {relatorioProdutos.estoqueMinimo.map((produto: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-amber-50 dark:bg-amber-950/20 rounded border border-amber-200 dark:border-amber-900">
+                      <div>
+                        <p className="font-medium text-foreground">{produto.produto}</p>
+                        <p className="text-sm text-muted-foreground">Estoque atual: {produto.estoque} un</p>
+                      </div>
+                      <Badge variant="destructive">Baixo</Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
+        {/* Tab Vendedores */}
         <TabsContent value="vendedores" className="space-y-4">
-          <p className="text-muted-foreground">Relatório de vendedores mantido como estava anteriormente</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <UserCheck className="h-4 w-4" />
+                  Total de Vendedores
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-foreground">{relatorioVendedores.totalVendedores}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Vendedores Ativos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-green-600">{relatorioVendedores.topVendedores.length}</div>
+                <p className="text-xs text-muted-foreground mt-1">Com vendas registradas</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Top Vendedores */}
+          {relatorioVendedores.topVendedores && relatorioVendedores.topVendedores.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Crown className="h-5 w-5 text-amber-500" />
+                  Ranking de Vendedores
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {relatorioVendedores.topVendedores.map((vendedor: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-4 bg-gradient-to-r from-muted/50 to-background rounded-lg border">
+                      <div className="flex items-center gap-4">
+                        <div className={`h-12 w-12 rounded-full flex items-center justify-center font-bold text-lg ${
+                          index === 0 ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-lg' :
+                          index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500 text-white shadow-md' :
+                          index === 2 ? 'bg-gradient-to-br from-amber-600 to-amber-800 text-white shadow-md' :
+                          'bg-muted text-muted-foreground'
+                        }`}>
+                          {index + 1}
+                        </div>
+                        <div>
+                          <p className="font-bold text-lg text-foreground">{vendedor.nome}</p>
+                          <p className="text-sm text-muted-foreground">{vendedor.vendas} vendas realizadas</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-xl text-green-600">{formatCurrency(vendedor.valorTotal)}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Comissão: <span className="font-semibold text-primary">{formatCurrency(vendedor.comissao)}</span>
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {relatorioVendedores.topVendedores.length === 0 && (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <UserCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">Nenhuma venda registrada por vendedores ainda</p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
+        {/* Tab Caixa */}
         <TabsContent value="caixa" className="space-y-4">
-          <p className="text-muted-foreground">Relatório de caixa mantido como estava anteriormente</p>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <Wallet className="h-4 w-4" />
+                  Total de Caixas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-foreground">{relatorioCaixa.totalCaixas}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Caixas Abertos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-green-600">{relatorioCaixa.caixasAbertos}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Caixas Fechados</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-muted-foreground">{relatorioCaixa.caixasFechados}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-green-600" />
+                  Total Entradas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">{formatCurrency(relatorioCaixa.totalEntradas)}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4 text-red-600" />
+                  Total Saídas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">{formatCurrency(relatorioCaixa.totalSaidas)}</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Performance Total</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-4xl font-bold ${relatorioCaixa.performanceTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatCurrency(relatorioCaixa.performanceTotal)}
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                Saldo total de todos os caixas (entradas - saídas)
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Últimos Caixas */}
+          {relatorioCaixa.ultimosCaixas && relatorioCaixa.ultimosCaixas.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Wallet className="h-5 w-5 text-primary" />
+                  Últimos 5 Caixas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {relatorioCaixa.ultimosCaixas.map((caixa: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+                      <div className="flex items-center gap-4">
+                        <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
+                          caixa.status === 'aberto' ? 'bg-green-100 dark:bg-green-950' : 'bg-muted'
+                        }`}>
+                          <Wallet className={`h-5 w-5 ${caixa.status === 'aberto' ? 'text-green-600' : 'text-muted-foreground'}`} />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-foreground">Caixa #{caixa.codigo}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Abertura: {caixa.dataAbertura} | Fechamento: {caixa.dataFechamento}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant={caixa.status === 'aberto' ? 'default' : 'secondary'}>
+                          {caixa.status === 'aberto' ? 'Aberto' : 'Fechado'}
+                        </Badge>
+                        <p className={`font-bold mt-2 ${caixa.performance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatCurrency(caixa.performance)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {relatorioCaixa.ultimosCaixas.length === 0 && (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Wallet className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">Nenhum caixa registrado ainda</p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>

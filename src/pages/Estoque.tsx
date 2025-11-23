@@ -619,8 +619,8 @@ const Estoque = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <div className="relative overflow-hidden">
-              <Label className="text-sm font-bold text-secondary mb-2 block uppercase tracking-wide flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-gradient-to-r from-secondary to-primary animate-pulse-glow"></div>
+              <Label className="text-sm font-bold text-primary mb-2 block uppercase tracking-wide flex items-center gap-2">
+                <div className="h-3 w-3 rounded-full bg-gradient-to-r from-primary to-accent animate-pulse-glow"></div>
                 Filtrar por Categoria
               </Label>
               <Select value={filterCategoria} onValueChange={setFilterCategoria}>
