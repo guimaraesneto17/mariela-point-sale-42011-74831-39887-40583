@@ -101,7 +101,7 @@ const Relatorios = () => {
 
   useEffect(() => {
     loadRelatorios();
-  }, [periodoVendas, dataInicioVendas, dataFimVendas, periodoProdutos, dataInicioProdutos, dataFimProdutos, periodoCaixa, dataInicioCaixa, dataFimCaixa, periodoFinanceiro, dataInicioFinanceiro, dataFimFinanceiro]);
+  }, []);
 
   // Função auxiliar para filtrar dados por período
   const filtrarPorPeriodo = (data: Date, dataInicio: string, dataFim: string, periodo: string) => {
@@ -746,7 +746,6 @@ const Relatorios = () => {
                         setPeriodoFinanceiro("todos");
                         setDataInicioFinanceiro("");
                         setDataFimFinanceiro("");
-                        loadRelatorios();
                       }}
                     >
                       <X className="h-4 w-4 mr-2" />
@@ -979,7 +978,6 @@ const Relatorios = () => {
                         setPeriodoVendas("todos");
                         setDataInicioVendas("");
                         setDataFimVendas("");
-                        loadRelatorios();
                       }}
                     >
                       <X className="h-4 w-4 mr-2" />
@@ -1125,7 +1123,6 @@ const Relatorios = () => {
                         setPeriodoProdutos("todos");
                         setDataInicioProdutos("");
                         setDataFimProdutos("");
-                        loadRelatorios();
                       }}
                     >
                       <X className="h-4 w-4 mr-2" />
@@ -1390,7 +1387,6 @@ const Relatorios = () => {
                         setPeriodoCaixa("todos");
                         setDataInicioCaixa("");
                         setDataFimCaixa("");
-                        loadRelatorios();
                       }}
                     >
                       <X className="h-4 w-4 mr-2" />
