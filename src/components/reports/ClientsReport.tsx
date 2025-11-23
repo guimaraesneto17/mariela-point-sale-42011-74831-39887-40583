@@ -9,9 +9,13 @@ import {
   Calendar, 
   AlertCircle,
   ShoppingCart,
-  Clock
+  Clock,
+  Phone,
+  Mail
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ClientsReportProps {
   clientes: any[];
@@ -21,6 +25,8 @@ interface ClientsReportProps {
 export const ClientsReport = ({ clientes, vendas }: ClientsReportProps) => {
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
+  const [dialogAberto, setDialogAberto] = useState<string | null>(null);
+  const [clientesSelecionados, setClientesSelecionados] = useState<any[]>([]);
 
   const analiseClientes = useMemo(() => {
     const hoje = new Date();
@@ -136,6 +142,43 @@ export const ClientsReport = ({ clientes, vendas }: ClientsReportProps) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
 
+  const formatDate = (date: Date | null) => {
+    if (!date) return "Nunca";
+    return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+  };
+
+  const abrirDialog = (tipo: string) => {
+    let clientesFiltrados: any[] = [];
+    
+    switch(tipo) {
+      case "30dias":
+        clientesFiltrados = analiseClientes.todosClientes.filter((c: any) => c.statusInatividade === "30dias");
+        break;
+      case "60dias":
+        clientesFiltrados = analiseClientes.todosClientes.filter((c: any) => c.statusInatividade === "60dias");
+        break;
+      case "90dias":
+        clientesFiltrados = analiseClientes.todosClientes.filter((c: any) => c.statusInatividade === "90dias");
+        break;
+      case "nunca":
+        clientesFiltrados = analiseClientes.todosClientes.filter((c: any) => c.statusInatividade === "nunca");
+        break;
+    }
+    
+    setClientesSelecionados(clientesFiltrados);
+    setDialogAberto(tipo);
+  };
+
+  const getTituloDialog = () => {
+    switch(dialogAberto) {
+      case "30dias": return "Clientes sem compra há 30-60 dias";
+      case "60dias": return "Clientes sem compra há 60-90 dias";
+      case "90dias": return "Clientes sem compra há mais de 90 dias";
+      case "nunca": return "Clientes que nunca compraram";
+      default: return "";
+    }
+  };
+
   return (
     <div className="space-y-6">
       <ReportFilters
@@ -215,7 +258,10 @@ export const ClientsReport = ({ clientes, vendas }: ClientsReportProps) => {
 
       {/* Alertas de Inatividade */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-yellow-200 dark:border-yellow-900">
+        <Card 
+          className="border-yellow-200 dark:border-yellow-900 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => abrirDialog("30dias")}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Clock className="h-4 w-4 text-yellow-600" />
@@ -226,11 +272,14 @@ export const ClientsReport = ({ clientes, vendas }: ClientsReportProps) => {
             <p className="text-2xl font-bold text-yellow-600">
               {analiseClientes.clientesSem30dias}
             </p>
-            <p className="text-xs text-muted-foreground">sem compra</p>
+            <p className="text-xs text-muted-foreground">sem compra • clique para ver</p>
           </CardContent>
         </Card>
 
-        <Card className="border-orange-200 dark:border-orange-900">
+        <Card 
+          className="border-orange-200 dark:border-orange-900 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => abrirDialog("60dias")}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-orange-600" />
@@ -241,11 +290,14 @@ export const ClientsReport = ({ clientes, vendas }: ClientsReportProps) => {
             <p className="text-2xl font-bold text-orange-600">
               {analiseClientes.clientesSem60dias}
             </p>
-            <p className="text-xs text-muted-foreground">sem compra</p>
+            <p className="text-xs text-muted-foreground">sem compra • clique para ver</p>
           </CardContent>
         </Card>
 
-        <Card className="border-red-200 dark:border-red-900">
+        <Card 
+          className="border-red-200 dark:border-red-900 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => abrirDialog("90dias")}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-red-600" />
@@ -256,11 +308,14 @@ export const ClientsReport = ({ clientes, vendas }: ClientsReportProps) => {
             <p className="text-2xl font-bold text-red-600">
               {analiseClientes.clientesSem90dias}
             </p>
-            <p className="text-xs text-muted-foreground">sem compra</p>
+            <p className="text-xs text-muted-foreground">sem compra • clique para ver</p>
           </CardContent>
         </Card>
 
-        <Card className="border-gray-200 dark:border-gray-800">
+        <Card 
+          className="border-gray-200 dark:border-gray-800 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => abrirDialog("nunca")}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Users className="h-4 w-4 text-gray-600" />
@@ -271,7 +326,7 @@ export const ClientsReport = ({ clientes, vendas }: ClientsReportProps) => {
             <p className="text-2xl font-bold text-gray-600">
               {analiseClientes.clientesNuncaCompraram}
             </p>
-            <p className="text-xs text-muted-foreground">clientes</p>
+            <p className="text-xs text-muted-foreground">clientes • clique para ver</p>
           </CardContent>
         </Card>
       </div>
@@ -359,6 +414,87 @@ export const ClientsReport = ({ clientes, vendas }: ClientsReportProps) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialog de Detalhes dos Clientes */}
+      <Dialog open={!!dialogAberto} onOpenChange={() => setDialogAberto(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              {getTituloDialog()}
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[60vh] pr-4">
+            {clientesSelecionados.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <Users className="h-12 w-12 mb-4 opacity-50" />
+                <p>Nenhum cliente encontrado nesta categoria</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {clientesSelecionados.map((cliente: any) => (
+                  <Card key={cliente.codigoCliente} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-lg text-foreground mb-2">
+                            {cliente.nome}
+                          </h4>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                            {cliente.telefone && (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <Phone className="h-4 w-4" />
+                                <span>{cliente.telefone}</span>
+                              </div>
+                            )}
+                            
+                            {cliente.email && (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <Mail className="h-4 w-4" />
+                                <span>{cliente.email}</span>
+                              </div>
+                            )}
+                            
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <ShoppingCart className="h-4 w-4" />
+                              <span>{cliente.totalCompras} compras</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <DollarSign className="h-4 w-4" />
+                              <span>Ticket: {formatCurrency(cliente.ticketMedio)}</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Calendar className="h-4 w-4" />
+                              <span>Última compra: {formatDate(cliente.ultimaCompra)}</span>
+                            </div>
+                            
+                            {cliente.diasSemCompra > 0 && (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <Clock className="h-4 w-4" />
+                                <span>{cliente.diasSemCompra} dias sem compra</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="text-right ml-4">
+                          <p className="text-sm text-muted-foreground mb-1">Lifetime Value</p>
+                          <p className="text-xl font-bold text-primary">
+                            {formatCurrency(cliente.lifetimeValue)}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
