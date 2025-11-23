@@ -551,11 +551,14 @@ const Estoque = () => {
         </div>
         <Button
           size="lg"
-          onClick={() => setShowMultipleVariantsDialog(true)}
+          onClick={() => {
+            setSelectedItem(null);
+            setShowMultipleVariantsDialog(true);
+          }}
           className="gap-2"
         >
           <Plus className="h-5 w-5" />
-          Adicionar Variantes em Massa
+          Adicionar Várias Unidades ao Produto
         </Button>
       </div>
 
@@ -1043,6 +1046,20 @@ const Estoque = () => {
                     </Button>
                   </div>
 
+                  {/* Botão Adicionar Várias Unidades */}
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      setSelectedItem(item);
+                      setShowMultipleVariantsDialog(true);
+                    }}
+                    className="w-full h-8 text-xs gap-1"
+                  >
+                    <Plus className="h-3 w-3" />
+                    Adicionar Várias Unidades
+                  </Button>
+
                   {/* Menu de ações adicionais */}
                   <Collapsible>
                     <CollapsibleTrigger asChild>
@@ -1345,6 +1362,18 @@ const Estoque = () => {
                     </Button>
                     <Button
                       size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        setSelectedItem(item);
+                        setShowMultipleVariantsDialog(true);
+                      }}
+                      className="gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Adicionar Várias Unidades
+                    </Button>
+                    <Button
+                      size="sm"
                       variant="outline"
                       onClick={() => openPromotionDialog(item)}
                       className={item.emPromocao ? "gap-2 bg-purple-600 text-white hover:bg-purple-700 hover:text-white border-purple-600" : "gap-2"}
@@ -1587,6 +1616,7 @@ const Estoque = () => {
       <AddMultipleVariantsDialog
         open={showMultipleVariantsDialog}
         onOpenChange={setShowMultipleVariantsDialog}
+        produto={selectedItem}
         onSuccess={loadEstoque}
       />
 
