@@ -4,9 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { caixaAPI, contasPagarAPI, contasReceberAPI } from "@/lib/api";
 import { ArrowDownCircle, ArrowUpCircle, Clock, CheckCircle2, XCircle, RefreshCw, DollarSign, TrendingUp, TrendingDown, Activity } from "lucide-react";
-import { format } from "date-fns";
+import { format, startOfDay, differenceInMinutes } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 interface Transaction {
   id: string;
@@ -17,10 +19,17 @@ interface Transaction {
   status: 'processando' | 'concluido' | 'erro';
 }
 
+interface ChartDataPoint {
+  hora: string;
+  entradas: number;
+  saidas: number;
+}
+
 export default function Monitoramento() {
   const [caixaAberto, setCaixaAberto] = useState<any>(null);
   const [ultimasTransacoes, setUltimasTransacoes] = useState<Transaction[]>([]);
   const [contasPendentes, setContasPendentes] = useState({ pagar: 0, receber: 0 });
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -49,6 +58,46 @@ export default function Monitoramento() {
           }));
         setUltimasTransacoes(transacoes);
         console.log('✅ [MONITORAMENTO] Transações carregadas:', transacoes.length);
+
+        // Processar dados para o gráfico (agrupar por hora)
+        const hoje = startOfDay(new Date());
+        const movimentosHoje = caixa.movimentos.filter((mov: any) => {
+          const movData = new Date(mov.data);
+          return movData >= hoje;
+        });
+
+        // Criar dados agregados por hora
+        const dadosPorHora: { [key: string]: { entradas: number; saidas: number } } = {};
+        
+        // Inicializar todas as horas do dia
+        for (let i = 0; i < 24; i++) {
+          const hora = `${i.toString().padStart(2, '0')}:00`;
+          dadosPorHora[hora] = { entradas: 0, saidas: 0 };
+        }
+
+        // Agregar movimentos por hora
+        movimentosHoje.forEach((mov: any) => {
+          const movData = new Date(mov.data);
+          const hora = `${movData.getHours().toString().padStart(2, '0')}:00`;
+          
+          if (mov.tipo === 'entrada') {
+            dadosPorHora[hora].entradas += mov.valor;
+          } else {
+            dadosPorHora[hora].saidas += mov.valor;
+          }
+        });
+
+        // Converter para array ordenado
+        const dadosGrafico = Object.entries(dadosPorHora)
+          .map(([hora, valores]) => ({
+            hora,
+            entradas: valores.entradas,
+            saidas: valores.saidas
+          }))
+          .sort((a, b) => a.hora.localeCompare(b.hora));
+
+        setChartData(dadosGrafico);
+        console.log('✅ [MONITORAMENTO] Dados do gráfico processados:', dadosGrafico.length, 'pontos');
       }
 
       // Buscar resumo de contas pendentes
@@ -256,6 +305,105 @@ export default function Monitoramento() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Gráfico de Evolução */}
+        <Card className="col-span-1">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Evolução de Entradas e Saídas
+            </CardTitle>
+            <CardDescription>
+              Movimentações financeiras ao longo do dia
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {chartData.length > 0 ? (
+              <ChartContainer
+                config={{
+                  entradas: {
+                    label: "Entradas",
+                    color: "hsl(var(--chart-2))",
+                  },
+                  saidas: {
+                    label: "Saídas",
+                    color: "hsl(var(--chart-1))",
+                  },
+                }}
+                className="h-[300px] w-full"
+              >
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="fillEntradas" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0.1} />
+                    </linearGradient>
+                    <linearGradient id="fillSaidas" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0.1} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis
+                    dataKey="hora"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    className="text-xs"
+                  />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    className="text-xs"
+                    tickFormatter={(value) =>
+                      new Intl.NumberFormat('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL',
+                        minimumFractionDigits: 0,
+                      }).format(value)
+                    }
+                  />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        labelFormatter={(value) => `Horário: ${value}`}
+                        formatter={(value, name) => [
+                          new Intl.NumberFormat('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL',
+                          }).format(value as number),
+                          name === 'entradas' ? 'Entradas' : 'Saídas',
+                        ]}
+                      />
+                    }
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="entradas"
+                    stroke="hsl(var(--chart-2))"
+                    fill="url(#fillEntradas)"
+                    strokeWidth={2}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="saidas"
+                    stroke="hsl(var(--chart-1))"
+                    fill="url(#fillSaidas)"
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ChartContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                <div className="text-center">
+                  <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                  <p>Nenhum dado disponível para o gráfico</p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Últimas Transações */}
         <Card>
