@@ -120,41 +120,37 @@ const Relatorios = () => {
 
   const aplicarFiltrosVendas = async () => {
     try {
-      setLoading(true);
       await loadRelatorios();
       toast.success("Filtros de vendas aplicados!");
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      toast.error("Erro ao aplicar filtros");
     }
   };
 
   const aplicarFiltrosProdutos = async () => {
     try {
-      setLoading(true);
       await loadRelatorios();
       toast.success("Filtros de produtos aplicados!");
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      toast.error("Erro ao aplicar filtros");
     }
   };
 
   const aplicarFiltrosCaixa = async () => {
     try {
-      setLoading(true);
       await loadRelatorios();
       toast.success("Filtros de caixa aplicados!");
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      toast.error("Erro ao aplicar filtros");
     }
   };
 
   const aplicarFiltrosFinanceiro = async () => {
     try {
-      setLoading(true);
       await loadRelatorios();
       toast.success("Filtros financeiros aplicados!");
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      toast.error("Erro ao aplicar filtros");
     }
   };
 

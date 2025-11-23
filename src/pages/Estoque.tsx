@@ -1280,20 +1280,20 @@ const Estoque = () => {
                         <img
                           src={varianteSelecionada.imagens[0]}
                           alt={`${item.nomeProduto} - ${selectedCor}`}
-                          className="w-20 h-20 object-cover rounded-lg border-2 border-primary/20 shadow-md transition-all group-hover:border-primary group-hover:scale-105"
+                          className="w-24 h-24 object-cover rounded-lg border-2 border-primary/20 shadow-md transition-all group-hover:border-primary group-hover:scale-105"
                         />
                         {/* Badge com ícone de imagem e quantidade */}
                         <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-1.5 shadow-lg border-2 border-background flex items-center justify-center gap-1 min-w-[28px]">
                           <ImageIcon className="h-3 w-3" />
                           <span className="text-xs font-bold">{varianteSelecionada.imagens.length}</span>
                         </div>
-                        <div className="absolute top-1 left-1 bg-yellow-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shadow-md">
-                          <Star className="h-2.5 w-2.5 fill-current" />
-                          <span>DEST</span>
+                        {/* Estrela de destaque dourada */}
+                        <div className="absolute top-1 right-1 bg-yellow-500 rounded-full p-1 shadow-md">
+                          <Star className="h-3 w-3 fill-white text-white" />
                         </div>
                       </div>
                     ) : (
-                      <div className="w-20 h-20 bg-gradient-to-br from-muted/50 to-muted/20 rounded-lg flex items-center justify-center border-2 border-dashed border-border">
+                      <div className="w-24 h-24 bg-gradient-to-br from-muted/50 to-muted/20 rounded-lg flex items-center justify-center border-2 border-dashed border-border">
                         <img 
                           src={getDefaultImageByCategory(item.categoria)} 
                           alt={`${item.categoria || 'Produto'} - Logo Mariela`}

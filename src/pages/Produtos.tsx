@@ -665,7 +665,14 @@ const Produtos = () => {
                 {/* Botão para ver no estoque - só aparece se tem estoque */}
                 {(() => {
                   const estoqueItem = estoque.find((e: any) => e.codigoProduto === produto.codigoProduto);
-                  const quantidadeTotal = estoqueItem?.quantidade || 0;
+                  // Calcular quantidade total somando todas as variantes
+                  let quantidadeTotal = 0;
+                  if (estoqueItem && estoqueItem.variantes && Array.isArray(estoqueItem.variantes)) {
+                    quantidadeTotal = estoqueItem.variantes.reduce((total: number, v: any) => {
+                      return total + (v.quantidade || 0);
+                    }, 0);
+                  }
+                  
                   if (quantidadeTotal > 0) {
                     return (
                       <Button

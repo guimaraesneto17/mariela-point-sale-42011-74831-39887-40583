@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Wallet, Plus, Minus, DollarSign, TrendingUp, TrendingDown, RefreshCw, XCircle, History, Calendar as CalendarIcon, Trash2 } from "lucide-react";
+import { Wallet, Plus, Minus, DollarSign, TrendingUp, TrendingDown, RefreshCw, XCircle, History, Calendar as CalendarIcon, Trash2, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import { ptBR } from "date-fns/locale";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { FecharCaixaDialog } from "@/components/FecharCaixaDialog";
+import { MonitoramentoDialog } from "@/components/MonitoramentoDialog";
 
 interface Movimento {
   tipo: 'entrada' | 'saida';
@@ -60,6 +61,9 @@ const Caixa = () => {
   // Estados para exclusão de movimentação
   const [movimentoParaExcluir, setMovimentoParaExcluir] = useState<number | null>(null);
   const [dialogExcluirMovimento, setDialogExcluirMovimento] = useState(false);
+  
+  // Estado para monitoramento
+  const [monitoramentoOpen, setMonitoramentoOpen] = useState(false);
 
   useEffect(() => {
     carregarCaixaAberto();
@@ -273,6 +277,12 @@ const Caixa = () => {
         </div>
         
         <div className="flex gap-2">
+          {caixaAberto && (
+            <Button onClick={() => setMonitoramentoOpen(true)} variant="default" size="lg">
+              <Activity className="h-5 w-5 mr-2" />
+              Monitoramento
+            </Button>
+          )}
           <Button onClick={handleAbrirHistorico} variant="outline" size="lg">
             <History className="h-5 w-5 mr-2" />
             Histórico de Caixas
@@ -734,6 +744,13 @@ const Caixa = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Monitoramento Dialog */}
+      <MonitoramentoDialog
+        open={monitoramentoOpen}
+        onOpenChange={setMonitoramentoOpen}
+        caixaAberto={caixaAberto}
+      />
     </div>
   );
 };

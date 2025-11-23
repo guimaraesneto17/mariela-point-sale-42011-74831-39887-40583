@@ -73,9 +73,13 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect, est
     produto.codigoProduto?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Cores disponíveis do produto selecionado
+  // Cores disponíveis do produto selecionado (apenas cores com quantidade > 0)
   const coresDisponiveis = produtoSelecionado 
-    ? [...new Set(produtoSelecionado.variantes.map(v => v.cor))]
+    ? [...new Set(
+        produtoSelecionado.variantes
+          .filter(v => v.quantidade > 0)
+          .map(v => v.cor)
+      )]
     : [];
 
   // Tamanhos disponíveis para a cor selecionada (considerando estoque retido)
