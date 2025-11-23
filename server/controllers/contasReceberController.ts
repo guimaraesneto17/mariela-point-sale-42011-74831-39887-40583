@@ -258,7 +258,7 @@ export const updateContaReceber = async (req: Request, res: Response) => {
 
 export const receberConta = async (req: Request, res: Response) => {
   try {
-    const { valor, data, formaPagamento, observacoes, numeroParcela } = req.body;
+    const { valor, data, formaPagamento, observacoes, numeroParcela, comprovante } = req.body;
 
     console.log('📝 [RECEBER CONTA] Payload recebido:', JSON.stringify(req.body, null, 2));
 
@@ -293,7 +293,8 @@ export const receberConta = async (req: Request, res: Response) => {
         valor,
         data: dataConvertida,
         formaPagamento,
-        observacoes
+        observacoes,
+        comprovante
       } as any;
       conta.status = 'Recebido';
       
@@ -312,7 +313,8 @@ export const receberConta = async (req: Request, res: Response) => {
         valor,
         data: dataConvertida,
         formaPagamento,
-        observacoes
+        observacoes,
+        comprovante
       };
       (parcela as any).status = 'Recebido';
 

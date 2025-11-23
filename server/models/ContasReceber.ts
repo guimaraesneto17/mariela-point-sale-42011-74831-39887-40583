@@ -64,7 +64,7 @@ const ContasReceberSchema = new mongoose.Schema({
       type: String, 
       enum: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto', 'Transferência', 'Outro']
     },
-    comprovante: [{ type: String }],
+    comprovante: { type: String },
     observacoes: { type: String, trim: true }
   },
   
@@ -90,7 +90,7 @@ const ContasReceberSchema = new mongoose.Schema({
         type: String,
         enum: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto', 'Transferência', 'Outro']
       },
-      comprovante: [{ type: String }],
+      comprovante: { type: String },
       observacoes: { type: String, trim: true }
     }
   }],

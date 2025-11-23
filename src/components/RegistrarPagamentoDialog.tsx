@@ -11,6 +11,7 @@ import * as z from "zod";
 import { contasPagarAPI, contasReceberAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { ImagePlus, X } from "lucide-react";
 
 const formas = ["Pix","Cartão de Crédito","Cartão de Débito","Dinheiro","Boleto","Transferência","Outro"] as const;
 
@@ -23,7 +24,8 @@ const schema = z.object({
     }, "Valor deve ser maior que zero"),
   formaPagamento: z.enum(["Pix","Cartão de Crédito","Cartão de Débito","Dinheiro","Boleto","Transferência","Outro"], { required_error: "Selecione a forma de pagamento" }),
   observacoes: z.string().max(500).optional(),
-  numeroParcela: z.number().optional()
+  numeroParcela: z.number().optional(),
+  comprovante: z.string().optional()
 });
 
 type FormData = z.infer<typeof schema>;
@@ -39,6 +41,7 @@ interface RegistrarPagamentoDialogProps {
 
 export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSuccess, numeroParcela }: RegistrarPagamentoDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   
   // Verifica se é parcelamento e se tem parcela específica
   const isParcelamento = conta?.tipoCriacao === 'Parcelamento';
@@ -64,7 +67,7 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
   
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { valor: "0", formaPagamento: undefined, observacoes: '', numeroParcela }
+    defaultValues: { valor: "0", formaPagamento: undefined, observacoes: '', numeroParcela, comprovante: '' }
   });
 
   // Atualiza o valor default quando a conta muda
@@ -74,10 +77,35 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
         valor: saldoRestante.toFixed(2),
         formaPagamento: undefined,
         observacoes: '',
-        numeroParcela
+        numeroParcela,
+        comprovante: ''
       });
+      setImagePreview(null);
     }
   }, [conta, open, saldoRestante, numeroParcela]);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Imagem muito grande. Máximo 5MB');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setImagePreview(base64String);
+        form.setValue('comprovante', base64String);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImagePreview(null);
+    form.setValue('comprovante', '');
+  };
 
   const onSubmit = async (values: FormData) => {
     try {
@@ -106,23 +134,23 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
       
       if (tipo === 'pagar') {
         const payload = { 
-          valorPago: valorNumerico, 
+          valorPago: valorNumerico,
           formaPagamento: values.formaPagamento,
           observacoes: values.observacoes,
-          numeroParcela // Envia o número da parcela se existir
+          numeroParcela,
+          comprovante: values.comprovante
         };
         console.log('📤 [FRONTEND] Payload de pagamento:', payload);
-        
         await contasPagarAPI.pagar(conta.numeroDocumento, payload);
       } else {
         const payload = { 
-          valorRecebido: valorNumerico, 
+          valorRecebido: valorNumerico,
           formaPagamento: values.formaPagamento,
           observacoes: values.observacoes,
-          numeroParcela // Envia o número da parcela se existir
+          numeroParcela,
+          comprovante: values.comprovante
         };
         console.log('📤 [FRONTEND] Payload de recebimento:', payload);
-        
         await contasReceberAPI.receber(conta.numeroDocumento, payload);
       }
       
@@ -208,6 +236,47 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
                 <FormMessage />
               </FormItem>
             )} />
+            
+            <FormField name="comprovante" control={form.control} render={({ field }) => (
+              <FormItem>
+                <FormLabel>Comprovante (Imagem)</FormLabel>
+                <FormControl>
+                  <div className="space-y-2">
+                    {!imagePreview ? (
+                      <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 transition-smooth">
+                        <ImagePlus className="h-5 w-5 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">Anexar comprovante (máx 5MB)</span>
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden" 
+                          onChange={handleImageUpload}
+                        />
+                      </label>
+                    ) : (
+                      <div className="relative">
+                        <img 
+                          src={imagePreview} 
+                          alt="Comprovante" 
+                          className="w-full h-48 object-contain rounded-lg border border-border"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2"
+                          onClick={removeImage}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            
             <div className="rounded-md border border-primary/20 bg-primary/5 p-4">
               <p className="text-sm font-medium text-primary">
                 ℹ️ Esta transação será automaticamente registrada no caixa aberto

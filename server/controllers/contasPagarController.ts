@@ -252,7 +252,7 @@ export const updateContaPagar = async (req: Request, res: Response) => {
 
 export const pagarConta = async (req: Request, res: Response) => {
   try {
-    const { valor, data, formaPagamento, observacoes, numeroParcela } = req.body;
+    const { valor, data, formaPagamento, observacoes, numeroParcela, comprovante } = req.body;
 
     console.log('📝 [PAGAR CONTA] Payload recebido:', JSON.stringify(req.body, null, 2));
 
@@ -287,7 +287,8 @@ export const pagarConta = async (req: Request, res: Response) => {
         valor,
         data: dataConvertida,
         formaPagamento,
-        observacoes
+        observacoes,
+        comprovante
       } as any;
       conta.status = 'Pago';
       
@@ -306,7 +307,8 @@ export const pagarConta = async (req: Request, res: Response) => {
         valor,
         data: dataConvertida,
         formaPagamento,
-        observacoes
+        observacoes,
+        comprovante
       };
       (parcela as any).status = 'Pago';
 

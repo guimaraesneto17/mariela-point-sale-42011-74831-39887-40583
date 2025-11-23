@@ -3,11 +3,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, CreditCard, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Calendar, CreditCard, CheckCircle2, Clock, AlertCircle, FileImage, ImagePlus } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useState } from "react";
 import { RegistrarPagamentoDialog } from "./RegistrarPagamentoDialog";
+import { ComprovanteDialog } from "./ComprovanteDialog";
 
 interface DetalhesParcelamentoDialogProps {
   open: boolean;
@@ -20,6 +21,8 @@ interface DetalhesParcelamentoDialogProps {
 export function DetalhesParcelamentoDialog({ open, onOpenChange, conta, tipo, onSuccess }: DetalhesParcelamentoDialogProps) {
   const [registroDialogOpen, setRegistroDialogOpen] = useState(false);
   const [parcelaParaPagar, setParcelaParaPagar] = useState<number | undefined>(undefined);
+  const [comprovanteDialogOpen, setComprovanteDialogOpen] = useState(false);
+  const [comprovanteAtual, setComprovanteAtual] = useState<string | undefined>(undefined);
 
   if (!conta || conta.tipoCriacao !== 'Parcelamento') return null;
 
@@ -77,6 +80,11 @@ export function DetalhesParcelamentoDialog({ open, onOpenChange, conta, tipo, on
     onSuccess();
     setRegistroDialogOpen(false);
     setParcelaParaPagar(undefined);
+  };
+
+  const handleViewComprovante = (comprovante: string) => {
+    setComprovanteAtual(comprovante);
+    setComprovanteDialogOpen(true);
   };
 
   return (
@@ -190,6 +198,17 @@ export function DetalhesParcelamentoDialog({ open, onOpenChange, conta, tipo, on
                                 {pagamentoParcela.observacoes}
                               </p>
                             )}
+                            {pagamentoParcela?.comprovante && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
+                                onClick={() => handleViewComprovante(pagamentoParcela.comprovante)}
+                              >
+                                <FileImage className="h-3 w-3 mr-1" />
+                                Ver comprovante
+                              </Button>
+                            )}
                           </div>
                         </div>
                         <div className="text-right space-y-2">
@@ -234,6 +253,13 @@ export function DetalhesParcelamentoDialog({ open, onOpenChange, conta, tipo, on
         conta={conta}
         numeroParcela={parcelaParaPagar}
         onSuccess={handleSuccessRegistro}
+      />
+
+      <ComprovanteDialog
+        open={comprovanteDialogOpen}
+        onOpenChange={setComprovanteDialogOpen}
+        comprovante={comprovanteAtual}
+        readonly={true}
       />
     </>
   );
