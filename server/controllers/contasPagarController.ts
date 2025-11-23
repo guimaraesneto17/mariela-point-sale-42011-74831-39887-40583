@@ -202,7 +202,7 @@ export const pagarConta = async (req: Request, res: Response) => {
     const movimento = {
       tipo: 'saida' as const,
       valor: valorPago,
-      data: new Date(dataPagamento || new Date()),
+      data: new Date(dataPagamento || new Date()).toISOString(),
       codigoVenda: null,
       formaPagamento: formaPagamento || null,
       observacao: `Pagamento: ${conta.descricao} - ${conta.numeroDocumento}`
