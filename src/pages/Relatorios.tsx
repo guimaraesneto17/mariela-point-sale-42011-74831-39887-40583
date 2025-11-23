@@ -108,6 +108,26 @@ const Relatorios = () => {
     loadRelatorios();
   }, []);
 
+  const aplicarFiltrosVendas = () => {
+    loadRelatorios();
+    toast.success("Filtros de vendas aplicados!");
+  };
+
+  const aplicarFiltrosProdutos = () => {
+    loadRelatorios();
+    toast.success("Filtros de produtos aplicados!");
+  };
+
+  const aplicarFiltrosCaixa = () => {
+    loadRelatorios();
+    toast.success("Filtros de caixa aplicados!");
+  };
+
+  const aplicarFiltrosFinanceiro = () => {
+    loadRelatorios();
+    toast.success("Filtros financeiros aplicados!");
+  };
+
   // Função auxiliar para filtrar dados por período
   const filtrarPorPeriodo = (data: Date, dataInicio: string, dataFim: string, periodo: string) => {
     const hoje = new Date();
@@ -790,19 +810,28 @@ const Relatorios = () => {
                     onChange={(e) => setDataFimFinanceiro(e.target.value)}
                   />
                 </div>
-                <div className="flex items-end">
+                <div className="flex items-end gap-2">
+                  <Button
+                    variant="default"
+                    className="flex-1"
+                    onClick={aplicarFiltrosFinanceiro}
+                  >
+                    <Filter className="h-4 w-4 mr-2" />
+                    Aplicar Filtros
+                  </Button>
                   {(periodoFinanceiro !== "todos" || dataInicioFinanceiro || dataFimFinanceiro) && (
                     <Button
                       variant="outline"
-                      className="w-full"
+                      className="flex-1"
                       onClick={() => {
                         setPeriodoFinanceiro("todos");
                         setDataInicioFinanceiro("");
                         setDataFimFinanceiro("");
+                        loadRelatorios();
                       }}
                     >
                       <X className="h-4 w-4 mr-2" />
-                      Limpar Filtros
+                      Limpar
                     </Button>
                   )}
                 </div>
@@ -1022,19 +1051,28 @@ const Relatorios = () => {
                     onChange={(e) => setDataFimVendas(e.target.value)}
                   />
                 </div>
-                <div className="flex items-end">
+                <div className="flex items-end gap-2">
+                  <Button
+                    variant="default"
+                    className="flex-1"
+                    onClick={aplicarFiltrosVendas}
+                  >
+                    <Filter className="h-4 w-4 mr-2" />
+                    Aplicar Filtros
+                  </Button>
                   {(periodoVendas !== "todos" || dataInicioVendas || dataFimVendas) && (
                     <Button
                       variant="outline"
-                      className="w-full"
+                      className="flex-1"
                       onClick={() => {
                         setPeriodoVendas("todos");
                         setDataInicioVendas("");
                         setDataFimVendas("");
+                        loadRelatorios();
                       }}
                     >
                       <X className="h-4 w-4 mr-2" />
-                      Limpar Filtros
+                      Limpar
                     </Button>
                   )}
                 </div>
@@ -1167,19 +1205,28 @@ const Relatorios = () => {
                     onChange={(e) => setDataFimProdutos(e.target.value)}
                   />
                 </div>
-                <div className="flex items-end">
+                <div className="flex items-end gap-2">
+                  <Button
+                    variant="default"
+                    className="flex-1"
+                    onClick={aplicarFiltrosProdutos}
+                  >
+                    <Filter className="h-4 w-4 mr-2" />
+                    Aplicar Filtros
+                  </Button>
                   {(periodoProdutos !== "todos" || dataInicioProdutos || dataFimProdutos) && (
                     <Button
                       variant="outline"
-                      className="w-full"
+                      className="flex-1"
                       onClick={() => {
                         setPeriodoProdutos("todos");
                         setDataInicioProdutos("");
                         setDataFimProdutos("");
+                        loadRelatorios();
                       }}
                     >
                       <X className="h-4 w-4 mr-2" />
-                      Limpar Filtros
+                      Limpar
                     </Button>
                   )}
                 </div>
@@ -1531,19 +1578,28 @@ const Relatorios = () => {
                     onChange={(e) => setDataFimCaixa(e.target.value)}
                   />
                 </div>
-                <div className="flex items-end">
+                <div className="flex items-end gap-2">
+                  <Button
+                    variant="default"
+                    className="flex-1"
+                    onClick={aplicarFiltrosCaixa}
+                  >
+                    <Filter className="h-4 w-4 mr-2" />
+                    Aplicar Filtros
+                  </Button>
                   {(periodoCaixa !== "todos" || dataInicioCaixa || dataFimCaixa) && (
                     <Button
                       variant="outline"
-                      className="w-full"
+                      className="flex-1"
                       onClick={() => {
                         setPeriodoCaixa("todos");
                         setDataInicioCaixa("");
                         setDataFimCaixa("");
+                        loadRelatorios();
                       }}
                     >
                       <X className="h-4 w-4 mr-2" />
-                      Limpar Filtros
+                      Limpar
                     </Button>
                   )}
                 </div>
