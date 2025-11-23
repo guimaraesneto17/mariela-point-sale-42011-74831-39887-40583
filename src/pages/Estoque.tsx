@@ -20,6 +20,7 @@ import { ImageGalleryLightbox } from "@/components/ImageGalleryLightbox";
 import { AddMultipleVariantsDialog } from "@/components/AddMultipleVariantsDialog";
 import { HistoricoPrecosDialog } from "@/components/HistoricoPrecosDialog";
 import { EstoqueAlertasDialog } from "@/components/EstoqueAlertasDialog";
+import { ImageNavigator } from "@/components/ImageNavigator";
 
 import { estoqueAPI } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
@@ -1002,11 +1003,11 @@ const Estoque = () => {
                   <div className="relative aspect-square rounded-lg overflow-hidden bg-muted group">
                     {varianteSelecionada?.imagens?.[0] ? (
                       <div className="relative w-full h-full">
-                        <img
-                          src={varianteSelecionada.imagens[0]}
+                        <ImageNavigator
+                          images={varianteSelecionada.imagens}
                           alt={item.nomeProduto}
-                          className="w-full h-full object-cover cursor-pointer group-hover:scale-105 transition-transform"
-                          onClick={() => openLightbox(varianteSelecionada.imagens)}
+                          onImageClick={() => openLightbox(varianteSelecionada.imagens)}
+                          showControls={true}
                         />
                         
                         {/* Estrela de destaque - canto superior esquerdo */}
@@ -1283,23 +1284,25 @@ const Estoque = () => {
                   <div className="flex items-start gap-4">
                     {varianteSelecionada && varianteSelecionada.imagens && varianteSelecionada.imagens.length > 0 ? (
                       <div 
-                        className="relative group cursor-pointer" 
+                        className="relative group cursor-pointer w-24 h-24 rounded-lg overflow-hidden" 
                         onClick={() => openLightbox(varianteSelecionada.imagens)}
                         title="Clique para ver todas as imagens"
                       >
-                        <img
-                          src={varianteSelecionada.imagens[0]}
+                        <ImageNavigator
+                          images={varianteSelecionada.imagens}
                           alt={`${item.nomeProduto} - ${selectedCor}`}
-                          className="w-24 h-24 object-cover rounded-lg border-2 border-primary/20 shadow-md transition-all group-hover:border-primary group-hover:scale-105"
+                          className="border-2 border-primary/20 shadow-md transition-all group-hover:border-primary group-hover:scale-105"
+                          onImageClick={() => openLightbox(varianteSelecionada.imagens)}
+                          showControls={varianteSelecionada.imagens.length > 1}
                         />
                         
                         {/* Estrela de destaque dourada - canto superior esquerdo */}
-                        <div className="absolute top-1 left-1 bg-yellow-500 text-white rounded-full p-1 shadow-md z-10">
+                        <div className="absolute top-1 left-1 bg-yellow-500 text-white rounded-full p-1 shadow-md z-30">
                           <Star className="h-3 w-3 fill-current" />
                         </div>
                         
                         {/* Badge com ícone de imagem e quantidade */}
-                        <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-1.5 shadow-lg border-2 border-background flex items-center justify-center gap-1 min-w-[28px] z-10">
+                        <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-1.5 shadow-lg border-2 border-background flex items-center justify-center gap-1 min-w-[28px] z-30">
                           <ImageIcon className="h-3 w-3" />
                           <span className="text-xs font-bold">{varianteSelecionada.imagens.length}</span>
                         </div>

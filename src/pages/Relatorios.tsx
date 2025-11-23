@@ -17,6 +17,7 @@ import { MargemLucroCard } from "@/components/MargemLucroCard";
 import { DashboardMovimentacoes } from "@/components/DashboardMovimentacoes";
 import { EstoqueAlertasDialog } from "@/components/EstoqueAlertasDialog";
 import { PromocoesEfetividadeDialog } from "@/components/PromocoesEfetividadeDialog";
+import { MovimentacaoEstoqueChart } from "@/components/MovimentacaoEstoqueChart";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, LineChart, Line, Area, AreaChart } from "recharts";
 import { GlobalLoading } from "@/components/GlobalLoading";
 import { format, addDays } from "date-fns";
@@ -118,41 +119,20 @@ const Relatorios = () => {
     loadRelatorios();
   }, []);
 
-  const aplicarFiltrosVendas = async () => {
-    try {
-      await loadRelatorios();
-      toast.success("Filtros de vendas aplicados!");
-    } catch (error) {
-      toast.error("Erro ao aplicar filtros");
-    }
-  };
-
-  const aplicarFiltrosProdutos = async () => {
-    try {
-      await loadRelatorios();
-      toast.success("Filtros de produtos aplicados!");
-    } catch (error) {
-      toast.error("Erro ao aplicar filtros");
-    }
-  };
-
-  const aplicarFiltrosCaixa = async () => {
-    try {
-      await loadRelatorios();
-      toast.success("Filtros de caixa aplicados!");
-    } catch (error) {
-      toast.error("Erro ao aplicar filtros");
-    }
-  };
-
-  const aplicarFiltrosFinanceiro = async () => {
-    try {
-      await loadRelatorios();
-      toast.success("Filtros financeiros aplicados!");
-    } catch (error) {
-      toast.error("Erro ao aplicar filtros");
-    }
-  };
+  // Aplicar filtros automaticamente quando mudarem (sem recarregar página)
+  useEffect(() => {
+    if (loading) return; // Não executar durante loading inicial
+    const timeoutId = setTimeout(() => {
+      loadRelatorios();
+    }, 300); // Debounce de 300ms
+    return () => clearTimeout(timeoutId);
+  }, [
+    periodoVendas, dataInicioVendas, dataFimVendas, vendedorSelecionado, formaPagamentoSelecionada,
+    periodoProdutos, dataInicioProdutos, dataFimProdutos, categoriaSelecionada,
+    periodoCaixa, dataInicioCaixa, dataFimCaixa,
+    periodoFinanceiro, dataInicioFinanceiro, dataFimFinanceiro, periodoVencimento, dataInicioVencimento, dataFimVencimento,
+    clienteSelecionado
+  ]);
 
   // Função auxiliar para filtrar dados por período
   const filtrarPorPeriodo = (data: Date, dataInicio: string, dataFim: string, periodo: string) => {
@@ -1012,38 +992,22 @@ const Relatorios = () => {
 
               {/* Botões de Ação */}
               <div className="flex items-center gap-2 pt-2">
-                <Button
-                  variant="default"
-                  className="flex-1"
-                  onClick={aplicarFiltrosFinanceiro}
-                  disabled={loading}
-                >
-                  <Filter className="h-4 w-4 mr-2" />
-                  Aplicar Filtros
-                </Button>
                 {(periodoFinanceiro !== "todos" || dataInicioFinanceiro || dataFimFinanceiro || periodoVencimento !== "todos" || dataInicioVencimento || dataFimVencimento) && (
                   <Button
                     variant="outline"
                     className="flex-1"
-                    onClick={async () => {
+                    onClick={() => {
                       setPeriodoFinanceiro("todos");
                       setDataInicioFinanceiro("");
                       setDataFimFinanceiro("");
                       setPeriodoVencimento("todos");
                       setDataInicioVencimento("");
                       setDataFimVencimento("");
-                      try {
-                        setLoading(true);
-                        await loadRelatorios();
-                        toast.success("Filtros limpos!");
-                      } finally {
-                        setLoading(false);
-                      }
                     }}
                     disabled={loading}
                   >
                     <X className="h-4 w-4 mr-2" />
-                    Limpar
+                    Limpar Filtros
                   </Button>
                 )}
               </div>
@@ -1295,37 +1259,21 @@ const Relatorios = () => {
                   </Select>
                 </div>
                 <div className="flex items-end gap-2">
-                  <Button
-                    variant="default"
-                    className="flex-1"
-                    onClick={aplicarFiltrosVendas}
-                    disabled={loading}
-                  >
-                    <Filter className="h-4 w-4 mr-2" />
-                    Aplicar Filtros
-                  </Button>
                   {(periodoVendas !== "todos" || dataInicioVendas || dataFimVendas || vendedorSelecionado !== "todos" || formaPagamentoSelecionada !== "todos") && (
                     <Button
                       variant="outline"
                       className="flex-1"
-                      onClick={async () => {
+                      onClick={() => {
                         setPeriodoVendas("todos");
                         setDataInicioVendas("");
                         setDataFimVendas("");
                         setVendedorSelecionado("todos");
                         setFormaPagamentoSelecionada("todos");
-                        try {
-                          setLoading(true);
-                          await loadRelatorios();
-                          toast.success("Filtros limpos!");
-                        } finally {
-                          setLoading(false);
-                        }
                       }}
                       disabled={loading}
                     >
                       <X className="h-4 w-4 mr-2" />
-                      Limpar
+                      Limpar Filtros
                     </Button>
                   )}
                 </div>
@@ -1475,36 +1423,20 @@ const Relatorios = () => {
                   </Select>
                 </div>
                 <div className="flex items-end gap-2">
-                  <Button
-                    variant="default"
-                    className="flex-1"
-                    onClick={aplicarFiltrosProdutos}
-                    disabled={loading}
-                  >
-                    <Filter className="h-4 w-4 mr-2" />
-                    Aplicar Filtros
-                  </Button>
                   {(periodoProdutos !== "todos" || dataInicioProdutos || dataFimProdutos || categoriaSelecionada !== "todos") && (
                     <Button
                       variant="outline"
                       className="flex-1"
-                      onClick={async () => {
+                      onClick={() => {
                         setPeriodoProdutos("todos");
                         setDataInicioProdutos("");
                         setDataFimProdutos("");
                         setCategoriaSelecionada("todos");
-                        try {
-                          setLoading(true);
-                          await loadRelatorios();
-                          toast.success("Filtros limpos!");
-                        } finally {
-                          setLoading(false);
-                        }
                       }}
                       disabled={loading}
                     >
                       <X className="h-4 w-4 mr-2" />
-                      Limpar
+                      Limpar Filtros
                     </Button>
                   )}
                 </div>
@@ -1742,6 +1674,13 @@ const Relatorios = () => {
               </CardContent>
             </Card>
           )}
+
+          {/* Movimentação de Estoque */}
+          <MovimentacaoEstoqueChart 
+            estoque={estoque} 
+            dataInicio={dataInicioProdutos}
+            dataFim={dataFimProdutos}
+          />
         </TabsContent>
 
         {/* Tab Vendedores */}
@@ -1857,35 +1796,19 @@ const Relatorios = () => {
                   />
                 </div>
                 <div className="flex items-end gap-2">
-                  <Button
-                    variant="default"
-                    className="flex-1"
-                    onClick={aplicarFiltrosCaixa}
-                    disabled={loading}
-                  >
-                    <Filter className="h-4 w-4 mr-2" />
-                    Aplicar Filtros
-                  </Button>
                   {(periodoCaixa !== "todos" || dataInicioCaixa || dataFimCaixa) && (
                     <Button
                       variant="outline"
                       className="flex-1"
-                      onClick={async () => {
+                      onClick={() => {
                         setPeriodoCaixa("todos");
                         setDataInicioCaixa("");
                         setDataFimCaixa("");
-                        try {
-                          setLoading(true);
-                          await loadRelatorios();
-                          toast.success("Filtros limpos!");
-                        } finally {
-                          setLoading(false);
-                        }
                       }}
                       disabled={loading}
                     >
                       <X className="h-4 w-4 mr-2" />
-                      Limpar
+                      Limpar Filtros
                     </Button>
                   )}
                 </div>
