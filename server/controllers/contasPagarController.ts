@@ -26,6 +26,8 @@ export const getContaPagarByNumero = async (req: Request, res: Response) => {
 
 export const createContaPagar = async (req: Request, res: Response) => {
   try {
+    console.log('📝 [CREATE CONTA PAGAR] Payload recebido:', JSON.stringify(req.body, null, 2));
+    
     let numero = (req.body?.numeroDocumento || '').trim();
     const isParcelamento = req.body?.isParcelamento || false;
     const numeroParcela = req.body?.numeroParcela || 1;
@@ -76,18 +78,58 @@ export const createContaPagar = async (req: Request, res: Response) => {
       }
     }
 
+    // Buscar dados do fornecedor se fornecedorCodigo foi enviado
+    let fornecedorObj = null;
+    if (req.body.fornecedorCodigo) {
+      const Fornecedor = (await import('../models/Fornecedor')).default;
+      const fornecedor = await Fornecedor.findOne({ codigoFornecedor: req.body.fornecedorCodigo });
+      if (fornecedor) {
+        fornecedorObj = {
+          codigoFornecedor: fornecedor.codigoFornecedor,
+          nome: fornecedor.nome
+        };
+        console.log('✅ [CREATE CONTA PAGAR] Fornecedor encontrado:', fornecedorObj);
+      } else {
+        console.warn('⚠️ [CREATE CONTA PAGAR] Fornecedor não encontrado:', req.body.fornecedorCodigo);
+      }
+    }
+
     // Converter datas de string para Date object se necessário
     const contaData: any = {
-      ...req.body,
       numeroDocumento: numero,
+      descricao: req.body.descricao,
+      categoria: req.body.categoria,
+      valor: Number(req.body.valor),
+      valorPago: req.body.valorPago ? Number(req.body.valorPago) : 0,
       dataEmissao: req.body.dataEmissao ? new Date(req.body.dataEmissao) : new Date(),
-      dataVencimento: new Date(req.body.dataVencimento)
+      dataVencimento: new Date(req.body.dataVencimento),
+      status: req.body.status || 'Pendente'
     };
+
+    // Adicionar fornecedor se existir
+    if (fornecedorObj) {
+      contaData.fornecedor = fornecedorObj;
+    }
 
     // Converter outras datas se presentes
     if (req.body.dataPagamento) {
       contaData.dataPagamento = new Date(req.body.dataPagamento);
     }
+    
+    // Adicionar campos opcionais
+    if (req.body.formaPagamento) {
+      contaData.formaPagamento = req.body.formaPagamento;
+    }
+    
+    if (req.body.observacoes) {
+      contaData.observacoes = req.body.observacoes;
+    }
+    
+    if (req.body.anexos) {
+      contaData.anexos = req.body.anexos;
+    }
+
+    console.log('💾 [CREATE CONTA PAGAR] Dados preparados para salvar:', JSON.stringify(contaData, null, 2));
 
     const conta = new ContasPagar(contaData);
 
@@ -102,17 +144,21 @@ export const createContaPagar = async (req: Request, res: Response) => {
     }
 
     await conta.save();
+    console.log('✅ [CREATE CONTA PAGAR] Conta salva com sucesso:', conta.numeroDocumento);
     res.status(201).json(conta);
   } catch (error: any) {
-    console.error('Erro ao criar conta a pagar:', error);
+    console.error('❌ [CREATE CONTA PAGAR] Erro:', error);
+    console.error('❌ [CREATE CONTA PAGAR] Stack:', error.stack);
+    
     if (error?.code === 11000) {
       return res.status(400).json({ error: 'Número de documento já existe' });
     }
     if (error?.name === 'ValidationError') {
       const messages = Object.values(error.errors || {}).map((e: any) => e.message);
+      console.error('❌ [CREATE CONTA PAGAR] Erros de validação:', messages);
       return res.status(400).json({ error: messages.join('; ') });
     }
-    res.status(400).json({ error: 'Erro ao criar conta a pagar' });
+    res.status(400).json({ error: `Erro ao criar conta a pagar: ${error.message}` });
   }
 };
 
@@ -139,15 +185,16 @@ export const pagarConta = async (req: Request, res: Response) => {
   try {
     const { valorPago, dataPagamento, formaPagamento, observacoes } = req.body;
 
-    console.log('📝 Iniciando registro de pagamento:', { valorPago, dataPagamento, formaPagamento, observacoes });
+    console.log('📝 [PAGAR CONTA] Payload recebido:', JSON.stringify(req.body, null, 2));
+    console.log('📝 [PAGAR CONTA] Número da conta:', req.params.numero);
 
     if (typeof valorPago !== 'number' || valorPago <= 0) {
-      console.error('❌ Valor inválido:', valorPago);
+      console.error('❌ [PAGAR CONTA] Valor inválido:', valorPago);
       return res.status(400).json({ error: 'valorPago deve ser um número positivo' });
     }
 
     if (!formaPagamento) {
-      console.error('❌ Forma de pagamento não informada');
+      console.error('❌ [PAGAR CONTA] Forma de pagamento não informada');
       return res.status(400).json({ error: 'Forma de pagamento é obrigatória' });
     }
 
@@ -156,21 +203,23 @@ export const pagarConta = async (req: Request, res: Response) => {
     const caixaAberto = await Caixa.findOne({ status: 'aberto' }).sort({ dataAbertura: -1 });
     
     if (!caixaAberto) {
-      console.error('❌ Nenhum caixa aberto encontrado');
+      console.error('❌ [PAGAR CONTA] Nenhum caixa aberto encontrado');
       return res.status(400).json({ 
         error: 'Não é possível registrar pagamento sem um caixa aberto. Por favor, abra o caixa primeiro.' 
       });
     }
 
-    console.log('✅ Caixa aberto encontrado:', caixaAberto.codigoCaixa);
+    console.log('✅ [PAGAR CONTA] Caixa aberto encontrado:', caixaAberto.codigoCaixa);
 
     const conta = await ContasPagar.findOne({ numeroDocumento: req.params.numero });
     if (!conta) {
-      console.error('❌ Conta não encontrada:', req.params.numero);
+      console.error('❌ [PAGAR CONTA] Conta não encontrada:', req.params.numero);
       return res.status(404).json({ error: 'Conta a pagar não encontrada' });
     }
 
-    console.log('✅ Conta encontrada:', conta.numeroDocumento);
+    console.log('✅ [PAGAR CONTA] Conta encontrada:', conta.numeroDocumento);
+    console.log('📊 [PAGAR CONTA] Valor atual da conta:', conta.valor);
+    console.log('📊 [PAGAR CONTA] Valor já pago:', conta.valorPago || 0);
 
     // Converter dataPagamento para Date object
     const dataConvertida = dataPagamento ? new Date(dataPagamento) : new Date();
@@ -181,22 +230,40 @@ export const pagarConta = async (req: Request, res: Response) => {
 
     // Histórico
     (conta as any).historicoPagamentos = (conta as any).historicoPagamentos || [];
-    (conta as any).historicoPagamentos.push({
+    const historicoItem = {
       valor: valorPago,
       data: dataConvertida, // Date object, não string
-      formaPagamento,
-      observacoes: observacoes || undefined
-    });
+      formaPagamento
+    };
+    
+    // Adicionar observacoes apenas se tiver valor
+    if (observacoes) {
+      (historicoItem as any).observacoes = observacoes;
+    }
+    
+    (conta as any).historicoPagamentos.push(historicoItem);
+    console.log('📝 [PAGAR CONTA] Item adicionado ao histórico:', JSON.stringify(historicoItem, null, 2));
 
     if (conta.valorPago >= conta.valor) {
       conta.status = 'Pago';
+      console.log('✅ [PAGAR CONTA] Status alterado para: Pago');
     } else if (conta.valorPago > 0) {
       conta.status = 'Parcial';
+      console.log('⚠️ [PAGAR CONTA] Status alterado para: Parcial');
     }
 
-    console.log('💾 Salvando conta...');
+    console.log('💾 [PAGAR CONTA] Salvando conta...');
+    console.log('💾 [PAGAR CONTA] Dados da conta antes de salvar:', JSON.stringify({
+      numeroDocumento: conta.numeroDocumento,
+      valorPago: conta.valorPago,
+      status: conta.status,
+      formaPagamento: conta.formaPagamento,
+      dataPagamento: conta.dataPagamento,
+      historicoLength: (conta as any).historicoPagamentos.length
+    }, null, 2));
+    
     await conta.save();
-    console.log('✅ Conta salva com sucesso');
+    console.log('✅ [PAGAR CONTA] Conta salva com sucesso');
 
     // Registrar no caixa (obrigatório)
     const movimento = {
@@ -208,7 +275,7 @@ export const pagarConta = async (req: Request, res: Response) => {
       observacao: `Pagamento: ${conta.descricao} - ${conta.numeroDocumento}`
     };
 
-    console.log('💰 Registrando movimento no caixa:', movimento);
+    console.log('💰 [PAGAR CONTA] Registrando movimento no caixa:', JSON.stringify(movimento, null, 2));
     caixaAberto.movimentos.push(movimento);
 
     // Recalcular totais
@@ -222,14 +289,24 @@ export const pagarConta = async (req: Request, res: Response) => {
 
     caixaAberto.performance = caixaAberto.entrada - caixaAberto.saida;
 
-    console.log('💾 Salvando caixa...');
+    console.log('📊 [PAGAR CONTA] Totais recalculados - Entrada:', caixaAberto.entrada, 'Saída:', caixaAberto.saida, 'Performance:', caixaAberto.performance);
+    console.log('💾 [PAGAR CONTA] Salvando caixa...');
+    
     await caixaAberto.save();
-    console.log('✅ Caixa salvo com sucesso');
+    console.log('✅ [PAGAR CONTA] Caixa salvo com sucesso');
+    console.log('✅ [PAGAR CONTA] Operação finalizada com sucesso');
 
     res.json(conta);
   } catch (error: any) {
-    console.error('❌ ERRO COMPLETO ao registrar pagamento:', error);
-    console.error('Stack trace:', error.stack);
+    console.error('❌ [PAGAR CONTA] ERRO COMPLETO:', error);
+    console.error('❌ [PAGAR CONTA] Stack trace:', error.stack);
+    console.error('❌ [PAGAR CONTA] Error name:', error.name);
+    console.error('❌ [PAGAR CONTA] Error message:', error.message);
+    
+    if (error.name === 'ValidationError') {
+      console.error('❌ [PAGAR CONTA] Erros de validação do Mongoose:', error.errors);
+    }
+    
     res.status(400).json({ error: `Erro ao registrar pagamento: ${error.message || 'Erro desconhecido'}` });
   }
 };

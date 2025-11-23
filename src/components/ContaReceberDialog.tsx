@@ -108,6 +108,9 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
     try {
       setLoading(true);
       
+      console.log('📝 [FRONTEND] Iniciando criação/edição de conta a receber');
+      console.log('📝 [FRONTEND] Dados do formulário:', data);
+      
       // Construir payload com dados formatados corretamente
       const payload: any = {
         descricao: data.descricao.trim(),
@@ -127,19 +130,26 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
         payload.observacoes = data.observacoes.trim();
       }
 
+      console.log('📤 [FRONTEND] Payload preparado:', JSON.stringify(payload, null, 2));
+
       if (conta) {
+        console.log('📝 [FRONTEND] Atualizando conta existente:', conta.numeroDocumento);
         await contasReceberAPI.update(conta.numeroDocumento, payload);
         toast.success("Conta a receber atualizada com sucesso!");
       } else {
+        console.log('📝 [FRONTEND] Criando nova conta');
         await contasReceberAPI.create(payload);
         toast.success("Conta a receber criada com sucesso!");
       }
 
+      console.log('✅ [FRONTEND] Conta salva com sucesso');
       onSuccess();
       onOpenChange(false);
       form.reset();
     } catch (error: any) {
-      console.error('Erro ao salvar conta:', error);
+      console.error('❌ [FRONTEND] Erro ao salvar conta:', error);
+      console.error('❌ [FRONTEND] Mensagem:', error.message);
+      console.error('❌ [FRONTEND] Stack:', error.stack);
       toast.error(error.message || "Erro ao salvar conta a receber");
     } finally {
       setLoading(false);

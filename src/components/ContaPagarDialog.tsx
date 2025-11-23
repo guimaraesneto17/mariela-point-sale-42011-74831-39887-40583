@@ -108,6 +108,9 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
     try {
       setLoading(true);
       
+      console.log('📝 [FRONTEND] Iniciando criação/edição de conta a pagar');
+      console.log('📝 [FRONTEND] Dados do formulário:', data);
+      
       // Construir payload com dados formatados corretamente
       const payload: any = {
         descricao: data.descricao.trim(),
@@ -127,19 +130,26 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
         payload.observacoes = data.observacoes.trim();
       }
 
+      console.log('📤 [FRONTEND] Payload preparado:', JSON.stringify(payload, null, 2));
+
       if (conta) {
+        console.log('📝 [FRONTEND] Atualizando conta existente:', conta.numeroDocumento);
         await contasPagarAPI.update(conta.numeroDocumento, payload);
         toast.success("Conta a pagar atualizada com sucesso!");
       } else {
+        console.log('📝 [FRONTEND] Criando nova conta');
         await contasPagarAPI.create(payload);
         toast.success("Conta a pagar criada com sucesso!");
       }
 
+      console.log('✅ [FRONTEND] Conta salva com sucesso');
       onSuccess();
       onOpenChange(false);
       form.reset();
     } catch (error: any) {
-      console.error('Erro ao salvar conta:', error);
+      console.error('❌ [FRONTEND] Erro ao salvar conta:', error);
+      console.error('❌ [FRONTEND] Mensagem:', error.message);
+      console.error('❌ [FRONTEND] Stack:', error.stack);
       toast.error(error.message || "Erro ao salvar conta a pagar");
     } finally {
       setLoading(false);

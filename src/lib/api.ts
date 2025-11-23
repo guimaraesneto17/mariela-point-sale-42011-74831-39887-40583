@@ -202,11 +202,19 @@ export const contasPagarAPI = {
     formaPagamento: string; 
     observacoes?: string; 
     registrarNoCaixa?: boolean 
-  }) => 
-    fetchAPI(`/contas-pagar/${numero}/pagar`, {
+  }) => {
+    console.log('📤 [FRONTEND] Enviando pagamento:', { numero, data });
+    return fetchAPI(`/contas-pagar/${numero}/pagar`, {
       method: 'POST',
       body: JSON.stringify(data),
-    }),
+    }).then(result => {
+      console.log('✅ [FRONTEND] Resposta do pagamento:', result);
+      return result;
+    }).catch(error => {
+      console.error('❌ [FRONTEND] Erro no pagamento:', error);
+      throw error;
+    });
+  },
   delete: (numero: string) => fetchAPI(`/contas-pagar/${numero}`, { method: 'DELETE' }),
 };
 
@@ -229,11 +237,19 @@ export const contasReceberAPI = {
     formaPagamento: string; 
     observacoes?: string; 
     registrarNoCaixa?: boolean 
-  }) => 
-    fetchAPI(`/contas-receber/${numero}/receber`, {
+  }) => {
+    console.log('📤 [FRONTEND] Enviando recebimento:', { numero, data });
+    return fetchAPI(`/contas-receber/${numero}/receber`, {
       method: 'POST',
       body: JSON.stringify(data),
-    }),
+    }).then(result => {
+      console.log('✅ [FRONTEND] Resposta do recebimento:', result);
+      return result;
+    }).catch(error => {
+      console.error('❌ [FRONTEND] Erro no recebimento:', error);
+      throw error;
+    });
+  },
   delete: (numero: string) => fetchAPI(`/contas-receber/${numero}`, { method: 'DELETE' }),
 };
 

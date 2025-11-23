@@ -66,40 +66,59 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
       setLoading(true);
       if (!conta) return;
       
+      console.log('📝 [FRONTEND] Iniciando registro de', tipo === 'pagar' ? 'pagamento' : 'recebimento');
+      console.log('📝 [FRONTEND] Conta:', conta.numeroDocumento);
+      console.log('📝 [FRONTEND] Valores do formulário:', values);
+      
       const valorNumerico = parseFloat(values.valor);
       if (isNaN(valorNumerico) || valorNumerico <= 0) {
+        console.error('❌ [FRONTEND] Valor inválido:', values.valor);
         toast.error('Valor inválido');
         return;
       }
       
       if (valorNumerico > saldoRestante) {
+        console.error('❌ [FRONTEND] Valor excede saldo restante:', { valorNumerico, saldoRestante });
         toast.error('Valor excede o saldo restante');
         return;
       }
       
+      console.log('✅ [FRONTEND] Validações passaram. Enviando para API...');
+      
       if (tipo === 'pagar') {
-        await contasPagarAPI.pagar(conta.numeroDocumento, { 
+        const payload = { 
           valorPago: valorNumerico, 
           formaPagamento: values.formaPagamento,
           observacoes: values.observacoes
-        });
+        };
+        console.log('📤 [FRONTEND] Payload de pagamento:', payload);
+        
+        await contasPagarAPI.pagar(conta.numeroDocumento, payload);
       } else {
-        await contasReceberAPI.receber(conta.numeroDocumento, { 
+        const payload = { 
           valorRecebido: valorNumerico, 
           formaPagamento: values.formaPagamento,
           observacoes: values.observacoes
-        });
+        };
+        console.log('📤 [FRONTEND] Payload de recebimento:', payload);
+        
+        await contasReceberAPI.receber(conta.numeroDocumento, payload);
       }
       
       const mensagem = tipo === 'pagar' 
         ? 'Pagamento registrado e lançado no caixa'
         : 'Recebimento registrado e lançado no caixa';
+      
+      console.log('✅ [FRONTEND] Operação concluída com sucesso');
       toast.success(mensagem);
       
       onSuccess();
       onOpenChange(false);
       form.reset();
     } catch (e: any) {
+      console.error('❌ [FRONTEND] Erro ao registrar:', e);
+      console.error('❌ [FRONTEND] Mensagem de erro:', e?.message);
+      console.error('❌ [FRONTEND] Objeto completo do erro:', e);
       toast.error(e?.message || 'Erro ao registrar');
     } finally {
       setLoading(false);

@@ -26,6 +26,8 @@ export const getContaReceberByNumero = async (req: Request, res: Response) => {
 
 export const createContaReceber = async (req: Request, res: Response) => {
   try {
+    console.log('📝 [CREATE CONTA RECEBER] Payload recebido:', JSON.stringify(req.body, null, 2));
+    
     // Gerar número CR### ou CRP-###-# se não vier informado ou inválido
     let numero = (req.body?.numeroDocumento || '').trim();
     const isParcelamento = req.body?.isParcelamento || false;
@@ -77,18 +79,61 @@ export const createContaReceber = async (req: Request, res: Response) => {
       }
     }
 
+    // Buscar dados do cliente se clienteCodigo foi enviado
+    let clienteObj = null;
+    if (req.body.clienteCodigo) {
+      const Cliente = (await import('../models/Cliente')).default;
+      const cliente = await Cliente.findOne({ codigoCliente: req.body.clienteCodigo });
+      if (cliente) {
+        clienteObj = {
+          codigoCliente: cliente.codigoCliente,
+          nome: cliente.nome
+        };
+        console.log('✅ [CREATE CONTA RECEBER] Cliente encontrado:', clienteObj);
+      } else {
+        console.warn('⚠️ [CREATE CONTA RECEBER] Cliente não encontrado:', req.body.clienteCodigo);
+      }
+    }
+
     // Converter datas de string para Date object se necessário
     const contaData: any = {
-      ...req.body,
       numeroDocumento: numero,
+      descricao: req.body.descricao,
+      categoria: req.body.categoria,
+      valor: Number(req.body.valor),
+      valorRecebido: req.body.valorRecebido ? Number(req.body.valorRecebido) : 0,
       dataEmissao: req.body.dataEmissao ? new Date(req.body.dataEmissao) : new Date(),
-      dataVencimento: new Date(req.body.dataVencimento)
+      dataVencimento: new Date(req.body.dataVencimento),
+      status: req.body.status || 'Pendente'
     };
+
+    // Adicionar cliente se existir
+    if (clienteObj) {
+      contaData.cliente = clienteObj;
+    }
+    
+    // Adicionar vendaRelacionada se existir
+    if (req.body.codigoVenda) {
+      contaData.vendaRelacionada = {
+        codigoVenda: req.body.codigoVenda
+      };
+    }
 
     // Converter outras datas se presentes
     if (req.body.dataRecebimento) {
       contaData.dataRecebimento = new Date(req.body.dataRecebimento);
     }
+    
+    // Adicionar campos opcionais
+    if (req.body.formaPagamento) {
+      contaData.formaPagamento = req.body.formaPagamento;
+    }
+    
+    if (req.body.observacoes) {
+      contaData.observacoes = req.body.observacoes;
+    }
+
+    console.log('💾 [CREATE CONTA RECEBER] Dados preparados para salvar:', JSON.stringify(contaData, null, 2));
 
     const conta = new ContasReceber(contaData);
 
@@ -103,17 +148,21 @@ export const createContaReceber = async (req: Request, res: Response) => {
     }
 
     await conta.save();
+    console.log('✅ [CREATE CONTA RECEBER] Conta salva com sucesso:', conta.numeroDocumento);
     res.status(201).json(conta);
   } catch (error: any) {
-    console.error('Erro ao criar conta a receber:', error);
+    console.error('❌ [CREATE CONTA RECEBER] Erro:', error);
+    console.error('❌ [CREATE CONTA RECEBER] Stack:', error.stack);
+    
     if (error?.code === 11000) {
       return res.status(400).json({ error: 'Número de documento já existe' });
     }
     if (error?.name === 'ValidationError') {
       const messages = Object.values(error.errors || {}).map((e: any) => e.message);
+      console.error('❌ [CREATE CONTA RECEBER] Erros de validação:', messages);
       return res.status(400).json({ error: messages.join('; ') });
     }
-    res.status(400).json({ error: 'Erro ao criar conta a receber' });
+    res.status(400).json({ error: `Erro ao criar conta a receber: ${error.message}` });
   }
 };
 
@@ -140,15 +189,16 @@ export const receberConta = async (req: Request, res: Response) => {
   try {
     const { valorRecebido, dataRecebimento, formaPagamento, observacoes } = req.body;
 
-    console.log('📝 Iniciando registro de recebimento:', { valorRecebido, dataRecebimento, formaPagamento, observacoes });
+    console.log('📝 [RECEBER CONTA] Payload recebido:', JSON.stringify(req.body, null, 2));
+    console.log('📝 [RECEBER CONTA] Número da conta:', req.params.numero);
 
     if (typeof valorRecebido !== 'number' || valorRecebido <= 0) {
-      console.error('❌ Valor inválido:', valorRecebido);
+      console.error('❌ [RECEBER CONTA] Valor inválido:', valorRecebido);
       return res.status(400).json({ error: 'valorRecebido deve ser um número positivo' });
     }
 
     if (!formaPagamento) {
-      console.error('❌ Forma de pagamento não informada');
+      console.error('❌ [RECEBER CONTA] Forma de pagamento não informada');
       return res.status(400).json({ error: 'Forma de pagamento é obrigatória' });
     }
 
@@ -157,21 +207,23 @@ export const receberConta = async (req: Request, res: Response) => {
     const caixaAberto = await Caixa.findOne({ status: 'aberto' }).sort({ dataAbertura: -1 });
     
     if (!caixaAberto) {
-      console.error('❌ Nenhum caixa aberto encontrado');
+      console.error('❌ [RECEBER CONTA] Nenhum caixa aberto encontrado');
       return res.status(400).json({ 
         error: 'Não é possível registrar recebimento sem um caixa aberto. Por favor, abra o caixa primeiro.' 
       });
     }
 
-    console.log('✅ Caixa aberto encontrado:', caixaAberto.codigoCaixa);
+    console.log('✅ [RECEBER CONTA] Caixa aberto encontrado:', caixaAberto.codigoCaixa);
 
     const conta = await ContasReceber.findOne({ numeroDocumento: req.params.numero });
     if (!conta) {
-      console.error('❌ Conta não encontrada:', req.params.numero);
+      console.error('❌ [RECEBER CONTA] Conta não encontrada:', req.params.numero);
       return res.status(404).json({ error: 'Conta a receber não encontrada' });
     }
 
-    console.log('✅ Conta encontrada:', conta.numeroDocumento);
+    console.log('✅ [RECEBER CONTA] Conta encontrada:', conta.numeroDocumento);
+    console.log('📊 [RECEBER CONTA] Valor da conta:', conta.valor);
+    console.log('📊 [RECEBER CONTA] Valor já recebido:', conta.valorRecebido || 0);
 
     // Converter dataRecebimento para Date object
     const dataConvertida = dataRecebimento ? new Date(dataRecebimento) : new Date();
@@ -182,22 +234,40 @@ export const receberConta = async (req: Request, res: Response) => {
 
     // Histórico
     (conta as any).historicoRecebimentos = (conta as any).historicoRecebimentos || [];
-    (conta as any).historicoRecebimentos.push({
+    const historicoItem = {
       valor: valorRecebido,
       data: dataConvertida, // Date object, não string
-      formaPagamento,
-      observacoes: observacoes || undefined
-    });
+      formaPagamento
+    };
+    
+    // Adicionar observacoes apenas se tiver valor
+    if (observacoes) {
+      (historicoItem as any).observacoes = observacoes;
+    }
+    
+    (conta as any).historicoRecebimentos.push(historicoItem);
+    console.log('📝 [RECEBER CONTA] Item adicionado ao histórico:', JSON.stringify(historicoItem, null, 2));
 
     if (conta.valorRecebido >= conta.valor) {
       conta.status = 'Recebido';
+      console.log('✅ [RECEBER CONTA] Status alterado para: Recebido');
     } else if (conta.valorRecebido > 0) {
       conta.status = 'Parcial';
+      console.log('⚠️ [RECEBER CONTA] Status alterado para: Parcial');
     }
 
-    console.log('💾 Salvando conta...');
+    console.log('💾 [RECEBER CONTA] Salvando conta...');
+    console.log('💾 [RECEBER CONTA] Dados da conta antes de salvar:', JSON.stringify({
+      numeroDocumento: conta.numeroDocumento,
+      valorRecebido: conta.valorRecebido,
+      status: conta.status,
+      formaPagamento: conta.formaPagamento,
+      dataRecebimento: conta.dataRecebimento,
+      historicoLength: (conta as any).historicoRecebimentos.length
+    }, null, 2));
+    
     await conta.save();
-    console.log('✅ Conta salva com sucesso');
+    console.log('✅ [RECEBER CONTA] Conta salva com sucesso');
 
     // Registrar no caixa (obrigatório)
     const movimento = {
@@ -209,7 +279,7 @@ export const receberConta = async (req: Request, res: Response) => {
       observacao: `Recebimento: ${conta.descricao} - ${conta.numeroDocumento}`
     };
 
-    console.log('💰 Registrando movimento no caixa:', movimento);
+    console.log('💰 [RECEBER CONTA] Registrando movimento no caixa:', JSON.stringify(movimento, null, 2));
     caixaAberto.movimentos.push(movimento);
 
     // Recalcular totais
@@ -223,14 +293,24 @@ export const receberConta = async (req: Request, res: Response) => {
 
     caixaAberto.performance = caixaAberto.entrada - caixaAberto.saida;
 
-    console.log('💾 Salvando caixa...');
+    console.log('📊 [RECEBER CONTA] Totais recalculados - Entrada:', caixaAberto.entrada, 'Saída:', caixaAberto.saida, 'Performance:', caixaAberto.performance);
+    console.log('💾 [RECEBER CONTA] Salvando caixa...');
+    
     await caixaAberto.save();
-    console.log('✅ Caixa salvo com sucesso');
+    console.log('✅ [RECEBER CONTA] Caixa salvo com sucesso');
+    console.log('✅ [RECEBER CONTA] Operação finalizada com sucesso');
 
     res.json(conta);
   } catch (error: any) {
-    console.error('❌ ERRO COMPLETO ao registrar recebimento:', error);
-    console.error('Stack trace:', error.stack);
+    console.error('❌ [RECEBER CONTA] ERRO COMPLETO:', error);
+    console.error('❌ [RECEBER CONTA] Stack trace:', error.stack);
+    console.error('❌ [RECEBER CONTA] Error name:', error.name);
+    console.error('❌ [RECEBER CONTA] Error message:', error.message);
+    
+    if (error.name === 'ValidationError') {
+      console.error('❌ [RECEBER CONTA] Erros de validação do Mongoose:', error.errors);
+    }
+    
     res.status(400).json({ error: `Erro ao registrar recebimento: ${error.message || 'Erro desconhecido'}` });
   }
 };
