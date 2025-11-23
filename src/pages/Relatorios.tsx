@@ -52,7 +52,7 @@ const Relatorios = () => {
     valorEstoqueCusto: 0,
     valorEstoqueVenda: 0,
     produtosMaisVendidos: [],
-    estoqueMinimo: [],
+    estoquePorCategoria: [],
   });
   const [relatorioClientes, setRelatorioClientes] = useState<any>({
     totalClientes: 0,
@@ -227,6 +227,24 @@ const Relatorios = () => {
         .sort((a: any, b: any) => b.vendas - a.vendas)
         .slice(0, 5);
 
+      // Calcular estoque por categoria para relatório de produtos
+      const estoquePorCategoriaProdutos: any = {};
+      estoqueData.forEach((item: any) => {
+        const produto = produtos.find((p: any) => p.codigoProduto === item.codigoProduto);
+        const categoria = produto?.categoria || 'Sem Categoria';
+        
+        if (!estoquePorCategoriaProdutos[categoria]) {
+          estoquePorCategoriaProdutos[categoria] = {
+            categoria,
+            quantidade: 0,
+            valor: 0
+          };
+        }
+        
+        estoquePorCategoriaProdutos[categoria].quantidade += item.quantidadeTotal || 0;
+        estoquePorCategoriaProdutos[categoria].valor += (item.quantidadeTotal || 0) * (item.precoVenda || item.precoPromocional || 0);
+      });
+
       setRelatorioProdutos({
         totalProdutos,
         emEstoque,
@@ -235,14 +253,7 @@ const Relatorios = () => {
         valorEstoqueCusto,
         valorEstoqueVenda,
         produtosMaisVendidos: topProdutos,
-        estoqueMinimo: estoqueData
-          .filter((item: any) => (item.quantidadeTotal || 0) < 10)
-          .map((item: any) => ({
-            produto: item.nomeProduto || item.nome,
-            estoque: item.quantidadeTotal || 0,
-            minimo: 10
-          }))
-          .slice(0, 5),
+        estoquePorCategoria: Object.values(estoquePorCategoriaProdutos).sort((a: any, b: any) => b.quantidade - a.quantidade),
       });
 
       // Relatório de Clientes - Adicionar aniversariantes do mês
@@ -1240,24 +1251,24 @@ const Relatorios = () => {
             </Card>
           )}
 
-          {/* Estoque Mínimo */}
-          {relatorioProdutos.estoqueMinimo && relatorioProdutos.estoqueMinimo.length > 0 && (
-            <Card className="border-amber-200 dark:border-amber-900">
+          {/* Estoque por Categoria */}
+          {relatorioProdutos.estoquePorCategoria && relatorioProdutos.estoquePorCategoria.length > 0 && (
+            <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-500">
-                  <Bell className="h-5 w-5" />
-                  Alerta: Estoque Baixo (menos de 10 unidades)
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-primary" />
+                  Estoque por Categoria
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  {relatorioProdutos.estoqueMinimo.map((produto: any, index: number) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-amber-50 dark:bg-amber-950/20 rounded border border-amber-200 dark:border-amber-900">
+                <div className="space-y-3">
+                  {relatorioProdutos.estoquePorCategoria.map((cat: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                       <div>
-                        <p className="font-medium text-foreground">{produto.produto}</p>
-                        <p className="text-sm text-muted-foreground">Estoque atual: {produto.estoque} un</p>
+                        <p className="font-medium text-foreground">{cat.categoria}</p>
+                        <p className="text-sm text-muted-foreground">{cat.quantidade} unidades</p>
                       </div>
-                      <Badge variant="destructive">Baixo</Badge>
+                      <p className="font-bold text-primary">{formatCurrency(cat.valor)}</p>
                     </div>
                   ))}
                 </div>
