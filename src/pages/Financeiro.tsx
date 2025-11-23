@@ -3,18 +3,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, TrendingUp, TrendingDown, AlertCircle, Plus, CreditCard, Calendar, Split, BarChart3, Edit, Trash2, Filter, Eye, Link as LinkIcon } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, AlertCircle, Plus, CreditCard, Calendar, Split, BarChart3, Edit, Trash2, Filter, Eye, Link as LinkIcon, ChevronDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import { contasPagarAPI, contasReceberAPI } from "@/lib/api";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, isAfter, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ContaPagarDialog } from "@/components/ContaPagarDialog";
 import { ContaReceberDialog } from "@/components/ContaReceberDialog";
 import { FinanceNotifications } from "@/components/FinanceNotifications";
 import { RegistrarPagamentoDialog } from "@/components/RegistrarPagamentoDialog";
 import { DetalhesParcelamentoDialog } from "@/components/DetalhesParcelamentoDialog";
+import { DashboardParcelamentos } from "@/components/DashboardParcelamentos";
 import { useNavigate } from "react-router-dom";
 
 const Financeiro = () => {
@@ -34,6 +37,10 @@ const Financeiro = () => {
   const [registroConta, setRegistroConta] = useState<any | null>(null);
   const [filtroStatusPagar, setFiltroStatusPagar] = useState<string>("todos");
   const [filtroStatusReceber, setFiltroStatusReceber] = useState<string>("todos");
+  const [filtroTipoCriacaoPagar, setFiltroTipoCriacaoPagar] = useState<string>("todos");
+  const [filtroTipoCriacaoReceber, setFiltroTipoCriacaoReceber] = useState<string>("todos");
+  const [dataInicioFiltro, setDataInicioFiltro] = useState<Date | undefined>(undefined);
+  const [dataFimFiltro, setDataFimFiltro] = useState<Date | undefined>(undefined);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contaToDelete, setContaToDelete] = useState<{tipo: 'pagar'|'receber', numeroDocumento: string, descricao: string} | null>(null);
   const [detalhesParcelamentoOpen, setDetalhesParcelamentoOpen] = useState(false);
@@ -106,13 +113,57 @@ const Financeiro = () => {
   };
 
   const contasPagarFiltradas = contasPagar.filter(conta => {
-    if (filtroStatusPagar === "todos") return true;
-    return conta.status === filtroStatusPagar;
+    // Filtro de status
+    if (filtroStatusPagar !== "todos" && conta.status !== filtroStatusPagar) {
+      return false;
+    }
+    
+    // Filtro de tipo de criação
+    if (filtroTipoCriacaoPagar !== "todos" && conta.tipoCriacao !== filtroTipoCriacaoPagar) {
+      return false;
+    }
+    
+    // Filtro de período de vencimento
+    if (dataInicioFiltro || dataFimFiltro) {
+      const dataVenc = startOfDay(new Date(conta.dataVencimento));
+      
+      if (dataInicioFiltro && isBefore(dataVenc, startOfDay(dataInicioFiltro))) {
+        return false;
+      }
+      
+      if (dataFimFiltro && isAfter(dataVenc, startOfDay(dataFimFiltro))) {
+        return false;
+      }
+    }
+    
+    return true;
   });
 
   const contasReceberFiltradas = contasReceber.filter(conta => {
-    if (filtroStatusReceber === "todos") return true;
-    return conta.status === filtroStatusReceber;
+    // Filtro de status
+    if (filtroStatusReceber !== "todos" && conta.status !== filtroStatusReceber) {
+      return false;
+    }
+    
+    // Filtro de tipo de criação
+    if (filtroTipoCriacaoReceber !== "todos" && conta.tipoCriacao !== filtroTipoCriacaoReceber) {
+      return false;
+    }
+    
+    // Filtro de período de vencimento
+    if (dataInicioFiltro || dataFimFiltro) {
+      const dataVenc = startOfDay(new Date(conta.dataVencimento));
+      
+      if (dataInicioFiltro && isBefore(dataVenc, startOfDay(dataInicioFiltro))) {
+        return false;
+      }
+      
+      if (dataFimFiltro && isAfter(dataVenc, startOfDay(dataFimFiltro))) {
+        return false;
+      }
+    }
+    
+    return true;
   });
 
   return (
@@ -219,8 +270,12 @@ const Financeiro = () => {
       </div>
 
       {/* Tabs de Contas */}
-      <Tabs defaultValue="pagar" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs defaultValue="dashboard" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="dashboard">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Dashboard
+          </TabsTrigger>
           <TabsTrigger value="pagar">
             <TrendingDown className="h-4 w-4 mr-2" />
             Contas a Pagar
@@ -231,24 +286,103 @@ const Financeiro = () => {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="dashboard">
+          <DashboardParcelamentos />
+        </TabsContent>
+
 
         <TabsContent value="pagar" className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h2 className="text-2xl font-bold text-foreground">Contas a Pagar</h2>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
+              
+              {/* Filtro de Status */}
               <Select value={filtroStatusPagar} onValueChange={setFiltroStatusPagar}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filtrar por status" />
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="todos">Todos Status</SelectItem>
                   <SelectItem value="Pendente">Pendente</SelectItem>
                   <SelectItem value="Pago">Pago</SelectItem>
                   <SelectItem value="Vencido">Vencido</SelectItem>
                   <SelectItem value="Parcial">Parcial</SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* Filtro de Tipo de Criação */}
+              <Select value={filtroTipoCriacaoPagar} onValueChange={setFiltroTipoCriacaoPagar}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos Tipos</SelectItem>
+                  <SelectItem value="Unica">Única</SelectItem>
+                  <SelectItem value="Parcelamento">Parcelamento</SelectItem>
+                  <SelectItem value="Replica">Réplica</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Filtro de Período */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Período
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-4" align="end">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Data Início</label>
+                      <CalendarComponent
+                        mode="single"
+                        selected={dataInicioFiltro}
+                        onSelect={setDataInicioFiltro}
+                        locale={ptBR}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Data Fim</label>
+                      <CalendarComponent
+                        mode="single"
+                        selected={dataFimFiltro}
+                        onSelect={setDataFimFiltro}
+                        locale={ptBR}
+                      />
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => {
+                        setDataInicioFiltro(undefined);
+                        setDataFimFiltro(undefined);
+                      }}
+                    >
+                      Limpar Período
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {/* Botão Limpar Filtros */}
+              {(filtroStatusPagar !== "todos" || filtroTipoCriacaoPagar !== "todos" || dataInicioFiltro || dataFimFiltro) && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setFiltroStatusPagar("todos");
+                    setFiltroTipoCriacaoPagar("todos");
+                    setDataInicioFiltro(undefined);
+                    setDataFimFiltro(undefined);
+                  }}
+                >
+                  Limpar Filtros
+                </Button>
+              )}
             </div>
           </div>
 
@@ -367,22 +501,97 @@ const Financeiro = () => {
         </TabsContent>
 
         <TabsContent value="receber" className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h2 className="text-2xl font-bold text-foreground">Contas a Receber</h2>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
+              
+              {/* Filtro de Status */}
               <Select value={filtroStatusReceber} onValueChange={setFiltroStatusReceber}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filtrar por status" />
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="todos">Todos Status</SelectItem>
                   <SelectItem value="Pendente">Pendente</SelectItem>
                   <SelectItem value="Recebido">Recebido</SelectItem>
                   <SelectItem value="Vencido">Vencido</SelectItem>
                   <SelectItem value="Parcial">Parcial</SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* Filtro de Tipo de Criação */}
+              <Select value={filtroTipoCriacaoReceber} onValueChange={setFiltroTipoCriacaoReceber}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos Tipos</SelectItem>
+                  <SelectItem value="Unica">Única</SelectItem>
+                  <SelectItem value="Parcelamento">Parcelamento</SelectItem>
+                  <SelectItem value="Replica">Réplica</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Filtro de Período */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Período
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-4" align="end">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Data Início</label>
+                      <CalendarComponent
+                        mode="single"
+                        selected={dataInicioFiltro}
+                        onSelect={setDataInicioFiltro}
+                        locale={ptBR}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Data Fim</label>
+                      <CalendarComponent
+                        mode="single"
+                        selected={dataFimFiltro}
+                        onSelect={setDataFimFiltro}
+                        locale={ptBR}
+                      />
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => {
+                        setDataInicioFiltro(undefined);
+                        setDataFimFiltro(undefined);
+                      }}
+                    >
+                      Limpar Período
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {/* Botão Limpar Filtros */}
+              {(filtroStatusReceber !== "todos" || filtroTipoCriacaoReceber !== "todos" || dataInicioFiltro || dataFimFiltro) && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setFiltroStatusReceber("todos");
+                    setFiltroTipoCriacaoReceber("todos");
+                    setDataInicioFiltro(undefined);
+                    setDataFimFiltro(undefined);
+                  }}
+                >
+                  Limpar Filtros
+                </Button>
+              )}
             </div>
           </div>
 
