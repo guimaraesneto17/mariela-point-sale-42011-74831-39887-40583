@@ -34,6 +34,7 @@ import { formatDateTime, safeDate } from "@/lib/utils";
 import { ComparacaoPeriodoDialog } from "@/components/ComparacaoPeriodoDialog";
 import { DashboardWidgetCard } from "@/components/DashboardWidgetCard";
 import { DashboardWidgetConfig, WidgetConfig } from "@/components/DashboardWidgetConfig";
+import { DashboardAlertasCard } from "@/components/DashboardAlertasCard";
 
 const Dashboard = () => {
   const [dataInicio, setDataInicio] = useState<Date | undefined>(undefined);
@@ -753,6 +754,9 @@ const Dashboard = () => {
               </div>
             </div>
           )}
+
+          {/* Alertas de Estoque Parado */}
+          <DashboardAlertasCard />
 
 
           {/* Top 3 Informações */}

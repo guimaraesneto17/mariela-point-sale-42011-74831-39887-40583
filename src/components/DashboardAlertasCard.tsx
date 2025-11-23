@@ -1,0 +1,202 @@
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { AlertTriangle, TrendingDown, Package } from "lucide-react";
+import { estoqueAPI, vendasAPI } from "@/lib/api";
+import { EstoqueAlertasDialog } from "./EstoqueAlertasDialog";
+
+export function DashboardAlertasCard() {
+  const [loading, setLoading] = useState(true);
+  const [alertas, setAlertas] = useState({
+    total: 0,
+    criticos: 0,
+    alto: 0,
+    medio: 0,
+    valorTotal: 0
+  });
+  const [showDialog, setShowDialog] = useState(false);
+
+  useEffect(() => {
+    loadResumoAlertas();
+  }, []);
+
+  const loadResumoAlertas = async () => {
+    try {
+      setLoading(true);
+      const [estoque, vendas] = await Promise.all([
+        estoqueAPI.getAll(),
+        vendasAPI.getAll()
+      ]);
+
+      const hoje = new Date();
+      const limite90Dias = new Date();
+      limite90Dias.setDate(hoje.getDate() - 90);
+
+      let total = 0;
+      let criticos = 0;
+      let alto = 0;
+      let medio = 0;
+      let valorTotal = 0;
+
+      estoque.forEach((item: any) => {
+        if (!item.quantidadeTotal || item.quantidadeTotal === 0) return;
+
+        // Encontrar última venda do produto
+        let ultimaVenda: Date | null = null;
+        
+        vendas.forEach((venda: any) => {
+          venda.itens?.forEach((itemVenda: any) => {
+            if (itemVenda.codigoProduto === item.codigoProduto) {
+              const dataVenda = new Date(venda.data || venda.dataVenda);
+              if (!ultimaVenda || dataVenda > ultimaVenda) {
+                ultimaVenda = dataVenda;
+              }
+            }
+          });
+        });
+
+        // Se não teve venda ou última venda foi há mais de 90 dias
+        const dataReferencia = ultimaVenda || (item.dataCadastro ? new Date(item.dataCadastro) : null);
+        
+        if (!dataReferencia || dataReferencia < limite90Dias) {
+          const diasParado = dataReferencia 
+            ? Math.floor((hoje.getTime() - dataReferencia.getTime()) / (1000 * 60 * 60 * 24))
+            : 999;
+
+          total++;
+          valorTotal += item.quantidadeTotal * (item.precoVenda || item.precoPromocional || 0);
+
+          if (diasParado >= 180) criticos++;
+          else if (diasParado >= 120) alto++;
+          else medio++;
+        }
+      });
+
+      setAlertas({
+        total,
+        criticos,
+        alto,
+        medio,
+        valorTotal
+      });
+    } catch (error) {
+      console.error('Erro ao carregar resumo de alertas:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  if (loading) {
+    return (
+      <Card className="border-amber-200 dark:border-amber-900">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-amber-600">
+            <AlertTriangle className="h-5 w-5" />
+            Alertas de Estoque
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-muted-foreground text-sm">Carregando...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (alertas.total === 0) {
+    return (
+      <Card className="border-green-200 dark:border-green-900">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-green-600">
+            <Package className="h-5 w-5" />
+            Alertas de Estoque
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-4">
+            <p className="text-sm text-muted-foreground">
+              ✅ Nenhum produto parado há mais de 90 dias
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      <Card className="border-amber-200 dark:border-amber-900 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setShowDialog(true)}>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2 text-amber-600">
+              <AlertTriangle className="h-5 w-5 animate-pulse" />
+              Alertas de Estoque Parado
+            </span>
+            <Badge variant="destructive" className="text-lg px-3 py-1">
+              {alertas.total}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="text-center p-3 bg-red-50 dark:bg-red-950/20 rounded-lg">
+              <div className="text-2xl font-bold text-red-600">{alertas.criticos}</div>
+              <div className="text-xs text-muted-foreground mt-1">Críticos</div>
+              <div className="text-xs text-red-600 font-medium">180+ dias</div>
+            </div>
+            
+            <div className="text-center p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
+              <div className="text-2xl font-bold text-orange-600">{alertas.alto}</div>
+              <div className="text-xs text-muted-foreground mt-1">Alto Risco</div>
+              <div className="text-xs text-orange-600 font-medium">120-179 dias</div>
+            </div>
+            
+            <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600">{alertas.medio}</div>
+              <div className="text-xs text-muted-foreground mt-1">Médio</div>
+              <div className="text-xs text-blue-600 font-medium">90-119 dias</div>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm text-muted-foreground">Valor Total Parado:</span>
+              <span className="text-lg font-bold text-amber-600">
+                {formatCurrency(alertas.valorTotal)}
+              </span>
+            </div>
+            
+            <Button 
+              className="w-full gap-2" 
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowDialog(true);
+              }}
+            >
+              <TrendingDown className="h-4 w-4" />
+              Ver Detalhes e Ações
+            </Button>
+          </div>
+
+          <div className="bg-amber-50 dark:bg-amber-950/20 p-3 rounded-lg border border-amber-200 dark:border-amber-900">
+            <p className="text-xs text-amber-800 dark:text-amber-200">
+              💡 <strong>Dica:</strong> Produtos parados há muito tempo podem virar promoções para liberar capital!
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <EstoqueAlertasDialog
+        open={showDialog}
+        onOpenChange={setShowDialog}
+      />
+    </>
+  );
+}

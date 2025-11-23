@@ -297,17 +297,7 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
                         <Calendar
                           mode="single"
                           selected={field.value}
-                          onSelect={(date) => {
-                            field.onChange(date);
-                            // Fechar popover após selecionar
-                            const popover = document.querySelector('[data-radix-popper-content-wrapper]');
-                            if (popover) {
-                              (popover as HTMLElement).style.display = 'none';
-                              setTimeout(() => {
-                                (popover as HTMLElement).style.display = '';
-                              }, 100);
-                            }
-                          }}
+                          onSelect={field.onChange}
                           className="pointer-events-auto"
                           initialFocus
                         />

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History, Image as ImageIcon, ChevronDown, Star, X, ArrowUpDown, Package2, Grid3X3, BarChart3 } from "lucide-react";
+import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History, Image as ImageIcon, ChevronDown, Star, X, ArrowUpDown, Package2, Grid3X3, Bell } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import { EditVariantImagesDialog } from "@/components/EditVariantImagesDialog";
 import { ImageGalleryLightbox } from "@/components/ImageGalleryLightbox";
 import { AddMultipleVariantsDialog } from "@/components/AddMultipleVariantsDialog";
 import { HistoricoPrecosDialog } from "@/components/HistoricoPrecosDialog";
+import { EstoqueAlertasDialog } from "@/components/EstoqueAlertasDialog";
 
 import { estoqueAPI } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
@@ -40,6 +41,7 @@ const Estoque = () => {
   const [showMultipleVariantsDialog, setShowMultipleVariantsDialog] = useState(false);
   const [showHistoricoPrecos, setShowHistoricoPrecos] = useState(false);
   const [produtoHistorico, setProdutoHistorico] = useState<any>(null);
+  const [showAlertasDialog, setShowAlertasDialog] = useState(false);
   
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
@@ -628,12 +630,12 @@ const Estoque = () => {
         <div className="flex gap-2">
           <Button
             size="lg"
-            variant={showAnalytics ? "default" : "outline"}
-            onClick={() => setShowAnalytics(!showAnalytics)}
-            className="gap-2"
+            variant="outline"
+            onClick={() => setShowAlertasDialog(true)}
+            className="gap-2 border-amber-500/50 hover:bg-amber-50 dark:hover:bg-amber-950/20"
           >
-            <BarChart3 className="h-5 w-5" />
-            {showAnalytics ? "Ocultar Gráficos" : "Ver Gráficos"}
+            <Bell className="h-5 w-5 text-amber-600 animate-pulse" />
+            Alertas de Estoque
           </Button>
           <Button
             size="lg"
@@ -762,59 +764,6 @@ const Estoque = () => {
               </Select>
             </div>
 
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground mb-2 block">Ordenar por</Label>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Ordenar" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="nome">
-                    <span className="flex items-center gap-2">
-                      <ArrowUpDown className="h-3 w-3" />
-                      Nome (A-Z)
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="preco-asc">
-                    <span className="flex items-center gap-2">
-                      <ArrowUpDown className="h-3 w-3" />
-                      Preço (Menor)
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="preco-desc">
-                    <span className="flex items-center gap-2">
-                      <ArrowUpDown className="h-3 w-3" />
-                      Preço (Maior)
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="quantidade-asc">
-                    <span className="flex items-center gap-2">
-                      <ArrowUpDown className="h-3 w-3" />
-                      Quantidade (Menor)
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="quantidade-desc">
-                    <span className="flex items-center gap-2">
-                      <ArrowUpDown className="h-3 w-3" />
-                      Quantidade (Maior)
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="data-entrada">
-                    <span className="flex items-center gap-2">
-                      <ArrowUpDown className="h-3 w-3" />
-                      Data (Mais Recentes)
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="data-entrada-antiga">
-                    <span className="flex items-center gap-2">
-                      <ArrowUpDown className="h-3 w-3" />
-                      Data (Mais Antigas)
-                    </span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="flex gap-2">
               <div className="flex-1">
                 <Label className="text-sm font-medium text-muted-foreground mb-2 block">Filtros</Label>
@@ -908,6 +857,59 @@ const Estoque = () => {
                   <SelectItem value="ultimos7dias">Últimos 7 dias</SelectItem>
                   <SelectItem value="ultimos30dias">Últimos 30 dias</SelectItem>
                   <SelectItem value="ultimos90dias">Últimos 90 dias</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground mb-2 block">Ordenar por</Label>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Ordenar" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nome">
+                    <span className="flex items-center gap-2">
+                      <ArrowUpDown className="h-3 w-3" />
+                      Nome (A-Z)
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="preco-asc">
+                    <span className="flex items-center gap-2">
+                      <ArrowUpDown className="h-3 w-3" />
+                      Preço (Menor)
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="preco-desc">
+                    <span className="flex items-center gap-2">
+                      <ArrowUpDown className="h-3 w-3" />
+                      Preço (Maior)
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="quantidade-asc">
+                    <span className="flex items-center gap-2">
+                      <ArrowUpDown className="h-3 w-3" />
+                      Quantidade (Menor)
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="quantidade-desc">
+                    <span className="flex items-center gap-2">
+                      <ArrowUpDown className="h-3 w-3" />
+                      Quantidade (Maior)
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="data-entrada">
+                    <span className="flex items-center gap-2">
+                      <ArrowUpDown className="h-3 w-3" />
+                      Data (Mais Recentes)
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="data-entrada-antiga">
+                    <span className="flex items-center gap-2">
+                      <ArrowUpDown className="h-3 w-3" />
+                      Data (Mais Antigas)
+                    </span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1744,6 +1746,11 @@ const Estoque = () => {
         onOpenChange={setShowHistoricoPrecos}
         produto={produtoHistorico}
         historico={produtoHistorico?.historicoPrecosn || []}
+      />
+
+      <EstoqueAlertasDialog
+        open={showAlertasDialog}
+        onOpenChange={setShowAlertasDialog}
       />
     </div>
   );

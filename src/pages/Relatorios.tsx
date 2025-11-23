@@ -53,6 +53,7 @@ const Relatorios = () => {
     valorEstoqueVenda: 0,
     produtosMaisVendidos: [],
     estoquePorCategoria: [],
+    giroEstoque: [],
   });
   const [relatorioClientes, setRelatorioClientes] = useState<any>({
     totalClientes: 0,
@@ -229,6 +230,8 @@ const Relatorios = () => {
 
       // Calcular estoque por categoria para relatório de produtos
       const estoquePorCategoriaProdutos: any = {};
+      const giroEstoquePorCategoria: any = {};
+      
       estoqueData.forEach((item: any) => {
         const produto = produtos.find((p: any) => p.codigoProduto === item.codigoProduto);
         const categoria = produto?.categoria || 'Sem Categoria';
@@ -241,9 +244,43 @@ const Relatorios = () => {
           };
         }
         
+        if (!giroEstoquePorCategoria[categoria]) {
+          giroEstoquePorCategoria[categoria] = {
+            categoria,
+            estoque: 0,
+            vendas: 0,
+            produtosParados: []
+          };
+        }
+        
         estoquePorCategoriaProdutos[categoria].quantidade += item.quantidadeTotal || 0;
         estoquePorCategoriaProdutos[categoria].valor += (item.quantidadeTotal || 0) * (item.precoVenda || item.precoPromocional || 0);
+        giroEstoquePorCategoria[categoria].estoque += item.quantidadeTotal || 0;
+        
+        // Calcular vendas do produto
+        const vendasProduto = produtosVendidosFiltrados.reduce((total: number, venda: any) => {
+          const itemVenda = venda.itens?.find((i: any) => i.codigoProduto === item.codigoProduto);
+          return total + (itemVenda?.quantidade || 0);
+        }, 0);
+        
+        giroEstoquePorCategoria[categoria].vendas += vendasProduto;
+        
+        // Identificar produtos parados (sem vendas)
+        if (vendasProduto === 0 && item.quantidadeTotal > 0) {
+          giroEstoquePorCategoria[categoria].produtosParados.push({
+            nome: item.nomeProduto || item.nome,
+            estoque: item.quantidadeTotal,
+            valor: (item.quantidadeTotal || 0) * (item.precoVenda || item.precoPromocional || 0)
+          });
+        }
       });
+      
+      // Calcular taxa de giro para cada categoria
+      const giroComTaxa = Object.values(giroEstoquePorCategoria).map((cat: any) => ({
+        ...cat,
+        taxaGiro: cat.estoque > 0 ? ((cat.vendas / cat.estoque) * 100).toFixed(1) : 0,
+        produtosParados: cat.produtosParados.sort((a: any, b: any) => b.valor - a.valor).slice(0, 3)
+      }));
 
       setRelatorioProdutos({
         totalProdutos,
@@ -254,6 +291,7 @@ const Relatorios = () => {
         valorEstoqueVenda,
         produtosMaisVendidos: topProdutos,
         estoquePorCategoria: Object.values(estoquePorCategoriaProdutos).sort((a: any, b: any) => b.quantidade - a.quantidade),
+        giroEstoque: giroComTaxa.sort((a: any, b: any) => parseFloat(a.taxaGiro) - parseFloat(b.taxaGiro)),
       });
 
       // Relatório de Clientes - Adicionar aniversariantes do mês
@@ -1251,24 +1289,112 @@ const Relatorios = () => {
             </Card>
           )}
 
-          {/* Estoque por Categoria */}
-          {relatorioProdutos.estoquePorCategoria && relatorioProdutos.estoquePorCategoria.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Estoque por Categoria */}
+            {relatorioProdutos.estoquePorCategoria && relatorioProdutos.estoquePorCategoria.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5 text-primary" />
+                    Estoque por Categoria
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {relatorioProdutos.estoquePorCategoria.map((cat: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-foreground">{cat.categoria}</p>
+                          <p className="text-sm text-muted-foreground">{cat.quantidade} unidades</p>
+                        </div>
+                        <p className="font-bold text-primary">{formatCurrency(cat.valor)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Gráfico de Pizza - Distribuição de Estoque */}
+            {relatorioProdutos.estoquePorCategoria && relatorioProdutos.estoquePorCategoria.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-primary" />
+                    Distribuição de Estoque
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={relatorioProdutos.estoquePorCategoria}
+                        dataKey="quantidade"
+                        nameKey="categoria"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={100}
+                        label={(entry) => `${entry.categoria}: ${entry.quantidade}`}
+                      >
+                        {relatorioProdutos.estoquePorCategoria.map((_: any, index: number) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip 
+                        formatter={(value: any) => [`${value} unidades`, 'Quantidade']}
+                      />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Análise de Giro de Estoque */}
+          {relatorioProdutos.giroEstoque && relatorioProdutos.giroEstoque.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5 text-primary" />
-                  Estoque por Categoria
+                  <TrendingDown className="h-5 w-5 text-amber-600" />
+                  Análise de Giro de Estoque por Categoria
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {relatorioProdutos.estoquePorCategoria.map((cat: any, index: number) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-foreground">{cat.categoria}</p>
-                        <p className="text-sm text-muted-foreground">{cat.quantidade} unidades</p>
+                <div className="space-y-4">
+                  {relatorioProdutos.giroEstoque.map((cat: any, index: number) => (
+                    <div key={index} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h3 className="font-semibold text-lg text-foreground">{cat.categoria}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Estoque: {cat.estoque} un | Vendas: {cat.vendas} un
+                          </p>
+                        </div>
+                        <Badge variant={parseFloat(cat.taxaGiro) < 20 ? "destructive" : parseFloat(cat.taxaGiro) < 50 ? "secondary" : "default"}>
+                          Giro: {cat.taxaGiro}%
+                        </Badge>
                       </div>
-                      <p className="font-bold text-primary">{formatCurrency(cat.valor)}</p>
+                      
+                      {cat.produtosParados.length > 0 && (
+                        <div className="mt-3 pt-3 border-t">
+                          <p className="text-sm font-medium text-amber-600 mb-2 flex items-center gap-1">
+                            <Bell className="h-4 w-4" />
+                            Produtos Parados (sem vendas):
+                          </p>
+                          <div className="space-y-2">
+                            {cat.produtosParados.map((prod: any, idx: number) => (
+                              <div key={idx} className="flex items-center justify-between p-2 bg-amber-50 dark:bg-amber-950/20 rounded text-sm">
+                                <span className="text-foreground">{prod.nome}</span>
+                                <div className="text-right">
+                                  <span className="text-muted-foreground">{prod.estoque} un</span>
+                                  <span className="ml-2 font-medium text-amber-600">{formatCurrency(prod.valor)}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
