@@ -37,10 +37,14 @@ const Relatorios = () => {
   const [periodoFinanceiro, setPeriodoFinanceiro] = useState("todos");
   const [vendedorSelecionado, setVendedorSelecionado] = useState("todos");
   const [clienteSelecionado, setClienteSelecionado] = useState("todos");
+  const [categoriaSelecionada, setCategoriaSelecionada] = useState("todos");
+  const [formaPagamentoSelecionada, setFormaPagamentoSelecionada] = useState("todos");
   
   const [loading, setLoading] = useState(true);
   const [vendedores, setVendedores] = useState<any[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
+  const [categorias, setCategorias] = useState<string[]>([]);
+  const [formasPagamento, setFormasPagamento] = useState<string[]>([]);
   const [relatorioVendas, setRelatorioVendas] = useState<any>({
     totalVendas: 0,
     faturamentoTotal: 0,
@@ -168,13 +172,22 @@ const Relatorios = () => {
       setVendedores(vendedoresList);
       setClientes(clientes);
       setEstoque(estoqueData);
+      
+      // Extrair categorias únicas dos produtos
+      const categoriasUnicas = Array.from(new Set(produtos.map((p: any) => p.categoria).filter(Boolean)));
+      setCategorias(categoriasUnicas as string[]);
+      
+      // Extrair formas de pagamento únicas das vendas
+      const formasPagamentoUnicas = Array.from(new Set(vendas.map((v: any) => v.formaPagamento).filter(Boolean)));
+      setFormasPagamento(formasPagamentoUnicas as string[]);
 
-      // Relatório de Vendas com filtros de período e vendedor
+      // Relatório de Vendas com filtros de período, vendedor e forma de pagamento
       const vendasFiltradas = vendas.filter((venda: any) => {
         const dataVenda = new Date(venda.data || venda.dataVenda);
         const passaPeriodo = filtrarPorPeriodo(dataVenda, dataInicioVendas, dataFimVendas, periodoVendas);
         const passaVendedor = vendedorSelecionado === "todos" || venda.vendedor?.codigoVendedor === vendedorSelecionado;
-        return passaPeriodo && passaVendedor;
+        const passaFormaPagamento = formaPagamentoSelecionada === "todos" || venda.formaPagamento === formaPagamentoSelecionada;
+        return passaPeriodo && passaVendedor && passaFormaPagamento;
       });
 
       const vendasPorCategoria: any = {};
@@ -214,17 +227,30 @@ const Relatorios = () => {
         vendasOriginais: vendasFiltradas,
       });
 
-      // Relatório de Produtos com filtros de período
+      // Relatório de Produtos com filtros de período e categoria
       const produtosVendidosFiltrados = vendasFiltradas;
-      const totalProdutos = produtos.length;
-      const emEstoque = estoqueData.reduce((acc: number, item: any) => acc + (item.quantidadeTotal || 0), 0);
-      const novidades = estoqueData.filter((item: any) => item.isNovidade === true).length;
-      const emPromocao = estoqueData.filter((item: any) => item.emPromocao === true).length;
+      
+      // Filtrar produtos por categoria
+      const produtosFiltrados = categoriaSelecionada === "todos" 
+        ? produtos 
+        : produtos.filter((p: any) => p.categoria === categoriaSelecionada);
+      
+      const estoqueFiltrado = categoriaSelecionada === "todos"
+        ? estoqueData
+        : estoqueData.filter((item: any) => {
+            const produto = produtos.find((p: any) => p.codigoProduto === item.codigoProduto);
+            return produto?.categoria === categoriaSelecionada;
+          });
+      
+      const totalProdutos = produtosFiltrados.length;
+      const emEstoque = estoqueFiltrado.reduce((acc: number, item: any) => acc + (item.quantidadeTotal || 0), 0);
+      const novidades = estoqueFiltrado.filter((item: any) => item.isNovidade === true).length;
+      const emPromocao = estoqueFiltrado.filter((item: any) => item.emPromocao === true).length;
 
       let valorEstoqueCusto = 0;
       let valorEstoqueVenda = 0;
       
-      estoqueData.forEach((item: any) => {
+      estoqueFiltrado.forEach((item: any) => {
         const quantidade = item.quantidadeTotal || 0;
         const precoCusto = item.precoCusto || 0;
         const precoVenda = item.precoVenda || item.precoPromocional || 0;
@@ -250,7 +276,7 @@ const Relatorios = () => {
       });
 
       Object.keys(produtosVendidos).forEach(codigo => {
-        const itemEstoque = estoqueData.find((e: any) => e.codigoProduto === codigo);
+        const itemEstoque = estoqueFiltrado.find((e: any) => e.codigoProduto === codigo);
         produtosVendidos[codigo].estoque = itemEstoque?.quantidadeTotal || 0;
       });
 
@@ -262,8 +288,8 @@ const Relatorios = () => {
       const estoquePorCategoriaProdutos: any = {};
       const giroEstoquePorCategoria: any = {};
       
-      estoqueData.forEach((item: any) => {
-        const produto = produtos.find((p: any) => p.codigoProduto === item.codigoProduto);
+      estoqueFiltrado.forEach((item: any) => {
+        const produto = produtosFiltrados.find((p: any) => p.codigoProduto === item.codigoProduto);
         const categoria = produto?.categoria || 'Sem Categoria';
         
         if (!estoquePorCategoriaProdutos[categoria]) {
@@ -1084,7 +1110,7 @@ const Relatorios = () => {
           {/* Filtros de Período */}
           <Card className="bg-gradient-to-br from-primary/5 to-background">
             <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                 <div>
                   <Label className="text-sm font-medium mb-2 block">Período</Label>
                   <Select value={periodoVendas} onValueChange={setPeriodoVendas}>
@@ -1132,6 +1158,22 @@ const Relatorios = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Forma de Pagamento</Label>
+                  <Select value={formaPagamentoSelecionada} onValueChange={setFormaPagamentoSelecionada}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todas as Formas</SelectItem>
+                      {formasPagamento.map((forma: string) => (
+                        <SelectItem key={forma} value={forma}>
+                          {forma}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="flex items-end gap-2">
                   <Button
                     variant="default"
@@ -1141,7 +1183,7 @@ const Relatorios = () => {
                     <Filter className="h-4 w-4 mr-2" />
                     Aplicar Filtros
                   </Button>
-                  {(periodoVendas !== "todos" || dataInicioVendas || dataFimVendas || vendedorSelecionado !== "todos") && (
+                  {(periodoVendas !== "todos" || dataInicioVendas || dataFimVendas || vendedorSelecionado !== "todos" || formaPagamentoSelecionada !== "todos") && (
                     <Button
                       variant="outline"
                       className="flex-1"
@@ -1150,6 +1192,7 @@ const Relatorios = () => {
                         setDataInicioVendas("");
                         setDataFimVendas("");
                         setVendedorSelecionado("todos");
+                        setFormaPagamentoSelecionada("todos");
                         loadRelatorios();
                       }}
                     >
@@ -1255,7 +1298,7 @@ const Relatorios = () => {
           {/* Filtros de Período */}
           <Card className="bg-gradient-to-br from-primary/5 to-background">
             <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div>
                   <Label className="text-sm font-medium mb-2 block">Período</Label>
                   <Select value={periodoProdutos} onValueChange={setPeriodoProdutos}>
@@ -1287,6 +1330,22 @@ const Relatorios = () => {
                     onChange={(e) => setDataFimProdutos(e.target.value)}
                   />
                 </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Categoria</Label>
+                  <Select value={categoriaSelecionada} onValueChange={setCategoriaSelecionada}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todas as Categorias</SelectItem>
+                      {categorias.map((categoria: string) => (
+                        <SelectItem key={categoria} value={categoria}>
+                          {categoria}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="flex items-end gap-2">
                   <Button
                     variant="default"
@@ -1296,7 +1355,7 @@ const Relatorios = () => {
                     <Filter className="h-4 w-4 mr-2" />
                     Aplicar Filtros
                   </Button>
-                  {(periodoProdutos !== "todos" || dataInicioProdutos || dataFimProdutos) && (
+                  {(periodoProdutos !== "todos" || dataInicioProdutos || dataFimProdutos || categoriaSelecionada !== "todos") && (
                     <Button
                       variant="outline"
                       className="flex-1"
@@ -1304,6 +1363,7 @@ const Relatorios = () => {
                         setPeriodoProdutos("todos");
                         setDataInicioProdutos("");
                         setDataFimProdutos("");
+                        setCategoriaSelecionada("todos");
                         loadRelatorios();
                       }}
                     >
