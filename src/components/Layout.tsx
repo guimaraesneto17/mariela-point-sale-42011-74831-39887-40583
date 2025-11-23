@@ -14,7 +14,8 @@ import {
   Wallet,
   TrendingUp,
   Menu,
-  X
+  X,
+  Activity
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,6 +50,7 @@ const Layout = () => {
 
   const navItems = [
     { to: "/", icon: LayoutDashboard, label: "Dashboard" },
+    { to: "/monitoramento", icon: Activity, label: "Monitoramento" },
     { to: "/relatorios", icon: FileText, label: "Relatórios" },
     { to: "/produtos", icon: Package, label: "Produtos" },
     { to: "/clientes", icon: Users, label: "Clientes" },

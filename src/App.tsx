@@ -14,6 +14,7 @@ import Estoque from "./pages/Estoque";
 import Fornecedores from "./pages/Fornecedores";
 import Vendedores from "./pages/Vendedores";
 import Relatorios from "./pages/Relatorios";
+import Monitoramento from "./pages/Monitoramento";
 import VitrineVirtual from "./pages/VitrineVirtual";
 import Caixa from "./pages/Caixa";
 import Financeiro from "./pages/Financeiro";
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/fornecedores" element={<ProtectedRoute><Fornecedores /></ProtectedRoute>} />
             <Route path="/vendedores" element={<ProtectedRoute><Vendedores /></ProtectedRoute>} />
             <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
+            <Route path="/monitoramento" element={<ProtectedRoute><Monitoramento /></ProtectedRoute>} />
             <Route path="/vitrine-virtual" element={<ProtectedRoute><VitrineVirtual /></ProtectedRoute>} />
             <Route path="/caixa" element={<ProtectedRoute><Caixa /></ProtectedRoute>} />
             <Route path="/financeiro" element={<ProtectedRoute><Financeiro /></ProtectedRoute>} />
