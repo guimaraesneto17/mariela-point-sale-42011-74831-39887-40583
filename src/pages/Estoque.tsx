@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History, Image as ImageIcon, ChevronDown, Star, X } from "lucide-react";
+import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History, Image as ImageIcon, ChevronDown, Star, X, ArrowUpDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,6 +51,7 @@ const Estoque = () => {
   const [filterCategoria, setFilterCategoria] = useState<string>("todas");
   const [filterQuantidade, setFilterQuantidade] = useState<string>("todas");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [sortBy, setSortBy] = useState<string>("nome"); // nome, preco-asc, preco-desc, quantidade-asc, quantidade-desc, data-entrada
   
   // Novos filtros avançados
   const [filterPrecoMin, setFilterPrecoMin] = useState<string>("");
@@ -113,6 +114,38 @@ const Estoque = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Função para contar itens por categoria
+  const getCountByCategoria = (categoria: string) => {
+    return inventory.filter(item => {
+      if (categoria === "todas") return true;
+      return item.categoria === categoria;
+    }).length;
+  };
+
+  // Função para contar itens por cor
+  const getCountByCor = (cor: string) => {
+    return inventory.filter(item => {
+      if (cor === "todas") return true;
+      return item.variantes?.some((v: any) => v.cor === cor && v.quantidade > 0);
+    }).length;
+  };
+
+  // Função para contar itens por tamanho
+  const getCountByTamanho = (tamanho: string) => {
+    return inventory.filter(item => {
+      if (tamanho === "todos") return true;
+      return item.variantes?.some((v: any) => {
+        if (!Array.isArray(v.tamanhos) || v.tamanhos.length === 0) {
+          return v.tamanho === tamanho && v.quantidade > 0;
+        }
+        if (typeof v.tamanhos[0] === 'object' && v.tamanhos[0].tamanho) {
+          return v.tamanhos.some((t: any) => t.tamanho === tamanho) && v.quantidade > 0;
+        }
+        return v.tamanhos.includes(tamanho) && v.quantidade > 0;
+      });
+    }).length;
   };
 
   const filteredInventory = inventory.filter(item => {
@@ -189,6 +222,36 @@ const Estoque = () => {
     return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria && 
            matchesCor && matchesTamanho && matchesQuantidade && matchesPrecoMin && 
            matchesPrecoMax && matchesFornecedor && matchesDataEntrada;
+  });
+
+  // Aplicar ordenação
+  const sortedInventory = [...filteredInventory].sort((a, b) => {
+    switch (sortBy) {
+      case "nome":
+        return (a.nomeProduto || "").localeCompare(b.nomeProduto || "");
+      case "preco-asc":
+        const precoA = a.precoPromocional || a.precoVenda || 0;
+        const precoB = b.precoPromocional || b.precoVenda || 0;
+        return precoA - precoB;
+      case "preco-desc":
+        const precoDescA = a.precoPromocional || a.precoVenda || 0;
+        const precoDescB = b.precoPromocional || b.precoVenda || 0;
+        return precoDescB - precoDescA;
+      case "quantidade-asc":
+        const qtdA = a.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0;
+        const qtdB = b.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0;
+        return qtdA - qtdB;
+      case "quantidade-desc":
+        const qtdDescA = a.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0;
+        const qtdDescB = b.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0;
+        return qtdDescB - qtdDescA;
+      case "data-entrada":
+        const dataA = a.dataCadastro ? new Date(a.dataCadastro).getTime() : 0;
+        const dataB = b.dataCadastro ? new Date(b.dataCadastro).getTime() : 0;
+        return dataB - dataA; // Mais recentes primeiro
+      default:
+        return 0;
+    }
   });
 
   const openEntryDialog = (item: any, variante: any) => {
@@ -508,17 +571,28 @@ const Estoque = () => {
             />
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground mb-2 block">Filtrar por Categoria</Label>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+            <div className="relative overflow-hidden">
+              <Label className="text-sm font-bold text-secondary mb-2 block uppercase tracking-wide flex items-center gap-2">
+                <div className="h-3 w-3 rounded-full bg-gradient-to-r from-secondary to-primary animate-pulse-glow"></div>
+                Filtrar por Categoria
+              </Label>
               <Select value={filterCategoria} onValueChange={setFilterCategoria}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-gradient-to-br from-background to-secondary/5 border-2 border-secondary/20 hover:border-secondary/40 transition-all shadow-sm hover:shadow-md">
                   <SelectValue placeholder="Todas as categorias" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas as categorias</SelectItem>
+                <SelectContent className="bg-gradient-to-br from-background to-secondary/5">
+                  <SelectItem value="todas" className="font-semibold">
+                    📦 Todas as categorias ({inventory.length})
+                  </SelectItem>
                   {getAllCategorias().map((categoria) => (
-                    <SelectItem key={categoria} value={categoria}>{categoria}</SelectItem>
+                    <SelectItem key={categoria} value={categoria} className="hover:bg-secondary/10">
+                      <span className="flex items-center gap-2">
+                        <span className="h-3 w-3 rounded-full bg-gradient-to-r from-secondary to-primary"></span>
+                        {categoria}
+                        <span className="ml-auto text-muted-foreground text-xs">({getCountByCategoria(categoria)})</span>
+                      </span>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -534,12 +608,15 @@ const Estoque = () => {
                   <SelectValue placeholder="Todas as cores" />
                 </SelectTrigger>
                 <SelectContent className="bg-gradient-to-br from-background to-primary/5">
-                  <SelectItem value="todas" className="font-semibold">🎨 Todas as cores</SelectItem>
+                  <SelectItem value="todas" className="font-semibold">
+                    🎨 Todas as cores ({inventory.length})
+                  </SelectItem>
                   {getAllCores().map((cor) => (
                     <SelectItem key={cor} value={cor} className="hover:bg-primary/10">
                       <span className="flex items-center gap-2">
                         <span className="h-3 w-3 rounded-full bg-gradient-to-r from-primary to-accent"></span>
                         {cor}
+                        <span className="ml-auto text-muted-foreground text-xs">({getCountByCor(cor)})</span>
                       </span>
                     </SelectItem>
                   ))}
@@ -557,12 +634,15 @@ const Estoque = () => {
                   <SelectValue placeholder="Todos os tamanhos" />
                 </SelectTrigger>
                 <SelectContent className="bg-gradient-to-br from-background to-accent/5">
-                  <SelectItem value="todos" className="font-semibold">📏 Todos os tamanhos</SelectItem>
+                  <SelectItem value="todos" className="font-semibold">
+                    📏 Todos os tamanhos ({inventory.length})
+                  </SelectItem>
                   {getAllTamanhos().map((tamanho) => (
                     <SelectItem key={tamanho} value={tamanho} className="hover:bg-accent/10">
                       <span className="flex items-center gap-2">
                         <span className="h-3 w-3 rounded-full bg-gradient-to-r from-accent to-primary"></span>
                         {tamanho}
+                        <span className="ml-auto text-muted-foreground text-xs">({getCountByTamanho(tamanho)})</span>
                       </span>
                     </SelectItem>
                   ))}
@@ -581,6 +661,53 @@ const Estoque = () => {
                   <SelectItem value="disponivel">Disponível (&gt; 10)</SelectItem>
                   <SelectItem value="baixo">Baixo Estoque (≤ 10)</SelectItem>
                   <SelectItem value="zerado">Zerado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground mb-2 block">Ordenar por</Label>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Ordenar" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nome">
+                    <span className="flex items-center gap-2">
+                      <ArrowUpDown className="h-3 w-3" />
+                      Nome (A-Z)
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="preco-asc">
+                    <span className="flex items-center gap-2">
+                      <ArrowUpDown className="h-3 w-3" />
+                      Preço (Menor)
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="preco-desc">
+                    <span className="flex items-center gap-2">
+                      <ArrowUpDown className="h-3 w-3" />
+                      Preço (Maior)
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="quantidade-asc">
+                    <span className="flex items-center gap-2">
+                      <ArrowUpDown className="h-3 w-3" />
+                      Quantidade (Menor)
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="quantidade-desc">
+                    <span className="flex items-center gap-2">
+                      <ArrowUpDown className="h-3 w-3" />
+                      Quantidade (Maior)
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="data-entrada">
+                    <span className="flex items-center gap-2">
+                      <ArrowUpDown className="h-3 w-3" />
+                      Data (Mais Recentes)
+                    </span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -699,7 +826,7 @@ const Estoque = () => {
         <div className="text-center py-8">
           <p className="text-muted-foreground">Carregando estoque...</p>
         </div>
-      ) : filteredInventory.length === 0 ? (
+      ) : sortedInventory.length === 0 ? (
         <Card className="p-12 text-center shadow-card">
           <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-xl font-semibold mb-2">Nenhum produto no estoque</h3>
@@ -709,7 +836,7 @@ const Estoque = () => {
         </Card>
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredInventory.map((item) => {
+          {sortedInventory.map((item) => {
             const quantidadeTotal = item.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0;
             const coresDisponiveis = getCoresDisponiveis(item);
             const selectedCor = String(selectedColorByItem[item.codigoProduto] || coresDisponiveis[0] || '');
@@ -985,7 +1112,7 @@ const Estoque = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          {filteredInventory.map((item) => {
+          {sortedInventory.map((item) => {
             const coresDisponiveis = getCoresDisponiveis(item);
             const selectedCor = selectedColorByItem[item.codigoProduto] || '';
             const selectedTamanho = selectedSizeByItem[item.codigoProduto] || '';
