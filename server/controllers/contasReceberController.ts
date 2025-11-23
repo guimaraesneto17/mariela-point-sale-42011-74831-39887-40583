@@ -147,6 +147,11 @@ export const receberConta = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'valorRecebido deve ser um número positivo' });
     }
 
+    if (!formaPagamento) {
+      console.error('❌ Forma de pagamento não informada');
+      return res.status(400).json({ error: 'Forma de pagamento é obrigatória' });
+    }
+
     // Verificar se existe caixa aberto antes de processar o recebimento
     const Caixa = (await import('../models/Caixa')).default;
     const caixaAberto = await Caixa.findOne({ status: 'aberto' }).sort({ dataAbertura: -1 });
@@ -168,17 +173,20 @@ export const receberConta = async (req: Request, res: Response) => {
 
     console.log('✅ Conta encontrada:', conta.numeroDocumento);
 
+    // Converter dataRecebimento para Date object
+    const dataConvertida = dataRecebimento ? new Date(dataRecebimento) : new Date();
+
     conta.valorRecebido = (conta.valorRecebido || 0) + valorRecebido;
-    conta.dataRecebimento = dataRecebimento || new Date();
+    conta.dataRecebimento = dataConvertida;
     conta.formaPagamento = formaPagamento;
 
     // Histórico
     (conta as any).historicoRecebimentos = (conta as any).historicoRecebimentos || [];
     (conta as any).historicoRecebimentos.push({
       valor: valorRecebido,
-      data: dataRecebimento || new Date(),
+      data: dataConvertida, // Date object, não string
       formaPagamento,
-      observacoes
+      observacoes: observacoes || undefined
     });
 
     if (conta.valorRecebido >= conta.valor) {

@@ -30,7 +30,6 @@ const contaPagarSchema = z.object({
   categoria: z.string().min(1, "Categoria é obrigatória"),
   dataVencimento: z.date({ required_error: "Data de vencimento é obrigatória" }),
   fornecedorCodigo: z.string().optional(),
-  formaPagamento: z.string().optional(),
   observacoes: z.string().optional(),
 });
 
@@ -42,16 +41,6 @@ interface ContaPagarDialogProps {
   conta?: any;
   onSuccess: () => void;
 }
-
-const formasPagamento = [
-  "Dinheiro",
-  "PIX",
-  "Débito",
-  "Crédito",
-  "Boleto",
-  "Transferência",
-  "Outro"
-];
 
 export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: ContaPagarDialogProps) {
   const [loading, setLoading] = useState(false);
@@ -66,7 +55,6 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
       valor: "",
       categoria: "",
       fornecedorCodigo: "",
-      formaPagamento: "",
       observacoes: "",
     }
   });
@@ -84,7 +72,6 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
         categoria: conta.categoria || "",
         dataVencimento: conta.dataVencimento ? new Date(conta.dataVencimento) : undefined,
         fornecedorCodigo: conta.fornecedorCodigo || "",
-        formaPagamento: conta.formaPagamento || "",
         observacoes: conta.observacoes || "",
       });
     } else {
@@ -93,7 +80,6 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
         valor: "",
         categoria: "",
         fornecedorCodigo: "",
-        formaPagamento: "",
         observacoes: "",
       });
     }
@@ -136,10 +122,6 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
         payload.fornecedorCodigo = data.fornecedorCodigo.trim();
       }
       
-      if (data.formaPagamento && data.formaPagamento.trim()) {
-        payload.formaPagamento = data.formaPagamento;
-      }
-      
       if (data.observacoes && data.observacoes.trim()) {
         payload.observacoes = data.observacoes.trim();
       }
@@ -175,48 +157,23 @@ export function ContaPagarDialog({ open, onOpenChange, conta, onSuccess }: Conta
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="valor"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Valor*</FormLabel>
-                    <FormControl>
-                      <CurrencyInput 
-                        {...field} 
-                        placeholder="R$ 0,00"
-                        onValueChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="formaPagamento"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Forma de Pagamento</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione (opcional)" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="bg-background z-50">
-                        {formasPagamento.map((forma) => (
-                          <SelectItem key={forma} value={forma}>{forma}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="valor"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Valor*</FormLabel>
+                  <FormControl>
+                    <CurrencyInput 
+                      {...field} 
+                      placeholder="R$ 0,00"
+                      onValueChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}

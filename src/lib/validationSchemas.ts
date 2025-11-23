@@ -210,9 +210,6 @@ export const contaPagarSchema = z.object({
   status: z.enum(['Pendente', 'Pago', 'Vencido', 'Parcial'], {
     errorMap: () => ({ message: "Status inválido" }),
   }).default('Pendente'),
-  formaPagamento: z.enum(['Dinheiro', 'PIX', 'Débito', 'Crédito', 'Boleto', 'Transferência', 'Outro'], {
-    errorMap: () => ({ message: "Forma de pagamento inválida" }),
-  }).optional(),
   observacoes: z.string().max(500, "Observações devem ter no máximo 500 caracteres").optional(),
   anexos: z.array(z.string().url("URL de anexo inválida")).optional(),
 });
@@ -251,9 +248,6 @@ export const contaReceberSchema = z.object({
   status: z.enum(['Pendente', 'Recebido', 'Vencido', 'Parcial'], {
     errorMap: () => ({ message: "Status inválido" }),
   }).default('Pendente'),
-  formaPagamento: z.enum(['Dinheiro', 'PIX', 'Débito', 'Crédito', 'Boleto', 'Transferência', 'Outro'], {
-    errorMap: () => ({ message: "Forma de pagamento inválida" }),
-  }).optional(),
   observacoes: z.string().max(500, "Observações devem ter no máximo 500 caracteres").optional(),
 });
 
