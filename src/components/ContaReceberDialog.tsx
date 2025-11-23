@@ -48,6 +48,7 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
   const [categorias, setCategorias] = useState<any[]>([]);
   const [showCategoriesManager, setShowCategoriesManager] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [dataVencimentoInput, setDataVencimentoInput] = useState("");
 
   const form = useForm<ContaReceberFormData>({
     resolver: zodResolver(contaReceberSchema),
@@ -67,14 +68,20 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
 
   useEffect(() => {
     if (conta) {
+      const vencimento = conta.dataVencimento ? new Date(conta.dataVencimento) : undefined;
+
       form.reset({
         descricao: conta.descricao || "",
         valor: conta.valor?.toString() || "",
         categoria: conta.categoria || "",
-        dataVencimento: conta.dataVencimento ? new Date(conta.dataVencimento) : undefined,
+        dataVencimento: vencimento,
         clienteCodigo: conta.clienteCodigo || "",
         observacoes: conta.observacoes || "",
       });
+
+      setDataVencimentoInput(
+        vencimento ? format(vencimento, "dd/MM/yyyy", { locale: ptBR }) : ""
+      );
     } else {
       form.reset({
         descricao: "",
@@ -83,6 +90,7 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
         clienteCodigo: "",
         observacoes: "",
       });
+      setDataVencimentoInput("");
     }
   }, [conta, open]);
 
@@ -245,20 +253,38 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
                     <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "dd/MM/yyyy", { locale: ptBR })
-                            ) : (
-                              <span>Selecione a data</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
+                          <div className="relative w-full">
+                            <Input
+                              placeholder="dd/mm/aaaa"
+                              value={
+                                dataVencimentoInput ||
+                                (field.value
+                                  ? format(field.value, "dd/MM/yyyy", { locale: ptBR })
+                                  : "")
+                              }
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setDataVencimentoInput(value);
+
+                                const parts = value.split("/");
+                                if (parts.length === 3) {
+                                  const [dia, mes, ano] = parts;
+                                  const diaNum = Number(dia);
+                                  const mesNum = Number(mes);
+                                  const anoNum = Number(ano);
+
+                                  if (diaNum && mesNum && anoNum && ano.length === 4) {
+                                    const parsed = new Date(anoNum, mesNum - 1, diaNum);
+                                    if (!isNaN(parsed.getTime())) {
+                                      field.onChange(parsed);
+                                    }
+                                  }
+                                }
+                              }}
+                              className="pr-10"
+                            />
+                            <CalendarIcon className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 opacity-50" />
+                          </div>
                         </FormControl>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0 bg-background z-50" align="start">
@@ -266,10 +292,15 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
                           mode="single"
                           selected={field.value}
                           onSelect={(date) => {
+                            if (!date) return;
                             field.onChange(date);
+                            setDataVencimentoInput(
+                              format(date, "dd/MM/yyyy", { locale: ptBR })
+                            );
                             setCalendarOpen(false);
                           }}
-                          className="pointer-events-auto"
+                          locale={ptBR}
+                          className="p-3 pointer-events-auto"
                           initialFocus
                         />
                       </PopoverContent>

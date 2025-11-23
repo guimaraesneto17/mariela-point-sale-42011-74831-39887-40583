@@ -4,11 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { caixaAPI, contasPagarAPI, contasReceberAPI } from "@/lib/api";
 import { ArrowDownCircle, ArrowUpCircle, Clock, CheckCircle2, XCircle, RefreshCw, DollarSign, TrendingUp, TrendingDown, Activity } from "lucide-react";
-import { format, startOfDay, differenceInMinutes } from "date-fns";
+import { format, startOfDay, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell } from "recharts";
 
 interface Transaction {
   id: string;
@@ -25,11 +25,28 @@ interface ChartDataPoint {
   saidas: number;
 }
 
+interface ExpenseCategoryData {
+  categoria: string;
+  valor: number;
+}
+
+type Period = 'hoje' | '7dias' | '30dias';
+
+const CATEGORY_COLORS = [
+  "hsl(var(--chart-1))",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-5))",
+] as const;
+
 export default function Monitoramento() {
   const [caixaAberto, setCaixaAberto] = useState<any>(null);
   const [ultimasTransacoes, setUltimasTransacoes] = useState<Transaction[]>([]);
   const [contasPendentes, setContasPendentes] = useState({ pagar: 0, receber: 0 });
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [despesasPorCategoria, setDespesasPorCategoria] = useState<ExpenseCategoryData[]>([]);
+  const [selectedPeriod, setSelectedPeriod] = useState<Period>('hoje');
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -37,6 +54,16 @@ export default function Monitoramento() {
   const loadMonitoringData = async () => {
     try {
       console.log('🔄 [MONITORAMENTO] Atualizando dados...');
+      
+      // Definir período base para os gráficos
+      const agora = new Date();
+      let dataInicio = startOfDay(agora);
+
+      if (selectedPeriod === '7dias') {
+        dataInicio = startOfDay(subDays(agora, 6));
+      } else if (selectedPeriod === '30dias') {
+        dataInicio = startOfDay(subDays(agora, 29));
+      }
       
       // Buscar caixa aberto
       const caixa = await caixaAPI.getCaixaAberto();
@@ -59,40 +86,40 @@ export default function Monitoramento() {
         setUltimasTransacoes(transacoes);
         console.log('✅ [MONITORAMENTO] Transações carregadas:', transacoes.length);
 
-        // Processar dados para o gráfico (agrupar por hora)
-        const hoje = startOfDay(new Date());
-        const movimentosHoje = caixa.movimentos.filter((mov: any) => {
+        // Processar dados para o gráfico de evolução, considerando o período selecionado
+        const movimentosPeriodo = caixa.movimentos.filter((mov: any) => {
           const movData = new Date(mov.data);
-          return movData >= hoje;
+          return movData >= dataInicio && movData <= agora;
         });
 
-        // Criar dados agregados por hora
-        const dadosPorHora: { [key: string]: { entradas: number; saidas: number } } = {};
-        
-        // Inicializar todas as horas do dia
-        for (let i = 0; i < 24; i++) {
-          const hora = `${i.toString().padStart(2, '0')}:00`;
-          dadosPorHora[hora] = { entradas: 0, saidas: 0 };
-        }
+        const dadosPorPeriodo: { [key: string]: { entradas: number; saidas: number } } = {};
 
-        // Agregar movimentos por hora
-        movimentosHoje.forEach((mov: any) => {
+        movimentosPeriodo.forEach((mov: any) => {
           const movData = new Date(mov.data);
-          const hora = `${movData.getHours().toString().padStart(2, '0')}:00`;
-          
-          if (mov.tipo === 'entrada') {
-            dadosPorHora[hora].entradas += mov.valor;
+
+          let chave: string;
+          if (selectedPeriod === 'hoje') {
+            chave = `${movData.getHours().toString().padStart(2, '0')}:00`;
           } else {
-            dadosPorHora[hora].saidas += mov.valor;
+            chave = format(movData, "dd/MM");
+          }
+
+          if (!dadosPorPeriodo[chave]) {
+            dadosPorPeriodo[chave] = { entradas: 0, saidas: 0 };
+          }
+
+          if (mov.tipo === 'entrada') {
+            dadosPorPeriodo[chave].entradas += mov.valor;
+          } else {
+            dadosPorPeriodo[chave].saidas += mov.valor;
           }
         });
 
-        // Converter para array ordenado
-        const dadosGrafico = Object.entries(dadosPorHora)
-          .map(([hora, valores]) => ({
-            hora,
+        const dadosGrafico = Object.entries(dadosPorPeriodo)
+          .map(([label, valores]) => ({
+            hora: label,
             entradas: valores.entradas,
-            saidas: valores.saidas
+            saidas: valores.saidas,
           }))
           .sort((a, b) => a.hora.localeCompare(b.hora));
 
@@ -100,17 +127,43 @@ export default function Monitoramento() {
         console.log('✅ [MONITORAMENTO] Dados do gráfico processados:', dadosGrafico.length, 'pontos');
       }
 
-      // Buscar resumo de contas pendentes
-      const [resumoPagar, resumoReceber] = await Promise.all([
+      // Buscar resumo de contas pendentes e lista de contas para distribuição por categoria
+      const [resumoPagar, resumoReceber, contasPagarLista] = await Promise.all([
         contasPagarAPI.getResumo(),
-        contasReceberAPI.getResumo()
+        contasReceberAPI.getResumo(),
+        contasPagarAPI.getAll(),
       ]);
 
       setContasPendentes({
         pagar: resumoPagar.totalPendente || 0,
-        receber: resumoReceber.totalPendente || 0
+        receber: resumoReceber.totalPendente || 0,
       });
       console.log('✅ [MONITORAMENTO] Contas pendentes:', { pagar: resumoPagar.totalPendente, receber: resumoReceber.totalPendente });
+
+      // Processar despesas por categoria no período selecionado
+      const despesasPorCategoriaMap: { [categoria: string]: number } = {};
+
+      contasPagarLista.forEach((conta: any) => {
+        const categoria = conta.categoria || 'Outros';
+        const valorConta = Number(conta.valorPago ?? conta.valor ?? 0);
+
+        if (!valorConta) return;
+
+        const dataRef = conta.dataPagamento || conta.dataVencimento;
+        if (!dataRef) return;
+
+        const dataConta = new Date(dataRef);
+        if (dataConta < dataInicio || dataConta > agora) return;
+
+        despesasPorCategoriaMap[categoria] = (despesasPorCategoriaMap[categoria] || 0) + valorConta;
+      });
+
+      const dadosDespesas = Object.entries(despesasPorCategoriaMap)
+        .map(([categoria, valor]) => ({ categoria, valor }))
+        .sort((a, b) => b.valor - a.valor);
+
+      setDespesasPorCategoria(dadosDespesas);
+      console.log('✅ [MONITORAMENTO] Despesas por categoria processadas:', dadosDespesas.length, 'categorias');
 
       setLastUpdate(new Date());
       setLoading(false);
@@ -122,7 +175,7 @@ export default function Monitoramento() {
 
   useEffect(() => {
     loadMonitoringData();
-  }, []);
+  }, [selectedPeriod]);
 
   // Auto-refresh a cada 30 segundos
   useEffect(() => {
@@ -133,7 +186,7 @@ export default function Monitoramento() {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [autoRefresh]);
+  }, [autoRefresh, selectedPeriod]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -176,29 +229,63 @@ export default function Monitoramento() {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Monitoramento Financeiro</h1>
             <p className="text-muted-foreground">Acompanhamento em tempo real das operações</p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Activity className="h-4 w-4" />
-              Última atualização: {format(lastUpdate, "HH:mm:ss", { locale: ptBR })}
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>Período:</span>
+              <div className="inline-flex rounded-md border bg-background p-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className={"h-7 px-3 text-xs " + (selectedPeriod === 'hoje' ? 'bg-primary/10 text-primary' : '')}
+                  onClick={() => setSelectedPeriod('hoje')}
+                >
+                  Hoje
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className={"h-7 px-3 text-xs " + (selectedPeriod === '7dias' ? 'bg-primary/10 text-primary' : '')}
+                  onClick={() => setSelectedPeriod('7dias')}
+                >
+                  Últimos 7 dias
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className={"h-7 px-3 text-xs " + (selectedPeriod === '30dias' ? 'bg-primary/10 text-primary' : '')}
+                  onClick={() => setSelectedPeriod('30dias')}
+                >
+                  Últimos 30 dias
+                </Button>
+              </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setAutoRefresh(!autoRefresh)}
-              className={autoRefresh ? 'border-primary' : ''}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${autoRefresh ? 'animate-spin' : ''}`} />
-              {autoRefresh ? 'Auto-refresh' : 'Pausado'}
-            </Button>
-            <Button size="sm" onClick={loadMonitoringData}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Atualizar
-            </Button>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Activity className="h-4 w-4" />
+                Última atualização: {format(lastUpdate, "HH:mm:ss", { locale: ptBR })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className={autoRefresh ? 'border-primary' : ''}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${autoRefresh ? 'animate-spin' : ''}`} />
+                {autoRefresh ? 'Auto-refresh' : 'Pausado'}
+              </Button>
+              <Button size="sm" onClick={loadMonitoringData}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Atualizar
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -306,104 +393,172 @@ export default function Monitoramento() {
           </Card>
         </div>
 
-        {/* Gráfico de Evolução */}
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Evolução de Entradas e Saídas
-            </CardTitle>
-            <CardDescription>
-              Movimentações financeiras ao longo do dia
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {chartData.length > 0 ? (
-              <ChartContainer
-                config={{
-                  entradas: {
-                    label: "Entradas",
-                    color: "hsl(var(--chart-2))",
-                  },
-                  saidas: {
-                    label: "Saídas",
-                    color: "hsl(var(--chart-1))",
-                  },
-                }}
-                className="h-[300px] w-full"
-              >
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="fillEntradas" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.8} />
-                      <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0.1} />
-                    </linearGradient>
-                    <linearGradient id="fillSaidas" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8} />
-                      <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0.1} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis
-                    dataKey="hora"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    className="text-xs"
-                  />
-                  <YAxis
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    className="text-xs"
-                    tickFormatter={(value) =>
-                      new Intl.NumberFormat('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL',
-                        minimumFractionDigits: 0,
-                      }).format(value)
-                    }
-                  />
-                  <ChartTooltip
-                    content={
-                      <ChartTooltipContent
-                        labelFormatter={(value) => `Horário: ${value}`}
-                        formatter={(value, name) => [
-                          new Intl.NumberFormat('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL',
-                          }).format(value as number),
-                          name === 'entradas' ? 'Entradas' : 'Saídas',
-                        ]}
-                      />
-                    }
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="entradas"
-                    stroke="hsl(var(--chart-2))"
-                    fill="url(#fillEntradas)"
-                    strokeWidth={2}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="saidas"
-                    stroke="hsl(var(--chart-1))"
-                    fill="url(#fillSaidas)"
-                    strokeWidth={2}
-                  />
-                </AreaChart>
-              </ChartContainer>
-            ) : (
-              <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-                <div className="text-center">
-                  <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                  <p>Nenhum dado disponível para o gráfico</p>
+        {/* Gráficos */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Gráfico de Evolução */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Evolução de Entradas e Saídas
+              </CardTitle>
+              <CardDescription>
+                Movimentações financeiras ao longo do período selecionado
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {chartData.length > 0 ? (
+                <ChartContainer
+                  config={{
+                    entradas: {
+                      label: "Entradas",
+                      color: "hsl(var(--chart-2))",
+                    },
+                    saidas: {
+                      label: "Saídas",
+                      color: "hsl(var(--chart-1))",
+                    },
+                  }}
+                  className="h-[300px] w-full"
+                >
+                  <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="fillEntradas" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0.1} />
+                      </linearGradient>
+                      <linearGradient id="fillSaidas" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0.1} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis
+                      dataKey="hora"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      className="text-xs"
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      className="text-xs"
+                      tickFormatter={(value) =>
+                        new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                          minimumFractionDigits: 0,
+                        }).format(value)
+                      }
+                    />
+                    <ChartTooltip
+                      content={
+                        <ChartTooltipContent
+                          labelFormatter={(value) => `Período: ${value}`}
+                          formatter={(value, name) => [
+                            new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL',
+                            }).format(value as number),
+                            name === 'entradas' ? 'Entradas' : 'Saídas',
+                          ]}
+                        />
+                      }
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="entradas"
+                      stroke="hsl(var(--chart-2))"
+                      fill="url(#fillEntradas)"
+                      strokeWidth={2}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="saidas"
+                      stroke="hsl(var(--chart-1))"
+                      fill="url(#fillSaidas)"
+                      strokeWidth={2}
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                  <div className="text-center">
+                    <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                    <p>Nenhum dado disponível para o gráfico no período selecionado</p>
+                  </div>
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Gráfico de Despesas por Categoria */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingDown className="h-5 w-5" />
+                Despesas por Categoria
+              </CardTitle>
+              <CardDescription>
+                Distribuição das despesas no período selecionado
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {despesasPorCategoria.length > 0 ? (
+                <ChartContainer
+                  config={{
+                    valor: {
+                      label: "Valor",
+                      color: "hsl(var(--chart-1))",
+                    },
+                  }}
+                  className="h-[300px] w-full"
+                >
+                  <PieChart>
+                    <Pie
+                      data={despesasPorCategoria}
+                      dataKey="valor"
+                      nameKey="categoria"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={4}
+                      strokeWidth={2}
+                    >
+                      {despesasPorCategoria.map((item, index) => (
+                        <Cell
+                          key={item.categoria}
+                          fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <ChartTooltip
+                      content={
+                        <ChartTooltipContent
+                          formatter={(value, _name, item) => [
+                            new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL',
+                            }).format(value as number),
+                            (item?.payload as any)?.categoria ?? 'Categoria',
+                          ]}
+                        />
+                      }
+                    />
+                  </PieChart>
+                </ChartContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                  <div className="text-center">
+                    <TrendingDown className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                    <p>Nenhuma despesa encontrada para o período selecionado</p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Últimas Transações */}
         <Card>
