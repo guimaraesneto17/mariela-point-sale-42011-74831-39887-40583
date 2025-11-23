@@ -47,6 +47,7 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
   const [clientes, setClientes] = useState<any[]>([]);
   const [categorias, setCategorias] = useState<any[]>([]);
   const [showCategoriesManager, setShowCategoriesManager] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const form = useForm<ContaReceberFormData>({
     resolver: zodResolver(contaReceberSchema),
@@ -231,7 +232,7 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>Data de Vencimento*</FormLabel>
-                    <Popover>
+                    <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
@@ -254,7 +255,10 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
                         <Calendar
                           mode="single"
                           selected={field.value}
-                          onSelect={field.onChange}
+                          onSelect={(date) => {
+                            field.onChange(date);
+                            setCalendarOpen(false);
+                          }}
                           className="pointer-events-auto"
                           initialFocus
                         />
