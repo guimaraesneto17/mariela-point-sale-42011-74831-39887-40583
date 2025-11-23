@@ -8,7 +8,7 @@ const router = express.Router();
  * /api/vitrine:
  *   get:
  *     summary: Lista todos os produtos da vitrine virtual
- *     description: Retorna uma view agregada combinando dados de Produto e Estoque, formatada para exibição na vitrine
+ *     description: Retorna uma view agregada da collection vitrineVirtual do MongoDB, formatada para exibição na vitrine
  *     tags: [Vitrine Virtual]
  *     responses:
  *       200:
@@ -18,70 +18,7 @@ const router = express.Router();
  *             schema:
  *               type: array
  *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: integer
- *                     description: ID sequencial gerado pela view
- *                   code:
- *                     type: string
- *                     description: Código do produto
- *                   title:
- *                     type: string
- *                     description: Nome do produto
- *                   description:
- *                     type: string
- *                     description: Descrição detalhada do produto
- *                   category:
- *                     type: string
- *                     description: Categoria do produto
- *                   image:
- *                     type: array
- *                     items:
- *                       type: string
- *                     description: URLs das imagens do produto
- *                   price:
- *                     type: string
- *                     description: Preço formatado (com ou sem promoção)
- *                   priceValue:
- *                     type: number
- *                     description: Valor numérico do preço
- *                   originalPrice:
- *                     type: string
- *                     nullable: true
- *                     description: Preço original formatado (apenas em promoção)
- *                   originalPriceValue:
- *                     type: number
- *                     nullable: true
- *                     description: Valor numérico do preço original
- *                   isOnSale:
- *                     type: boolean
- *                     description: Indica se está em promoção
- *                   isNew:
- *                     type: boolean
- *                     description: Indica se é novidade
- *                   variants:
- *                     type: array
- *                     description: Variantes disponíveis (cor, tamanho, quantidade)
- *                     items:
- *                       type: object
- *                       properties:
- *                         color:
- *                           type: string
- *                         size:
- *                           type: string
- *                         available:
- *                           type: number
- *                   totalAvailable:
- *                     type: number
- *                     description: Total de unidades disponíveis
- *                   statusProduct:
- *                     type: string
- *                     description: Status do produto (Disponível, Esgotado, Últimas unidades)
- *                   updatedAt:
- *                     type: string
- *                     format: date-time
- *                     description: Data da última atualização
+ *                 $ref: '#/components/schemas/VitrineVirtual'
  *       500:
  *         description: Erro ao buscar produtos
  */

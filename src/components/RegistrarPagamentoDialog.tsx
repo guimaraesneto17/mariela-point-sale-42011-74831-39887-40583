@@ -94,7 +94,12 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
           registrarNoCaixa: values.registrarNoCaixa
         });
       }
-      toast.success(tipo === 'pagar' ? 'Pagamento registrado' : 'Recebimento registrado');
+      
+      const mensagem = tipo === 'pagar' 
+        ? 'Pagamento registrado' + (values.registrarNoCaixa ? ' e lançado no caixa' : '')
+        : 'Recebimento registrado' + (values.registrarNoCaixa ? ' e lançado no caixa' : '');
+      toast.success(mensagem);
+      
       onSuccess();
       onOpenChange(false);
       form.reset();
