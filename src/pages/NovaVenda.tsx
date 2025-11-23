@@ -57,6 +57,9 @@ const NovaVenda = () => {
   const [clientes, setClientes] = useState<any[]>([]);
   const [vendedores, setVendedores] = useState<any[]>([]);
   const [estoque, setEstoque] = useState<any[]>([]);
+  
+  // Estado para rastrear estoque retido (key: codigoProduto-cor-tamanho, value: quantidade retida)
+  const [estoqueRetido, setEstoqueRetido] = useState<Record<string, number>>({});
 
   useEffect(() => {
     loadData();
@@ -175,11 +178,29 @@ const NovaVenda = () => {
   const valorTaxaMaquininha = (totalFinal * taxaMaquininha) / 100;
   const valorRecebidoLojista = totalFinal - valorTaxaMaquininha;
 
+  // Helper para criar chave única da variante
+  const getVarianteKey = (codigoProduto: string, cor: string, tamanho: string) => {
+    return `${codigoProduto}-${cor}-${tamanho}`;
+  };
+
+  // Helper para calcular estoque disponível considerando itens retidos
+  const getEstoqueDisponivel = (codigoProduto: string, cor: string, tamanho: string, quantidadeOriginal: number) => {
+    const key = getVarianteKey(codigoProduto, cor, tamanho);
+    const retido = estoqueRetido[key] || 0;
+    return Math.max(0, quantidadeOriginal - retido);
+  };
+
   const adicionarOuEditarProduto = () => {
     if (!produtoSelecionado || quantidadeProduto <= 0) {
       toast.error("Selecione um produto e quantidade válida!");
       return;
     }
+
+    const varianteKey = getVarianteKey(
+      produtoSelecionado.codigoProduto,
+      produtoSelecionado.cor,
+      produtoSelecionado.tamanho
+    );
 
     // Verificar se o produto já está na lista de itens
     const itemExistente = itensVenda.findIndex(
@@ -192,9 +213,16 @@ const NovaVenda = () => {
     if (itemEmEdicao === null && itemExistente !== -1) {
       const novaQuantidade = itensVenda[itemExistente].quantidade + quantidadeProduto;
       
-      // Verificar quantidade disponível em estoque
-      if (novaQuantidade > (produtoSelecionado.quantidade || 0)) {
-        toast.error(`Quantidade indisponível! Estoque atual: ${produtoSelecionado.quantidade || 0} un.`);
+      // Verificar quantidade disponível considerando estoque retido
+      const estoqueDisponivel = getEstoqueDisponivel(
+        produtoSelecionado.codigoProduto,
+        produtoSelecionado.cor,
+        produtoSelecionado.tamanho,
+        produtoSelecionado.quantidade || 0
+      );
+      
+      if (quantidadeProduto > estoqueDisponivel) {
+        toast.error(`Quantidade indisponível! Estoque disponível: ${estoqueDisponivel} un.`);
         return;
       }
 
@@ -208,6 +236,13 @@ const NovaVenda = () => {
       novosItens[itemExistente].subtotal = precoComDesconto * novaQuantidade;
       
       setItensVenda(novosItens);
+      
+      // Atualizar estoque retido
+      setEstoqueRetido(prev => ({
+        ...prev,
+        [varianteKey]: (prev[varianteKey] || 0) + quantidadeProduto
+      }));
+      
       setProdutoSelecionado(null);
       setQuantidadeProduto(1);
       setDescontoProduto(0);
@@ -215,9 +250,16 @@ const NovaVenda = () => {
       return;
     }
 
-    // Verificar quantidade disponível em estoque
-    if (quantidadeProduto > (produtoSelecionado.quantidade || 0)) {
-      toast.error(`Quantidade indisponível! Estoque atual: ${produtoSelecionado.quantidade || 0} un.`);
+    // Verificar quantidade disponível considerando estoque retido
+    const estoqueDisponivel = getEstoqueDisponivel(
+      produtoSelecionado.codigoProduto,
+      produtoSelecionado.cor,
+      produtoSelecionado.tamanho,
+      produtoSelecionado.quantidade || 0
+    );
+    
+    if (quantidadeProduto > estoqueDisponivel) {
+      toast.error(`Quantidade indisponível! Estoque disponível: ${estoqueDisponivel} un.`);
       return;
     }
 
@@ -242,13 +284,29 @@ const NovaVenda = () => {
     };
 
     if (itemEmEdicao !== null) {
+      // Ao editar, devolver o estoque retido do item antigo
+      const itemAntigo = itensVenda[itemEmEdicao];
+      const keyAntiga = getVarianteKey(itemAntigo.codigoProduto, itemAntigo.cor, itemAntigo.tamanho);
+      
+      setEstoqueRetido(prev => {
+        const novo = { ...prev };
+        novo[keyAntiga] = Math.max(0, (novo[keyAntiga] || 0) - itemAntigo.quantidade);
+        novo[varianteKey] = (novo[varianteKey] || 0) + quantidadeProduto;
+        return novo;
+      });
+      
       const novosItens = [...itensVenda];
       novosItens[itemEmEdicao] = novoItem;
       setItensVenda(novosItens);
       setItemEmEdicao(null);
       toast.success("Produto atualizado!");
     } else {
+      // Adicionar novo item e reter estoque
       setItensVenda([...itensVenda, novoItem]);
+      setEstoqueRetido(prev => ({
+        ...prev,
+        [varianteKey]: (prev[varianteKey] || 0) + quantidadeProduto
+      }));
       toast.success("Produto adicionado!");
     }
 
@@ -302,11 +360,24 @@ const NovaVenda = () => {
 
   const confirmDeleteItem = () => {
     if (itemToDeleteIndex !== null) {
+      // Devolver estoque retido ao remover item
+      const itemRemovido = itensVenda[itemToDeleteIndex];
+      const varianteKey = getVarianteKey(
+        itemRemovido.codigoProduto,
+        itemRemovido.cor,
+        itemRemovido.tamanho
+      );
+      
+      setEstoqueRetido(prev => ({
+        ...prev,
+        [varianteKey]: Math.max(0, (prev[varianteKey] || 0) - itemRemovido.quantidade)
+      }));
+      
       setItensVenda(itensVenda.filter((_, i) => i !== itemToDeleteIndex));
       if (itemEmEdicao === itemToDeleteIndex) {
         cancelarEdicao();
       }
-      toast.info("Produto removido");
+      toast.info("Produto removido e estoque liberado");
       setDeleteItemDialogOpen(false);
       setItemToDeleteIndex(null);
     }
@@ -812,6 +883,7 @@ const NovaVenda = () => {
         onOpenChange={setShowProductDialog}
         estoque={estoque.length > 0 ? estoque : mockEstoque}
         onSelect={setProdutoSelecionado}
+        estoqueRetido={estoqueRetido}
       />
 
       <AlertDeleteDialog

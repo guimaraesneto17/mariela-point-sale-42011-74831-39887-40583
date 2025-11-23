@@ -47,15 +47,28 @@ interface SelectProductDialogProps {
   onOpenChange: (open: boolean) => void;
   estoque: ProdutoEstoque[];
   onSelect: (item: ItemSelecionado) => void;
+  estoqueRetido?: Record<string, number>;
 }
 
-export function SelectProductDialog({ open, onOpenChange, estoque, onSelect }: SelectProductDialogProps) {
+export function SelectProductDialog({ open, onOpenChange, estoque, onSelect, estoqueRetido = {} }: SelectProductDialogProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [produtoSelecionado, setProdutoSelecionado] = useState<ProdutoEstoque | null>(null);
   const [corSelecionada, setCorSelecionada] = useState("");
   const [tamanhoSelecionado, setTamanhoSelecionado] = useState("");
 
-  const filteredProdutos = estoque.filter(produto => 
+  // Helper para criar chave única da variante
+  const getVarianteKey = (codigoProduto: string, cor: string, tamanho: string) => {
+    return `${codigoProduto}-${cor}-${tamanho}`;
+  };
+
+  // Helper para calcular estoque disponível considerando itens retidos
+  const getEstoqueDisponivel = (codigoProduto: string, cor: string, tamanho: string, quantidadeOriginal: number) => {
+    const key = getVarianteKey(codigoProduto, cor, tamanho);
+    const retido = estoqueRetido[key] || 0;
+    return Math.max(0, quantidadeOriginal - retido);
+  };
+
+  const filteredProdutos = estoque.filter(produto =>
     produto.nomeProduto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     produto.codigoProduto?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -65,7 +78,7 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect }: S
     ? [...new Set(produtoSelecionado.variantes.map(v => v.cor))]
     : [];
 
-  // Tamanhos disponíveis para a cor selecionada
+  // Tamanhos disponíveis para a cor selecionada (considerando estoque retido)
   const tamanhosDisponiveis = produtoSelecionado && corSelecionada
     ? (() => {
         // Encontrar variante com a cor selecionada
@@ -74,20 +87,37 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect }: S
         
         // Verificar se tem array de tamanhos (estrutura nova)
         if (Array.isArray(varianteDaCor.tamanhos) && varianteDaCor.tamanhos.length > 0) {
-          // Filtrar apenas tamanhos com quantidade disponível
+          // Filtrar apenas tamanhos com quantidade disponível (descontando retidos)
           return varianteDaCor.tamanhos
-            .filter(t => t.quantidade > 0)
-            .map(t => ({
-              tamanho: String(t.tamanho),
-              quantidade: t.quantidade
-            }));
+            .map(t => {
+              const disponivelReal = getEstoqueDisponivel(
+                produtoSelecionado.codigoProduto,
+                corSelecionada,
+                String(t.tamanho),
+                t.quantidade
+              );
+              return {
+                tamanho: String(t.tamanho),
+                quantidade: disponivelReal
+              };
+            })
+            .filter(t => t.quantidade > 0);
         } 
         // Fallback para estrutura antiga (campo tamanho único)
-        else if (varianteDaCor.tamanho && varianteDaCor.quantidade > 0) {
-          return [{ 
-            tamanho: String(varianteDaCor.tamanho), 
-            quantidade: varianteDaCor.quantidade 
-          }];
+        else if (varianteDaCor.tamanho) {
+          const disponivelReal = getEstoqueDisponivel(
+            produtoSelecionado.codigoProduto,
+            corSelecionada,
+            String(varianteDaCor.tamanho),
+            varianteDaCor.quantidade
+          );
+          
+          if (disponivelReal > 0) {
+            return [{ 
+              tamanho: String(varianteDaCor.tamanho), 
+              quantidade: disponivelReal
+            }];
+          }
         }
         
         return [];

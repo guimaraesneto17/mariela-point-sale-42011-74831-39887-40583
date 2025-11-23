@@ -276,6 +276,18 @@ const Vendas = () => {
             </div>
 
             <div className="mt-4 pt-4 border-t space-y-2">
+              {Number(venda.totalDesconto || 0) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center gap-2">
+                    <TrendingDown className="h-4 w-4 text-orange-500" />
+                    Desconto Total Aplicado:
+                  </span>
+                  <span className="font-medium text-orange-600 dark:text-orange-400">
+                    - {formatCurrency(venda.totalDesconto || 0)}
+                  </span>
+                </div>
+              )}
+              
               <div className="flex justify-between items-center">
                 <span className="text-lg font-medium">Total:</span>
                 <span className="text-2xl font-bold text-primary">{formatCurrency(venda.total || 0)}</span>
