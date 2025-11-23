@@ -58,7 +58,6 @@ const Estoque = () => {
   // Novos filtros avançados
   const [filterPrecoMin, setFilterPrecoMin] = useState<string>("");
   const [filterPrecoMax, setFilterPrecoMax] = useState<string>("");
-  const [filterFornecedor, setFilterFornecedor] = useState<string>("todos");
   const [filterDataEntrada, setFilterDataEntrada] = useState<string>("todas");
   
   // State para selecionar cor/tamanho por item
@@ -181,6 +180,62 @@ const Estoque = () => {
     }).length;
   };
 
+  // Função para contar itens em promoção (com filtros aplicados, exceto promoção)
+  const getCountPromo = () => {
+    return inventory.filter(item => {
+      const nomeProduto = item.nomeProduto || '';
+      const codigoProduto = item.codigoProduto || '';
+      const categoria = item.categoria || '';
+      
+      const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesNovidade = filterNovidade === null || item.isNovidade === filterNovidade;
+      const matchesCategoria = filterCategoria === "todas" || categoria === filterCategoria;
+      const matchesCor = filterCor === "todas" || 
+        (item.variantes && item.variantes.some((v: any) => v.cor === filterCor && v.quantidade > 0));
+      const matchesTamanho = filterTamanho === "todos" || 
+        item.variantes?.some((v: any) => {
+          if (!Array.isArray(v.tamanhos) || v.tamanhos.length === 0) {
+            return v.tamanho === filterTamanho && v.quantidade > 0;
+          }
+          if (typeof v.tamanhos[0] === 'object' && v.tamanhos[0].tamanho) {
+            return v.tamanhos.some((t: any) => t.tamanho === filterTamanho) && v.quantidade > 0;
+          }
+          return v.tamanhos.includes(filterTamanho) && v.quantidade > 0;
+        });
+      
+      return matchesSearch && matchesNovidade && matchesCategoria && matchesCor && matchesTamanho && item.emPromocao === true;
+    }).length;
+  };
+
+  // Função para contar itens novos (com filtros aplicados, exceto novidade)
+  const getCountNovo = () => {
+    return inventory.filter(item => {
+      const nomeProduto = item.nomeProduto || '';
+      const codigoProduto = item.codigoProduto || '';
+      const categoria = item.categoria || '';
+      
+      const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesPromocao = filterPromocao === null || item.emPromocao === filterPromocao;
+      const matchesCategoria = filterCategoria === "todas" || categoria === filterCategoria;
+      const matchesCor = filterCor === "todas" || 
+        (item.variantes && item.variantes.some((v: any) => v.cor === filterCor && v.quantidade > 0));
+      const matchesTamanho = filterTamanho === "todos" || 
+        item.variantes?.some((v: any) => {
+          if (!Array.isArray(v.tamanhos) || v.tamanhos.length === 0) {
+            return v.tamanho === filterTamanho && v.quantidade > 0;
+          }
+          if (typeof v.tamanhos[0] === 'object' && v.tamanhos[0].tamanho) {
+            return v.tamanhos.some((t: any) => t.tamanho === filterTamanho) && v.quantidade > 0;
+          }
+          return v.tamanhos.includes(filterTamanho) && v.quantidade > 0;
+        });
+      
+      return matchesSearch && matchesPromocao && matchesCategoria && matchesCor && matchesTamanho && item.isNovidade === true;
+    }).length;
+  };
+
   const filteredInventory = inventory.filter(item => {
     const nomeProduto = item.nomeProduto || '';
     const codigoProduto = item.codigoProduto || '';
@@ -231,10 +286,6 @@ const Estoque = () => {
     const matchesPrecoMin = !filterPrecoMin || precoVenda >= parseFloat(filterPrecoMin);
     const matchesPrecoMax = !filterPrecoMax || precoVenda <= parseFloat(filterPrecoMax);
     
-    // Filtro de fornecedor
-    const matchesFornecedor = filterFornecedor === "todos" || 
-      item.fornecedor?.codigoFornecedor === filterFornecedor;
-    
     // Filtro de data de entrada
     const matchesDataEntrada = filterDataEntrada === "todas" || (() => {
       if (!item.variantes || item.variantes.length === 0) return false;
@@ -256,7 +307,7 @@ const Estoque = () => {
     
     return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria && 
            matchesCor && matchesTamanho && matchesQuantidadeRange &&
-           matchesPrecoMin && matchesPrecoMax && matchesFornecedor && matchesDataEntrada;
+           matchesPrecoMin && matchesPrecoMax && matchesDataEntrada;
   });
 
   // Aplicar ordenação
@@ -425,7 +476,6 @@ const Estoque = () => {
       const precoVenda = item.precoPromocional || item.precoVenda || 0;
       const matchesPrecoMin = !filterPrecoMin || precoVenda >= parseFloat(filterPrecoMin);
       const matchesPrecoMax = !filterPrecoMax || precoVenda <= parseFloat(filterPrecoMax);
-      const matchesFornecedor = filterFornecedor === "todos" || item.fornecedor?.codigoFornecedor === filterFornecedor;
       const matchesDataEntrada = filterDataEntrada === "todas" || (() => {
         if (!item.variantes || item.variantes.length === 0) return false;
         const hoje = new Date();
@@ -441,7 +491,7 @@ const Estoque = () => {
       })();
       
       return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria && 
-             matchesPrecoMin && matchesPrecoMax && matchesFornecedor && matchesDataEntrada;
+             matchesPrecoMin && matchesPrecoMax && matchesDataEntrada;
     });
     
     inventoryParaCores.forEach((item) => {
@@ -474,7 +524,6 @@ const Estoque = () => {
       const precoVenda = item.precoPromocional || item.precoVenda || 0;
       const matchesPrecoMin = !filterPrecoMin || precoVenda >= parseFloat(filterPrecoMin);
       const matchesPrecoMax = !filterPrecoMax || precoVenda <= parseFloat(filterPrecoMax);
-      const matchesFornecedor = filterFornecedor === "todos" || item.fornecedor?.codigoFornecedor === filterFornecedor;
       const matchesDataEntrada = filterDataEntrada === "todas" || (() => {
         if (!item.variantes || item.variantes.length === 0) return false;
         const hoje = new Date();
@@ -491,7 +540,7 @@ const Estoque = () => {
       
       return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria && 
              matchesCor && matchesPrecoMin && matchesPrecoMax && 
-             matchesFornecedor && matchesDataEntrada;
+             matchesDataEntrada;
     });
     
     inventoryParaTamanhos.forEach((item) => {
@@ -778,6 +827,7 @@ const Estoque = () => {
                   >
                     <Tag className="h-4 w-4 mr-1" />
                     Promo
+                    <Badge variant="secondary" className="ml-2">{getCountPromo()}</Badge>
                   </Button>
                   <Button
                     variant={filterNovidade === true ? "default" : "outline"}
@@ -787,6 +837,7 @@ const Estoque = () => {
                   >
                     <Sparkles className="h-4 w-4 mr-1" />
                     Novo
+                    <Badge variant="secondary" className="ml-2">{getCountNovo()}</Badge>
                   </Button>
                 </div>
               </div>
@@ -847,23 +898,6 @@ const Estoque = () => {
             </div>
 
             <div>
-              <Label className="text-sm font-medium text-muted-foreground mb-2 block">Filtrar por Fornecedor</Label>
-              <Select value={filterFornecedor} onValueChange={setFilterFornecedor}>
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Todos os fornecedores" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os fornecedores</SelectItem>
-                  {getAllFornecedores().map((fornecedor) => (
-                    <SelectItem key={fornecedor.codigo} value={fornecedor.codigo}>
-                      {fornecedor.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
               <Label className="text-sm font-medium text-muted-foreground mb-2 block">Data de Entrada</Label>
               <Select value={filterDataEntrada} onValueChange={setFilterDataEntrada}>
                 <SelectTrigger className="h-9">
@@ -878,8 +912,8 @@ const Estoque = () => {
               </Select>
             </div>
 
-            {(filterPrecoMin || filterPrecoMax || filterFornecedor !== "todos" || 
-              filterDataEntrada !== "todas" || filterCategoria !== "todas" || 
+            {(filterPrecoMin || filterPrecoMax || 
+              filterDataEntrada !== "todas" || filterCategoria !== "todas" ||
               filterCor !== "todas" || filterTamanho !== "todos" || 
               filterQuantidadeRange !== "todos" ||
               filterPromocao !== null || filterNovidade !== null) && (
@@ -890,7 +924,6 @@ const Estoque = () => {
                   onClick={() => {
                     setFilterPrecoMin("");
                     setFilterPrecoMax("");
-                    setFilterFornecedor("todos");
                     setFilterDataEntrada("todas");
                     setFilterCategoria("todas");
                     setFilterCor("todas");

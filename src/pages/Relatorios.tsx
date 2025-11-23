@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { FileText, Calendar, Filter, Download, TrendingUp, TrendingDown, Package, Users, DollarSign, ShoppingBag, Sparkles, Tag, Crown, UserCheck, Wallet, BarChart3, Boxes, Gift, MessageSquare, Send, Calendar as CalendarDays, Bell } from "lucide-react";
+import { FileText, Calendar, Filter, Download, TrendingUp, TrendingDown, Package, Users, DollarSign, ShoppingBag, Sparkles, Tag, Crown, UserCheck, Wallet, BarChart3, Boxes, Gift, MessageSquare, Send, Calendar as CalendarDays, Bell, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,10 +23,15 @@ import { ptBR } from "date-fns/locale";
 const Relatorios = () => {
   const [dataInicioVendas, setDataInicioVendas] = useState("");
   const [dataFimVendas, setDataFimVendas] = useState("");
-  const [vendedorFiltro, setVendedorFiltro] = useState("todos");
-  const [categoriaFiltro, setCategoriaFiltro] = useState("todas");
-  const [statusCliente, setStatusCliente] = useState("todos");
-  const [periodoCaixa, setPeriodoCaixa] = useState("mensal");
+  const [periodoVendas, setPeriodoVendas] = useState("todos");
+  const [dataInicioProdutos, setDataInicioProdutos] = useState("");
+  const [dataFimProdutos, setDataFimProdutos] = useState("");
+  const [periodoProdutos, setPeriodoProdutos] = useState("todos");
+  const [dataInicioCaixa, setDataInicioCaixa] = useState("");
+  const [dataFimCaixa, setDataFimCaixa] = useState("");
+  const [periodoCaixa, setPeriodoCaixa] = useState("todos");
+  const [dataInicioFinanceiro, setDataInicioFinanceiro] = useState("");
+  const [dataFimFinanceiro, setDataFimFinanceiro] = useState("");
   const [periodoFinanceiro, setPeriodoFinanceiro] = useState("todos");
   
   const [loading, setLoading] = useState(true);
@@ -95,7 +101,29 @@ const Relatorios = () => {
 
   useEffect(() => {
     loadRelatorios();
-  }, [periodoFinanceiro]);
+  }, [periodoVendas, dataInicioVendas, dataFimVendas, periodoProdutos, dataInicioProdutos, dataFimProdutos, periodoCaixa, dataInicioCaixa, dataFimCaixa, periodoFinanceiro, dataInicioFinanceiro, dataFimFinanceiro]);
+
+  // Função auxiliar para filtrar dados por período
+  const filtrarPorPeriodo = (data: Date, dataInicio: string, dataFim: string, periodo: string) => {
+    const hoje = new Date();
+    
+    // Se há datas personalizadas, usa elas
+    if (dataInicio && dataFim) {
+      const inicio = new Date(dataInicio);
+      const fim = new Date(dataFim);
+      fim.setHours(23, 59, 59, 999); // Inclui o dia todo
+      return data >= inicio && data <= fim;
+    }
+    
+    // Caso contrário, usa o período predefinido
+    if (periodo === "todos") return true;
+    
+    const diasAtras = periodo === "7" ? 7 : periodo === "30" ? 30 : periodo === "90" ? 90 : 365;
+    const dataLimite = new Date();
+    dataLimite.setDate(hoje.getDate() - diasAtras);
+    
+    return data >= dataLimite;
+  };
 
   const loadRelatorios = async () => {
     try {
@@ -112,9 +140,14 @@ const Relatorios = () => {
       setVendedores(vendedoresList);
       setEstoque(estoqueData);
 
-      // Relatório de Vendas
+      // Relatório de Vendas com filtros de período
+      const vendasFiltradas = vendas.filter((venda: any) => {
+        const dataVenda = new Date(venda.data || venda.dataVenda);
+        return filtrarPorPeriodo(dataVenda, dataInicioVendas, dataFimVendas, periodoVendas);
+      });
+
       const vendasPorCategoria: any = {};
-      vendas.forEach((venda: any) => {
+      vendasFiltradas.forEach((venda: any) => {
         venda.itens?.forEach((item: any) => {
           const produto = produtos.find((p: any) => p.codigoProduto === item.codigoProduto);
           const categoria = produto?.categoria || 'Outro';
@@ -127,7 +160,7 @@ const Relatorios = () => {
       });
 
       const vendasPorMes: any = {};
-      vendas.forEach((venda: any) => {
+      vendasFiltradas.forEach((venda: any) => {
         const data = new Date(venda.data || venda.dataVenda);
         const mesAno = `${data.toLocaleString('pt-BR', { month: 'long' })} ${data.getFullYear()}`;
         if (!vendasPorMes[mesAno]) {
@@ -137,8 +170,8 @@ const Relatorios = () => {
         vendasPorMes[mesAno].valor += venda.total || 0;
       });
 
-      const totalVendas = vendas.length;
-      const faturamentoTotal = vendas.reduce((acc: number, v: any) => acc + (v.total || 0), 0);
+      const totalVendas = vendasFiltradas.length;
+      const faturamentoTotal = vendasFiltradas.reduce((acc: number, v: any) => acc + (v.total || 0), 0);
       const ticketMedio = totalVendas > 0 ? faturamentoTotal / totalVendas : 0;
 
       setRelatorioVendas({
@@ -147,10 +180,11 @@ const Relatorios = () => {
         ticketMedio,
         vendasPorCategoria: Object.values(vendasPorCategoria),
         vendasPorMes: Object.values(vendasPorMes).slice(-3),
-        vendasOriginais: vendas,
+        vendasOriginais: vendasFiltradas,
       });
 
-      // Relatório de Produtos
+      // Relatório de Produtos com filtros de período
+      const produtosVendidosFiltrados = vendasFiltradas;
       const totalProdutos = produtos.length;
       const emEstoque = estoqueData.reduce((acc: number, item: any) => acc + (item.quantidadeTotal || 0), 0);
       const novidades = estoqueData.filter((item: any) => item.isNovidade === true).length;
@@ -169,7 +203,7 @@ const Relatorios = () => {
       });
 
       const produtosVendidos: any = {};
-      vendas.forEach((venda: any) => {
+      produtosVendidosFiltrados.forEach((venda: any) => {
         venda.itens?.forEach((item: any) => {
           if (!produtosVendidos[item.codigoProduto]) {
             produtosVendidos[item.codigoProduto] = {
@@ -296,14 +330,19 @@ const Relatorios = () => {
         topVendedores: topVendedoresArray,
       });
 
-      // Relatório de Caixa
-      const caixasAbertos = caixas.filter((c: any) => c.status === 'aberto').length;
-      const caixasFechados = caixas.filter((c: any) => c.status === 'fechado').length;
-      const totalEntradas = caixas.reduce((acc: number, c: any) => acc + (c.entrada || 0), 0);
-      const totalSaidas = caixas.reduce((acc: number, c: any) => acc + (c.saida || 0), 0);
-      const performanceTotal = caixas.reduce((acc: number, c: any) => acc + (c.performance || 0), 0);
+      // Relatório de Caixa com filtros de período
+      const caixasFiltrados = caixas.filter((caixa: any) => {
+        const dataCaixa = new Date(caixa.dataAbertura);
+        return filtrarPorPeriodo(dataCaixa, dataInicioCaixa, dataFimCaixa, periodoCaixa);
+      });
 
-      const ultimosCaixas = caixas
+      const caixasAbertos = caixasFiltrados.filter((c: any) => c.status === 'aberto').length;
+      const caixasFechados = caixasFiltrados.filter((c: any) => c.status === 'fechado').length;
+      const totalEntradas = caixasFiltrados.reduce((acc: number, c: any) => acc + (c.entrada || 0), 0);
+      const totalSaidas = caixasFiltrados.reduce((acc: number, c: any) => acc + (c.saida || 0), 0);
+      const performanceTotal = caixasFiltrados.reduce((acc: number, c: any) => acc + (c.performance || 0), 0);
+
+      const ultimosCaixas = caixasFiltrados
         .sort((a: any, b: any) => new Date(b.dataAbertura).getTime() - new Date(a.dataAbertura).getTime())
         .slice(0, 5)
         .map((c: any) => ({
@@ -315,7 +354,7 @@ const Relatorios = () => {
         }));
 
       setRelatorioCaixa({
-        totalCaixas: caixas.length,
+        totalCaixas: caixasFiltrados.length,
         caixasAbertos,
         caixasFechados,
         totalEntradas,
@@ -377,28 +416,25 @@ const Relatorios = () => {
         valorTotal: valorTotalEstoque,
       });
 
-      // Relatório Financeiro - Com top categorias e próximos vencimentos
+      // Relatório Financeiro com filtros de período
       let [contasPagar, contasReceber] = await Promise.all([
         contasPagarAPI.getAll(),
         contasReceberAPI.getAll(),
       ]);
 
       const hoje = new Date();
-      const filtrarPorPeriodo = (contas: any[]) => {
-        if (periodoFinanceiro === "todos") return contas;
-        
-        const diasFiltro = periodoFinanceiro === "30" ? 30 : periodoFinanceiro === "90" ? 90 : 365;
-        const dataLimite = new Date();
-        dataLimite.setDate(hoje.getDate() - diasFiltro);
-        
-        return contas.filter((conta: any) => {
-          const dataVencimento = new Date(conta.dataVencimento);
-          return dataVencimento >= dataLimite;
-        });
-      };
+      
+      // Filtrar contas a pagar
+      contasPagar = contasPagar.filter((conta: any) => {
+        const dataVencimento = new Date(conta.dataVencimento);
+        return filtrarPorPeriodo(dataVencimento, dataInicioFinanceiro, dataFimFinanceiro, periodoFinanceiro);
+      });
 
-      contasPagar = filtrarPorPeriodo(contasPagar);
-      contasReceber = filtrarPorPeriodo(contasReceber);
+      // Filtrar contas a receber
+      contasReceber = contasReceber.filter((conta: any) => {
+        const dataVencimento = new Date(conta.dataVencimento);
+        return filtrarPorPeriodo(dataVencimento, dataInicioFinanceiro, dataFimFinanceiro, periodoFinanceiro);
+      });
 
       const totalPagar = contasPagar.reduce((acc: number, c: any) => acc + (c.valor || 0), 0);
       const totalReceber = contasReceber.reduce((acc: number, c: any) => acc + (c.valor || 0), 0);
@@ -666,7 +702,63 @@ const Relatorios = () => {
 
         {/* Tab Financeiro com Top Categorias e Próximos Vencimentos */}
         <TabsContent value="financeiro" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Filtros de Período */}
+          <Card className="bg-gradient-to-br from-primary/5 to-background">
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Período</Label>
+                  <Select value={periodoFinanceiro} onValueChange={setPeriodoFinanceiro}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="7">Últimos 7 dias</SelectItem>
+                      <SelectItem value="30">Últimos 30 dias</SelectItem>
+                      <SelectItem value="90">Últimos 90 dias</SelectItem>
+                      <SelectItem value="365">Último ano</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Data Início</Label>
+                  <Input
+                    type="date"
+                    value={dataInicioFinanceiro}
+                    onChange={(e) => setDataInicioFinanceiro(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Data Fim</Label>
+                  <Input
+                    type="date"
+                    value={dataFimFinanceiro}
+                    onChange={(e) => setDataFimFinanceiro(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-end">
+                  {(periodoFinanceiro !== "todos" || dataInicioFinanceiro || dataFimFinanceiro) && (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setPeriodoFinanceiro("todos");
+                        setDataInicioFinanceiro("");
+                        setDataFimFinanceiro("");
+                        loadRelatorios();
+                      }}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Limpar Filtros
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Total a Receber</CardTitle>
@@ -691,24 +783,6 @@ const Relatorios = () => {
                 <div className={`text-2xl font-bold ${relatorioFinanceiro.saldoPrevisto >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {formatCurrency(relatorioFinanceiro.saldoPrevisto)}
                 </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Filtro de Período</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Select value={periodoFinanceiro} onValueChange={setPeriodoFinanceiro}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    <SelectItem value="30">Últimos 30 dias</SelectItem>
-                    <SelectItem value="90">Últimos 90 dias</SelectItem>
-                    <SelectItem value="365">Último ano</SelectItem>
-                  </SelectContent>
-                </Select>
               </CardContent>
             </Card>
           </div>
@@ -861,6 +935,62 @@ const Relatorios = () => {
 
         {/* Tab Vendas */}
         <TabsContent value="vendas" className="space-y-4">
+          {/* Filtros de Período */}
+          <Card className="bg-gradient-to-br from-primary/5 to-background">
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Período</Label>
+                  <Select value={periodoVendas} onValueChange={setPeriodoVendas}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="7">Últimos 7 dias</SelectItem>
+                      <SelectItem value="30">Últimos 30 dias</SelectItem>
+                      <SelectItem value="90">Últimos 90 dias</SelectItem>
+                      <SelectItem value="365">Último ano</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Data Início</Label>
+                  <Input
+                    type="date"
+                    value={dataInicioVendas}
+                    onChange={(e) => setDataInicioVendas(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Data Fim</Label>
+                  <Input
+                    type="date"
+                    value={dataFimVendas}
+                    onChange={(e) => setDataFimVendas(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-end">
+                  {(periodoVendas !== "todos" || dataInicioVendas || dataFimVendas) && (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setPeriodoVendas("todos");
+                        setDataInicioVendas("");
+                        setDataFimVendas("");
+                        loadRelatorios();
+                      }}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Limpar Filtros
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
               <CardHeader className="pb-3">
@@ -951,6 +1081,62 @@ const Relatorios = () => {
 
         {/* Tab Produtos */}
         <TabsContent value="produtos" className="space-y-4">
+          {/* Filtros de Período */}
+          <Card className="bg-gradient-to-br from-primary/5 to-background">
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Período</Label>
+                  <Select value={periodoProdutos} onValueChange={setPeriodoProdutos}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="7">Últimos 7 dias</SelectItem>
+                      <SelectItem value="30">Últimos 30 dias</SelectItem>
+                      <SelectItem value="90">Últimos 90 dias</SelectItem>
+                      <SelectItem value="365">Último ano</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Data Início</Label>
+                  <Input
+                    type="date"
+                    value={dataInicioProdutos}
+                    onChange={(e) => setDataInicioProdutos(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Data Fim</Label>
+                  <Input
+                    type="date"
+                    value={dataFimProdutos}
+                    onChange={(e) => setDataFimProdutos(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-end">
+                  {(periodoProdutos !== "todos" || dataInicioProdutos || dataFimProdutos) && (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setPeriodoProdutos("todos");
+                        setDataInicioProdutos("");
+                        setDataFimProdutos("");
+                        loadRelatorios();
+                      }}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Limpar Filtros
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="pb-3">
@@ -1160,6 +1346,62 @@ const Relatorios = () => {
 
         {/* Tab Caixa */}
         <TabsContent value="caixa" className="space-y-4">
+          {/* Filtros de Período */}
+          <Card className="bg-gradient-to-br from-primary/5 to-background">
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Período</Label>
+                  <Select value={periodoCaixa} onValueChange={setPeriodoCaixa}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="7">Últimos 7 dias</SelectItem>
+                      <SelectItem value="30">Últimos 30 dias</SelectItem>
+                      <SelectItem value="90">Últimos 90 dias</SelectItem>
+                      <SelectItem value="365">Último ano</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Data Início</Label>
+                  <Input
+                    type="date"
+                    value={dataInicioCaixa}
+                    onChange={(e) => setDataInicioCaixa(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Data Fim</Label>
+                  <Input
+                    type="date"
+                    value={dataFimCaixa}
+                    onChange={(e) => setDataFimCaixa(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-end">
+                  {(periodoCaixa !== "todos" || dataInicioCaixa || dataFimCaixa) && (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setPeriodoCaixa("todos");
+                        setDataInicioCaixa("");
+                        setDataFimCaixa("");
+                        loadRelatorios();
+                      }}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Limpar Filtros
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <Card>
               <CardHeader className="pb-3">
