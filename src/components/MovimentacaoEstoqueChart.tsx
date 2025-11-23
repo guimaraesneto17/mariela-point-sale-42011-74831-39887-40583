@@ -30,9 +30,12 @@ export const MovimentacaoEstoqueChart = ({
       // Encontrar o produto correspondente
       const produto = produtos.find((p: any) => p.codigoProduto === item.codigoProduto);
       
-      // Aplicar filtros
-      if (categoriaSelecionada !== 'todos' && produto?.categoria !== categoriaSelecionada) return;
-      if (fornecedorSelecionado !== 'todos' && produto?.fornecedor !== fornecedorSelecionado) return;
+      // Aplicar filtros (considerar se categoria/fornecedor são strings ou objetos)
+      const categoriaTexto = typeof produto?.categoria === 'string' ? produto?.categoria : produto?.categoria?.nome;
+      const fornecedorTexto = typeof produto?.fornecedor === 'string' ? produto?.fornecedor : produto?.fornecedor?.nome;
+      
+      if (categoriaSelecionada !== 'todos' && categoriaTexto !== categoriaSelecionada) return;
+      if (fornecedorSelecionado !== 'todos' && fornecedorTexto !== fornecedorSelecionado) return;
       
       // Processar movimentações de entrada
       if (tipoMovimentacao === 'todos' || tipoMovimentacao === 'entrada') {

@@ -38,11 +38,19 @@ export const ProductsReport = ({ produtos, estoque, vendas }: ProductsReportProp
   }
 
   const categorias = useMemo(() => {
-    return Array.from(new Set(produtos.map((p: any) => p.categoria).filter(Boolean)));
+    const cats = produtos.map((p: any) => {
+      const cat = p.categoria;
+      return typeof cat === 'string' ? cat : cat?.nome || null;
+    }).filter(Boolean);
+    return Array.from(new Set(cats));
   }, [produtos]);
 
   const fornecedores = useMemo(() => {
-    return Array.from(new Set(produtos.map((p: any) => p.fornecedor).filter(Boolean)));
+    const forns = produtos.map((p: any) => {
+      const forn = p.fornecedor;
+      return typeof forn === 'string' ? forn : forn?.nome || null;
+    }).filter(Boolean);
+    return Array.from(new Set(forns));
   }, [produtos]);
 
   const metricas = useMemo(() => {

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { ReportFilters } from "./ReportFilters";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { 
   Users, 
   DollarSign, 
@@ -11,11 +12,13 @@ import {
   ShoppingCart,
   Clock,
   Phone,
-  Mail
+  Mail,
+  MessageCircle
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
 
 interface ClientsReportProps {
   clientes: any[];
@@ -177,6 +180,33 @@ export const ClientsReport = ({ clientes, vendas }: ClientsReportProps) => {
       case "nunca": return "Clientes que nunca compraram";
       default: return "";
     }
+  };
+
+  const enviarWhatsApp = (cliente: any) => {
+    const telefone = cliente.telefone?.replace(/\D/g, '');
+    if (!telefone) {
+      toast.error("Cliente sem telefone cadastrado");
+      return;
+    }
+
+    let mensagem = `Olá ${cliente.nome}! `;
+    
+    // Mensagem personalizada baseada no status
+    if (cliente.statusInatividade === "nunca") {
+      mensagem += `Notamos que você ainda não fez nenhuma compra conosco. Gostaríamos de oferecer um *desconto especial de 15%* na sua primeira compra! 🎁`;
+    } else if (cliente.statusInatividade === "90dias") {
+      mensagem += `Sentimos sua falta! Faz mais de 90 dias que você não compra conosco. Que tal voltar com um *desconto exclusivo de 20%* em toda a loja? 🎉`;
+    } else if (cliente.statusInatividade === "60dias") {
+      mensagem += `Olá! Notamos que faz um tempo que você não visita nossa loja. Temos novidades incríveis e um *desconto de 15%* especial para você! 🛍️`;
+    } else {
+      mensagem += `Que saudade! Temos produtos novos e promoções especiais pensadas em você. *10% de desconto* em qualquer compra! 💝`;
+    }
+
+    mensagem += `\n\nVenha nos visitar! Estamos te esperando! 😊`;
+
+    const whatsappUrl = `https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`;
+    window.open(whatsappUrl, '_blank');
+    toast.success("WhatsApp aberto com mensagem personalizada!");
   };
 
   return (
@@ -480,11 +510,22 @@ export const ClientsReport = ({ clientes, vendas }: ClientsReportProps) => {
                           </div>
                         </div>
                         
-                        <div className="text-right ml-4">
-                          <p className="text-sm text-muted-foreground mb-1">Lifetime Value</p>
-                          <p className="text-xl font-bold text-primary">
-                            {formatCurrency(cliente.lifetimeValue)}
-                          </p>
+                        <div className="flex items-center gap-3 ml-4">
+                          <div className="text-right">
+                            <p className="text-sm text-muted-foreground mb-1">Lifetime Value</p>
+                            <p className="text-xl font-bold text-primary">
+                              {formatCurrency(cliente.lifetimeValue)}
+                            </p>
+                          </div>
+                          
+                          <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                            onClick={() => enviarWhatsApp(cliente)}
+                          >
+                            <MessageCircle className="h-4 w-4 mr-2" />
+                            WhatsApp
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
