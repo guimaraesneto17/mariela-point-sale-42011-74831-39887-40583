@@ -139,7 +139,10 @@ export const pagarConta = async (req: Request, res: Response) => {
   try {
     const { valorPago, dataPagamento, formaPagamento, observacoes } = req.body;
 
+    console.log('📝 Iniciando registro de pagamento:', { valorPago, dataPagamento, formaPagamento, observacoes });
+
     if (typeof valorPago !== 'number' || valorPago <= 0) {
+      console.error('❌ Valor inválido:', valorPago);
       return res.status(400).json({ error: 'valorPago deve ser um número positivo' });
     }
 
@@ -148,15 +151,21 @@ export const pagarConta = async (req: Request, res: Response) => {
     const caixaAberto = await Caixa.findOne({ status: 'aberto' }).sort({ dataAbertura: -1 });
     
     if (!caixaAberto) {
+      console.error('❌ Nenhum caixa aberto encontrado');
       return res.status(400).json({ 
         error: 'Não é possível registrar pagamento sem um caixa aberto. Por favor, abra o caixa primeiro.' 
       });
     }
 
+    console.log('✅ Caixa aberto encontrado:', caixaAberto.codigoCaixa);
+
     const conta = await ContasPagar.findOne({ numeroDocumento: req.params.numero });
     if (!conta) {
+      console.error('❌ Conta não encontrada:', req.params.numero);
       return res.status(404).json({ error: 'Conta a pagar não encontrada' });
     }
+
+    console.log('✅ Conta encontrada:', conta.numeroDocumento);
 
     conta.valorPago = (conta.valorPago || 0) + valorPago;
     conta.dataPagamento = dataPagamento || new Date();
@@ -177,18 +186,21 @@ export const pagarConta = async (req: Request, res: Response) => {
       conta.status = 'Parcial';
     }
 
+    console.log('💾 Salvando conta...');
     await conta.save();
+    console.log('✅ Conta salva com sucesso');
 
     // Registrar no caixa (obrigatório)
     const movimento = {
-      tipo: 'saida',
+      tipo: 'saida' as const,
       valor: valorPago,
-      data: (dataPagamento || new Date()).toISOString ? (dataPagamento || new Date()).toISOString() : (dataPagamento || new Date()),
+      data: new Date(dataPagamento || new Date()),
       codigoVenda: null,
       formaPagamento: formaPagamento || null,
       observacao: `Pagamento: ${conta.descricao} - ${conta.numeroDocumento}`
     };
 
+    console.log('💰 Registrando movimento no caixa:', movimento);
     caixaAberto.movimentos.push(movimento);
 
     // Recalcular totais
@@ -202,12 +214,15 @@ export const pagarConta = async (req: Request, res: Response) => {
 
     caixaAberto.performance = caixaAberto.entrada - caixaAberto.saida;
 
+    console.log('💾 Salvando caixa...');
     await caixaAberto.save();
+    console.log('✅ Caixa salvo com sucesso');
 
     res.json(conta);
-  } catch (error) {
-    console.error('Erro ao registrar pagamento:', error);
-    res.status(400).json({ error: 'Erro ao registrar pagamento' });
+  } catch (error: any) {
+    console.error('❌ ERRO COMPLETO ao registrar pagamento:', error);
+    console.error('Stack trace:', error.stack);
+    res.status(400).json({ error: `Erro ao registrar pagamento: ${error.message || 'Erro desconhecido'}` });
   }
 };
 

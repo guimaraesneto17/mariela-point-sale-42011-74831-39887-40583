@@ -140,7 +140,10 @@ export const receberConta = async (req: Request, res: Response) => {
   try {
     const { valorRecebido, dataRecebimento, formaPagamento, observacoes } = req.body;
 
+    console.log('📝 Iniciando registro de recebimento:', { valorRecebido, dataRecebimento, formaPagamento, observacoes });
+
     if (typeof valorRecebido !== 'number' || valorRecebido <= 0) {
+      console.error('❌ Valor inválido:', valorRecebido);
       return res.status(400).json({ error: 'valorRecebido deve ser um número positivo' });
     }
 
@@ -149,15 +152,21 @@ export const receberConta = async (req: Request, res: Response) => {
     const caixaAberto = await Caixa.findOne({ status: 'aberto' }).sort({ dataAbertura: -1 });
     
     if (!caixaAberto) {
+      console.error('❌ Nenhum caixa aberto encontrado');
       return res.status(400).json({ 
         error: 'Não é possível registrar recebimento sem um caixa aberto. Por favor, abra o caixa primeiro.' 
       });
     }
 
+    console.log('✅ Caixa aberto encontrado:', caixaAberto.codigoCaixa);
+
     const conta = await ContasReceber.findOne({ numeroDocumento: req.params.numero });
     if (!conta) {
+      console.error('❌ Conta não encontrada:', req.params.numero);
       return res.status(404).json({ error: 'Conta a receber não encontrada' });
     }
+
+    console.log('✅ Conta encontrada:', conta.numeroDocumento);
 
     conta.valorRecebido = (conta.valorRecebido || 0) + valorRecebido;
     conta.dataRecebimento = dataRecebimento || new Date();
@@ -178,18 +187,21 @@ export const receberConta = async (req: Request, res: Response) => {
       conta.status = 'Parcial';
     }
 
+    console.log('💾 Salvando conta...');
     await conta.save();
+    console.log('✅ Conta salva com sucesso');
 
     // Registrar no caixa (obrigatório)
     const movimento = {
-      tipo: 'entrada',
+      tipo: 'entrada' as const,
       valor: valorRecebido,
-      data: (dataRecebimento || new Date()).toISOString ? (dataRecebimento || new Date()).toISOString() : (dataRecebimento || new Date()),
+      data: new Date(dataRecebimento || new Date()),
       codigoVenda: null,
       formaPagamento: formaPagamento || null,
       observacao: `Recebimento: ${conta.descricao} - ${conta.numeroDocumento}`
     };
 
+    console.log('💰 Registrando movimento no caixa:', movimento);
     caixaAberto.movimentos.push(movimento);
 
     // Recalcular totais
@@ -203,12 +215,15 @@ export const receberConta = async (req: Request, res: Response) => {
 
     caixaAberto.performance = caixaAberto.entrada - caixaAberto.saida;
 
+    console.log('💾 Salvando caixa...');
     await caixaAberto.save();
+    console.log('✅ Caixa salvo com sucesso');
 
     res.json(conta);
-  } catch (error) {
-    console.error('Erro ao registrar recebimento:', error);
-    res.status(400).json({ error: 'Erro ao registrar recebimento' });
+  } catch (error: any) {
+    console.error('❌ ERRO COMPLETO ao registrar recebimento:', error);
+    console.error('Stack trace:', error.stack);
+    res.status(400).json({ error: `Erro ao registrar recebimento: ${error.message || 'Erro desconhecido'}` });
   }
 };
 
