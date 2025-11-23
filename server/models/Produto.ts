@@ -49,7 +49,25 @@ const ProdutoSchema = new mongoose.Schema({
       type: String,
       trim: true
     }
-  }
+  },
+  historicoPrecosn: [{
+    data: {
+      type: Date,
+      default: Date.now
+    },
+    precoCusto: {
+      type: Number,
+      required: true
+    },
+    precoVenda: {
+      type: Number,
+      required: true
+    },
+    margemDeLucro: {
+      type: Number,
+      required: true
+    }
+  }]
 }, {
   timestamps: { createdAt: 'dataCadastro', updatedAt: 'dataAtualizacao' },
   collection: 'produto',

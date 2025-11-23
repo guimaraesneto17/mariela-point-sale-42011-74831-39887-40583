@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History, Image as ImageIcon, ChevronDown, Star } from "lucide-react";
+import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History, Image as ImageIcon, ChevronDown, Star, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { PromocaoHistoricoDialog } from "@/components/PromocaoHistoricoDialog";
 import { EditVariantImagesDialog } from "@/components/EditVariantImagesDialog";
 import { ImageGalleryLightbox } from "@/components/ImageGalleryLightbox";
 import { AddMultipleVariantsDialog } from "@/components/AddMultipleVariantsDialog";
+import { HistoricoPrecosDialog } from "@/components/HistoricoPrecosDialog";
 
 import { estoqueAPI } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
@@ -36,6 +37,8 @@ const Estoque = () => {
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [showMultipleVariantsDialog, setShowMultipleVariantsDialog] = useState(false);
+  const [showHistoricoPrecos, setShowHistoricoPrecos] = useState(false);
+  const [produtoHistorico, setProdutoHistorico] = useState<any>(null);
   
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
@@ -48,6 +51,12 @@ const Estoque = () => {
   const [filterCategoria, setFilterCategoria] = useState<string>("todas");
   const [filterQuantidade, setFilterQuantidade] = useState<string>("todas");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  
+  // Novos filtros avançados
+  const [filterPrecoMin, setFilterPrecoMin] = useState<string>("");
+  const [filterPrecoMax, setFilterPrecoMax] = useState<string>("");
+  const [filterFornecedor, setFilterFornecedor] = useState<string>("todos");
+  const [filterDataEntrada, setFilterDataEntrada] = useState<string>("todas");
   
   // State para selecionar cor/tamanho por item
   const [selectedColorByItem, setSelectedColorByItem] = useState<{[key: string]: string}>({});
@@ -148,8 +157,38 @@ const Estoque = () => {
       (filterQuantidade === "baixo" && quantidadeTotal > 0 && quantidadeTotal <= 10) ||
       (filterQuantidade === "zerado" && quantidadeTotal === 0) ||
       (filterQuantidade === "disponivel" && quantidadeTotal > 10);
+
+    // Filtro de faixa de preço
+    const precoVenda = item.precoPromocional || item.precoVenda || 0;
+    const matchesPrecoMin = !filterPrecoMin || precoVenda >= parseFloat(filterPrecoMin);
+    const matchesPrecoMax = !filterPrecoMax || precoVenda <= parseFloat(filterPrecoMax);
     
-    return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria && matchesCor && matchesTamanho && matchesQuantidade;
+    // Filtro de fornecedor
+    const matchesFornecedor = filterFornecedor === "todos" || 
+      item.fornecedor?.codigoFornecedor === filterFornecedor;
+    
+    // Filtro de data de entrada
+    const matchesDataEntrada = filterDataEntrada === "todas" || (() => {
+      if (!item.variantes || item.variantes.length === 0) return false;
+      
+      const hoje = new Date();
+      const dataVariante = item.variantes.some((v: any) => {
+        if (!v.dataEntrada) return false;
+        const dataEntradaVariante = new Date(v.dataEntrada);
+        const diffDias = Math.floor((hoje.getTime() - dataEntradaVariante.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (filterDataEntrada === "ultimos7dias") return diffDias <= 7;
+        if (filterDataEntrada === "ultimos30dias") return diffDias <= 30;
+        if (filterDataEntrada === "ultimos90dias") return diffDias <= 90;
+        return false;
+      });
+      
+      return dataVariante;
+    })();
+    
+    return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria && 
+           matchesCor && matchesTamanho && matchesQuantidade && matchesPrecoMin && 
+           matchesPrecoMax && matchesFornecedor && matchesDataEntrada;
   });
 
   const openEntryDialog = (item: any, variante: any) => {
@@ -315,6 +354,17 @@ const Estoque = () => {
     return Array.from(categorias).sort();
   };
 
+  // Obter todos os fornecedores únicos
+  const getAllFornecedores = () => {
+    const fornecedores = new Map<string, string>();
+    inventory.forEach((item) => {
+      if (item.fornecedor?.codigoFornecedor && item.fornecedor?.nome) {
+        fornecedores.set(item.fornecedor.codigoFornecedor, item.fornecedor.nome);
+      }
+    });
+    return Array.from(fornecedores.entries()).map(([codigo, nome]) => ({ codigo, nome })).sort((a, b) => a.nome.localeCompare(b.nome));
+  };
+
   const openEditImagesDialog = (item: any, variante: any) => {
     setSelectedItem(item);
     setSelectedVariant(variante);
@@ -325,6 +375,11 @@ const Estoque = () => {
     setLightboxImages(images);
     setLightboxIndex(index);
     setShowLightbox(true);
+  };
+
+  const openHistoricoPrecos = (item: any) => {
+    setProdutoHistorico(item);
+    setShowHistoricoPrecos(true);
   };
 
 
@@ -438,74 +493,118 @@ const Estoque = () => {
                 <SelectContent>
                   <SelectItem value="todas">Todas</SelectItem>
                   <SelectItem value="disponivel">Disponível (&gt; 10)</SelectItem>
-                  <SelectItem value="baixo">Estoque Baixo (1-10)</SelectItem>
-                  <SelectItem value="zerado">Zerado (0)</SelectItem>
+                  <SelectItem value="baixo">Baixo Estoque (≤ 10)</SelectItem>
+                  <SelectItem value="zerado">Zerado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Label className="text-sm font-medium text-muted-foreground mb-2 block">Filtros</Label>
+                <div className="flex gap-2">
+                  <Button
+                    variant={filterPromocao === true ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setFilterPromocao(filterPromocao === true ? null : true)}
+                    className="flex-1"
+                  >
+                    <Tag className="h-4 w-4 mr-1" />
+                    Promo
+                  </Button>
+                  <Button
+                    variant={filterNovidade === true ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setFilterNovidade(filterNovidade === true ? null : true)}
+                    className="flex-1"
+                  >
+                    <Sparkles className="h-4 w-4 mr-1" />
+                    Novo
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Filtros Avançados - Nova Linha */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground mb-2 block">Preço Mín.</Label>
+                <Input
+                  type="number"
+                  placeholder="R$ 0,00"
+                  value={filterPrecoMin}
+                  onChange={(e) => setFilterPrecoMin(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground mb-2 block">Preço Máx.</Label>
+                <Input
+                  type="number"
+                  placeholder="R$ 0,00"
+                  value={filterPrecoMax}
+                  onChange={(e) => setFilterPrecoMax(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground mb-2 block">Filtrar por Fornecedor</Label>
+              <Select value={filterFornecedor} onValueChange={setFilterFornecedor}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Todos os fornecedores" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os fornecedores</SelectItem>
+                  {getAllFornecedores().map((fornecedor) => (
+                    <SelectItem key={fornecedor.codigo} value={fornecedor.codigo}>
+                      {fornecedor.nome}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <Label className="text-sm font-medium text-muted-foreground mb-2 block">Modo de Visualização</Label>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant={viewMode === "list" ? "default" : "outline"}
-                  onClick={() => setViewMode("list")}
-                  className="flex-1"
-                >
-                  <List className="h-4 w-4 mr-2" />
-                  Lista
-                </Button>
-                <Button
-                  size="sm"
-                  variant={viewMode === "grid" ? "default" : "outline"}
-                  onClick={() => setViewMode("grid")}
-                  className="flex-1"
-                >
-                  <Package className="h-4 w-4 mr-2" />
-                  Grade
-                </Button>
-              </div>
+              <Label className="text-sm font-medium text-muted-foreground mb-2 block">Data de Entrada</Label>
+              <Select value={filterDataEntrada} onValueChange={setFilterDataEntrada}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Todas as datas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as datas</SelectItem>
+                  <SelectItem value="ultimos7dias">Últimos 7 dias</SelectItem>
+                  <SelectItem value="ultimos30dias">Últimos 30 dias</SelectItem>
+                  <SelectItem value="ultimos90dias">Últimos 90 dias</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </div>
-          
-          <div className="flex gap-2 flex-wrap">
-            <Button
-              size="sm"
-              variant={filterPromocao === null ? "outline" : "default"}
-              onClick={() => setFilterPromocao(filterPromocao === null ? true : null)}
-              className={filterPromocao === true ? "bg-accent text-accent-foreground" : ""}
-            >
-              <Tag className="h-4 w-4 mr-2" />
-              Em Promoção
-            </Button>
-            
-            <Button
-              size="sm"
-              variant={filterNovidade === null ? "outline" : "default"}
-              onClick={() => setFilterNovidade(filterNovidade === null ? true : null)}
-              className={filterNovidade === true ? "bg-green-600 text-white hover:bg-green-700" : ""}
-            >
-              <Sparkles className="h-4 w-4 mr-2" />
-              Novidades
-            </Button>
-            
-            {(filterPromocao !== null || filterNovidade !== null || filterCategoria !== "todas" || filterCor !== "todas" || filterTamanho !== "todos" || filterQuantidade !== "todas") && (
+
+            <div className="flex items-end">
               <Button
+                variant="outline"
                 size="sm"
-                variant="ghost"
                 onClick={() => {
-                  setFilterPromocao(null);
-                  setFilterNovidade(null);
+                  setFilterPrecoMin("");
+                  setFilterPrecoMax("");
+                  setFilterFornecedor("todos");
+                  setFilterDataEntrada("todas");
                   setFilterCategoria("todas");
                   setFilterCor("todas");
                   setFilterTamanho("todos");
                   setFilterQuantidade("todas");
+                  setFilterPromocao(null);
+                  setFilterNovidade(null);
                 }}
+                className="w-full h-9"
               >
+                <X className="h-4 w-4 mr-2" />
                 Limpar Filtros
               </Button>
-            )}
+            </div>
           </div>
         </div>
       </Card>
@@ -775,11 +874,20 @@ const Estoque = () => {
                         <Button
                           size="sm"
                           variant="outline"
+                          onClick={() => openHistoricoPrecos(item)}
+                          className="h-7 text-xs gap-1"
+                        >
+                          <History className="h-3 w-3" />
+                          Preços
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
                           onClick={() => openMovimentacaoDialog(item)}
                           className="h-7 text-xs gap-1"
                         >
                           <History className="h-3 w-3" />
-                          Histórico
+                          Movimentações
                         </Button>
                       </div>
                     </CollapsibleContent>
@@ -1018,6 +1126,15 @@ const Estoque = () => {
                       <ImageIcon className="h-4 w-4" />
                       Gerenciar Imagens
                     </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openHistoricoPrecos(item)}
+                      className="gap-2"
+                    >
+                      <History className="h-4 w-4" />
+                      Histórico de Preços
+                    </Button>
                   </div>
 
                   {/* Histórico de Promoções - Colapsável */}
@@ -1226,6 +1343,13 @@ const Estoque = () => {
         open={showMultipleVariantsDialog}
         onOpenChange={setShowMultipleVariantsDialog}
         onSuccess={loadEstoque}
+      />
+
+      <HistoricoPrecosDialog
+        open={showHistoricoPrecos}
+        onOpenChange={setShowHistoricoPrecos}
+        produto={produtoHistorico}
+        historico={produtoHistorico?.historicoPrecosn || []}
       />
     </div>
   );

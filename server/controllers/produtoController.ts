@@ -87,6 +87,14 @@ export const createProduto = async (req: Request, res: Response) => {
       };
     }
 
+    // Adicionar primeiro registro ao histórico de preços
+    cleanData.historicoPrecosn = [{
+      data: new Date(),
+      precoCusto: req.body.precoCusto,
+      precoVenda: req.body.precoVenda,
+      margemDeLucro: req.body.margemDeLucro
+    }];
+
     console.log('Dados limpos para salvar:', JSON.stringify(cleanData, null, 2));
 
     const produto = new Produto(cleanData);
@@ -134,6 +142,12 @@ export const createProduto = async (req: Request, res: Response) => {
 
 export const updateProduto = async (req: Request, res: Response) => {
   try {
+    // Buscar produto atual para comparar preços
+    const produtoAtual = await Produto.findOne({ codigoProduto: req.params.codigo });
+    if (!produtoAtual) {
+      return res.status(404).json({ error: 'Produto não encontrado' });
+    }
+
     // Limpa campos vazios - mantém mesma lógica do create
     const cleanData: any = {
       nome: req.body.nome,
@@ -161,6 +175,24 @@ export const updateProduto = async (req: Request, res: Response) => {
       };
     } else if (req.body.fornecedor === null) {
       cleanData.fornecedor = null;
+    }
+
+    // Se os preços mudaram, adicionar ao histórico
+    if (
+      produtoAtual.precoCusto !== req.body.precoCusto ||
+      produtoAtual.precoVenda !== req.body.precoVenda ||
+      produtoAtual.margemDeLucro !== req.body.margemDeLucro
+    ) {
+      const novoRegistroHistorico = {
+        data: new Date(),
+        precoCusto: req.body.precoCusto,
+        precoVenda: req.body.precoVenda,
+        margemDeLucro: req.body.margemDeLucro
+      };
+      
+      cleanData.$push = {
+        historicoPrecosn: novoRegistroHistorico
+      };
     }
     
     const produto = await Produto.findOneAndUpdate(
