@@ -137,10 +137,20 @@ export const updateContaPagar = async (req: Request, res: Response) => {
 
 export const pagarConta = async (req: Request, res: Response) => {
   try {
-    const { valorPago, dataPagamento, formaPagamento, observacoes, registrarNoCaixa } = req.body;
+    const { valorPago, dataPagamento, formaPagamento, observacoes } = req.body;
 
     if (typeof valorPago !== 'number' || valorPago <= 0) {
       return res.status(400).json({ error: 'valorPago deve ser um número positivo' });
+    }
+
+    // Verificar se existe caixa aberto antes de processar o pagamento
+    const Caixa = (await import('../models/Caixa')).default;
+    const caixaAberto = await Caixa.findOne({ status: 'aberto' }).sort({ dataAbertura: -1 });
+    
+    if (!caixaAberto) {
+      return res.status(400).json({ 
+        error: 'Não é possível registrar pagamento sem um caixa aberto. Por favor, abra o caixa primeiro.' 
+      });
     }
 
     const conta = await ContasPagar.findOne({ numeroDocumento: req.params.numero });
@@ -169,30 +179,30 @@ export const pagarConta = async (req: Request, res: Response) => {
 
     await conta.save();
 
-    // Registrar no caixa se solicitado
-    if (registrarNoCaixa) {
-      try {
-        const Caixa = (await import('../models/Caixa')).default;
-        const caixaAberto = await Caixa.findOne({ status: 'Aberto' }).sort({ dataAbertura: -1 });
-        
-        if (caixaAberto) {
-          caixaAberto.movimentacoes.push({
-            tipo: 'Saída',
-            categoria: 'Pagamento',
-            descricao: `Pagamento: ${conta.descricao} - ${conta.numeroDocumento}`,
-            valor: valorPago,
-            formaPagamento: formaPagamento || 'Dinheiro',
-            data: dataPagamento || new Date()
-          } as any);
-          
-          caixaAberto.saldoAtual -= valorPago;
-          await caixaAberto.save();
-        }
-      } catch (caixaError) {
-        console.error('Erro ao registrar no caixa:', caixaError);
-        // Não falha a operação se o caixa não estiver disponível
-      }
-    }
+    // Registrar no caixa (obrigatório)
+    const movimento = {
+      tipo: 'saida',
+      valor: valorPago,
+      data: (dataPagamento || new Date()).toISOString ? (dataPagamento || new Date()).toISOString() : (dataPagamento || new Date()),
+      codigoVenda: null,
+      formaPagamento: formaPagamento || null,
+      observacao: `Pagamento: ${conta.descricao} - ${conta.numeroDocumento}`
+    };
+
+    caixaAberto.movimentos.push(movimento);
+
+    // Recalcular totais
+    caixaAberto.saida = caixaAberto.movimentos
+      .filter((m: any) => m.tipo === 'saida')
+      .reduce((sum: number, m: any) => sum + m.valor, 0);
+
+    caixaAberto.entrada = caixaAberto.movimentos
+      .filter((m: any) => m.tipo === 'entrada')
+      .reduce((sum: number, m: any) => sum + m.valor, 0);
+
+    caixaAberto.performance = caixaAberto.entrada - caixaAberto.saida;
+
+    await caixaAberto.save();
 
     res.json(conta);
   } catch (error) {

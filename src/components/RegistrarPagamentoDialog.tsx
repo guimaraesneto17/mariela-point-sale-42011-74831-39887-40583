@@ -22,8 +22,7 @@ const schema = z.object({
       return !isNaN(num) && num > 0;
     }, "Valor deve ser maior que zero"),
   formaPagamento: z.enum(["Dinheiro","PIX","Débito","Crédito","Boleto","Transferência","Outro"], { required_error: "Selecione a forma de pagamento" }),
-  observacoes: z.string().max(500).optional(),
-  registrarNoCaixa: z.boolean().default(true)
+  observacoes: z.string().max(500).optional()
 });
 
 type FormData = z.infer<typeof schema>;
@@ -48,7 +47,7 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
   
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { valor: "0", formaPagamento: undefined, observacoes: '', registrarNoCaixa: true }
+    defaultValues: { valor: "0", formaPagamento: undefined, observacoes: '' }
   });
 
   // Atualiza o valor default quando a conta muda
@@ -57,8 +56,7 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
       form.reset({
         valor: saldoRestante.toFixed(2),
         formaPagamento: undefined,
-        observacoes: '',
-        registrarNoCaixa: true
+        observacoes: ''
       });
     }
   }, [conta, open, saldoRestante]);
@@ -83,21 +81,19 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
         await contasPagarAPI.pagar(conta.numeroDocumento, { 
           valorPago: valorNumerico, 
           formaPagamento: values.formaPagamento,
-          observacoes: values.observacoes,
-          registrarNoCaixa: values.registrarNoCaixa
+          observacoes: values.observacoes
         });
       } else {
         await contasReceberAPI.receber(conta.numeroDocumento, { 
           valorRecebido: valorNumerico, 
           formaPagamento: values.formaPagamento,
-          observacoes: values.observacoes,
-          registrarNoCaixa: values.registrarNoCaixa
+          observacoes: values.observacoes
         });
       }
       
       const mensagem = tipo === 'pagar' 
-        ? 'Pagamento registrado' + (values.registrarNoCaixa ? ' e lançado no caixa' : '')
-        : 'Recebimento registrado' + (values.registrarNoCaixa ? ' e lançado no caixa' : '');
+        ? 'Pagamento registrado e lançado no caixa'
+        : 'Recebimento registrado e lançado no caixa';
       toast.success(mensagem);
       
       onSuccess();
@@ -159,19 +155,11 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
                 <FormMessage />
               </FormItem>
             )} />
-            <FormField name="registrarNoCaixa" control={form.control} render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                <FormControl>
-                  <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel>Registrar movimentação no caixa</FormLabel>
-                  <p className="text-sm text-muted-foreground">
-                    Esta transação será automaticamente lançada no caixa aberto
-                  </p>
-                </div>
-              </FormItem>
-            )} />
+            <div className="rounded-md border border-primary/20 bg-primary/5 p-4">
+              <p className="text-sm font-medium text-primary">
+                ℹ️ Esta transação será automaticamente registrada no caixa aberto
+              </p>
+            </div>
             <div className="flex gap-2 justify-end">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
               <Button type="submit" disabled={loading}>{loading ? 'Salvando...' : 'Salvar'}</Button>

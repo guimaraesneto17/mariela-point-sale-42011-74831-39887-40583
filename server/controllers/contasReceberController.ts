@@ -138,10 +138,20 @@ export const updateContaReceber = async (req: Request, res: Response) => {
 
 export const receberConta = async (req: Request, res: Response) => {
   try {
-    const { valorRecebido, dataRecebimento, formaPagamento, observacoes, registrarNoCaixa } = req.body;
+    const { valorRecebido, dataRecebimento, formaPagamento, observacoes } = req.body;
 
     if (typeof valorRecebido !== 'number' || valorRecebido <= 0) {
       return res.status(400).json({ error: 'valorRecebido deve ser um número positivo' });
+    }
+
+    // Verificar se existe caixa aberto antes de processar o recebimento
+    const Caixa = (await import('../models/Caixa')).default;
+    const caixaAberto = await Caixa.findOne({ status: 'aberto' }).sort({ dataAbertura: -1 });
+    
+    if (!caixaAberto) {
+      return res.status(400).json({ 
+        error: 'Não é possível registrar recebimento sem um caixa aberto. Por favor, abra o caixa primeiro.' 
+      });
     }
 
     const conta = await ContasReceber.findOne({ numeroDocumento: req.params.numero });
@@ -170,30 +180,30 @@ export const receberConta = async (req: Request, res: Response) => {
 
     await conta.save();
 
-    // Registrar no caixa se solicitado
-    if (registrarNoCaixa) {
-      try {
-        const Caixa = (await import('../models/Caixa')).default;
-        const caixaAberto = await Caixa.findOne({ status: 'Aberto' }).sort({ dataAbertura: -1 });
-        
-        if (caixaAberto) {
-          caixaAberto.movimentacoes.push({
-            tipo: 'Entrada',
-            categoria: 'Recebimento',
-            descricao: `Recebimento: ${conta.descricao} - ${conta.numeroDocumento}`,
-            valor: valorRecebido,
-            formaPagamento: formaPagamento || 'Dinheiro',
-            data: dataRecebimento || new Date()
-          } as any);
-          
-          caixaAberto.saldoAtual += valorRecebido;
-          await caixaAberto.save();
-        }
-      } catch (caixaError) {
-        console.error('Erro ao registrar no caixa:', caixaError);
-        // Não falha a operação se o caixa não estiver disponível
-      }
-    }
+    // Registrar no caixa (obrigatório)
+    const movimento = {
+      tipo: 'entrada',
+      valor: valorRecebido,
+      data: (dataRecebimento || new Date()).toISOString ? (dataRecebimento || new Date()).toISOString() : (dataRecebimento || new Date()),
+      codigoVenda: null,
+      formaPagamento: formaPagamento || null,
+      observacao: `Recebimento: ${conta.descricao} - ${conta.numeroDocumento}`
+    };
+
+    caixaAberto.movimentos.push(movimento);
+
+    // Recalcular totais
+    caixaAberto.entrada = caixaAberto.movimentos
+      .filter((m: any) => m.tipo === 'entrada')
+      .reduce((sum: number, m: any) => sum + m.valor, 0);
+
+    caixaAberto.saida = caixaAberto.movimentos
+      .filter((m: any) => m.tipo === 'saida')
+      .reduce((sum: number, m: any) => sum + m.valor, 0);
+
+    caixaAberto.performance = caixaAberto.entrada - caixaAberto.saida;
+
+    await caixaAberto.save();
 
     res.json(conta);
   } catch (error) {
