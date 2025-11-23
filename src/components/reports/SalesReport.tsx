@@ -1,13 +1,16 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, TrendingUp, ShoppingBag, Users, Package, Crown } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { DollarSign, TrendingUp, ShoppingBag, Users, Package } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { VendasEvolutionChart } from "@/components/VendasEvolutionChart";
 import { VendasPorCategoriaCard } from "@/components/VendasPorCategoriaCard";
-import { MargemLucroCard } from "@/components/MargemLucroCard";
 import { ReportFilters } from "./ReportFilters";
+import { ExportDialog } from "./ExportDialog";
+import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
+import { toast } from "sonner";
+import { loadAppLogo, addHeader, addFooter, addWatermarkToAllPages } from "@/lib/pdfWatermark";
 
 interface SalesReportProps {
   vendas: any[];
@@ -22,6 +25,125 @@ export const SalesReport = ({ vendas, vendedores, clientes, produtos }: SalesRep
   const [vendedorSelecionado, setVendedorSelecionado] = useState("todos");
   const [clienteSelecionado, setClienteSelecionado] = useState("todos");
   const [formaPagamento, setFormaPagamento] = useState("todos");
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  };
+
+  const formatDate = (date: Date | string) => {
+    return new Intl.DateTimeFormat('pt-BR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric' 
+    }).format(new Date(date));
+  };
+
+  const handleExport = async (format: "pdf" | "excel", selectedData: string[]) => {
+    const filename = `relatorio_vendas_${formatDate(new Date()).replace(/\//g, '-')}`;
+
+    if (format === "excel") {
+      const wb = XLSX.utils.book_new();
+
+      if (selectedData.includes("metricas")) {
+        const metricasData = [
+          { Métrica: "Total de Vendas", Valor: metricas.totalVendas },
+          { Métrica: "Faturamento Total", Valor: formatCurrency(metricas.faturamentoTotal) },
+          { Métrica: "Ticket Médio", Valor: formatCurrency(metricas.ticketMedio) },
+          { Métrica: "Clientes Atendidos", Valor: metricas.clientesUnicos },
+          { Métrica: "Produtos Vendidos", Valor: metricas.produtosVendidos }
+        ];
+        const ws = XLSX.utils.json_to_sheet(metricasData);
+        XLSX.utils.book_append_sheet(wb, ws, "Métricas");
+      }
+
+      if (selectedData.includes("vendas")) {
+        const vendasData = vendasFiltradas.map(v => ({
+          Data: formatDate(v.data || v.dataVenda),
+          Cliente: v.cliente?.nome || v.nomeCliente || "Cliente não identificado",
+          "Valor Total": formatCurrency(v.valorTotal),
+          "Forma Pagamento": v.formaPagamento || "-",
+          Vendedor: v.vendedor?.nome || v.nomeVendedor || "-",
+          Itens: v.itens?.length || 0
+        }));
+        const ws = XLSX.utils.json_to_sheet(vendasData);
+        XLSX.utils.book_append_sheet(wb, ws, "Vendas");
+      }
+
+      XLSX.writeFile(wb, `${filename}.xlsx`);
+    } else {
+      // PDF
+      const logo = await loadAppLogo();
+      const doc = new jsPDF();
+      
+      let yPosition = addHeader(doc, "Relatório de Vendas", logo);
+      yPosition += 10;
+
+      if (selectedData.includes("metricas")) {
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(44, 62, 80);
+        doc.text("Métricas Gerais", 15, yPosition);
+        yPosition += 8;
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(52, 73, 94);
+        doc.text(`Total de Vendas: ${metricas.totalVendas}`, 15, yPosition);
+        yPosition += 6;
+        doc.text(`Faturamento Total: ${formatCurrency(metricas.faturamentoTotal)}`, 15, yPosition);
+        yPosition += 6;
+        doc.text(`Ticket Médio: ${formatCurrency(metricas.ticketMedio)}`, 15, yPosition);
+        yPosition += 6;
+        doc.text(`Clientes Atendidos: ${metricas.clientesUnicos}`, 15, yPosition);
+        yPosition += 6;
+        doc.text(`Produtos Vendidos: ${metricas.produtosVendidos}`, 15, yPosition);
+        yPosition += 15;
+      }
+
+      if (selectedData.includes("vendas")) {
+        if (yPosition > 220) {
+          doc.addPage();
+          yPosition = addHeader(doc, "Relatório de Vendas", logo);
+          yPosition += 10;
+        }
+
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(44, 62, 80);
+        doc.text("Detalhamento de Vendas", 15, yPosition);
+        yPosition += 10;
+
+        (doc as any).autoTable({
+          startY: yPosition,
+          head: [["Data", "Cliente", "Valor", "Forma Pgto", "Vendedor"]],
+          body: vendasFiltradas.slice(0, 50).map(v => [
+            formatDate(v.data || v.dataVenda),
+            (v.cliente?.nome || v.nomeCliente || "N/A").substring(0, 20),
+            formatCurrency(v.valorTotal),
+            (v.formaPagamento || "-").substring(0, 15),
+            (v.vendedor?.nome || v.nomeVendedor || "-").substring(0, 15)
+          ]),
+          theme: 'striped',
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: { fillColor: [59, 130, 246], fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          margin: { left: 15, right: 15 }
+        });
+      }
+
+      // Adicionar watermark e rodapé
+      addWatermarkToAllPages(doc, logo, 0.1);
+      addFooter(doc);
+
+      doc.save(`${filename}.pdf`);
+    }
+  };
+
+  const exportOptions = [
+    { id: "metricas", label: "Métricas Gerais", checked: true },
+    { id: "vendas", label: "Detalhamento de Vendas", checked: true },
+  ];
 
   const vendasFiltradas = useMemo(() => {
     return vendas.filter((venda: any) => {
@@ -116,6 +238,7 @@ export const SalesReport = ({ vendas, vendedores, clientes, produtos }: SalesRep
           setDataInicio("");
           setDataFim("");
         }}
+        onExport={() => setExportDialogOpen(true)}
         additionalFilters={
           <>
             <div>
@@ -235,6 +358,14 @@ export const SalesReport = ({ vendas, vendedores, clientes, produtos }: SalesRep
       </div>
 
       <VendasEvolutionChart vendas={vendasFiltradas} />
+
+      <ExportDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        reportType="sales"
+        onExport={handleExport}
+        availableData={exportOptions}
+      />
     </div>
   );
 };

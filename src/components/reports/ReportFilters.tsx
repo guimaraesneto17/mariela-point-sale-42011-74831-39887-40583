@@ -1,4 +1,4 @@
-import { Calendar, Filter, X } from "lucide-react";
+import { Calendar, Filter, X, FileDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ interface ReportFiltersProps {
   additionalFilters?: React.ReactNode;
   activeFiltersCount?: number;
   onClearFilters?: () => void;
+  onExport?: () => void;
 }
 
 export const ReportFilters = ({
@@ -25,7 +26,8 @@ export const ReportFilters = ({
   onPeriodoChange,
   additionalFilters,
   activeFiltersCount = 0,
-  onClearFilters
+  onClearFilters,
+  onExport
 }: ReportFiltersProps) => {
   const hasActiveFilters = dataInicio || dataFim || activeFiltersCount > 0;
 
@@ -42,17 +44,30 @@ export const ReportFilters = ({
               </Badge>
             )}
           </CardTitle>
-          {hasActiveFilters && onClearFilters && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClearFilters}
-              className="h-8 px-2"
-            >
-              <X className="h-4 w-4 mr-1" />
-              Limpar
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {onExport && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={onExport}
+                className="h-8"
+              >
+                <FileDown className="h-4 w-4 mr-1" />
+                Exportar
+              </Button>
+            )}
+            {hasActiveFilters && onClearFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClearFilters}
+                className="h-8 px-2"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Limpar
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>

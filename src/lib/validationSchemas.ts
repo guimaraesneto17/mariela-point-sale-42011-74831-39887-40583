@@ -181,9 +181,9 @@ export const estoqueSchema = z.object({
 
 // CONTAS A PAGAR
 export const contaPagarSchema = z.object({
-  numeroDocumento: z.string()
-    .min(1, "Número do documento é obrigatório")
-    .max(50, "Número do documento deve ter no máximo 50 caracteres"),
+  tipoCriacao: z.enum(['Unica', 'Parcelamento', 'Replica'], {
+    errorMap: () => ({ message: "Tipo de criação é obrigatório" }),
+  }).default('Unica'),
   descricao: z.string()
     .min(3, "Descrição deve ter no mínimo 3 caracteres")
     .max(200, "Descrição deve ter no máximo 200 caracteres"),
@@ -191,34 +191,26 @@ export const contaPagarSchema = z.object({
     codigoFornecedor: optionalString(),
     nome: optionalString(),
   }).optional(),
-  categoria: z.enum(['Aluguel', 'Fornecedores', 'Salários', 'Impostos', 'Energia', 'Água', 'Internet', 'Marketing', 'Manutenção', 'Outros'], {
-    errorMap: () => ({ message: "Categoria é obrigatória" }),
-  }),
+  categoria: z.string().min(1, "Categoria é obrigatória"),
   valor: z.number()
     .min(0.01, "Valor deve ser maior que 0"),
-  valorPago: z.number()
-    .min(0, "Valor pago deve ser maior ou igual a 0")
-    .default(0)
-    .optional(),
-  dataEmissao: z.date({
-    required_error: "Data de emissão é obrigatória",
-  }),
   dataVencimento: z.date({
     required_error: "Data de vencimento é obrigatória",
   }),
-  dataPagamento: z.date().nullable().optional(),
-  status: z.enum(['Pendente', 'Pago', 'Vencido', 'Parcial'], {
-    errorMap: () => ({ message: "Status inválido" }),
-  }).default('Pendente'),
   observacoes: z.string().max(500, "Observações devem ter no máximo 500 caracteres").optional(),
-  anexos: z.array(z.string().url("URL de anexo inválida")).optional(),
+  // Campos para parcelamento
+  quantidadeParcelas: z.number().min(1).optional(),
+  valorTotal: z.number().min(0.01).optional(),
+  dataInicio: z.date().optional(),
+  // Campos para réplica
+  quantidadeReplicas: z.number().min(1).optional(),
 });
 
 // CONTAS A RECEBER
 export const contaReceberSchema = z.object({
-  numeroDocumento: z.string()
-    .min(1, "Número do documento é obrigatório")
-    .max(50, "Número do documento deve ter no máximo 50 caracteres"),
+  tipoCriacao: z.enum(['Unica', 'Parcelamento', 'Replica'], {
+    errorMap: () => ({ message: "Tipo de criação é obrigatório" }),
+  }).default('Unica'),
   descricao: z.string()
     .min(3, "Descrição deve ter no mínimo 3 caracteres")
     .max(200, "Descrição deve ter no máximo 200 caracteres"),
@@ -229,26 +221,19 @@ export const contaReceberSchema = z.object({
   vendaRelacionada: z.object({
     codigoVenda: optionalString(),
   }).optional(),
-  categoria: z.enum(['Venda', 'Serviço', 'Outros'], {
-    errorMap: () => ({ message: "Categoria é obrigatória" }),
-  }),
+  categoria: z.string().min(1, "Categoria é obrigatória"),
   valor: z.number()
     .min(0.01, "Valor deve ser maior que 0"),
-  valorRecebido: z.number()
-    .min(0, "Valor recebido deve ser maior ou igual a 0")
-    .default(0)
-    .optional(),
-  dataEmissao: z.date({
-    required_error: "Data de emissão é obrigatória",
-  }),
   dataVencimento: z.date({
     required_error: "Data de vencimento é obrigatória",
   }),
-  dataRecebimento: z.date().nullable().optional(),
-  status: z.enum(['Pendente', 'Recebido', 'Vencido', 'Parcial'], {
-    errorMap: () => ({ message: "Status inválido" }),
-  }).default('Pendente'),
   observacoes: z.string().max(500, "Observações devem ter no máximo 500 caracteres").optional(),
+  // Campos para parcelamento
+  quantidadeParcelas: z.number().min(1).optional(),
+  valorTotal: z.number().min(0.01).optional(),
+  dataInicio: z.date().optional(),
+  // Campos para réplica
+  quantidadeReplicas: z.number().min(1).optional(),
 });
 
 // CATEGORIA FINANCEIRA

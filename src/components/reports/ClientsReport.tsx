@@ -19,6 +19,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
+import { ExportDialog } from "./ExportDialog";
+import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
+import { loadAppLogo, addHeader, addFooter, addWatermarkToAllPages } from "@/lib/pdfWatermark";
 
 interface ClientsReportProps {
   clientes: any[];
@@ -30,6 +34,127 @@ export const ClientsReport = ({ clientes, vendas }: ClientsReportProps) => {
   const [dataFim, setDataFim] = useState("");
   const [dialogAberto, setDialogAberto] = useState<string | null>(null);
   const [clientesSelecionados, setClientesSelecionados] = useState<any[]>([]);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+
+  const handleExport = async (format: "pdf" | "excel", selectedData: string[]) => {
+    const filename = `relatorio_clientes_${formatDate(new Date()).replace(/\//g, '-')}`;
+
+    if (format === "excel") {
+      const wb = XLSX.utils.book_new();
+
+      if (selectedData.includes("metricas")) {
+        const metricasData = [
+          { Métrica: "Total de Clientes", Valor: analiseClientes.totalClientes },
+          { Métrica: "Clientes Ativos", Valor: analiseClientes.clientesAtivos },
+          { Métrica: "Ticket Médio", Valor: formatCurrency(analiseClientes.ticketMedioGeral) },
+          { Métrica: "Lifetime Value Total", Valor: formatCurrency(analiseClientes.lifetimeValueTotal) },
+          { Métrica: "Frequência Média (dias)", Valor: Math.round(analiseClientes.frequenciaMediaGeral) }
+        ];
+        const ws = XLSX.utils.json_to_sheet(metricasData);
+        XLSX.utils.book_append_sheet(wb, ws, "Métricas");
+      }
+
+      if (selectedData.includes("topClientes")) {
+        const topClientesData = analiseClientes.topClientes.map((c: any, index: number) => ({
+          Posição: index + 1,
+          Nome: c.nome,
+          "Total Compras": c.totalCompras,
+          "Ticket Médio": formatCurrency(c.ticketMedio),
+          "Lifetime Value": formatCurrency(c.lifetimeValue),
+          "Frequência (dias)": c.frequenciaMedia || "-"
+        }));
+        const ws = XLSX.utils.json_to_sheet(topClientesData);
+        XLSX.utils.book_append_sheet(wb, ws, "Top Clientes");
+      }
+
+      if (selectedData.includes("clientesInativos")) {
+        const inativosData = analiseClientes.todosClientes
+          .filter((c: any) => c.statusInatividade !== "ativo")
+          .map((c: any) => ({
+            Nome: c.nome,
+            Telefone: c.telefone || "-",
+            Email: c.email || "-",
+            "Dias sem Compra": c.diasSemCompra,
+            "Última Compra": formatDate(c.ultimaCompra || new Date()),
+            "Lifetime Value": formatCurrency(c.lifetimeValue)
+          }));
+        const ws = XLSX.utils.json_to_sheet(inativosData);
+        XLSX.utils.book_append_sheet(wb, ws, "Clientes Inativos");
+      }
+
+      XLSX.writeFile(wb, `${filename}.xlsx`);
+    } else {
+      // PDF
+      const logo = await loadAppLogo();
+      const doc = new jsPDF();
+      
+      let yPosition = addHeader(doc, "Relatório de Clientes", logo);
+      yPosition += 10;
+
+      if (selectedData.includes("metricas")) {
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(44, 62, 80);
+        doc.text("Métricas Gerais", 15, yPosition);
+        yPosition += 8;
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(52, 73, 94);
+        doc.text(`Total de Clientes: ${analiseClientes.totalClientes}`, 15, yPosition);
+        yPosition += 6;
+        doc.text(`Clientes Ativos: ${analiseClientes.clientesAtivos}`, 15, yPosition);
+        yPosition += 6;
+        doc.text(`Ticket Médio: ${formatCurrency(analiseClientes.ticketMedioGeral)}`, 15, yPosition);
+        yPosition += 6;
+        doc.text(`Lifetime Value Total: ${formatCurrency(analiseClientes.lifetimeValueTotal)}`, 15, yPosition);
+        yPosition += 15;
+      }
+
+      if (selectedData.includes("topClientes")) {
+        if (yPosition > 220) {
+          doc.addPage();
+          yPosition = addHeader(doc, "Relatório de Clientes", logo);
+          yPosition += 10;
+        }
+
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(44, 62, 80);
+        doc.text("Top 10 Clientes", 15, yPosition);
+        yPosition += 10;
+
+        (doc as any).autoTable({
+          startY: yPosition,
+          head: [["#", "Nome", "Compras", "Ticket Médio", "LTV"]],
+          body: analiseClientes.topClientes.map((c: any, index: number) => [
+            index + 1,
+            c.nome.substring(0, 25),
+            c.totalCompras,
+            formatCurrency(c.ticketMedio),
+            formatCurrency(c.lifetimeValue)
+          ]),
+          theme: 'striped',
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: { fillColor: [59, 130, 246], fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          margin: { left: 15, right: 15 }
+        });
+      }
+
+      // Adicionar watermark e rodapé
+      addWatermarkToAllPages(doc, logo, 0.1);
+      addFooter(doc);
+
+      doc.save(`${filename}.pdf`);
+    }
+  };
+
+  const exportOptions = [
+    { id: "metricas", label: "Métricas Gerais", checked: true },
+    { id: "topClientes", label: "Top 10 Clientes por LTV", checked: true },
+    { id: "clientesInativos", label: "Clientes Inativos", checked: true },
+  ];
 
   const analiseClientes = useMemo(() => {
     const hoje = new Date();
@@ -221,6 +346,7 @@ export const ClientsReport = ({ clientes, vendas }: ClientsReportProps) => {
           setDataInicio("");
           setDataFim("");
         }}
+        onExport={() => setExportDialogOpen(true)}
       />
 
       {/* Métricas Principais */}
@@ -536,6 +662,14 @@ export const ClientsReport = ({ clientes, vendas }: ClientsReportProps) => {
           </ScrollArea>
         </DialogContent>
       </Dialog>
+
+      <ExportDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        reportType="clients"
+        onExport={handleExport}
+        availableData={exportOptions}
+      />
     </div>
   );
 };

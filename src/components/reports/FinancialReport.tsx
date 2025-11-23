@@ -12,6 +12,10 @@ import {
   Wallet
 } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Area, AreaChart } from "recharts";
+import { ExportDialog } from "./ExportDialog";
+import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
+import { loadAppLogo, addHeader, addFooter, addWatermarkToAllPages } from "@/lib/pdfWatermark";
 
 interface FinancialReportProps {
   contasPagar: any[];
@@ -23,6 +27,148 @@ interface FinancialReportProps {
 export const FinancialReport = ({ contasPagar, contasReceber, vendas, caixas }: FinancialReportProps) => {
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+
+  const handleExport = async (format: "pdf" | "excel", selectedData: string[]) => {
+    const formatCurrency = (value: number) => {
+      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    };
+
+    const formatDate = (date: Date | string) => {
+      return new Intl.DateTimeFormat('pt-BR', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric' 
+      }).format(new Date(date));
+    };
+
+    const filename = `relatorio_financeiro_${formatDate(new Date()).replace(/\//g, '-')}`;
+
+    if (format === "excel") {
+      const wb = XLSX.utils.book_new();
+
+      if (selectedData.includes("metricas")) {
+        const metricasData = [
+          { Métrica: "Saldo em Caixa", Valor: formatCurrency(analiseFinanceira.saldoCaixaAtual) },
+          { Métrica: "Total a Pagar", Valor: formatCurrency(analiseFinanceira.totalPagar) },
+          { Métrica: "Contas Vencidas (Pagar)", Valor: formatCurrency(analiseFinanceira.totalPagarVencido) },
+          { Métrica: "Total a Receber", Valor: formatCurrency(analiseFinanceira.totalReceber) },
+          { Métrica: "Contas Vencidas (Receber)", Valor: formatCurrency(analiseFinanceira.totalReceberVencido) },
+          { Métrica: "Saldo Projetado (30d)", Valor: formatCurrency(analiseFinanceira.saldoProjetado) }
+        ];
+        const ws = XLSX.utils.json_to_sheet(metricasData);
+        XLSX.utils.book_append_sheet(wb, ws, "Métricas");
+      }
+
+      if (selectedData.includes("contasPagar")) {
+        const pagarData = contasPagar.map((c: any) => ({
+          Descrição: c.descricao,
+          Fornecedor: c.fornecedor?.nome || "-",
+          Valor: formatCurrency(c.valor),
+          Vencimento: formatDate(c.dataVencimento),
+          Status: c.status === "Pago" ? "Pago" : c.status === "Parcial" ? "Parcial" : "Pendente"
+        }));
+        const ws = XLSX.utils.json_to_sheet(pagarData);
+        XLSX.utils.book_append_sheet(wb, ws, "Contas a Pagar");
+      }
+
+      if (selectedData.includes("contasReceber")) {
+        const receberData = contasReceber.map((c: any) => ({
+          Descrição: c.descricao,
+          Cliente: c.cliente?.nome || "-",
+          Valor: formatCurrency(c.valor),
+          Vencimento: formatDate(c.dataVencimento),
+          Status: c.status === "Recebido" ? "Recebido" : c.status === "Parcial" ? "Parcial" : "Pendente"
+        }));
+        const ws = XLSX.utils.json_to_sheet(receberData);
+        XLSX.utils.book_append_sheet(wb, ws, "Contas a Receber");
+      }
+
+      if (selectedData.includes("fluxoCaixa")) {
+        const fluxoData = analiseFinanceira.fluxoCaixaArray.map((f: any) => ({
+          Data: f.data,
+          Entradas: formatCurrency(f.entradas),
+          Saídas: formatCurrency(f.saidas),
+          Saldo: formatCurrency(f.saldo)
+        }));
+        const ws = XLSX.utils.json_to_sheet(fluxoData);
+        XLSX.utils.book_append_sheet(wb, ws, "Fluxo de Caixa");
+      }
+
+      XLSX.writeFile(wb, `${filename}.xlsx`);
+    } else {
+      // PDF
+      const logo = await loadAppLogo();
+      const doc = new jsPDF();
+      
+      let yPosition = addHeader(doc, "Relatório Financeiro", logo);
+      yPosition += 10;
+
+      if (selectedData.includes("metricas")) {
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(44, 62, 80);
+        doc.text("Métricas Financeiras", 15, yPosition);
+        yPosition += 8;
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(52, 73, 94);
+        doc.text(`Saldo em Caixa: ${formatCurrency(analiseFinanceira.saldoCaixaAtual)}`, 15, yPosition);
+        yPosition += 6;
+        doc.text(`Total a Pagar: ${formatCurrency(analiseFinanceira.totalPagar)}`, 15, yPosition);
+        yPosition += 6;
+        doc.text(`Total a Receber: ${formatCurrency(analiseFinanceira.totalReceber)}`, 15, yPosition);
+        yPosition += 6;
+        doc.text(`Saldo Projetado (30d): ${formatCurrency(analiseFinanceira.saldoProjetado)}`, 15, yPosition);
+        yPosition += 15;
+      }
+
+      if (selectedData.includes("contasPagar") && contasPagar.length > 0) {
+        if (yPosition > 220) {
+          doc.addPage();
+          yPosition = addHeader(doc, "Relatório Financeiro", logo);
+          yPosition += 10;
+        }
+
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(44, 62, 80);
+        doc.text("Contas a Pagar", 15, yPosition);
+        yPosition += 10;
+
+        (doc as any).autoTable({
+          startY: yPosition,
+          head: [["Descrição", "Fornecedor", "Valor", "Vencimento", "Status"]],
+          body: contasPagar.slice(0, 30).map((c: any) => [
+            c.descricao.substring(0, 20),
+            (c.fornecedor?.nome || "-").substring(0, 15),
+            formatCurrency(c.valor),
+            formatDate(c.dataVencimento),
+            c.status === "Pago" ? "Pago" : c.status === "Parcial" ? "Parcial" : "Pendente"
+          ]),
+          theme: 'striped',
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: { fillColor: [59, 130, 246], fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          margin: { left: 15, right: 15 }
+        });
+      }
+
+      // Adicionar watermark e rodapé
+      addWatermarkToAllPages(doc, logo, 0.1);
+      addFooter(doc);
+
+      doc.save(`${filename}.pdf`);
+    }
+  };
+
+  const exportOptions = [
+    { id: "metricas", label: "Métricas Financeiras", checked: true },
+    { id: "contasPagar", label: "Contas a Pagar", checked: true },
+    { id: "contasReceber", label: "Contas a Receber", checked: true },
+    { id: "fluxoCaixa", label: "Fluxo de Caixa", checked: true },
+  ];
 
   const analiseFinanceira = useMemo(() => {
     const hoje = new Date();
@@ -204,6 +350,7 @@ export const FinancialReport = ({ contasPagar, contasReceber, vendas, caixas }: 
           setDataInicio("");
           setDataFim("");
         }}
+        onExport={() => setExportDialogOpen(true)}
       />
 
       {/* Visão Geral */}
@@ -446,6 +593,14 @@ export const FinancialReport = ({ contasPagar, contasReceber, vendas, caixas }: 
           </div>
         </CardContent>
       </Card>
+
+      <ExportDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        reportType="financial"
+        onExport={handleExport}
+        availableData={exportOptions}
+      />
     </div>
   );
 };

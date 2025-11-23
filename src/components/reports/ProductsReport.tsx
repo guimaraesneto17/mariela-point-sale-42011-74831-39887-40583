@@ -6,6 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, TrendingUp, AlertTriangle, DollarSign } from "lucide-react";
+import { ExportDialog } from "./ExportDialog";
+import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
+import { loadAppLogo, addHeader, addFooter, addWatermarkToAllPages } from "@/lib/pdfWatermark";
 
 interface ProductsReportProps {
   produtos: any[];
@@ -19,6 +23,136 @@ export const ProductsReport = ({ produtos, estoque, vendas }: ProductsReportProp
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("todos");
   const [fornecedorSelecionado, setFornecedorSelecionado] = useState("todos");
   const [tipoMovimentacao, setTipoMovimentacao] = useState("todos");
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  };
+
+  const formatDate = (date: Date | string) => {
+    return new Intl.DateTimeFormat('pt-BR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric' 
+    }).format(new Date(date));
+  };
+
+  const handleExport = async (format: "pdf" | "excel", selectedData: string[]) => {
+    const filename = `relatorio_produtos_${formatDate(new Date()).replace(/\//g, '-')}`;
+
+    if (format === "excel") {
+      const wb = XLSX.utils.book_new();
+
+      if (selectedData.includes("metricas")) {
+        const metricasData = [
+          { Métrica: "Total de Produtos", Valor: metricas.totalProdutos },
+          { Métrica: "Em Estoque", Valor: metricas.emEstoque },
+          { Métrica: "Valor Estoque (Custo)", Valor: formatCurrency(metricas.valorEstoqueCusto) },
+          { Métrica: "Valor Estoque (Venda)", Valor: formatCurrency(metricas.valorEstoqueVenda) },
+          { Métrica: "Margem Potencial", Valor: formatCurrency(metricas.margemPotencial) },
+          { Métrica: "Novidades", Valor: metricas.novidades },
+          { Métrica: "Em Promoção", Valor: metricas.emPromocao }
+        ];
+        const ws = XLSX.utils.json_to_sheet(metricasData);
+        XLSX.utils.book_append_sheet(wb, ws, "Métricas");
+      }
+
+      if (selectedData.includes("produtos")) {
+        const produtosData = produtos.map(p => ({
+          Código: p.codigoProduto,
+          Nome: p.nome,
+          Categoria: typeof p.categoria === 'string' ? p.categoria : p.categoria?.nome || '-',
+          Fornecedor: typeof p.fornecedor === 'string' ? p.fornecedor : p.fornecedor?.nome || '-',
+          Status: p.novidade ? "Novidade" : p.promocao ? "Promoção" : "Normal"
+        }));
+        const ws = XLSX.utils.json_to_sheet(produtosData);
+        XLSX.utils.book_append_sheet(wb, ws, "Produtos");
+      }
+
+      if (selectedData.includes("estoque")) {
+        const estoqueData = estoque.map(e => ({
+          Produto: e.nomeProduto,
+          Quantidade: e.quantidadeTotal || 0,
+          "Preço Custo": formatCurrency(e.precoCusto || 0),
+          "Preço Venda": formatCurrency(e.precoVenda || e.precoPromocional || 0),
+          "Valor Total": formatCurrency((e.quantidadeTotal || 0) * (e.precoVenda || e.precoPromocional || 0))
+        }));
+        const ws = XLSX.utils.json_to_sheet(estoqueData);
+        XLSX.utils.book_append_sheet(wb, ws, "Estoque");
+      }
+
+      XLSX.writeFile(wb, `${filename}.xlsx`);
+    } else {
+      // PDF
+      const logo = await loadAppLogo();
+      const doc = new jsPDF();
+      
+      let yPosition = addHeader(doc, "Relatório de Produtos", logo);
+      yPosition += 10;
+
+      if (selectedData.includes("metricas")) {
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(44, 62, 80);
+        doc.text("Métricas Gerais", 15, yPosition);
+        yPosition += 8;
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(52, 73, 94);
+        doc.text(`Total de Produtos: ${metricas.totalProdutos}`, 15, yPosition);
+        yPosition += 6;
+        doc.text(`Em Estoque: ${metricas.emEstoque}`, 15, yPosition);
+        yPosition += 6;
+        doc.text(`Valor Estoque (Venda): ${formatCurrency(metricas.valorEstoqueVenda)}`, 15, yPosition);
+        yPosition += 6;
+        doc.text(`Margem Potencial: ${formatCurrency(metricas.margemPotencial)}`, 15, yPosition);
+        yPosition += 15;
+      }
+
+      if (selectedData.includes("produtos")) {
+        if (yPosition > 220) {
+          doc.addPage();
+          yPosition = addHeader(doc, "Relatório de Produtos", logo);
+          yPosition += 10;
+        }
+
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(44, 62, 80);
+        doc.text("Listagem de Produtos", 15, yPosition);
+        yPosition += 10;
+
+        (doc as any).autoTable({
+          startY: yPosition,
+          head: [["Código", "Nome", "Categoria", "Fornecedor"]],
+          body: produtos.slice(0, 50).map(p => [
+            p.codigoProduto,
+            p.nome.substring(0, 30),
+            (typeof p.categoria === 'string' ? p.categoria : p.categoria?.nome || '-').substring(0, 20),
+            (typeof p.fornecedor === 'string' ? p.fornecedor : p.fornecedor?.nome || '-').substring(0, 20)
+          ]),
+          theme: 'striped',
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: { fillColor: [59, 130, 246], fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          margin: { left: 15, right: 15 }
+        });
+      }
+
+      // Adicionar watermark e rodapé
+      addWatermarkToAllPages(doc, logo, 0.1);
+      addFooter(doc);
+
+      doc.save(`${filename}.pdf`);
+    }
+  };
+
+  const exportOptions = [
+    { id: "metricas", label: "Métricas Gerais", checked: true },
+    { id: "produtos", label: "Listagem de Produtos", checked: true },
+    { id: "estoque", label: "Detalhamento de Estoque", checked: true },
+  ];
 
   // Verificar se os dados estão disponíveis
   if (!produtos || !estoque || !vendas) {
@@ -97,6 +231,7 @@ export const ProductsReport = ({ produtos, estoque, vendas }: ProductsReportProp
           setDataInicio("");
           setDataFim("");
         }}
+        onExport={() => setExportDialogOpen(true)}
         additionalFilters={
           <>
             <div>
@@ -220,6 +355,14 @@ export const ProductsReport = ({ produtos, estoque, vendas }: ProductsReportProp
         estoque={estoque}
         produtos={produtos}
         vendas={vendas}
+      />
+
+      <ExportDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        reportType="products"
+        onExport={handleExport}
+        availableData={exportOptions}
       />
     </div>
   );
