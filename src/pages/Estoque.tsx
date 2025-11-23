@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History, Image as ImageIcon, ChevronDown, Star, X, ArrowUpDown, Package2, Grid3X3 } from "lucide-react";
+import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History, Image as ImageIcon, ChevronDown, Star, X, ArrowUpDown, Package2, Grid3X3, BarChart3 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import { estoqueAPI } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
 import { getDefaultImageByCategory } from "@/lib/defaultImages";
 import { GlobalLoading } from "@/components/GlobalLoading";
+import { EstoqueAnalyticsCard } from "@/components/EstoqueAnalyticsCard";
 
 const Estoque = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -50,8 +51,10 @@ const Estoque = () => {
   const [filterTamanho, setFilterTamanho] = useState<string>("todos");
   const [filterCategoria, setFilterCategoria] = useState<string>("todas");
   const [filterQuantidade, setFilterQuantidade] = useState<string>("todas");
+  const [filterQuantidadeRange, setFilterQuantidadeRange] = useState<string>("todos");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [sortBy, setSortBy] = useState<string>("nome"); // nome, preco-asc, preco-desc, quantidade-asc, quantidade-desc, data-entrada
+  const [showAnalytics, setShowAnalytics] = useState(false);
   
   // Novos filtros avançados
   const [filterPrecoMin, setFilterPrecoMin] = useState<string>("");
@@ -215,12 +218,20 @@ const Estoque = () => {
         return v.tamanhos.includes(filterTamanho) && v.quantidade > 0;
       }));
     
-    // Filtro de quantidade
+    // Filtro de quantidade (básico)
     const quantidadeTotal = item.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0;
     const matchesQuantidade = filterQuantidade === "todas" ||
       (filterQuantidade === "baixo" && quantidadeTotal > 0 && quantidadeTotal <= 10) ||
       (filterQuantidade === "zerado" && quantidadeTotal === 0) ||
       (filterQuantidade === "disponivel" && quantidadeTotal > 10);
+    
+    // Filtro de quantidade por range personalizado
+    const matchesQuantidadeRange = filterQuantidadeRange === "todos" ||
+      (filterQuantidadeRange === "0-5" && quantidadeTotal >= 0 && quantidadeTotal <= 5) ||
+      (filterQuantidadeRange === "6-10" && quantidadeTotal >= 6 && quantidadeTotal <= 10) ||
+      (filterQuantidadeRange === "11-20" && quantidadeTotal >= 11 && quantidadeTotal <= 20) ||
+      (filterQuantidadeRange === "21-50" && quantidadeTotal >= 21 && quantidadeTotal <= 50) ||
+      (filterQuantidadeRange === "51+" && quantidadeTotal >= 51);
 
     // Filtro de faixa de preço
     const precoVenda = item.precoPromocional || item.precoVenda || 0;
@@ -251,8 +262,8 @@ const Estoque = () => {
     })();
     
     return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria && 
-           matchesCor && matchesTamanho && matchesQuantidade && matchesPrecoMin && 
-           matchesPrecoMax && matchesFornecedor && matchesDataEntrada;
+           matchesCor && matchesTamanho && matchesQuantidade && matchesQuantidadeRange &&
+           matchesPrecoMin && matchesPrecoMax && matchesFornecedor && matchesDataEntrada;
   });
 
   // Aplicar ordenação
@@ -584,18 +595,34 @@ const Estoque = () => {
             Controle de inventário e movimentações
           </p>
         </div>
-        <Button
-          size="lg"
-          onClick={() => {
-            setSelectedItem(null);
-            setShowMultipleVariantsDialog(true);
-          }}
-          className="gap-2"
-        >
-          <Package2 className="h-5 w-5" />
-          Adicionar Várias Unidades ao Produto
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            size="lg"
+            variant={showAnalytics ? "default" : "outline"}
+            onClick={() => setShowAnalytics(!showAnalytics)}
+            className="gap-2"
+          >
+            <BarChart3 className="h-5 w-5" />
+            {showAnalytics ? "Ocultar Gráficos" : "Ver Gráficos"}
+          </Button>
+          <Button
+            size="lg"
+            onClick={() => {
+              setSelectedItem(null);
+              setShowMultipleVariantsDialog(true);
+            }}
+            className="gap-2"
+          >
+            <Package2 className="h-5 w-5" />
+            Adicionar Várias Unidades ao Produto
+          </Button>
+        </div>
       </div>
+
+      {/* Dashboard de Analytics */}
+      {showAnalytics && (
+        <EstoqueAnalyticsCard className="mb-6" />
+      )}
 
       <Card className="p-4 md:p-6 shadow-card">
         <div className="space-y-4">
@@ -689,7 +716,7 @@ const Estoque = () => {
             </div>
 
             <div>
-              <Label className="text-sm font-medium text-muted-foreground mb-2 block">Filtrar por Quantidade</Label>
+              <Label className="text-sm font-medium text-muted-foreground mb-2 block">Status do Estoque</Label>
               <Select value={filterQuantidade} onValueChange={setFilterQuantidade}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todas" />
@@ -704,9 +731,26 @@ const Estoque = () => {
             </div>
 
             <div>
+              <Label className="text-sm font-medium text-muted-foreground mb-2 block">Faixa de Quantidade</Label>
+              <Select value={filterQuantidadeRange} onValueChange={setFilterQuantidadeRange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas as faixas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todas as faixas</SelectItem>
+                  <SelectItem value="0-5">0 - 5 unidades</SelectItem>
+                  <SelectItem value="6-10">6 - 10 unidades</SelectItem>
+                  <SelectItem value="11-20">11 - 20 unidades</SelectItem>
+                  <SelectItem value="21-50">21 - 50 unidades</SelectItem>
+                  <SelectItem value="51+">51+ unidades</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
               <Label className="text-sm font-medium text-muted-foreground mb-2 block">Ordenar por</Label>
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Ordenar" />
                 </SelectTrigger>
                 <SelectContent>
@@ -871,8 +915,8 @@ const Estoque = () => {
             {(filterPrecoMin || filterPrecoMax || filterFornecedor !== "todos" || 
               filterDataEntrada !== "todas" || filterCategoria !== "todas" || 
               filterCor !== "todas" || filterTamanho !== "todos" || 
-              filterQuantidade !== "todas" || filterPromocao !== null || 
-              filterNovidade !== null) && (
+              filterQuantidade !== "todas" || filterQuantidadeRange !== "todos" ||
+              filterPromocao !== null || filterNovidade !== null) && (
               <div className="flex items-end">
                 <Button
                   variant="outline"
@@ -886,6 +930,7 @@ const Estoque = () => {
                     setFilterCor("todas");
                     setFilterTamanho("todos");
                     setFilterQuantidade("todas");
+                    setFilterQuantidadeRange("todos");
                     setFilterPromocao(null);
                     setFilterNovidade(null);
                     setSortBy("nome");
