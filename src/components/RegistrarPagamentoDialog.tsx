@@ -12,7 +12,7 @@ import { contasPagarAPI, contasReceberAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { CurrencyInput } from "@/components/ui/currency-input";
 
-const formas = ["Dinheiro","PIX","Débito","Crédito","Boleto","Transferência","Outro"] as const;
+const formas = ["Pix","Cartão de Crédito","Cartão de Débito","Dinheiro","Boleto","Transferência","Outro"] as const;
 
 const schema = z.object({
   valor: z.string()
@@ -21,7 +21,7 @@ const schema = z.object({
       const num = parseFloat(val);
       return !isNaN(num) && num > 0;
     }, "Valor deve ser maior que zero"),
-  formaPagamento: z.enum(["Dinheiro","PIX","Débito","Crédito","Boleto","Transferência","Outro"], { required_error: "Selecione a forma de pagamento" }),
+  formaPagamento: z.enum(["Pix","Cartão de Crédito","Cartão de Débito","Dinheiro","Boleto","Transferência","Outro"], { required_error: "Selecione a forma de pagamento" }),
   observacoes: z.string().max(500).optional()
 });
 

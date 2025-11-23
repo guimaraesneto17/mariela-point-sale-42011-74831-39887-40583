@@ -65,7 +65,7 @@ const ContasReceberSchema = new mongoose.Schema({
   },
   formaPagamento: {
     type: String,
-    enum: ['Dinheiro', 'PIX', 'Débito', 'Crédito', 'Boleto', 'Transferência', 'Outro'],
+    enum: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto', 'Transferência', 'Outro'],
     trim: true
   },
   observacoes: {
@@ -75,7 +75,7 @@ const ContasReceberSchema = new mongoose.Schema({
   historicoRecebimentos: [{
     valor: { type: Number, required: true, min: 0 },
     data: { type: Date, default: Date.now },
-    formaPagamento: { type: String, enum: ['Dinheiro', 'PIX', 'Débito', 'Crédito', 'Boleto', 'Transferência', 'Outro'] },
+    formaPagamento: { type: String, enum: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto', 'Transferência', 'Outro'] },
     observacoes: { type: String, trim: true }
   }]
 }, {

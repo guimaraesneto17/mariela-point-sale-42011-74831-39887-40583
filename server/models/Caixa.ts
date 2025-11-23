@@ -23,7 +23,7 @@ const MovimentoSchema = new mongoose.Schema({
   },
   formaPagamento: {
     type: String,
-    enum: ['Dinheiro', 'PIX', 'Débito', 'Crédito', 'Boleto', 'Transferência', 'Outro', null],
+    enum: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto', 'Transferência', 'Outro', null],
     default: null
   },
   observacao: {
