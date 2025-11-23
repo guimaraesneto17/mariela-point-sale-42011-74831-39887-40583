@@ -1008,12 +1008,8 @@ const Estoque = () => {
                           alt={item.nomeProduto}
                           onImageClick={() => openLightbox(varianteSelecionada.imagens)}
                           showControls={true}
+                          showStarOnFirst={true}
                         />
-                        
-                        {/* Estrela de destaque - canto superior esquerdo */}
-                        <div className="absolute top-2 left-2 bg-yellow-500 text-white rounded-full p-1.5 shadow-lg border-2 border-background z-10">
-                          <Star className="h-3 w-3 fill-current" />
-                        </div>
                         
                         {/* Badge de quantidade de imagens */}
                         <div className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground rounded-full p-1.5 shadow-lg border-2 border-background flex items-center gap-0.5 text-xs font-bold z-10">
@@ -1294,12 +1290,8 @@ const Estoque = () => {
                           className="border-2 border-primary/20 shadow-md transition-all group-hover:border-primary group-hover:scale-105"
                           onImageClick={() => openLightbox(varianteSelecionada.imagens)}
                           showControls={varianteSelecionada.imagens.length > 1}
+                          showStarOnFirst={true}
                         />
-                        
-                        {/* Estrela de destaque dourada - canto superior esquerdo */}
-                        <div className="absolute top-1 left-1 bg-yellow-500 text-white rounded-full p-1 shadow-md z-30">
-                          <Star className="h-3 w-3 fill-current" />
-                        </div>
                         
                         {/* Badge com ícone de imagem e quantidade */}
                         <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-1.5 shadow-lg border-2 border-background flex items-center justify-center gap-1 min-w-[28px] z-30">

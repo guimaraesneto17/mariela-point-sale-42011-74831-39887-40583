@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ImageNavigatorProps {
@@ -8,6 +8,7 @@ interface ImageNavigatorProps {
   className?: string;
   onImageClick?: () => void;
   showControls?: boolean;
+  showStarOnFirst?: boolean;
 }
 
 export const ImageNavigator = ({ 
@@ -15,7 +16,8 @@ export const ImageNavigator = ({
   alt, 
   className = "", 
   onImageClick,
-  showControls = true 
+  showControls = true,
+  showStarOnFirst = false
 }: ImageNavigatorProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -41,6 +43,13 @@ export const ImageNavigator = ({
         className={`w-full h-full object-cover ${onImageClick ? 'cursor-pointer' : ''} ${className}`}
         onClick={onImageClick}
       />
+      
+      {/* Estrela de destaque - apenas na primeira imagem */}
+      {showStarOnFirst && currentIndex === 0 && (
+        <div className="absolute top-2 left-2 bg-yellow-500 text-white rounded-full p-1.5 shadow-lg border-2 border-background z-10">
+          <Star className="h-3 w-3 fill-current" />
+        </div>
+      )}
       
       {showControls && images.length > 1 && (
         <>
