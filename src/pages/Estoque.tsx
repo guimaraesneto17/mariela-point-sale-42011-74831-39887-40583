@@ -265,6 +265,10 @@ const Estoque = () => {
     // Filtro de categoria
     const matchesCategoria = filterCategoria === "todas" || categoria === filterCategoria;
     
+    // Ocultar produtos completamente zerados
+    const quantidadeTotal = item.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0;
+    if (quantidadeTotal === 0) return false;
+    
     // Filtro de cor
     const matchesCor = filterCor === "todas" || 
       (item.variantes && item.variantes.some((v: any) => v.cor === filterCor && v.quantidade > 0));
@@ -284,7 +288,6 @@ const Estoque = () => {
       }));
     
     // Filtro de quantidade por range personalizado
-    const quantidadeTotal = item.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0;
     const matchesQuantidadeRange = filterQuantidadeRange === "todos" ||
       (filterQuantidadeRange === "0-5" && quantidadeTotal >= 0 && quantidadeTotal <= 5) ||
       (filterQuantidadeRange === "6-10" && quantidadeTotal >= 6 && quantidadeTotal <= 10) ||
@@ -413,7 +416,10 @@ const Estoque = () => {
     if (!variante) return [];
     // Nova estrutura: tamanhos é array de objetos {tamanho, quantidade}
     if (Array.isArray(variante.tamanhos) && variante.tamanhos.length > 0 && typeof variante.tamanhos[0] === 'object') {
-      return variante.tamanhos.map((t: any) => String(t.tamanho));
+      // Filtrar apenas tamanhos com quantidade > 0
+      return variante.tamanhos
+        .filter((t: any) => t.quantidade > 0)
+        .map((t: any) => String(t.tamanho));
     }
     // Estrutura antiga: tamanhos é array de strings
     return Array.isArray(variante.tamanhos) ? variante.tamanhos.map(String) : (variante.tamanho ? [String(variante.tamanho)] : []);
@@ -992,20 +998,24 @@ const Estoque = () => {
             return (
               <Card key={item.codigoProduto} className="p-4 shadow-card hover:shadow-lg transition-all">
                 <div className="space-y-3">
-                  {/* Imagem principal com clique */}
+                  {/* Imagem principal com clique e navegação */}
                   <div className="relative aspect-square rounded-lg overflow-hidden bg-muted group">
                     {varianteSelecionada?.imagens?.[0] ? (
-                      <div 
-                        className="relative w-full h-full cursor-pointer" 
-                        onClick={() => openLightbox(varianteSelecionada.imagens)}
-                      >
+                      <div className="relative w-full h-full">
                         <img
                           src={varianteSelecionada.imagens[0]}
                           alt={item.nomeProduto}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          className="w-full h-full object-cover cursor-pointer group-hover:scale-105 transition-transform"
+                          onClick={() => openLightbox(varianteSelecionada.imagens)}
                         />
-                        {/* Badge de imagens */}
-                        <div className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground rounded-full p-1.5 shadow-lg border-2 border-background flex items-center gap-0.5 text-xs font-bold">
+                        
+                        {/* Estrela de destaque - canto superior esquerdo */}
+                        <div className="absolute top-2 left-2 bg-yellow-500 text-white rounded-full p-1.5 shadow-lg border-2 border-background z-10">
+                          <Star className="h-3 w-3 fill-current" />
+                        </div>
+                        
+                        {/* Badge de quantidade de imagens */}
+                        <div className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground rounded-full p-1.5 shadow-lg border-2 border-background flex items-center gap-0.5 text-xs font-bold z-10">
                           <ImageIcon className="h-3 w-3" />
                           {varianteSelecionada.imagens.length}
                         </div>
@@ -1020,13 +1030,13 @@ const Estoque = () => {
                       </div>
                     )}
                     {item.emPromocao && (
-                      <Badge className="absolute top-2 left-2 bg-accent text-accent-foreground">
+                      <Badge className="absolute bottom-2 left-2 bg-accent text-accent-foreground z-10">
                         <Tag className="h-3 w-3 mr-1" />
                         Promo
                       </Badge>
                     )}
                     {item.isNovidade && (
-                      <Badge className="absolute top-2 right-2 bg-green-600 text-white">
+                      <Badge className="absolute bottom-2 right-2 bg-green-600 text-white z-10">
                         <Sparkles className="h-3 w-3 mr-1" />
                         Novo
                       </Badge>
@@ -1282,14 +1292,16 @@ const Estoque = () => {
                           alt={`${item.nomeProduto} - ${selectedCor}`}
                           className="w-24 h-24 object-cover rounded-lg border-2 border-primary/20 shadow-md transition-all group-hover:border-primary group-hover:scale-105"
                         />
+                        
+                        {/* Estrela de destaque dourada - canto superior esquerdo */}
+                        <div className="absolute top-1 left-1 bg-yellow-500 text-white rounded-full p-1 shadow-md z-10">
+                          <Star className="h-3 w-3 fill-current" />
+                        </div>
+                        
                         {/* Badge com ícone de imagem e quantidade */}
-                        <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-1.5 shadow-lg border-2 border-background flex items-center justify-center gap-1 min-w-[28px]">
+                        <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-1.5 shadow-lg border-2 border-background flex items-center justify-center gap-1 min-w-[28px] z-10">
                           <ImageIcon className="h-3 w-3" />
                           <span className="text-xs font-bold">{varianteSelecionada.imagens.length}</span>
-                        </div>
-                        {/* Estrela de destaque dourada */}
-                        <div className="absolute top-1 right-1 bg-yellow-500 rounded-full p-1 shadow-md">
-                          <Star className="h-3 w-3 fill-white text-white" />
                         </div>
                       </div>
                     ) : (

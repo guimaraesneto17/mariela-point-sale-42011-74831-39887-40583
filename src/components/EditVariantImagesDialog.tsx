@@ -96,39 +96,39 @@ function SortableImageItem({
         }}
       />
       
-      {/* Botões de ação */}
-      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Botões de ação - sempre visíveis em mobile, hover em desktop */}
+      <div className="absolute top-2 right-2 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
         {!isDestaque && (
           <Button
             type="button"
             size="icon"
             variant="secondary"
-            className="h-7 w-7 bg-background/90 backdrop-blur-sm hover:bg-yellow-500 hover:text-white transition-colors"
+            className="h-8 w-8 bg-background/95 backdrop-blur-sm hover:bg-yellow-500 hover:text-white transition-colors shadow-md"
             onClick={onSetDestaque}
             title="Definir como imagem destaque"
           >
-            <Star className="h-3.5 w-3.5" />
+            <Star className="h-4 w-4" />
           </Button>
         )}
         <Button
           type="button"
           size="icon"
           variant="secondary"
-          className="h-7 w-7 bg-background/90 backdrop-blur-sm hover:bg-blue-500 hover:text-white transition-colors"
+          className="h-8 w-8 bg-background/95 backdrop-blur-sm hover:bg-blue-500 hover:text-white transition-colors shadow-md"
           onClick={onEdit}
           title="Editar imagem"
         >
-          <Edit className="h-3.5 w-3.5" />
+          <Edit className="h-4 w-4" />
         </Button>
         <Button
           type="button"
           size="icon"
           variant="destructive"
-          className="h-7 w-7"
+          className="h-8 w-8 shadow-md"
           onClick={onRemove}
           title="Remover imagem"
         >
-          <X className="h-3.5 w-3.5" />
+          <X className="h-4 w-4" />
         </Button>
       </div>
       
@@ -382,9 +382,9 @@ export function EditVariantImagesDialog({
             <ImageIcon className="h-5 w-5" />
             Gerenciar Imagens da Variante
           </DialogTitle>
-          <DialogDescription className="flex flex-col gap-1">
-            <span className="font-semibold">{produto?.nomeProduto}</span>
-            <span className="text-sm">Cor: {variante?.cor}</span>
+          <DialogDescription className="flex flex-col gap-1 mt-2">
+            <span className="font-semibold text-foreground">{produto?.nomeProduto}</span>
+            <span className="text-sm text-muted-foreground">Cor: {variante?.cor}</span>
           </DialogDescription>
         </DialogHeader>
 
