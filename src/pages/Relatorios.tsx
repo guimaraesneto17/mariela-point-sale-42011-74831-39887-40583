@@ -118,24 +118,44 @@ const Relatorios = () => {
     loadRelatorios();
   }, []);
 
-  const aplicarFiltrosVendas = () => {
-    loadRelatorios();
-    toast.success("Filtros de vendas aplicados!");
+  const aplicarFiltrosVendas = async () => {
+    try {
+      setLoading(true);
+      await loadRelatorios();
+      toast.success("Filtros de vendas aplicados!");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const aplicarFiltrosProdutos = () => {
-    loadRelatorios();
-    toast.success("Filtros de produtos aplicados!");
+  const aplicarFiltrosProdutos = async () => {
+    try {
+      setLoading(true);
+      await loadRelatorios();
+      toast.success("Filtros de produtos aplicados!");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const aplicarFiltrosCaixa = () => {
-    loadRelatorios();
-    toast.success("Filtros de caixa aplicados!");
+  const aplicarFiltrosCaixa = async () => {
+    try {
+      setLoading(true);
+      await loadRelatorios();
+      toast.success("Filtros de caixa aplicados!");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const aplicarFiltrosFinanceiro = () => {
-    loadRelatorios();
-    toast.success("Filtros financeiros aplicados!");
+  const aplicarFiltrosFinanceiro = async () => {
+    try {
+      setLoading(true);
+      await loadRelatorios();
+      toast.success("Filtros financeiros aplicados!");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Função auxiliar para filtrar dados por período
@@ -712,7 +732,7 @@ const Relatorios = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="clientes" className="space-y-4">
+      <Tabs defaultValue="clientes" className="space-y-4" onValueChange={() => {}}>
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="clientes"><Users className="h-4 w-4 mr-2" />Clientes</TabsTrigger>
           <TabsTrigger value="financeiro"><DollarSign className="h-4 w-4 mr-2" />Financeiro</TabsTrigger>
@@ -748,10 +768,16 @@ const Relatorios = () => {
                   <Button
                     variant="default"
                     className="flex-1"
-                    onClick={() => {
-                      loadRelatorios();
-                      toast.success("Filtros aplicados!");
+                    onClick={async () => {
+                      try {
+                        setLoading(true);
+                        await loadRelatorios();
+                        toast.success("Filtros aplicados!");
+                      } finally {
+                        setLoading(false);
+                      }
                     }}
+                    disabled={loading}
                   >
                     <Filter className="h-4 w-4 mr-2" />
                     Aplicar Filtros
@@ -760,10 +786,17 @@ const Relatorios = () => {
                     <Button
                       variant="outline"
                       className="flex-1"
-                      onClick={() => {
+                      onClick={async () => {
                         setClienteSelecionado("todos");
-                        loadRelatorios();
+                        try {
+                          setLoading(true);
+                          await loadRelatorios();
+                          toast.success("Filtros limpos!");
+                        } finally {
+                          setLoading(false);
+                        }
                       }}
+                      disabled={loading}
                     >
                       <X className="h-4 w-4 mr-2" />
                       Limpar
@@ -887,117 +920,136 @@ const Relatorios = () => {
 
         {/* Tab Financeiro com Top Categorias e Próximos Vencimentos */}
         <TabsContent value="financeiro" className="space-y-4">
-          {/* Filtros de Período de Emissão */}
+          {/* Filtros Consolidados */}
           <Card className="bg-gradient-to-br from-primary/5 to-background">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Filtros por Data de Emissão</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">Período</Label>
-                  <Select value={periodoFinanceiro} onValueChange={setPeriodoFinanceiro}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos</SelectItem>
-                      <SelectItem value="7">Últimos 7 dias</SelectItem>
-                      <SelectItem value="30">Últimos 30 dias</SelectItem>
-                      <SelectItem value="90">Últimos 90 dias</SelectItem>
-                      <SelectItem value="365">Último ano</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">Data Início</Label>
-                  <Input
-                    type="date"
-                    value={dataInicioFinanceiro}
-                    onChange={(e) => setDataInicioFinanceiro(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">Data Fim</Label>
-                  <Input
-                    type="date"
-                    value={dataFimFinanceiro}
-                    onChange={(e) => setDataFimFinanceiro(e.target.value)}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Filtros de Período de Vencimento */}
-          <Card className="bg-gradient-to-br from-amber-500/5 to-background border-amber-200 dark:border-amber-900">
-            <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-amber-600" />
-                Filtros por Data de Vencimento
+                <Filter className="h-4 w-4" />
+                Filtros de Relatório Financeiro
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">Período</Label>
-                  <Select value={periodoVencimento} onValueChange={setPeriodoVencimento}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos</SelectItem>
-                      <SelectItem value="7">Próximos 7 dias</SelectItem>
-                      <SelectItem value="30">Próximos 30 dias</SelectItem>
-                      <SelectItem value="90">Próximos 90 dias</SelectItem>
-                      <SelectItem value="365">Próximo ano</SelectItem>
-                    </SelectContent>
-                  </Select>
+            <CardContent className="space-y-4">
+              {/* Filtros de Emissão */}
+              <div>
+                <Label className="text-sm font-semibold mb-3 block flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Data de Emissão/Lançamento
+                </Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium mb-2 block">Período</Label>
+                    <Select value={periodoFinanceiro} onValueChange={setPeriodoFinanceiro}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Todos</SelectItem>
+                        <SelectItem value="7">Últimos 7 dias</SelectItem>
+                        <SelectItem value="30">Últimos 30 dias</SelectItem>
+                        <SelectItem value="90">Últimos 90 dias</SelectItem>
+                        <SelectItem value="365">Último ano</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium mb-2 block">Data Início</Label>
+                    <Input
+                      type="date"
+                      value={dataInicioFinanceiro}
+                      onChange={(e) => setDataInicioFinanceiro(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium mb-2 block">Data Fim</Label>
+                    <Input
+                      type="date"
+                      value={dataFimFinanceiro}
+                      onChange={(e) => setDataFimFinanceiro(e.target.value)}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">Vencimento Início</Label>
-                  <Input
-                    type="date"
-                    value={dataInicioVencimento}
-                    onChange={(e) => setDataInicioVencimento(e.target.value)}
-                  />
+              </div>
+
+              {/* Separador */}
+              <div className="border-t border-border/50" />
+
+              {/* Filtros de Vencimento */}
+              <div>
+                <Label className="text-sm font-semibold mb-3 block flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 text-amber-600" />
+                  Data de Vencimento
+                </Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium mb-2 block">Período</Label>
+                    <Select value={periodoVencimento} onValueChange={setPeriodoVencimento}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Todos</SelectItem>
+                        <SelectItem value="7">Próximos 7 dias</SelectItem>
+                        <SelectItem value="30">Próximos 30 dias</SelectItem>
+                        <SelectItem value="90">Próximos 90 dias</SelectItem>
+                        <SelectItem value="365">Próximo ano</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium mb-2 block">Vencimento Início</Label>
+                    <Input
+                      type="date"
+                      value={dataInicioVencimento}
+                      onChange={(e) => setDataInicioVencimento(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium mb-2 block">Vencimento Fim</Label>
+                    <Input
+                      type="date"
+                      value={dataFimVencimento}
+                      onChange={(e) => setDataFimVencimento(e.target.value)}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">Vencimento Fim</Label>
-                  <Input
-                    type="date"
-                    value={dataFimVencimento}
-                    onChange={(e) => setDataFimVencimento(e.target.value)}
-                  />
-                </div>
-                <div className="md:col-span-2 flex items-end gap-2">
+              </div>
+
+              {/* Botões de Ação */}
+              <div className="flex items-center gap-2 pt-2">
+                <Button
+                  variant="default"
+                  className="flex-1"
+                  onClick={aplicarFiltrosFinanceiro}
+                  disabled={loading}
+                >
+                  <Filter className="h-4 w-4 mr-2" />
+                  Aplicar Filtros
+                </Button>
+                {(periodoFinanceiro !== "todos" || dataInicioFinanceiro || dataFimFinanceiro || periodoVencimento !== "todos" || dataInicioVencimento || dataFimVencimento) && (
                   <Button
-                    variant="default"
+                    variant="outline"
                     className="flex-1"
-                    onClick={aplicarFiltrosFinanceiro}
+                    onClick={async () => {
+                      setPeriodoFinanceiro("todos");
+                      setDataInicioFinanceiro("");
+                      setDataFimFinanceiro("");
+                      setPeriodoVencimento("todos");
+                      setDataInicioVencimento("");
+                      setDataFimVencimento("");
+                      try {
+                        setLoading(true);
+                        await loadRelatorios();
+                        toast.success("Filtros limpos!");
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    disabled={loading}
                   >
-                    <Filter className="h-4 w-4 mr-2" />
-                    Aplicar Filtros
+                    <X className="h-4 w-4 mr-2" />
+                    Limpar
                   </Button>
-                  {(periodoFinanceiro !== "todos" || dataInicioFinanceiro || dataFimFinanceiro || periodoVencimento !== "todos" || dataInicioVencimento || dataFimVencimento) && (
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => {
-                        setPeriodoFinanceiro("todos");
-                        setDataInicioFinanceiro("");
-                        setDataFimFinanceiro("");
-                        setPeriodoVencimento("todos");
-                        setDataInicioVencimento("");
-                        setDataFimVencimento("");
-                        loadRelatorios();
-                      }}
-                    >
-                      <X className="h-4 w-4 mr-2" />
-                      Limpar
-                    </Button>
-                  )}
-                </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -1251,6 +1303,7 @@ const Relatorios = () => {
                     variant="default"
                     className="flex-1"
                     onClick={aplicarFiltrosVendas}
+                    disabled={loading}
                   >
                     <Filter className="h-4 w-4 mr-2" />
                     Aplicar Filtros
@@ -1259,14 +1312,21 @@ const Relatorios = () => {
                     <Button
                       variant="outline"
                       className="flex-1"
-                      onClick={() => {
+                      onClick={async () => {
                         setPeriodoVendas("todos");
                         setDataInicioVendas("");
                         setDataFimVendas("");
                         setVendedorSelecionado("todos");
                         setFormaPagamentoSelecionada("todos");
-                        loadRelatorios();
+                        try {
+                          setLoading(true);
+                          await loadRelatorios();
+                          toast.success("Filtros limpos!");
+                        } finally {
+                          setLoading(false);
+                        }
                       }}
+                      disabled={loading}
                     >
                       <X className="h-4 w-4 mr-2" />
                       Limpar
@@ -1423,6 +1483,7 @@ const Relatorios = () => {
                     variant="default"
                     className="flex-1"
                     onClick={aplicarFiltrosProdutos}
+                    disabled={loading}
                   >
                     <Filter className="h-4 w-4 mr-2" />
                     Aplicar Filtros
@@ -1431,13 +1492,20 @@ const Relatorios = () => {
                     <Button
                       variant="outline"
                       className="flex-1"
-                      onClick={() => {
+                      onClick={async () => {
                         setPeriodoProdutos("todos");
                         setDataInicioProdutos("");
                         setDataFimProdutos("");
                         setCategoriaSelecionada("todos");
-                        loadRelatorios();
+                        try {
+                          setLoading(true);
+                          await loadRelatorios();
+                          toast.success("Filtros limpos!");
+                        } finally {
+                          setLoading(false);
+                        }
                       }}
+                      disabled={loading}
                     >
                       <X className="h-4 w-4 mr-2" />
                       Limpar
@@ -1797,6 +1865,7 @@ const Relatorios = () => {
                     variant="default"
                     className="flex-1"
                     onClick={aplicarFiltrosCaixa}
+                    disabled={loading}
                   >
                     <Filter className="h-4 w-4 mr-2" />
                     Aplicar Filtros
@@ -1805,12 +1874,19 @@ const Relatorios = () => {
                     <Button
                       variant="outline"
                       className="flex-1"
-                      onClick={() => {
+                      onClick={async () => {
                         setPeriodoCaixa("todos");
                         setDataInicioCaixa("");
                         setDataFimCaixa("");
-                        loadRelatorios();
+                        try {
+                          setLoading(true);
+                          await loadRelatorios();
+                          toast.success("Filtros limpos!");
+                        } finally {
+                          setLoading(false);
+                        }
                       }}
+                      disabled={loading}
                     >
                       <X className="h-4 w-4 mr-2" />
                       Limpar
