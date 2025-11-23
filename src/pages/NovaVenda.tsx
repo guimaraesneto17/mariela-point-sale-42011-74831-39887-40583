@@ -26,6 +26,8 @@ interface ItemVenda {
   quantidade: number;
   precoUnitario: number;
   descontoAplicado: number;
+  descontoValor?: number;
+  tipoDesconto: "porcentagem" | "valor";
   subtotal: number;
   emPromocao?: boolean;
   novidade?: boolean;
@@ -53,6 +55,8 @@ const NovaVenda = () => {
   const [produtoSelecionado, setProdutoSelecionado] = useState<any>(null);
   const [quantidadeProduto, setQuantidadeProduto] = useState(1);
   const [descontoProduto, setDescontoProduto] = useState(0);
+  const [descontoValorProduto, setDescontoValorProduto] = useState("0");
+  const [tipoDescontoProduto, setTipoDescontoProduto] = useState<"porcentagem" | "valor">("porcentagem");
   const [itemEmEdicao, setItemEmEdicao] = useState<number | null>(null);
   const [clientes, setClientes] = useState<any[]>([]);
   const [vendedores, setVendedores] = useState<any[]>([]);
@@ -202,14 +206,19 @@ const NovaVenda = () => {
       produtoSelecionado.tamanho
     );
 
-    // Verificar se o produto já está na lista de itens
+    // Verificar se o produto já está na lista de itens COM O MESMO DESCONTO
+    const descontoAtual = tipoDescontoProduto === "porcentagem" ? descontoProduto : parseFloat(descontoValorProduto);
     const itemExistente = itensVenda.findIndex(
       item => item.codigoProduto === produtoSelecionado.codigoProduto &&
               item.cor === produtoSelecionado.cor &&
-              item.tamanho === produtoSelecionado.tamanho
+              item.tamanho === produtoSelecionado.tamanho &&
+              item.tipoDesconto === tipoDescontoProduto &&
+              (tipoDescontoProduto === "porcentagem" 
+                ? item.descontoAplicado === descontoAtual 
+                : item.descontoValor === descontoAtual)
     );
 
-    // Se não estiver editando e o item já existe, incrementar quantidade
+    // Se não estiver editando e o item já existe COM MESMO DESCONTO, incrementar quantidade
     if (itemEmEdicao === null && itemExistente !== -1) {
       const novaQuantidade = itensVenda[itemExistente].quantidade + quantidadeProduto;
       
@@ -267,7 +276,16 @@ const NovaVenda = () => {
     const precoBase = produtoSelecionado.emPromocao && produtoSelecionado.precoPromocional 
       ? Number(produtoSelecionado.precoPromocional) 
       : Number(produtoSelecionado.precoVenda ?? 0);
-    const precoComDesconto = precoBase * (1 - descontoProduto / 100);
+    
+    // Calcular desconto baseado no tipo (porcentagem ou valor)
+    let precoComDesconto = precoBase;
+    const descontoValorNumerico = parseFloat(descontoValorProduto) || 0;
+    if (tipoDescontoProduto === "porcentagem") {
+      precoComDesconto = precoBase * (1 - descontoProduto / 100);
+    } else {
+      precoComDesconto = Math.max(0, precoBase - descontoValorNumerico);
+    }
+    
     const subtotal = precoComDesconto * quantidadeProduto;
 
     const novoItem: ItemVenda = {
@@ -277,7 +295,9 @@ const NovaVenda = () => {
       tamanho: produtoSelecionado.tamanho,
       quantidade: quantidadeProduto,
       precoUnitario: precoBase,
-      descontoAplicado: descontoProduto,
+      descontoAplicado: tipoDescontoProduto === "porcentagem" ? descontoProduto : 0,
+      descontoValor: tipoDescontoProduto === "valor" ? descontoValorNumerico : undefined,
+      tipoDesconto: tipoDescontoProduto,
       subtotal: subtotal,
       emPromocao: produtoSelecionado.emPromocao || false,
       novidade: produtoSelecionado.novidade || false
@@ -314,6 +334,8 @@ const NovaVenda = () => {
     setProdutoSelecionado(null);
     setQuantidadeProduto(1);
     setDescontoProduto(0);
+    setDescontoValorProduto("0");
+    setTipoDescontoProduto("porcentagem");
   };
 
   const editarProduto = (index: number) => {
@@ -339,7 +361,14 @@ const NovaVenda = () => {
     }
     
     setQuantidadeProduto(item.quantidade);
-    setDescontoProduto(item.descontoAplicado);
+    setTipoDescontoProduto(item.tipoDesconto);
+    if (item.tipoDesconto === "porcentagem") {
+      setDescontoProduto(item.descontoAplicado);
+      setDescontoValorProduto("0");
+    } else {
+      setDescontoValorProduto(String(item.descontoValor || 0));
+      setDescontoProduto(0);
+    }
     setItemEmEdicao(index);
   };
 
@@ -347,6 +376,8 @@ const NovaVenda = () => {
     setProdutoSelecionado(null);
     setQuantidadeProduto(1);
     setDescontoProduto(0);
+    setDescontoValorProduto("0");
+    setTipoDescontoProduto("porcentagem");
     setItemEmEdicao(null);
   };
 
@@ -401,6 +432,53 @@ const NovaVenda = () => {
       return;
     }
 
+    // Validação de estoque em tempo real antes de finalizar
+    try {
+      const estoqueAtualizado = await estoqueAPI.getAll();
+      
+      for (const item of itensVenda) {
+        const produtoEstoque = estoqueAtualizado.find(
+          (e: any) => e.codigoProduto === item.codigoProduto
+        );
+        
+        if (!produtoEstoque) {
+          toast.error(`Produto ${item.nomeProduto} não encontrado no estoque!`);
+          return;
+        }
+        
+        // Verificar variante específica
+        const variante = produtoEstoque.variantes?.find(
+          (v: any) => v.cor === item.cor
+        );
+        
+        if (!variante) {
+          toast.error(`Variante ${item.cor} do produto ${item.nomeProduto} não encontrada!`);
+          return;
+        }
+        
+        // Verificar tamanho específico
+        let quantidadeDisponivel = 0;
+        if (Array.isArray(variante.tamanhos)) {
+          const tamanhoObj = variante.tamanhos.find((t: any) => String(t.tamanho) === item.tamanho);
+          quantidadeDisponivel = tamanhoObj?.quantidade || 0;
+        } else if (variante.tamanho === item.tamanho) {
+          quantidadeDisponivel = variante.quantidade || 0;
+        }
+        
+        if (quantidadeDisponivel < item.quantidade) {
+          toast.error(
+            `Estoque insuficiente para ${item.nomeProduto} (${item.cor} - ${item.tamanho}). ` +
+            `Disponível: ${quantidadeDisponivel}, Necessário: ${item.quantidade}`
+          );
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao validar estoque:', error);
+      toast.error('Erro ao validar estoque. Tente novamente.');
+      return;
+    }
+
     try {
       const codigoVenda = await generateCodigoVenda();
       
@@ -419,17 +497,28 @@ const NovaVenda = () => {
           codigoCliente: clienteSelecionado.codigo,
           nome: clienteSelecionado.nome
         },
-        itens: itensVenda.map(item => ({
-          codigoProduto: item.codigoProduto,
-          nomeProduto: item.nomeProduto,
-          cor: item.cor,
-          tamanho: item.tamanho,
-          quantidade: item.quantidade,
-          precoUnitario: item.precoUnitario,
-          precoFinalUnitario: item.precoUnitario * (1 - item.descontoAplicado / 100),
-          descontoAplicado: item.descontoAplicado,
-          subtotal: item.subtotal
-        })),
+        itens: itensVenda.map(item => {
+          let precoFinal = item.precoUnitario;
+          if (item.tipoDesconto === "porcentagem") {
+            precoFinal = item.precoUnitario * (1 - item.descontoAplicado / 100);
+          } else {
+            precoFinal = Math.max(0, item.precoUnitario - (item.descontoValor || 0));
+          }
+          
+          return {
+            codigoProduto: item.codigoProduto,
+            nomeProduto: item.nomeProduto,
+            cor: item.cor,
+            tamanho: item.tamanho,
+            quantidade: item.quantidade,
+            precoUnitario: item.precoUnitario,
+            precoFinalUnitario: precoFinal,
+            descontoAplicado: item.descontoAplicado,
+            descontoValor: item.descontoValor,
+            tipoDesconto: item.tipoDesconto,
+            subtotal: item.subtotal
+          };
+        }),
         total: totalFinal,
         totalDesconto: valorDescontoTotal,
         formaPagamento,
@@ -700,15 +789,47 @@ const NovaVenda = () => {
                         />
                       </div>
                       <div>
-                        <Label>Desconto (%)</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={descontoProduto}
-                          onChange={(e) => setDescontoProduto(parseFloat(e.target.value) || 0)}
-                        />
+                        <Label>Tipo de Desconto</Label>
+                        <RadioGroup 
+                          value={tipoDescontoProduto} 
+                          onValueChange={(value: "porcentagem" | "valor") => setTipoDescontoProduto(value)}
+                          className="flex gap-4 mt-2"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="porcentagem" id="tipo-porcentagem" />
+                            <Label htmlFor="tipo-porcentagem" className="cursor-pointer">Porcentagem</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="valor" id="tipo-valor" />
+                            <Label htmlFor="tipo-valor" className="cursor-pointer">Valor (R$)</Label>
+                          </div>
+                        </RadioGroup>
                       </div>
+                    </div>
+
+                    <div>
+                      {tipoDescontoProduto === "porcentagem" ? (
+                        <div>
+                          <Label>Desconto (%)</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            value={descontoProduto}
+                            onChange={(e) => setDescontoProduto(parseFloat(e.target.value) || 0)}
+                          />
+                        </div>
+                      ) : (
+                        <div>
+                          <Label>Desconto (R$)</Label>
+                          <CurrencyInput
+                            value={descontoValorProduto}
+                            onValueChange={(value: string) => setDescontoValorProduto(value)}
+                            placeholder="0.00"
+                          />
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex gap-2">
@@ -750,40 +871,111 @@ const NovaVenda = () => {
                 <p className="text-muted-foreground text-center py-8">Nenhum produto adicionado</p>
               ) : (
                 <div className="space-y-2">
-                  {itensVenda.map((item, index) => (
-                    <div 
-                      key={index} 
-                      className={`flex items-center justify-between p-4 rounded-lg border ${
-                        itemEmEdicao === index ? 'bg-primary/10 border-primary' : 'bg-background/50'
-                      }`}
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{item.nomeProduto}</p>
-                          {item.emPromocao && (
-                            <Badge className="bg-accent text-accent-foreground">Promoção</Badge>
-                          )}
+                  {itensVenda.map((item, index) => {
+                    const handleQuantidadeChange = (novaQuantidade: number) => {
+                      if (novaQuantidade <= 0) return;
+                      
+                      const varianteKey = getVarianteKey(item.codigoProduto, item.cor, item.tamanho);
+                      const produtoEstoque = estoque.find(e => e.codigoProduto === item.codigoProduto);
+                      
+                      if (!produtoEstoque) {
+                        toast.error("Produto não encontrado no estoque!");
+                        return;
+                      }
+                      
+                      const variante = produtoEstoque.variantes?.find((v: any) => v.cor === item.cor);
+                      if (!variante) {
+                        toast.error("Variante não encontrada!");
+                        return;
+                      }
+                      
+                      let quantidadeDisponivel = 0;
+                      if (Array.isArray(variante.tamanhos)) {
+                        const tamanhoObj = variante.tamanhos.find((t: any) => String(t.tamanho) === item.tamanho);
+                        quantidadeDisponivel = tamanhoObj?.quantidade || 0;
+                      } else if (variante.tamanho === item.tamanho) {
+                        quantidadeDisponivel = variante.quantidade || 0;
+                      }
+                      
+                      const retidoOutrosItens = estoqueRetido[varianteKey] - item.quantidade;
+                      const disponivelReal = quantidadeDisponivel - retidoOutrosItens;
+                      
+                      if (novaQuantidade > disponivelReal) {
+                        toast.error(`Apenas ${disponivelReal} unidades disponíveis!`);
+                        return;
+                      }
+                      
+                      const novosItens = [...itensVenda];
+                      let precoComDesconto = item.precoUnitario;
+                      if (item.tipoDesconto === "porcentagem") {
+                        precoComDesconto = item.precoUnitario * (1 - item.descontoAplicado / 100);
+                      } else if (item.descontoValor) {
+                        precoComDesconto = Math.max(0, item.precoUnitario - item.descontoValor);
+                      }
+                      
+                      novosItens[index] = {
+                        ...item,
+                        quantidade: novaQuantidade,
+                        subtotal: precoComDesconto * novaQuantidade
+                      };
+                      
+                      setItensVenda(novosItens);
+                      setEstoqueRetido(prev => ({
+                        ...prev,
+                        [varianteKey]: retidoOutrosItens + novaQuantidade
+                      }));
+                      
+                      toast.success("Quantidade atualizada!");
+                    };
+                    
+                    return (
+                      <div 
+                        key={index} 
+                        className={`flex items-center justify-between p-4 rounded-lg border ${
+                          itemEmEdicao === index ? 'bg-primary/10 border-primary' : 'bg-background/50'
+                        }`}
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{item.nomeProduto}</p>
+                            {item.emPromocao && (
+                              <Badge className="bg-accent text-accent-foreground">Promoção</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {item.codigoProduto} • {item.cor} • Tam: {item.tamanho} • R$ {item.precoUnitario.toFixed(2)}
+                            {item.tipoDesconto === "porcentagem" && item.descontoAplicado > 0 && (
+                              <Badge className="ml-2 bg-secondary">-{item.descontoAplicado}%</Badge>
+                            )}
+                            {item.tipoDesconto === "valor" && item.descontoValor && item.descontoValor > 0 && (
+                              <Badge className="ml-2 bg-secondary">-R$ {item.descontoValor.toFixed(2)}</Badge>
+                            )}
+                          </p>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          {item.codigoProduto} • {item.cor} • Tam: {item.tamanho} • {item.quantidade}x R$ {item.precoUnitario.toFixed(2)}
-                          {item.descontoAplicado > 0 && (
-                            <Badge className="ml-2 bg-secondary">-{item.descontoAplicado}%</Badge>
-                          )}
-                        </p>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-xs text-muted-foreground">Qtd:</Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={item.quantidade}
+                              onChange={(e) => handleQuantidadeChange(parseInt(e.target.value) || 1)}
+                              className="w-20 h-9 text-center"
+                            />
+                          </div>
+                          <p className="font-bold text-lg min-w-[100px] text-right">R$ {item.subtotal.toFixed(2)}</p>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => removerProduto(index)}
+                            className="hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-bold text-lg">R$ {item.subtotal.toFixed(2)}</p>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => removerProduto(index)}
-                          className="hover:bg-destructive/10"
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>

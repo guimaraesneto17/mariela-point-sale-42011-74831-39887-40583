@@ -158,10 +158,12 @@ const Vendas = () => {
                 const precoFinal = item.precoFinalUnitario || item.preco || item.precoUnitario || 0;
                 const precoOriginal = item.precoUnitario || item.preco || 0;
                 const temPromocao = item.emPromocao || false;
+                const tipoDesconto = item.tipoDesconto || "porcentagem";
                 const descontoAplicado = item.descontoAplicado || 0;
+                const descontoValor = item.descontoValor || 0;
                 
-                // Se tem desconto aplicado, o preço original é diferente do final
-                const temDesconto = descontoAplicado > 0 && !temPromocao;
+                // Se tem desconto aplicado (porcentagem ou valor), o preço original é diferente do final
+                const temDesconto = (descontoAplicado > 0 || descontoValor > 0) && !temPromocao;
                 const mostrarPrecoOriginal = temPromocao || temDesconto;
                 
                 // Calcular economia em promoção
@@ -190,10 +192,16 @@ const Vendas = () => {
                             <span className="text-xs font-bold">PROMOÇÃO</span>
                           </div>
                         )}
-                        {temDesconto && (
+                        {temDesconto && tipoDesconto === "porcentagem" && (
                           <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-md">
                             <TrendingDown className="h-3 w-3" />
                             <span className="text-xs font-bold">DESCONTO {descontoAplicado.toFixed(0)}%</span>
+                          </div>
+                        )}
+                        {temDesconto && tipoDesconto === "valor" && (
+                          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md">
+                            <TrendingDown className="h-3 w-3" />
+                            <span className="text-xs font-bold">DESCONTO R$ {descontoValor.toFixed(2)}</span>
                           </div>
                         )}
                         {item.novidade && (
@@ -280,7 +288,7 @@ const Vendas = () => {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground flex items-center gap-2">
                     <TrendingDown className="h-4 w-4 text-orange-500" />
-                    Desconto Total Aplicado:
+                    Desconto Total Aplicado {venda.tipoDesconto === "valor" ? "(Valor)" : "(Porcentagem)"}:
                   </span>
                   <span className="font-medium text-orange-600 dark:text-orange-400">
                     - {formatCurrency(venda.totalDesconto || 0)}
