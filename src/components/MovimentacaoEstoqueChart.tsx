@@ -1,62 +1,86 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { TrendingUp, TrendingDown, Package } from "lucide-react";
+import { TrendingUp, TrendingDown, Package, Filter as FilterIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface MovimentacaoEstoqueChartProps {
   estoque: any[];
+  produtos: any[];
   dataInicio?: string;
   dataFim?: string;
+  categoriaSelecionada?: string;
+  fornecedorSelecionado?: string;
+  tipoMovimentacao?: string;
 }
 
-export const MovimentacaoEstoqueChart = ({ estoque, dataInicio, dataFim }: MovimentacaoEstoqueChartProps) => {
+export const MovimentacaoEstoqueChart = ({ 
+  estoque, 
+  produtos, 
+  dataInicio, 
+  dataFim,
+  categoriaSelecionada = 'todos',
+  fornecedorSelecionado = 'todos',
+  tipoMovimentacao = 'todos'
+}: MovimentacaoEstoqueChartProps) => {
   // Processar movimentações de estoque
   const processarMovimentacoes = () => {
     const movimentacoesMap = new Map<string, { data: string; entradas: number; saidas: number; saldo: number }>();
     
     estoque.forEach((item: any) => {
+      // Encontrar o produto correspondente
+      const produto = produtos.find((p: any) => p.codigoProduto === item.codigoProduto);
+      
+      // Aplicar filtros
+      if (categoriaSelecionada !== 'todos' && produto?.categoria !== categoriaSelecionada) return;
+      if (fornecedorSelecionado !== 'todos' && produto?.fornecedor !== fornecedorSelecionado) return;
+      
       // Processar movimentações de entrada
-      item.movimentacoes?.forEach((mov: any) => {
-        if (mov.tipo === 'entrada') {
-          const movData = new Date(mov.data);
+      if (tipoMovimentacao === 'todos' || tipoMovimentacao === 'entrada') {
+        item.movimentacoes?.forEach((mov: any) => {
+          if (mov.tipo === 'entrada') {
+            const movData = new Date(mov.data);
+            
+            // Filtrar por período se definido
+            if (dataInicio && movData < new Date(dataInicio)) return;
+            if (dataFim && movData > new Date(dataFim)) return;
+            
+            const dataKey = movData.toLocaleDateString('pt-BR', { 
+              day: '2-digit', 
+              month: '2-digit',
+              year: '2-digit'
+            });
+            
+            const existing = movimentacoesMap.get(dataKey) || { data: dataKey, entradas: 0, saidas: 0, saldo: 0 };
+            existing.entradas += mov.quantidade || 0;
+            existing.saldo += mov.quantidade || 0;
+            
+            movimentacoesMap.set(dataKey, existing);
+          }
+        });
+      }
+
+      // Processar histórico de vendas como saídas
+      if (tipoMovimentacao === 'todos' || tipoMovimentacao === 'saida') {
+        item.historicoVendas?.forEach((venda: any) => {
+          const vendaData = new Date(venda.data);
           
           // Filtrar por período se definido
-          if (dataInicio && movData < new Date(dataInicio)) return;
-          if (dataFim && movData > new Date(dataFim)) return;
+          if (dataInicio && vendaData < new Date(dataInicio)) return;
+          if (dataFim && vendaData > new Date(dataFim)) return;
           
-          const dataKey = movData.toLocaleDateString('pt-BR', { 
+          const dataKey = vendaData.toLocaleDateString('pt-BR', { 
             day: '2-digit', 
             month: '2-digit',
             year: '2-digit'
           });
           
           const existing = movimentacoesMap.get(dataKey) || { data: dataKey, entradas: 0, saidas: 0, saldo: 0 };
-          existing.entradas += mov.quantidade || 0;
-          existing.saldo += mov.quantidade || 0;
+          existing.saidas += venda.quantidade || 0;
+          existing.saldo -= venda.quantidade || 0;
           
           movimentacoesMap.set(dataKey, existing);
-        }
-      });
-
-      // Processar histórico de vendas como saídas
-      item.historicoVendas?.forEach((venda: any) => {
-        const vendaData = new Date(venda.data);
-        
-        // Filtrar por período se definido
-        if (dataInicio && vendaData < new Date(dataInicio)) return;
-        if (dataFim && vendaData > new Date(dataFim)) return;
-        
-        const dataKey = vendaData.toLocaleDateString('pt-BR', { 
-          day: '2-digit', 
-          month: '2-digit',
-          year: '2-digit'
         });
-        
-        const existing = movimentacoesMap.get(dataKey) || { data: dataKey, entradas: 0, saidas: 0, saldo: 0 };
-        existing.saidas += venda.quantidade || 0;
-        existing.saldo -= venda.quantidade || 0;
-        
-        movimentacoesMap.set(dataKey, existing);
-      });
+      }
     });
     
     // Converter para array e ordenar por data
@@ -91,18 +115,47 @@ export const MovimentacaoEstoqueChart = ({ estoque, dataInicio, dataFim }: Movim
   const totalSaidas = dados.reduce((sum, d) => sum + d.saidas, 0);
   const saldoTotal = totalEntradas - totalSaidas;
 
+  // Verificar se há filtros ativos
+  const filtrosAtivos = categoriaSelecionada !== 'todos' || fornecedorSelecionado !== 'todos' || tipoMovimentacao !== 'todos';
+
   return (
     <Card className="shadow-card">
       <CardHeader>
-        <CardTitle className="text-xl font-bold flex items-center gap-2">
-          <Package className="h-5 w-5 text-primary" />
-          Movimentação de Estoque
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          {dataInicio || dataFim 
-            ? `Período: ${dataInicio ? new Date(dataInicio).toLocaleDateString('pt-BR') : 'Início'} até ${dataFim ? new Date(dataFim).toLocaleDateString('pt-BR') : 'Agora'}`
-            : 'Todas as movimentações registradas'}
-        </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="text-xl font-bold flex items-center gap-2">
+              <Package className="h-5 w-5 text-primary" />
+              Movimentação de Estoque
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              {dataInicio || dataFim 
+                ? `Período: ${dataInicio ? new Date(dataInicio).toLocaleDateString('pt-BR') : 'Início'} até ${dataFim ? new Date(dataFim).toLocaleDateString('pt-BR') : 'Agora'}`
+                : 'Todas as movimentações registradas'}
+            </p>
+          </div>
+          {filtrosAtivos && (
+            <div className="flex flex-wrap gap-2">
+              {categoriaSelecionada !== 'todos' && (
+                <Badge variant="secondary" className="gap-1">
+                  <FilterIcon className="h-3 w-3" />
+                  {categoriaSelecionada}
+                </Badge>
+              )}
+              {fornecedorSelecionado !== 'todos' && (
+                <Badge variant="secondary" className="gap-1">
+                  <FilterIcon className="h-3 w-3" />
+                  {fornecedorSelecionado}
+                </Badge>
+              )}
+              {tipoMovimentacao !== 'todos' && (
+                <Badge variant="secondary" className="gap-1">
+                  <FilterIcon className="h-3 w-3" />
+                  {tipoMovimentacao === 'entrada' ? 'Entradas' : 'Saídas'}
+                </Badge>
+              )}
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Estatísticas resumidas */}

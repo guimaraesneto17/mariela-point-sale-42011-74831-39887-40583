@@ -18,6 +18,7 @@ import { DashboardMovimentacoes } from "@/components/DashboardMovimentacoes";
 import { EstoqueAlertasDialog } from "@/components/EstoqueAlertasDialog";
 import { PromocoesEfetividadeDialog } from "@/components/PromocoesEfetividadeDialog";
 import { MovimentacaoEstoqueChart } from "@/components/MovimentacaoEstoqueChart";
+import { GiroEstoqueDashboard } from "@/components/GiroEstoqueDashboard";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, LineChart, Line, Area, AreaChart } from "recharts";
 import { GlobalLoading } from "@/components/GlobalLoading";
 import { format, addDays } from "date-fns";
@@ -43,12 +44,17 @@ const Relatorios = () => {
   const [clienteSelecionado, setClienteSelecionado] = useState("todos");
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("todos");
   const [formaPagamentoSelecionada, setFormaPagamentoSelecionada] = useState("todos");
+  const [fornecedorSelecionado, setFornecedorSelecionado] = useState("todos");
+  const [tipoMovimentacao, setTipoMovimentacao] = useState("todos");
   
   const [loading, setLoading] = useState(true);
   const [vendedores, setVendedores] = useState<any[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
   const [categorias, setCategorias] = useState<string[]>([]);
   const [formasPagamento, setFormasPagamento] = useState<string[]>([]);
+  const [fornecedores, setFornecedores] = useState<string[]>([]);
+  const [produtos, setProdutos] = useState<any[]>([]);
+  const [vendas, setVendas] = useState<any[]>([]);
   const [relatorioVendas, setRelatorioVendas] = useState<any>({
     totalVendas: 0,
     faturamentoTotal: 0,
@@ -131,7 +137,7 @@ const Relatorios = () => {
     periodoProdutos, dataInicioProdutos, dataFimProdutos, categoriaSelecionada,
     periodoCaixa, dataInicioCaixa, dataFimCaixa,
     periodoFinanceiro, dataInicioFinanceiro, dataFimFinanceiro, periodoVencimento, dataInicioVencimento, dataFimVencimento,
-    clienteSelecionado
+    clienteSelecionado, fornecedorSelecionado, tipoMovimentacao
   ]);
 
   // Função auxiliar para filtrar dados por período
@@ -171,6 +177,8 @@ const Relatorios = () => {
       setVendedores(vendedoresList);
       setClientes(clientes);
       setEstoque(estoqueData);
+      setProdutos(produtos);
+      setVendas(vendas);
       
       // Extrair categorias únicas dos produtos
       const categoriasUnicas = Array.from(new Set(produtos.map((p: any) => p.categoria).filter(Boolean)));
@@ -179,6 +187,10 @@ const Relatorios = () => {
       // Extrair formas de pagamento únicas das vendas
       const formasPagamentoUnicas = Array.from(new Set(vendas.map((v: any) => v.formaPagamento).filter(Boolean)));
       setFormasPagamento(formasPagamentoUnicas as string[]);
+
+      // Extrair fornecedores únicos dos produtos
+      const fornecedoresUnicos = Array.from(new Set(produtos.map((p: any) => p.fornecedor).filter(Boolean)));
+      setFornecedores(fornecedoresUnicos as string[]);
 
       // Relatório de Vendas com filtros de período, vendedor e forma de pagamento
       const vendasFiltradas = vendas.filter((venda: any) => {
@@ -1675,11 +1687,96 @@ const Relatorios = () => {
             </Card>
           )}
 
-          {/* Movimentação de Estoque */}
+          {/* Movimentação de Estoque com Filtros Avançados */}
+          <Card className="bg-gradient-to-br from-primary/5 to-background">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                Filtros de Movimentação
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Categoria</Label>
+                  <Select value={categoriaSelecionada} onValueChange={setCategoriaSelecionada}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todas as Categorias</SelectItem>
+                      {categorias.map((categoria: string) => (
+                        <SelectItem key={categoria} value={categoria}>
+                          {categoria}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Fornecedor</Label>
+                  <Select value={fornecedorSelecionado} onValueChange={setFornecedorSelecionado}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos os Fornecedores</SelectItem>
+                      {fornecedores.map((fornecedor: string) => (
+                        <SelectItem key={fornecedor} value={fornecedor}>
+                          {fornecedor}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Tipo de Movimentação</Label>
+                  <Select value={tipoMovimentacao} onValueChange={setTipoMovimentacao}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos os Tipos</SelectItem>
+                      <SelectItem value="entrada">Apenas Entradas</SelectItem>
+                      <SelectItem value="saida">Apenas Saídas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {(categoriaSelecionada !== "todos" || fornecedorSelecionado !== "todos" || tipoMovimentacao !== "todos") && (
+                <div className="mt-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setCategoriaSelecionada("todos");
+                      setFornecedorSelecionado("todos");
+                      setTipoMovimentacao("todos");
+                    }}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Limpar Filtros de Movimentação
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <MovimentacaoEstoqueChart 
-            estoque={estoque} 
+            estoque={estoque}
+            produtos={produtos}
             dataInicio={dataInicioProdutos}
             dataFim={dataFimProdutos}
+            categoriaSelecionada={categoriaSelecionada}
+            fornecedorSelecionado={fornecedorSelecionado}
+            tipoMovimentacao={tipoMovimentacao}
+          />
+
+          {/* Dashboard de Giro de Estoque */}
+          <GiroEstoqueDashboard 
+            estoque={estoque}
+            produtos={produtos}
+            vendas={vendas}
           />
         </TabsContent>
 
