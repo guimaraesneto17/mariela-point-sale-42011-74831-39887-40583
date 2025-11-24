@@ -15,19 +15,19 @@ import { toast } from 'sonner';
 
 // Query Keys
 export const QUERY_KEYS = {
-  CLIENTES: ['clientes'],
-  VENDAS: ['vendas'],
-  PRODUTOS: ['produtos'],
-  ESTOQUE: ['estoque'],
-  VENDEDORES: ['vendedores'],
-  FORNECEDORES: ['fornecedores'],
-  CAIXA_ABERTO: ['caixa', 'aberto'],
-  CONTAS_PAGAR: ['contas-pagar'],
-  CONTAS_RECEBER: ['contas-receber'],
-  RESUMO_PAGAR: ['resumo-pagar'],
-  RESUMO_RECEBER: ['resumo-receber'],
-  CATEGORIAS_FINANCEIRAS: ['categorias-financeiras'],
-} as const;
+  CLIENTES: ['clientes'] as const,
+  VENDAS: ['vendas'] as const,
+  PRODUTOS: ['produtos'] as const,
+  ESTOQUE: ['estoque'] as const,
+  VENDEDORES: ['vendedores'] as const,
+  FORNECEDORES: ['fornecedores'] as const,
+  CAIXA_ABERTO: ['caixa', 'aberto'] as const,
+  CONTAS_PAGAR: ['contas-pagar'] as const,
+  CONTAS_RECEBER: ['contas-receber'] as const,
+  RESUMO_PAGAR: ['resumo-pagar'] as const,
+  RESUMO_RECEBER: ['resumo-receber'] as const,
+  CATEGORIAS_FINANCEIRAS: ['categorias-financeiras'] as const,
+};
 
 // Clientes
 export function useClientes() {
