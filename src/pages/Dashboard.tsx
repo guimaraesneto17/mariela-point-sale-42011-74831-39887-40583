@@ -17,6 +17,8 @@ import {
   PackageOpen,
   ShoppingBag,
   Percent,
+  AlertCircle,
+  Plus,
 } from "lucide-react";
 import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
@@ -683,10 +685,15 @@ const Dashboard = () => {
                 widgets={widgetConfig}
                 onSave={handleWidgetConfigSave}
               />
-              {caixaAberto && (
+              {caixaAberto ? (
                 <Badge className="bg-green-500 hover:bg-green-600 shadow-sm text-base px-4 py-2">
                   <Wallet className="h-4 w-4 mr-2" />
                   Caixa {caixaAberto.codigoCaixa} - Aberto
+                </Badge>
+              ) : (
+                <Badge className="bg-orange-500 hover:bg-orange-600 shadow-sm text-base px-4 py-2">
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  Sem Caixa Aberto
                 </Badge>
               )}
             </div>
@@ -712,7 +719,7 @@ const Dashboard = () => {
           </DndContext>
 
           {/* Caixa e Performance - Destaque */}
-          {caixaAberto && (
+          {caixaAberto ? (
             <div className="p-6 rounded-xl bg-gradient-to-br from-primary/5 via-background to-accent/5 border-2 border-primary/20 shadow-lg">
               <div className="flex items-start justify-between mb-4">
                 <div>
@@ -761,6 +768,27 @@ const Dashboard = () => {
                   </p>
                 </div>
               </div>
+            </div>
+          ) : (
+            <div className="p-6 rounded-xl bg-gradient-to-br from-orange-50/50 via-background to-orange-100/20 dark:from-orange-950/20 dark:via-background dark:to-orange-900/10 border-2 border-orange-500/30 shadow-lg">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-orange-500/10 rounded-xl">
+                  <AlertCircle className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-orange-900 dark:text-orange-100">Nenhum Caixa Aberto</h3>
+                  <p className="text-sm text-orange-800 dark:text-orange-200">
+                    Para utilizar o sistema de vendas é necessário abrir o caixa antes
+                  </p>
+                </div>
+              </div>
+              <Button 
+                onClick={() => window.location.href = '/caixa'} 
+                className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Abrir Caixa Agora
+              </Button>
             </div>
           )}
 
