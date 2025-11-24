@@ -3,6 +3,7 @@ import Venda from '../models/Venda';
 import Estoque from '../models/Estoque';
 import Cliente from '../models/Cliente';
 import Vendedor from '../models/Vendedor';
+import Caixa from '../models/Caixa';
 import Validations from '../utils/validations';
 
 // Helper para formatar erros de validação do Mongoose
@@ -191,6 +192,43 @@ export const createVenda = async (req: Request, res: Response) => {
       );
     } catch (vendedorError) {
       console.error('Erro ao atualizar dados do vendedor:', vendedorError);
+    }
+    
+    // Registrar venda automaticamente no caixa aberto
+    try {
+      const caixaAberto = await Caixa.findOne({ status: 'aberto' });
+      if (caixaAberto) {
+        // Usar valorRecebido (que já desconta as taxas) em vez do total
+        const valorEntrada = venda.valorRecebido || venda.total;
+        
+        caixaAberto.movimentos.push({
+          tipo: 'entrada',
+          valor: valorEntrada,
+          data: venda.data.toISOString(),
+          codigoVenda: venda.codigoVenda,
+          formaPagamento: venda.formaPagamento,
+          observacao: `Venda ${venda.codigoVenda} - ${venda.cliente.nome} (${venda.formaPagamento})`
+        });
+
+        // Recalcular totais do caixa
+        caixaAberto.entrada = caixaAberto.movimentos
+          .filter((m: any) => m.tipo === 'entrada')
+          .reduce((sum: number, m: any) => sum + m.valor, 0);
+
+        caixaAberto.saida = caixaAberto.movimentos
+          .filter((m: any) => m.tipo === 'saida')
+          .reduce((sum: number, m: any) => sum + m.valor, 0);
+
+        caixaAberto.performance = caixaAberto.entrada - caixaAberto.saida;
+
+        await caixaAberto.save();
+        console.log(`✅ Venda ${venda.codigoVenda} registrada no caixa ${caixaAberto.codigoCaixa}`);
+      } else {
+        console.warn('⚠️ Nenhum caixa aberto encontrado para registrar a venda');
+      }
+    } catch (caixaError) {
+      console.error('Erro ao registrar venda no caixa:', caixaError);
+      // Não falha a venda se houver erro ao registrar no caixa
     }
     
     res.status(201).json(venda);
