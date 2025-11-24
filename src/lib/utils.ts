@@ -6,6 +6,25 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Format a number as Brazilian currency (R$)
+ */
+export function formatCurrency(value: number | null | undefined): string {
+  const numValue = Number(value ?? 0);
+  return isNaN(numValue) ? 'R$ 0,00' : new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(numValue);
+}
+
+/**
+ * Parse a currency string to number
+ */
+export function parseCurrency(value: string): number {
+  const numericValue = value.replace(/[^\d,]/g, '').replace(',', '.');
+  return parseFloat(numericValue) || 0;
+}
+
+/**
  * Safely format a date value to locale string
  * Returns a default message if the date is invalid
  */

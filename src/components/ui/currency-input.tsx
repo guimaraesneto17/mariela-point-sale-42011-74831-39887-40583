@@ -1,7 +1,19 @@
 import * as React from "react"
 import { Input } from "@/components/ui/input"
-import { applyCurrencyMask, removeCurrencyMask } from "@/lib/currencyMask"
-import { cn } from "@/lib/utils"
+import { formatCurrency, cn } from "@/lib/utils"
+
+const applyCurrencyMask = (value: string): string => {
+  let numericValue = value.replace(/\D/g, '');
+  if (!numericValue) return '';
+  const number = parseInt(numericValue, 10) / 100;
+  return formatCurrency(number);
+};
+
+const removeCurrencyMask = (value: string): string => {
+  const numericValue = value.replace(/\D/g, '');
+  if (!numericValue) return '0';
+  return (parseInt(numericValue, 10) / 100).toString();
+};
 
 export interface CurrencyInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   value?: string | number;
