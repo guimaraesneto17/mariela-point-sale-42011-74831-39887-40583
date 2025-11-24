@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Wallet, Plus, Minus, DollarSign, TrendingUp, TrendingDown, RefreshCw, XCircle, History, Calendar as CalendarIcon, Trash2, Activity } from "lucide-react";
+import { Wallet, Plus, Minus, DollarSign, TrendingUp, TrendingDown, RefreshCw, XCircle, History, Calendar as CalendarIcon, Trash2, Activity, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { FecharCaixaDialog } from "@/components/FecharCaixaDialog";
 import { MonitoramentoDialog } from "@/components/MonitoramentoDialog";
+import { gerarPDFCaixaFechamento } from "@/lib/pdfCaixaFechamento";
 
 interface Movimento {
   tipo: 'entrada' | 'saida';
@@ -638,6 +639,7 @@ const Caixa = () => {
                     <TableHead className="text-right">Entradas</TableHead>
                     <TableHead className="text-right">Saídas</TableHead>
                     <TableHead className="text-right">Performance</TableHead>
+                    <TableHead className="text-center">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -674,17 +676,30 @@ const Caixa = () => {
                           }`}>
                             {formatarMoeda(caixa.performance)}
                           </TableCell>
-                          <TableCell>
-                            {caixa.status === 'fechado' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => abrirDialogReabrirCaixa(caixa.codigoCaixa)}
-                                className="text-xs"
-                              >
-                                Reabrir
-                              </Button>
-                            )}
+                          <TableCell className="text-center">
+                            <div className="flex gap-2 justify-center">
+                              {caixa.status === 'fechado' && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => gerarPDFCaixaFechamento(caixa)}
+                                    className="text-xs"
+                                  >
+                                    <FileText className="h-3 w-3 mr-1" />
+                                    PDF
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => abrirDialogReabrirCaixa(caixa.codigoCaixa)}
+                                    className="text-xs"
+                                  >
+                                    Reabrir
+                                  </Button>
+                                </>
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
