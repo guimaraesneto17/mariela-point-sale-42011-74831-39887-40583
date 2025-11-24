@@ -23,12 +23,12 @@ const parcelamentoSchema = z.object({
       const num = parseFloat(val);
       return !isNaN(num) && num > 0;
     }, "Valor total deve ser maior que zero"),
-  numeroParcelas: z.string().min(1, "Número de parcelas é obrigatório").optional(),
+  numeroParcelas: z.string().min(1, "Número de parcelas/réplicas é obrigatório").optional(),
   descricaoBase: z.string().min(3, "Descrição base é obrigatória"),
   categoria: z.string().min(1, "Categoria é obrigatória"),
   tipo: z.enum(["pagar", "receber"], { required_error: "Tipo é obrigatório" }),
   dataInicio: z.string().min(1, "Data de início é obrigatória"),
-  parcelar: z.boolean().default(false),
+  tipoCriacao: z.enum(["Unica", "Parcelamento", "Replica"], { required_error: "Tipo de criação é obrigatório" }),
 });
 
 type ParcelamentoFormData = z.infer<typeof parcelamentoSchema>;
@@ -54,7 +54,7 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
       categoria: "",
       tipo: "pagar",
       dataInicio: format(new Date(), 'yyyy-MM-dd'),
-      parcelar: false,
+      tipoCriacao: "Unica",
     }
   });
 
@@ -83,7 +83,7 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
   const watchValorTotal = form.watch("valorTotal");
   const watchNumeroParcelas = form.watch("numeroParcelas");
   const watchDataInicio = form.watch("dataInicio");
-  const watchParcelar = form.watch("parcelar");
+  const watchTipoCriacao = form.watch("tipoCriacao");
 
   const calcularParcelas = () => {
     const valor = parseFloat(watchValorTotal);
@@ -95,14 +95,15 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
       return;
     }
 
-    const valorParcela = valor / numParcelas;
+    // Parcelamento: divide o valor | Replica: mantém o valor fixo
+    const valorPorItem = watchTipoCriacao === 'Parcelamento' ? valor / numParcelas : valor;
     const novasParcelas = [];
 
     for (let i = 0; i < numParcelas; i++) {
       const dataVencimento = addMonths(dataInicio, i);
       novasParcelas.push({
         numero: i + 1,
-        valor: valorParcela,
+        valor: valorPorItem,
         dataVencimento: dataVencimento,
       });
     }
@@ -121,43 +122,57 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
       setLoading(true);
       const api = data.tipo === "pagar" ? contasPagarAPI : contasReceberAPI;
       
-      if (data.parcelar) {
-        // Criar parcelamento
-        if (parcelas.length === 0) {
-          toast.error("Configure as parcelas antes de criar");
-          return;
-        }
-
-        for (const parcela of parcelas) {
-          const payload = {
-            isParcelamento: true,
-            numeroParcela: parcela.numero,
-            totalParcelas: parcelas.length,
-            descricao: `${data.descricaoBase} - Parcela ${parcela.numero}/${parcelas.length}`,
-            valor: parcela.valor,
-            categoria: data.categoria,
-            dataEmissao: new Date().toISOString(),
-            dataVencimento: parcela.dataVencimento.toISOString(),
-            status: 'Pendente'
-          };
-
-          await api.create(payload);
-        }
-
-        toast.success(`${parcelas.length} parcelas criadas com sucesso!`);
-      } else {
-        // Criar conta simples
+      if (data.tipoCriacao === 'Unica') {
+        // Criar conta única
         const payload = {
+          tipoCriacao: 'Unica',
           descricao: data.descricaoBase,
           valor: parseFloat(data.valorTotal),
           categoria: data.categoria,
           dataEmissao: new Date().toISOString(),
           dataVencimento: new Date(data.dataInicio).toISOString(),
-          status: 'Pendente'
         };
 
         await api.create(payload);
         toast.success(`Conta a ${data.tipo === "pagar" ? "pagar" : "receber"} criada com sucesso!`);
+        
+      } else if (data.tipoCriacao === 'Parcelamento') {
+        // Criar parcelamento
+        if (!data.numeroParcelas || parcelas.length === 0) {
+          toast.error("Configure as parcelas antes de criar");
+          return;
+        }
+
+        const payload = {
+          tipoCriacao: 'Parcelamento',
+          descricao: data.descricaoBase,
+          categoria: data.categoria,
+          valorTotal: parseFloat(data.valorTotal),
+          quantidadeParcelas: parseInt(data.numeroParcelas),
+          dataInicio: new Date(data.dataInicio).toISOString(),
+        };
+
+        await api.create(payload);
+        toast.success(`Parcelamento com ${parcelas.length} parcelas criado com sucesso!`);
+        
+      } else if (data.tipoCriacao === 'Replica') {
+        // Criar réplica
+        if (!data.numeroParcelas || parcelas.length === 0) {
+          toast.error("Configure as réplicas antes de criar");
+          return;
+        }
+
+        const payload = {
+          tipoCriacao: 'Replica',
+          descricao: data.descricaoBase,
+          categoria: data.categoria,
+          valor: parseFloat(data.valorTotal),
+          quantidadeReplicas: parseInt(data.numeroParcelas),
+          dataInicio: new Date(data.dataInicio).toISOString(),
+        };
+
+        await api.create(payload);
+        toast.success(`Réplica com ${parcelas.length} contas criada com sucesso!`);
       }
 
       onSuccess();
@@ -185,7 +200,7 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
         <DialogHeader>
           <DialogTitle>Nova Conta Financeira</DialogTitle>
           <DialogDescription>
-            Crie uma conta avulsa ou divida em parcelas
+            Crie uma conta única, parcelamento ou réplica mensal
           </DialogDescription>
         </DialogHeader>
 
@@ -266,23 +281,29 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
 
             <FormField
               control={form.control}
-              name="parcelar"
+              name="tipoCriacao"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center gap-2">
-                  <FormControl>
-                    <input 
-                      type="checkbox" 
-                      checked={field.value}
-                      onChange={(e) => {
-                        field.onChange(e.target.checked);
-                        if (!e.target.checked) {
-                          setParcelas([]);
-                        }
-                      }}
-                      className="h-4 w-4 rounded border-input"
-                    />
-                  </FormControl>
-                  <FormLabel className="!mt-0 cursor-pointer">Dividir em parcelas</FormLabel>
+                <FormItem>
+                  <FormLabel>Tipo de Criação*</FormLabel>
+                  <Select 
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      setParcelas([]);
+                    }} 
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="bg-background z-50">
+                      <SelectItem value="Unica">Conta Única</SelectItem>
+                      <SelectItem value="Parcelamento">Parcelamento (divide o valor)</SelectItem>
+                      <SelectItem value="Replica">Réplica Mensal (valor fixo)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -300,7 +321,7 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
                         placeholder="R$ 0,00"
                         onValueChange={(value) => {
                           field.onChange(value);
-                          if (watchParcelar) {
+                          if (watchTipoCriacao !== 'Unica') {
                             setTimeout(calcularParcelas, 100);
                           }
                         }}
@@ -316,14 +337,16 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
                 name="dataInicio"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data de Vencimento*</FormLabel>
+                    <FormLabel>
+                      {watchTipoCriacao === 'Unica' ? 'Data de Vencimento*' : 'Data de Início*'}
+                    </FormLabel>
                     <FormControl>
                       <Input 
                         {...field} 
                         type="date"
                         onChange={(e) => {
                           field.onChange(e);
-                          if (watchParcelar) {
+                          if (watchTipoCriacao !== 'Unica') {
                             setTimeout(calcularParcelas, 100);
                           }
                         }}
@@ -335,13 +358,15 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
               />
             </div>
 
-            {watchParcelar && (
+            {watchTipoCriacao !== 'Unica' && (
               <FormField
                 control={form.control}
                 name="numeroParcelas"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Número de Parcelas*</FormLabel>
+                    <FormLabel>
+                      {watchTipoCriacao === 'Parcelamento' ? 'Número de Parcelas*' : 'Número de Réplicas*'}
+                    </FormLabel>
                     <FormControl>
                       <Input 
                         {...field} 
@@ -360,9 +385,11 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
               />
             )}
 
-            {watchParcelar && parcelas.length > 0 && (
+            {watchTipoCriacao !== 'Unica' && parcelas.length > 0 && (
               <div className="border rounded-lg p-4 bg-muted/50">
-                <h3 className="text-sm font-medium mb-3">Parcelas a Criar</h3>
+                <h3 className="text-sm font-medium mb-3">
+                  {watchTipoCriacao === 'Parcelamento' ? 'Parcelas a Criar' : 'Réplicas a Criar'}
+                </h3>
                 <div className="max-h-[300px] overflow-y-auto">
                   <Table>
                     <TableHeader>
@@ -390,7 +417,9 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
                   </Table>
                 </div>
                 <div className="mt-3 pt-3 border-t flex justify-between items-center">
-                  <span className="text-sm font-medium">Total:</span>
+                  <span className="text-sm font-medium">
+                    {watchTipoCriacao === 'Parcelamento' ? 'Total:' : 'Total (soma das réplicas):'}
+                  </span>
                   <span className="text-lg font-bold text-primary">
                     {formatCurrency(parcelas.reduce((sum, p) => sum + p.valor, 0))}
                   </span>
@@ -404,7 +433,9 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
               </Button>
               <Button type="submit" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {watchParcelar ? `Criar ${parcelas.length} Parcela${parcelas.length !== 1 ? 's' : ''}` : 'Criar Conta'}
+                {watchTipoCriacao === 'Unica' && 'Criar Conta'}
+                {watchTipoCriacao === 'Parcelamento' && `Criar ${parcelas.length} Parcela${parcelas.length !== 1 ? 's' : ''}`}
+                {watchTipoCriacao === 'Replica' && `Criar ${parcelas.length} Réplica${parcelas.length !== 1 ? 's' : ''}`}
               </Button>
             </div>
           </form>
