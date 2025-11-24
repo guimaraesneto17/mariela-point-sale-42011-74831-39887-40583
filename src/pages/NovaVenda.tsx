@@ -127,48 +127,6 @@ const NovaVenda = () => {
     }
   };
 
-  // Mock data - substituir por dados da API
-  const mockClientes = [
-    { codigo: "C001", nome: "Ana Souza" },
-    { codigo: "C002", nome: "Fernanda Ribeiro" },
-    { codigo: "C003", nome: "Maria Silva" },
-  ];
-
-  const mockVendedores = [
-    { codigo: "V001", nome: "Carla Santos" },
-    { codigo: "V002", nome: "Juliana Lima" },
-  ];
-
-  const mockEstoque = [
-    { 
-      codigoProduto: "P101", 
-      nomeProduto: "Vestido Floral Curto", 
-      precoVenda: 149.90, 
-      categoria: "Vestido",
-      cor: "Azul",
-      tamanho: "M",
-      quantidade: 10
-    },
-    { 
-      codigoProduto: "P102", 
-      nomeProduto: "Blusa Manga Longa", 
-      precoVenda: 89.90, 
-      categoria: "Blusa",
-      cor: "Preto",
-      tamanho: "G",
-      quantidade: 5
-    },
-    { 
-      codigoProduto: "P103", 
-      nomeProduto: "Calça Jeans Skinny", 
-      precoVenda: 199.90, 
-      categoria: "Calça",
-      cor: "Azul Escuro",
-      tamanho: "38",
-      quantidade: 8
-    },
-  ];
-
   // Calcular subtotal dos itens
   const subtotalItens = itensVenda.reduce((acc, item) => acc + item.subtotal, 0);
   
@@ -342,10 +300,9 @@ const NovaVenda = () => {
 
   const editarProduto = (index: number) => {
     const item = itensVenda[index];
-    const allEstoque = estoque.length > 0 ? estoque : mockEstoque;
     
     // Buscar o produto completo no estoque com todas as informações
-    const itemEstoque = allEstoque.find(e => 
+    const itemEstoque = estoque.find(e =>
       e.codigoProduto === item.codigoProduto && 
       e.cor === item.cor && 
       e.tamanho === item.tamanho
@@ -1081,7 +1038,7 @@ const NovaVenda = () => {
       <SelectProductDialog 
         open={showProductDialog}
         onOpenChange={setShowProductDialog}
-        estoque={estoque.length > 0 ? estoque : mockEstoque}
+        estoque={estoque}
         onSelect={setProdutoSelecionado}
         estoqueRetido={estoqueRetido}
       />
