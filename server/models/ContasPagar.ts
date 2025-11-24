@@ -55,14 +55,18 @@ const ContasPagarSchema = new mongoose.Schema({
   
   // ============ PAGAMENTO (SOMENTE CONTA ÚNICA) ============
   pagamento: {
-    valor: { type: Number, min: 0 },
-    data: { type: Date },
-    formaPagamento: { 
-      type: String, 
-      enum: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto', 'Transferência', 'Outro']
+    type: {
+      valor: { type: Number, min: 0 },
+      data: { type: Date },
+      formaPagamento: { 
+        type: String, 
+        enum: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto', 'Transferência', 'Outro']
+      },
+      comprovante: { type: String },
+      observacoes: { type: String, trim: true }
     },
-    comprovante: { type: String },
-    observacoes: { type: String, trim: true }
+    required: false,
+    default: undefined
   },
   
   // ============ PARCELAMENTO ============
@@ -81,14 +85,18 @@ const ContasPagarSchema = new mongoose.Schema({
       default: 'Pendente'
     },
     pagamento: {
-      valor: { type: Number, min: 0 },
-      data: { type: Date },
-      formaPagamento: {
-        type: String,
-        enum: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto', 'Transferência', 'Outro']
+      type: {
+        valor: { type: Number, min: 0 },
+        data: { type: Date },
+        formaPagamento: {
+          type: String,
+          enum: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto', 'Transferência', 'Outro']
+        },
+        comprovante: { type: String },
+        observacoes: { type: String, trim: true }
       },
-      comprovante: { type: String },
-      observacoes: { type: String, trim: true }
+      required: false,
+      default: undefined
     }
   }],
   
