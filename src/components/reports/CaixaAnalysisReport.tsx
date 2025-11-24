@@ -294,6 +294,7 @@ export function CaixaAnalysisReport({ caixas }: CaixaAnalysisReportProps) {
 
   // Dados para gráfico de pizza (distribuição de formas de pagamento)
   const formasPagamentoMap = new Map<string, number>();
+  const formasPagamentoQtdMap = new Map<string, number>();
   
   caixasFechados.forEach(caixa => {
     caixa.movimentos
@@ -301,12 +302,19 @@ export function CaixaAnalysisReport({ caixas }: CaixaAnalysisReportProps) {
       .forEach(mov => {
         const forma = mov.formaPagamento || 'Não especificado';
         const valorAtual = formasPagamentoMap.get(forma) || 0;
+        const qtdAtual = formasPagamentoQtdMap.get(forma) || 0;
         formasPagamentoMap.set(forma, valorAtual + mov.valor);
+        formasPagamentoQtdMap.set(forma, qtdAtual + 1);
       });
   });
 
   const dadosFormasPagamento = Array.from(formasPagamentoMap.entries())
-    .map(([name, value]) => ({ name, value }))
+    .map(([name, value]) => ({ 
+      name, 
+      value,
+      quantidade: formasPagamentoQtdMap.get(name) || 0,
+      ticketMedio: value / (formasPagamentoQtdMap.get(name) || 1)
+    }))
     .sort((a, b) => b.value - a.value);
 
   const totalFormasPagamento = dadosFormasPagamento.reduce((acc, item) => acc + item.value, 0);
@@ -690,24 +698,40 @@ export function CaixaAnalysisReport({ caixas }: CaixaAnalysisReportProps) {
 
             {/* Tabela de detalhamento */}
             <div className="mt-6 space-y-2">
-              <h4 className="font-semibold text-sm">Detalhamento:</h4>
+              <h4 className="font-semibold text-sm">Detalhamento por Forma de Pagamento:</h4>
               <div className="grid gap-2">
                 {dadosFormasPagamento.map((forma, index) => (
                   <div 
                     key={forma.name} 
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                    className="p-4 rounded-lg bg-muted/50 border border-border"
                   >
-                    <div className="flex items-center gap-3">
-                      <div 
-                        className="w-4 h-4 rounded-full" 
-                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                      />
-                      <span className="font-medium">{forma.name}</span>
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-4 h-4 rounded-full" 
+                          style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                        />
+                        <span className="font-semibold text-base">{forma.name}</span>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        {forma.quantidade} transações
+                      </Badge>
                     </div>
-                    <div className="text-right">
-                      <div className="font-semibold">{formatarMoeda(forma.value)}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {((forma.value / totalFormasPagamento) * 100).toFixed(1)}% do total
+                    
+                    <div className="grid grid-cols-3 gap-4 mt-2">
+                      <div>
+                        <div className="text-xs text-muted-foreground mb-1">Total</div>
+                        <div className="font-semibold text-sm">{formatarMoeda(forma.value)}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground mb-1">Ticket Médio</div>
+                        <div className="font-semibold text-sm text-primary">{formatarMoeda(forma.ticketMedio)}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground mb-1">% do Total</div>
+                        <div className="font-semibold text-sm">
+                          {((forma.value / totalFormasPagamento) * 100).toFixed(1)}%
+                        </div>
                       </div>
                     </div>
                   </div>
