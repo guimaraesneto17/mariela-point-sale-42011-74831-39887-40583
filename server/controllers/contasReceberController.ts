@@ -142,77 +142,62 @@ export const createContaReceber = async (req: Request, res: Response) => {
       res.status(201).json(conta);
 
     } else if (tipoCriacao === 'Replica') {
-      // REPLICAÇÃO
+      // REPLICAÇÃO (mesmo padrão do Parcelamento, mas com valor fixo)
       const { quantidadeReplicas, valor, dataInicio } = req.body;
 
       if (!quantidadeReplicas || quantidadeReplicas < 1) {
         return res.status(400).json({ error: 'Quantidade de réplicas deve ser >= 1' });
       }
 
-      // Criar conta pai
-      const lastPai = await ContasReceber.findOne({ numeroDocumento: /^CRPAI-\d{3}$/ }).sort({ numeroDocumento: -1 });
-      const nextPai = lastPai ? parseInt((lastPai as any).numeroDocumento.split('-')[1], 10) + 1 : 1;
-      const numeroPai = `CRPAI-${String(nextPai).padStart(3, '0')}`;
+      const last = await ContasReceber.findOne({ numeroDocumento: /^CRR-\d{3}$/ }).sort({ numeroDocumento: -1 });
+      const next = last ? parseInt((last as any).numeroDocumento.split('-')[1], 10) + 1 : 1;
+      const numeroBase = `CRR-${String(next).padStart(3, '0')}`;
 
-      const contaPaiData: any = {
-        numeroDocumento: numeroPai,
-        descricao: `${req.body.descricao} [Origem de Réplica]`,
-        categoria: req.body.categoria,
-        valor: 0, // Conta pai não tem valor próprio
-        dataEmissao: new Date(),
-        dataVencimento: new Date(dataInicio || req.body.dataVencimento),
-        status: 'Pendente',
-        tipoCriacao: 'Replica',
-        detalhesReplica: {
-          quantidadeReplicas,
-          valor
-        }
-      };
-
-      if (clienteObj) contaPaiData.cliente = clienteObj;
-      if (req.body.observacoes) contaPaiData.observacoes = req.body.observacoes;
-
-      const contaPai = new ContasReceber(contaPaiData);
-      await contaPai.save();
-      console.log('✅ [CREATE CONTA RECEBER] Conta pai de réplica criada:', contaPai.numeroDocumento);
-
-      // Criar réplicas
       const dataInicioDate = new Date(dataInicio || req.body.dataVencimento);
-      const replicas = [];
+      const valorTotal = valor * quantidadeReplicas;
       
+      const parcelas = [];
       for (let i = 0; i < quantidadeReplicas; i++) {
-        const last = await ContasReceber.findOne({ numeroDocumento: /^CR\d{3}$/ }).sort({ numeroDocumento: -1 });
-        const next = last ? parseInt((last as any).numeroDocumento.slice(2), 10) + 1 : 1;
-        const numeroReplica = `CR${String(next).padStart(3, '0')}`;
-
         const dataVenc = addMonths(dataInicioDate, i);
         const hoje = new Date();
         hoje.setHours(0, 0, 0, 0);
         const venc = new Date(dataVenc);
         venc.setHours(0, 0, 0, 0);
 
-        const replicaData: any = {
-          numeroDocumento: numeroReplica,
-          descricao: `${req.body.descricao} - Mês ${i + 1}/${quantidadeReplicas}`,
-          categoria: req.body.categoria,
-          valor,
-          dataEmissao: new Date(),
+        parcelas.push({
+          numeroParcela: i + 1,
+          valor: valor, // Valor fixo (não divide)
           dataVencimento: dataVenc,
-          status: venc < hoje ? 'Vencido' : 'Pendente',
-          tipoCriacao: 'Unica',
-          replicaDe: contaPai._id.toString()
-        };
-
-        if (clienteObj) replicaData.cliente = clienteObj;
-        if (req.body.observacoes) replicaData.observacoes = req.body.observacoes;
-
-        const replica = new ContasReceber(replicaData);
-        await replica.save();
-        replicas.push(replica);
+          status: venc < hoje ? 'Vencido' : 'Pendente'
+        });
       }
 
-      console.log(`✅ [CREATE CONTA RECEBER] ${quantidadeReplicas} réplicas criadas`);
-      res.status(201).json({ contaPai, replicas });
+      const contaData: any = {
+        numeroDocumento: numeroBase,
+        descricao: req.body.descricao,
+        categoria: req.body.categoria,
+        valor: valorTotal,
+        dataEmissao: new Date(),
+        dataVencimento: parcelas[0].dataVencimento,
+        status: 'Pendente',
+        tipoCriacao: 'Replica',
+        detalhesReplica: {
+          quantidadeReplicas,
+          valor
+        },
+        parcelas
+      };
+
+      if (clienteObj) contaData.cliente = clienteObj;
+      if (req.body.codigoVenda) {
+        contaData.vendaRelacionada = { codigoVenda: req.body.codigoVenda };
+      }
+      if (req.body.observacoes) contaData.observacoes = req.body.observacoes;
+
+      const conta = new ContasReceber(contaData);
+      await conta.save();
+      console.log('✅ [CREATE CONTA RECEBER] Réplica criada:', conta.numeroDocumento);
+      res.status(201).json(conta);
 
     } else {
       return res.status(400).json({ error: 'Tipo de criação inválido' });

@@ -24,7 +24,7 @@ export function DetalhesParcelamentoDialog({ open, onOpenChange, conta, tipo, on
   const [comprovanteDialogOpen, setComprovanteDialogOpen] = useState(false);
   const [comprovanteAtual, setComprovanteAtual] = useState<string | undefined>(undefined);
 
-  if (!conta || conta.tipoCriacao !== 'Parcelamento') return null;
+  if (!conta || (conta.tipoCriacao !== 'Parcelamento' && conta.tipoCriacao !== 'Replica')) return null;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -58,6 +58,12 @@ export function DetalhesParcelamentoDialog({ open, onOpenChange, conta, tipo, on
     }
   };
 
+  const isReplica = conta.tipoCriacao === 'Replica';
+  const detalhes = isReplica ? conta.detalhesReplica : conta.detalhesParcelamento;
+  const tituloDialog = isReplica ? 'Detalhes da Réplica' : 'Detalhes do Parcelamento';
+  const labelItem = isReplica ? 'réplica' : 'parcela';
+  const labelItems = isReplica ? 'réplicas' : 'parcelas';
+
   const parcelasPagas = conta.parcelas?.filter((p: any) => 
     p.status === (tipo === 'pagar' ? 'Pago' : 'Recebido')
   ).length || 0;
@@ -70,6 +76,10 @@ export function DetalhesParcelamentoDialog({ open, onOpenChange, conta, tipo, on
       : (p.recebimento?.valor || 0);
     return sum + valorPago;
   }, 0) || 0;
+
+  const valorTotal = isReplica 
+    ? (detalhes?.valor || 0) * (detalhes?.quantidadeReplicas || 0)
+    : (detalhes?.valorTotal || 0);
 
   const handlePagarParcela = (numeroParcela: number) => {
     setParcelaParaPagar(numeroParcela);
@@ -92,7 +102,7 @@ export function DetalhesParcelamentoDialog({ open, onOpenChange, conta, tipo, on
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Detalhes do Parcelamento - {conta.numeroDocumento}</DialogTitle>
+            <DialogTitle>{tituloDialog} - {conta.numeroDocumento}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-6">
@@ -122,13 +132,13 @@ export function DetalhesParcelamentoDialog({ open, onOpenChange, conta, tipo, on
                   )}
                   <div>
                     <p className="text-sm text-muted-foreground">Valor Total</p>
-                    <p className="text-2xl font-bold text-foreground">{formatCurrency(conta.detalhesParcelamento?.valorTotal || 0)}</p>
+                    <p className="text-2xl font-bold text-foreground">{formatCurrency(valorTotal)}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Progresso do Parcelamento */}
+            {/* Progresso do Parcelamento/Replica */}
             <Card>
               <CardContent className="p-6">
                 <div className="space-y-4">
@@ -136,7 +146,7 @@ export function DetalhesParcelamentoDialog({ open, onOpenChange, conta, tipo, on
                     <div>
                       <p className="text-sm text-muted-foreground">Progresso</p>
                       <p className="text-lg font-semibold text-foreground">
-                        {parcelasPagas} de {totalParcelas} parcelas {tipo === 'pagar' ? 'pagas' : 'recebidas'}
+                        {parcelasPagas} de {totalParcelas} {labelItems} {tipo === 'pagar' ? 'pagas' : 'recebidas'}
                       </p>
                     </div>
                     <div className="text-right">
@@ -154,9 +164,9 @@ export function DetalhesParcelamentoDialog({ open, onOpenChange, conta, tipo, on
               </CardContent>
             </Card>
 
-            {/* Tabela de Parcelas */}
+            {/* Tabela de Parcelas/Réplicas */}
             <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-foreground">Parcelas</h3>
+              <h3 className="text-lg font-semibold text-foreground capitalize">{labelItems}</h3>
               {conta.parcelas?.map((parcela: any) => {
                 const pagamentoParcela = tipo === 'pagar' ? parcela.pagamento : parcela.recebimento;
                 const valorPago = pagamentoParcela?.valor || 0;
@@ -172,7 +182,7 @@ export function DetalhesParcelamentoDialog({ open, onOpenChange, conta, tipo, on
                           <div className="space-y-1 flex-1">
                             <div className="flex items-center gap-2">
                               <h4 className="font-semibold text-foreground">
-                                Parcela {parcela.numeroParcela}/{totalParcelas}
+                                {isReplica ? `Mês ${parcela.numeroParcela}/${totalParcelas}` : `Parcela ${parcela.numeroParcela}/${totalParcelas}`}
                               </h4>
                               {getStatusBadge(parcela.status)}
                             </div>

@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ImagePlus, X, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useImageCompression } from "@/hooks/useImageCompression";
 
@@ -23,6 +23,11 @@ export function ComprovanteDialog({
   const [comprovante, setComprovante] = useState<string | null>(initialComprovante || null);
   const [loading, setLoading] = useState(false);
   const { compressing, compressImage } = useImageCompression();
+
+  // Atualizar comprovante quando o prop mudar
+  useEffect(() => {
+    setComprovante(initialComprovante || null);
+  }, [initialComprovante]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

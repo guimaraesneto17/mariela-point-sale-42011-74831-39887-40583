@@ -388,7 +388,7 @@ const Financeiro = () => {
                             Parcelado
                           </Badge>
                         )}
-                        {conta.replicaDe && (
+                        {conta.tipoCriacao === 'Replica' && (
                           <Badge variant="outline" className="gap-1">
                             <LinkIcon className="h-3 w-3" />
                             Réplica
@@ -422,9 +422,9 @@ const Financeiro = () => {
                           Parcelas: {conta.parcelas.filter((p: any) => p.status === 'Pago').length}/{conta.parcelas.length} pagas
                         </div>
                       )}
-                      {conta.replicaDe && (
+                      {conta.tipoCriacao === 'Replica' && conta.parcelas && (
                         <div className="mt-2 text-xs text-muted-foreground">
-                          Réplica de: {conta.replicaDe}
+                          Réplicas: {conta.parcelas.filter((p: any) => p.status === 'Pago').length}/{conta.parcelas.length} pagas
                         </div>
                       )}
                     </div>
@@ -437,13 +437,18 @@ const Financeiro = () => {
                           Pago: {formatCurrency(conta.parcelas.reduce((sum: number, p: any) => sum + (p.pagamento?.valor || 0), 0))}
                         </div>
                       )}
+                      {conta.tipoCriacao === 'Replica' && conta.parcelas && (
+                        <div className="text-sm text-green-600">
+                          Pago: {formatCurrency(conta.parcelas.reduce((sum: number, p: any) => sum + (p.pagamento?.valor || 0), 0))}
+                        </div>
+                      )}
                       {conta.tipoCriacao === 'Unica' && conta.pagamento?.valor > 0 && (
                         <div className="text-sm text-green-600">
                           Pago: {formatCurrency(conta.pagamento.valor)}
                         </div>
                       )}
                       <div className="flex gap-2 flex-wrap justify-end">
-                        {conta.tipoCriacao === 'Parcelamento' && (
+                        {(conta.tipoCriacao === 'Parcelamento' || conta.tipoCriacao === 'Replica') && (
                           <Button 
                             size="sm" 
                             variant="outline"
@@ -454,7 +459,7 @@ const Financeiro = () => {
                             }}
                           >
                             <Eye className="h-4 w-4 mr-1" />
-                            Ver Parcelas
+                            Ver Detalhes
                           </Button>
                         )}
                         {conta.pagamento?.comprovante && (
@@ -610,7 +615,7 @@ const Financeiro = () => {
                             Parcelado
                           </Badge>
                         )}
-                        {conta.replicaDe && (
+                        {conta.tipoCriacao === 'Replica' && (
                           <Badge variant="outline" className="gap-1">
                             <LinkIcon className="h-3 w-3" />
                             Réplica
@@ -644,9 +649,9 @@ const Financeiro = () => {
                           Parcelas: {conta.parcelas.filter((p: any) => p.status === 'Recebido').length}/{conta.parcelas.length} recebidas
                         </div>
                       )}
-                      {conta.replicaDe && (
+                      {conta.tipoCriacao === 'Replica' && conta.parcelas && (
                         <div className="mt-2 text-xs text-muted-foreground">
-                          Réplica de: {conta.replicaDe}
+                          Réplicas: {conta.parcelas.filter((p: any) => p.status === 'Recebido').length}/{conta.parcelas.length} recebidas
                         </div>
                       )}
                     </div>
@@ -659,13 +664,18 @@ const Financeiro = () => {
                           Recebido: {formatCurrency(conta.parcelas.reduce((sum: number, p: any) => sum + (p.recebimento?.valor || 0), 0))}
                         </div>
                       )}
+                      {conta.tipoCriacao === 'Replica' && conta.parcelas && (
+                        <div className="text-sm text-green-600">
+                          Recebido: {formatCurrency(conta.parcelas.reduce((sum: number, p: any) => sum + (p.recebimento?.valor || 0), 0))}
+                        </div>
+                      )}
                       {conta.tipoCriacao === 'Unica' && conta.recebimento?.valor > 0 && (
                         <div className="text-sm text-green-600">
                           Recebido: {formatCurrency(conta.recebimento.valor)}
                         </div>
                       )}
                       <div className="flex gap-2 flex-wrap justify-end">
-                        {conta.tipoCriacao === 'Parcelamento' && (
+                        {(conta.tipoCriacao === 'Parcelamento' || conta.tipoCriacao === 'Replica') && (
                           <Button 
                             size="sm" 
                             variant="outline"
@@ -676,7 +686,7 @@ const Financeiro = () => {
                             }}
                           >
                             <Eye className="h-4 w-4 mr-1" />
-                            Ver Parcelas
+                            Ver Detalhes
                           </Button>
                         )}
                         {conta.recebimento?.comprovante && (

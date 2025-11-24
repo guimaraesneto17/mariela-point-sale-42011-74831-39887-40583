@@ -45,9 +45,9 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const { compressing, compressImage } = useImageCompression();
   
-  // Verifica se é parcelamento e se tem parcela específica
-  const isParcelamento = conta?.tipoCriacao === 'Parcelamento';
-  const parcelaEspecifica = isParcelamento && numeroParcela !== undefined 
+  // Verifica se é parcelamento/replica e se tem parcela específica
+  const isParcelamentoOuReplica = conta?.tipoCriacao === 'Parcelamento' || conta?.tipoCriacao === 'Replica';
+  const parcelaEspecifica = isParcelamentoOuReplica && numeroParcela !== undefined
     ? conta?.parcelas?.find((p: any) => p.numeroParcela === numeroParcela)
     : null;
   
