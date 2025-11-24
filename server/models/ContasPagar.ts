@@ -55,37 +55,36 @@ const ContasPagarSchema = new mongoose.Schema({
   
   // ============ PAGAMENTO (SOMENTE CONTA ÚNICA) ============
   pagamento: {
-    type: {
-      valor: { type: Number, min: 0 },
-      data: { type: Date },
-      formaPagamento: { 
-        type: String, 
-        enum: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto', 'Transferência', 'Outro']
-      },
-      comprovante: { type: String },
-      observacoes: { type: String, trim: true }
+    valor: { type: Number, min: 0 },
+    data: { type: Date },
+    formaPagamento: { 
+      type: String, 
+      enum: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto', 'Transferência', 'Outro']
     },
-    required: false,
-    default: undefined
+    comprovante: { type: String },
+    observacoes: { type: String, trim: true }
   },
   
   // ============ PARCELAMENTO ============
   detalhesParcelamento: {
-    quantidadeParcelas: { type: Number, min: 1 },
-    valorTotal: { type: Number, min: 0 }
+    type: {
+      quantidadeParcelas: { type: Number, min: 1 },
+      valorTotal: { type: Number, min: 0 }
+    },
+    required: false
   },
   
-  parcelas: [{
-    numeroParcela: { type: Number, required: true },
-    valor: { type: Number, required: true, min: 0 },
-    dataVencimento: { type: Date, required: true },
-    status: {
-      type: String,
-      enum: ['Pendente', 'Pago', 'Vencido', 'Parcial'],
-      default: 'Pendente'
-    },
-    pagamento: {
-      type: {
+  parcelas: {
+    type: [{
+      numeroParcela: { type: Number, required: true },
+      valor: { type: Number, required: true, min: 0 },
+      dataVencimento: { type: Date, required: true },
+      status: {
+        type: String,
+        enum: ['Pendente', 'Pago', 'Vencido', 'Parcial'],
+        default: 'Pendente'
+      },
+      pagamento: {
         valor: { type: Number, min: 0 },
         data: { type: Date },
         formaPagamento: {
@@ -94,16 +93,19 @@ const ContasPagarSchema = new mongoose.Schema({
         },
         comprovante: { type: String },
         observacoes: { type: String, trim: true }
-      },
-      required: false,
-      default: undefined
-    }
-  }],
+      }
+    }],
+    required: false,
+    default: undefined
+  },
   
   // ============ RÉPLICA ============
   detalhesReplica: {
-    quantidadeReplicas: { type: Number, min: 1 },
-    valor: { type: Number, min: 0 }
+    type: {
+      quantidadeReplicas: { type: Number, min: 1 },
+      valor: { type: Number, min: 0 }
+    },
+    required: false
   },
   
   replicaDe: {
