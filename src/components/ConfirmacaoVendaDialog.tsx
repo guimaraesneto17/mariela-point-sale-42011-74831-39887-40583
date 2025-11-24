@@ -1,7 +1,12 @@
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { User, UserCheck, CreditCard, ShoppingCart, TrendingDown } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { User, UserCheck, CreditCard, ShoppingCart, TrendingDown, Wallet, AlertCircle } from "lucide-react";
+import { caixaAPI } from "@/lib/api";
+import { toast } from "sonner";
+import { CurrencyInput } from "@/components/ui/currency-input";
 
 interface ItemVenda {
   codigoProduto: string;
@@ -50,8 +55,66 @@ export function ConfirmacaoVendaDialog({
   valorRecebidoLojista,
   parcelas,
 }: ConfirmacaoVendaDialogProps) {
+  const [caixaAberto, setCaixaAberto] = useState<any>(null);
+  const [verificandoCaixa, setVerificandoCaixa] = useState(false);
+  const [mostrarAbrirCaixa, setMostrarAbrirCaixa] = useState(false);
+  const [valorInicial, setValorInicial] = useState("0");
+  const [abindoCaixa, setAbindoCaixa] = useState(false);
+
   const formatCurrency = (value: number) => {
     return `R$ ${value.toFixed(2).replace('.', ',')}`;
+  };
+
+  useEffect(() => {
+    if (open) {
+      verificarCaixaAberto();
+    }
+  }, [open]);
+
+  const verificarCaixaAberto = async () => {
+    try {
+      setVerificandoCaixa(true);
+      const response = await caixaAPI.getCaixaAberto();
+      setCaixaAberto(response);
+      setMostrarAbrirCaixa(false);
+    } catch (error) {
+      console.log('Nenhum caixa aberto encontrado');
+      setCaixaAberto(null);
+      setMostrarAbrirCaixa(true);
+    } finally {
+      setVerificandoCaixa(false);
+    }
+  };
+
+  const handleAbrirCaixa = async () => {
+    try {
+      const valor = parseFloat(valorInicial);
+      
+      if (isNaN(valor) || valor < 0) {
+        toast.error("Valor inicial inválido");
+        return;
+      }
+
+      setAbindoCaixa(true);
+      const novoCaixa = await caixaAPI.abrirCaixa(valor);
+      setCaixaAberto(novoCaixa);
+      setMostrarAbrirCaixa(false);
+      setValorInicial("0");
+      toast.success("Caixa aberto com sucesso!");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao abrir caixa");
+    } finally {
+      setAbindoCaixa(false);
+    }
+  };
+
+  const handleConfirmarVenda = () => {
+    if (!caixaAberto) {
+      toast.error("É necessário ter um caixa aberto para finalizar a venda");
+      return;
+    }
+    onConfirm();
+    onOpenChange(false);
   };
 
   return (
@@ -64,7 +127,55 @@ export function ConfirmacaoVendaDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        {verificandoCaixa ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center space-y-2">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
+              <p className="text-sm text-muted-foreground">Verificando caixa...</p>
+            </div>
+          </div>
+        ) : mostrarAbrirCaixa ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+              <AlertCircle className="h-5 w-5 text-orange-500 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="font-semibold text-orange-900 dark:text-orange-100">Caixa Fechado</p>
+                <p className="text-sm text-orange-800 dark:text-orange-200">
+                  É necessário abrir um caixa para finalizar vendas. Informe o valor inicial do caixa abaixo.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="valorInicial">Valor Inicial do Caixa</Label>
+              <CurrencyInput
+                id="valorInicial"
+                value={valorInicial}
+                onValueChange={setValorInicial}
+                placeholder="R$ 0,00"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => onOpenChange(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={handleAbrirCaixa}
+                disabled={abindoCaixa}
+              >
+                <Wallet className="h-4 w-4 mr-2" />
+                {abindoCaixa ? "Abrindo..." : "Abrir Caixa"}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
           {/* Cliente e Vendedor */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2 p-4 bg-primary/5 rounded-lg border border-primary/20">
@@ -187,26 +298,40 @@ export function ConfirmacaoVendaDialog({
             )}
           </div>
 
-          {/* Botões */}
-          <div className="flex gap-3 pt-4">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => onOpenChange(false)}
-            >
-              Revisar Venda
-            </Button>
-            <Button
-              className="flex-1"
-              onClick={() => {
-                onConfirm();
-                onOpenChange(false);
-              }}
-            >
-              Confirmar e Finalizar
-            </Button>
+            {/* Status do Caixa */}
+            {caixaAberto && (
+              <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <Wallet className="h-4 w-4 text-green-600" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-green-900 dark:text-green-100">
+                    Caixa {caixaAberto.codigoCaixa} está aberto
+                  </p>
+                  <p className="text-xs text-green-800 dark:text-green-200">
+                    A venda será registrada automaticamente neste caixa
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Botões */}
+            <div className="flex gap-3 pt-4">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => onOpenChange(false)}
+              >
+                Revisar Venda
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={handleConfirmarVenda}
+                disabled={!caixaAberto}
+              >
+                Confirmar e Finalizar
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
   );
