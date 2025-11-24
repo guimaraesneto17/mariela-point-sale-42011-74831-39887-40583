@@ -1,7 +1,8 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -24,15 +25,54 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 10, // 10 minutes (previously cacheTime)
+      gcTime: 1000 * 60 * 30, // 30 minutes for persistence
       refetchOnWindowFocus: false,
       retry: 1,
     },
   },
 });
 
+// Configurar persistência customizada no localStorage
+const persister = {
+  persistClient: async (client: any) => {
+    try {
+      localStorage.setItem('MARIELA_CACHE', JSON.stringify(client));
+    } catch (error) {
+      console.error('Erro ao persistir cache:', error);
+    }
+  },
+  restoreClient: async () => {
+    try {
+      const cached = localStorage.getItem('MARIELA_CACHE');
+      return cached ? JSON.parse(cached) : undefined;
+    } catch (error) {
+      console.error('Erro ao restaurar cache:', error);
+      return undefined;
+    }
+  },
+  removeClient: async () => {
+    try {
+      localStorage.removeItem('MARIELA_CACHE');
+    } catch (error) {
+      console.error('Erro ao remover cache:', error);
+    }
+  },
+};
+
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  <PersistQueryClientProvider
+    client={queryClient}
+    persistOptions={{
+      persister,
+      maxAge: 1000 * 60 * 60 * 24, // 24 horas
+      dehydrateOptions: {
+        shouldDehydrateQuery: (query) => {
+          // Não persistir queries com erro ou que estão carregando
+          return query.state.status === 'success';
+        },
+      },
+    }}
+  >
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -58,7 +98,7 @@ const App = () => (
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
-  </QueryClientProvider>
+  </PersistQueryClientProvider>
 );
 
 export default App;

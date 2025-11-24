@@ -23,6 +23,7 @@ import logo from "@/logo.png";
 import { useAPIWakeup } from "@/hooks/useAPIWakeup";
 import { GlobalLoading } from "@/components/GlobalLoading";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { CacheIndicator } from "@/components/CacheIndicator";
 
 const Layout = () => {
   const navigate = useNavigate();
@@ -116,8 +117,10 @@ const Layout = () => {
 
         {/* Navegação */}
         <nav className={`flex-1 p-4 space-y-1 overflow-y-auto ${isMobile ? 'mt-4' : ''}`}>
-          {navItems.map((item) => (
-            <NavLink
+          {navItems.map((item) => {
+            // Simplificado sem PrefetchLink para evitar complexidade
+            return (
+              <NavLink
               key={item.to}
               to={item.to}
               end={item.to === "/"}
@@ -132,7 +135,8 @@ const Layout = () => {
               <item.icon className="h-5 w-5" />
               <span>{item.label}</span>
             </NavLink>
-          ))}
+            );
+          })}
 
           {/* Botão Nova Venda */}
           <Button
@@ -149,6 +153,11 @@ const Layout = () => {
 
         {/* Copyright e Logout */}
         <div className="p-4 border-t border-white/20 space-y-2">
+          {!isMobile && (
+            <div className="mb-2">
+              <CacheIndicator />
+            </div>
+          )}
           <Button
             variant="ghost"
             className="w-full text-white hover:bg-white/10 justify-start"
