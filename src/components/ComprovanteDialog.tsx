@@ -1,8 +1,9 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ImagePlus, X } from "lucide-react";
+import { ImagePlus, X, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useImageCompression } from "@/hooks/useImageCompression";
 
 interface ComprovanteDialogProps {
   open: boolean;
@@ -21,21 +22,26 @@ export function ComprovanteDialog({
 }: ComprovanteDialogProps) {
   const [comprovante, setComprovante] = useState<string | null>(initialComprovante || null);
   const [loading, setLoading] = useState(false);
+  const { compressing, compressImage } = useImageCompression();
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Imagem muito grande. Máximo 5MB');
-        return;
-      }
+    if (!file) return;
+
+    try {
+      // Comprimir imagem antes de salvar
+      const compressedBase64 = await compressImage(file, {
+        maxWidth: 1024,
+        maxHeight: 1024,
+        quality: 0.8,
+        maxSizeMB: 2
+      });
       
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setComprovante(base64String);
-      };
-      reader.readAsDataURL(file);
+      setComprovante(compressedBase64);
+      toast.success('Comprovante anexado e comprimido');
+    } catch (error: any) {
+      console.error('Erro ao processar imagem:', error);
+      toast.error(error.message || 'Erro ao processar imagem');
     }
   };
 
@@ -74,14 +80,24 @@ export function ComprovanteDialog({
 
         <div className="space-y-4">
           {!comprovante && !readonly ? (
-            <label className="flex items-center justify-center gap-2 p-8 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 transition-smooth">
-              <ImagePlus className="h-8 w-8 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Anexar comprovante (máx 5MB)</span>
+            <label className={`flex items-center justify-center gap-2 p-8 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 transition-smooth ${compressing ? 'opacity-50 pointer-events-none' : ''}`}>
+              {compressing ? (
+                <>
+                  <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                  <span className="text-sm text-primary">Comprimindo...</span>
+                </>
+              ) : (
+                <>
+                  <ImagePlus className="h-8 w-8 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Anexar comprovante (máx 2MB)</span>
+                </>
+              )}
               <input 
                 type="file" 
                 accept="image/*" 
                 className="hidden" 
                 onChange={handleImageUpload}
+                disabled={compressing}
               />
             </label>
           ) : comprovante ? (

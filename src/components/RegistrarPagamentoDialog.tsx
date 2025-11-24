@@ -11,7 +11,8 @@ import * as z from "zod";
 import { contasPagarAPI, contasReceberAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { CurrencyInput } from "@/components/ui/currency-input";
-import { ImagePlus, X } from "lucide-react";
+import { ImagePlus, X, Loader2 } from "lucide-react";
+import { useImageCompression } from "@/hooks/useImageCompression";
 
 const formas = ["Pix","Cartão de Crédito","Cartão de Débito","Dinheiro","Boleto","Transferência","Outro"] as const;
 
@@ -42,6 +43,7 @@ interface RegistrarPagamentoDialogProps {
 export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSuccess, numeroParcela }: RegistrarPagamentoDialogProps) {
   const [loading, setLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const { compressing, compressImage } = useImageCompression();
   
   // Verifica se é parcelamento e se tem parcela específica
   const isParcelamento = conta?.tipoCriacao === 'Parcelamento';
@@ -84,21 +86,25 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
     }
   }, [conta, open, saldoRestante, numeroParcela]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Imagem muito grande. Máximo 5MB');
-        return;
-      }
+    if (!file) return;
+
+    try {
+      // Comprimir imagem antes de salvar
+      const compressedBase64 = await compressImage(file, {
+        maxWidth: 1024,
+        maxHeight: 1024,
+        quality: 0.8,
+        maxSizeMB: 2
+      });
       
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setImagePreview(base64String);
-        form.setValue('comprovante', base64String);
-      };
-      reader.readAsDataURL(file);
+      setImagePreview(compressedBase64);
+      form.setValue('comprovante', compressedBase64);
+      toast.success('Comprovante anexado e comprimido');
+    } catch (error: any) {
+      console.error('Erro ao processar imagem:', error);
+      toast.error(error.message || 'Erro ao processar imagem');
     }
   };
 
@@ -243,14 +249,24 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
                 <FormControl>
                   <div className="space-y-2">
                     {!imagePreview ? (
-                      <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 transition-smooth">
-                        <ImagePlus className="h-5 w-5 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">Anexar comprovante (máx 5MB)</span>
+                      <label className={`flex items-center justify-center gap-2 p-4 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 transition-smooth ${compressing ? 'opacity-50 pointer-events-none' : ''}`}>
+                        {compressing ? (
+                          <>
+                            <Loader2 className="h-5 w-5 text-primary animate-spin" />
+                            <span className="text-sm text-primary">Comprimindo...</span>
+                          </>
+                        ) : (
+                          <>
+                            <ImagePlus className="h-5 w-5 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">Anexar comprovante (máx 2MB)</span>
+                          </>
+                        )}
                         <input 
                           type="file" 
                           accept="image/*" 
                           className="hidden" 
                           onChange={handleImageUpload}
+                          disabled={compressing}
                         />
                       </label>
                     ) : (
