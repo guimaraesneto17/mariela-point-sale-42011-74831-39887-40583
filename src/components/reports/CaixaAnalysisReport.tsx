@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { format, subDays, subMonths, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { TrendingUp, TrendingDown, Wallet, DollarSign, Activity, CalendarIcon, X, Download, FileText } from "lucide-react";
@@ -291,6 +291,28 @@ export function CaixaAnalysisReport({ caixas }: CaixaAnalysisReportProps) {
   const tendencia = mediaAnteriores5 > 0 
     ? ((mediaUltimos5 - mediaAnteriores5) / mediaAnteriores5) * 100 
     : 0;
+
+  // Dados para gráfico de pizza (distribuição de formas de pagamento)
+  const formasPagamentoMap = new Map<string, number>();
+  
+  caixasFechados.forEach(caixa => {
+    caixa.movimentos
+      .filter(mov => mov.tipo === 'entrada' && mov.formaPagamento)
+      .forEach(mov => {
+        const forma = mov.formaPagamento || 'Não especificado';
+        const valorAtual = formasPagamentoMap.get(forma) || 0;
+        formasPagamentoMap.set(forma, valorAtual + mov.valor);
+      });
+  });
+
+  const dadosFormasPagamento = Array.from(formasPagamentoMap.entries())
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value);
+
+  const totalFormasPagamento = dadosFormasPagamento.reduce((acc, item) => acc + item.value, 0);
+
+  // Cores para o gráfico de pizza
+  const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
   if (caixasFechados.length === 0) {
     return (
@@ -624,6 +646,77 @@ export function CaixaAnalysisReport({ caixas }: CaixaAnalysisReportProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Gráfico de Pizza - Distribuição de Formas de Pagamento */}
+      {dadosFormasPagamento.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-primary" />
+              Distribuição de Formas de Pagamento
+            </CardTitle>
+            <CardDescription>
+              Análise das entradas por forma de pagamento nos caixas filtrados
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={400}>
+              <PieChart>
+                <Pie
+                  data={dadosFormasPagamento}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
+                  outerRadius={120}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {dadosFormasPagamento.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  formatter={(value: number) => formatarMoeda(value)}
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--background))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+
+            {/* Tabela de detalhamento */}
+            <div className="mt-6 space-y-2">
+              <h4 className="font-semibold text-sm">Detalhamento:</h4>
+              <div className="grid gap-2">
+                {dadosFormasPagamento.map((forma, index) => (
+                  <div 
+                    key={forma.name} 
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div 
+                        className="w-4 h-4 rounded-full" 
+                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                      />
+                      <span className="font-medium">{forma.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold">{formatarMoeda(forma.value)}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {((forma.value / totalFormasPagamento) * 100).toFixed(1)}% do total
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Gráfico de Evolução */}
       <Card>
