@@ -25,158 +25,201 @@ Estes schemas devem ser aplicados **diretamente no MongoDB** através do MongoDB
       "status",
       "tipoCriacao"
     ],
+    "description": "Schema de validação da coleção Contas a Pagar.",
     "properties": {
       "numeroDocumento": {
         "bsonType": "string",
-        "description": "Número único do documento (CP001, CPP-001, CPPAI-001)"
+        "description": "Número único do documento (ex: CP001, CPP-001, CPPAI-001)."
       },
       "descricao": {
         "bsonType": "string",
         "minLength": 3,
-        "description": "Descrição da conta a pagar"
+        "description": "Descrição detalhada da conta a pagar."
       },
       "fornecedor": {
         "bsonType": "object",
+        "description": "Objeto contendo os dados do fornecedor (opcional).",
         "properties": {
-          "codigoFornecedor": { "bsonType": "string" },
-          "nome": { "bsonType": "string" }
-        },
-        "description": "Dados do fornecedor (opcional)"
+          "codigoFornecedor": {
+            "bsonType": "string",
+            "description": "Código único do fornecedor."
+          },
+          "nome": {
+            "bsonType": "string",
+            "description": "Nome completo do fornecedor."
+          }
+        }
       },
       "categoria": {
         "bsonType": "string",
-        "description": "Categoria da despesa (ex: Fornecedores, Aluguel, Salários)"
+        "description": "Categoria da despesa (ex: Fornecedores, Aluguel, Água/Luz, Salários, etc.)."
       },
       "valor": {
         "bsonType": "double",
         "minimum": 0,
-        "description": "Valor total da conta"
+        "description": "Valor total da conta a pagar."
       },
       "dataEmissao": {
         "bsonType": "date",
-        "description": "Data de emissão do documento"
+        "description": "Data em que o documento foi emitido."
       },
       "dataVencimento": {
         "bsonType": "date",
-        "description": "Data de vencimento da conta"
+        "description": "Data prevista para pagamento da conta."
       },
       "status": {
         "enum": ["Pendente", "Pago", "Vencido", "Parcial"],
-        "description": "Status atual da conta"
+        "description": "Status atual da conta."
       },
       "observacoes": {
         "bsonType": "string",
-        "description": "Observações adicionais (opcional)"
+        "description": "Observações adicionais sobre a conta (opcional)."
       },
       "tipoCriacao": {
         "enum": ["Unica", "Parcelamento", "Replica"],
-        "description": "Tipo de criação da conta"
+        "description": "Identifica se a conta é única, um parcelamento ou uma réplica."
       },
       "pagamento": {
         "bsonType": "object",
+        "description": "Dados do pagamento (somente para contas do tipo Única).",
         "properties": {
           "valor": {
             "bsonType": "double",
-            "minimum": 0
+            "minimum": 0,
+            "description": "Valor pago na operação."
           },
           "data": {
-            "bsonType": "date"
+            "bsonType": "date",
+            "description": "Data em que o pagamento foi realizado."
           },
           "formaPagamento": {
-            "enum": ["Pix", "Cartão de Crédito", "Cartão de Débito", "Dinheiro", "Boleto", "Transferência", "Outro"]
+            "enum": [
+              "Pix",
+              "Cartão de Crédito",
+              "Cartão de Débito",
+              "Dinheiro",
+              "Boleto",
+              "Transferência",
+              "Outro"
+            ],
+            "description": "Forma de pagamento utilizada."
           },
           "comprovante": {
-            "bsonType": "string"
+            "bsonType": "string",
+            "description": "Caminho ou nome do comprovante anexado."
           },
           "observacoes": {
-            "bsonType": "string"
+            "bsonType": "string",
+            "description": "Observação extra sobre o pagamento."
           }
-        },
-        "description": "Dados do pagamento (apenas para contas únicas)"
+        }
       },
       "detalhesParcelamento": {
         "bsonType": "object",
+        "description": "Informações gerais do parcelamento (somente quando tipoCriacao = Parcelamento).",
         "properties": {
           "quantidadeParcelas": {
             "bsonType": "int",
-            "minimum": 1
+            "minimum": 1,
+            "description": "Quantidade total de parcelas."
           },
           "valorTotal": {
             "bsonType": "double",
-            "minimum": 0
+            "minimum": 0,
+            "description": "Valor total somado de todas as parcelas."
           }
-        },
-        "description": "Detalhes do parcelamento (apenas para tipo Parcelamento)"
+        }
       },
       "parcelas": {
         "bsonType": "array",
+        "description": "Lista de parcelas da conta (usada quando tipoCriacao = Parcelamento).",
         "items": {
           "bsonType": "object",
+          "description": "Objeto contendo informações de cada parcela individual.",
           "required": ["numeroParcela", "valor", "dataVencimento", "status"],
           "properties": {
             "numeroParcela": {
-              "bsonType": "int"
+              "bsonType": "int",
+              "description": "Número sequencial da parcela."
             },
             "valor": {
               "bsonType": "double",
-              "minimum": 0
+              "minimum": 0,
+              "description": "Valor da parcela."
             },
             "dataVencimento": {
-              "bsonType": "date"
+              "bsonType": "date",
+              "description": "Data de vencimento da parcela."
             },
             "status": {
-              "enum": ["Pendente", "Pago", "Vencido", "Parcial"]
+              "enum": ["Pendente", "Pago", "Vencido", "Parcial"],
+              "description": "Status atual da parcela."
             },
             "pagamento": {
               "bsonType": "object",
+              "description": "Informações de pagamento da parcela (opcional).",
               "properties": {
                 "valor": {
                   "bsonType": "double",
-                  "minimum": 0
+                  "minimum": 0,
+                  "description": "Valor pago na parcela."
                 },
                 "data": {
-                  "bsonType": "date"
+                  "bsonType": "date",
+                  "description": "Data em que o pagamento da parcela foi realizado."
                 },
                 "formaPagamento": {
-                  "enum": ["Pix", "Cartão de Crédito", "Cartão de Débito", "Dinheiro", "Boleto", "Transferência", "Outro"]
+                  "enum": [
+                    "Pix",
+                    "Cartão de Crédito",
+                    "Cartão de Débito",
+                    "Dinheiro",
+                    "Boleto",
+                    "Transferência",
+                    "Outro"
+                  ],
+                  "description": "Forma de pagamento utilizada na parcela."
                 },
                 "comprovante": {
-                  "bsonType": "string"
+                  "bsonType": "string",
+                  "description": "Comprovante referente ao pagamento da parcela."
                 },
                 "observacoes": {
-                  "bsonType": "string"
+                  "bsonType": "string",
+                  "description": "Observações adicionais sobre o pagamento da parcela."
                 }
               }
             }
           }
-        },
-        "description": "Lista de parcelas (apenas para tipo Parcelamento)"
+        }
       },
       "detalhesReplica": {
         "bsonType": "object",
+        "description": "Informações de replicação (somente quando tipoCriacao = Replica).",
         "properties": {
           "quantidadeReplicas": {
             "bsonType": "int",
-            "minimum": 1
+            "minimum": 1,
+            "description": "Número de contas geradas como réplica."
           },
           "valor": {
             "bsonType": "double",
-            "minimum": 0
+            "minimum": 0,
+            "description": "Valor de cada réplica criada."
           }
-        },
-        "description": "Detalhes da réplica (apenas para tipo Replica)"
+        }
       },
       "replicaDe": {
         "bsonType": "string",
-        "description": "ID da conta pai que originou esta réplica"
+        "description": "ID da conta pai da qual esta réplica foi gerada."
       },
       "dataCadastro": {
         "bsonType": "date",
-        "description": "Data de cadastro (gerada automaticamente)"
+        "description": "Data em que o registro foi criado no banco."
       },
       "dataAtualizacao": {
         "bsonType": "date",
-        "description": "Data de última atualização (gerada automaticamente)"
+        "description": "Data da última modificação do registro."
       }
     }
   }
@@ -205,6 +248,7 @@ db.contasPagar.createIndex({ replicaDe: 1 });
 {
   "$jsonSchema": {
     "bsonType": "object",
+    "description": "Schema de validação da coleção Contas a Receber.",
     "required": [
       "numeroDocumento",
       "descricao",
@@ -217,162 +261,207 @@ db.contasPagar.createIndex({ replicaDe: 1 });
     "properties": {
       "numeroDocumento": {
         "bsonType": "string",
-        "description": "Número único do documento (CR001, CRP-001, CRPAI-001)"
+        "description": "Número único da conta a receber (ex: CR001, CRP-001, CRPAI-001)."
       },
       "descricao": {
         "bsonType": "string",
         "minLength": 3,
-        "description": "Descrição da conta a receber"
+        "description": "Descrição detalhada da conta a receber."
       },
       "cliente": {
         "bsonType": "object",
+        "description": "Informações do cliente vinculado à conta (opcional).",
         "properties": {
-          "codigoCliente": { "bsonType": "string" },
-          "nome": { "bsonType": "string" }
-        },
-        "description": "Dados do cliente (opcional)"
+          "codigoCliente": {
+            "bsonType": "string",
+            "description": "Código único do cliente."
+          },
+          "nome": {
+            "bsonType": "string",
+            "description": "Nome do cliente."
+          }
+        }
       },
       "vendaRelacionada": {
         "bsonType": "object",
+        "description": "Venda que gerou esta conta a receber (opcional).",
         "properties": {
-          "codigoVenda": { "bsonType": "string" }
-        },
-        "description": "Venda relacionada à conta (opcional)"
+          "codigoVenda": {
+            "bsonType": "string",
+            "description": "Código identificador da venda associada."
+          }
+        }
       },
       "categoria": {
         "bsonType": "string",
-        "description": "Categoria da receita (ex: Vendas, Serviços, Outros)"
+        "description": "Categoria da receita (ex: Vendas, Serviços, Outros)."
       },
       "valor": {
         "bsonType": "double",
         "minimum": 0,
-        "description": "Valor total da conta"
+        "description": "Valor total a receber."
       },
       "dataEmissao": {
         "bsonType": "date",
-        "description": "Data de emissão do documento"
+        "description": "Data em que a conta foi emitida."
       },
       "dataVencimento": {
         "bsonType": "date",
-        "description": "Data de vencimento da conta"
+        "description": "Data de vencimento da conta."
       },
       "status": {
         "enum": ["Pendente", "Recebido", "Vencido", "Parcial"],
-        "description": "Status atual da conta"
+        "description": "Status atual da conta a receber."
       },
       "observacoes": {
         "bsonType": "string",
-        "description": "Observações adicionais (opcional)"
+        "description": "Observações gerais sobre a conta (opcional)."
       },
       "tipoCriacao": {
         "enum": ["Unica", "Parcelamento", "Replica"],
-        "description": "Tipo de criação da conta"
+        "description": "Define se a conta é única, parcelada ou uma réplica."
       },
       "recebimento": {
         "bsonType": "object",
+        "description": "Dados do recebimento (apenas para contas do tipo Única).",
         "properties": {
           "valor": {
             "bsonType": "double",
-            "minimum": 0
+            "minimum": 0,
+            "description": "Valor recebido do cliente."
           },
           "data": {
-            "bsonType": "date"
+            "bsonType": "date",
+            "description": "Data do recebimento."
           },
           "formaPagamento": {
-            "enum": ["Pix", "Cartão de Crédito", "Cartão de Débito", "Dinheiro", "Boleto", "Transferência", "Outro"]
+            "enum": [
+              "Pix",
+              "Cartão de Crédito",
+              "Cartão de Débito",
+              "Dinheiro",
+              "Boleto",
+              "Transferência",
+              "Outro"
+            ],
+            "description": "Forma de pagamento utilizada no recebimento."
           },
           "comprovante": {
-            "bsonType": "string"
+            "bsonType": "string",
+            "description": "Arquivo ou referência do comprovante de pagamento."
           },
           "observacoes": {
-            "bsonType": "string"
+            "bsonType": "string",
+            "description": "Observações adicionais sobre o recebimento."
           }
-        },
-        "description": "Dados do recebimento (apenas para contas únicas)"
+        }
       },
       "detalhesParcelamento": {
         "bsonType": "object",
+        "description": "Informações gerais do parcelamento (apenas quando tipoCriacao = Parcelamento).",
         "properties": {
           "quantidadeParcelas": {
             "bsonType": "int",
-            "minimum": 1
+            "minimum": 1,
+            "description": "Quantidade total de parcelas geradas."
           },
           "valorTotal": {
             "bsonType": "double",
-            "minimum": 0
+            "minimum": 0,
+            "description": "Valor total somado das parcelas."
           }
-        },
-        "description": "Detalhes do parcelamento (apenas para tipo Parcelamento)"
+        }
       },
       "parcelas": {
         "bsonType": "array",
+        "description": "Lista contendo todas as parcelas desta conta (apenas quando tipoCriacao = Parcelamento).",
         "items": {
           "bsonType": "object",
+          "description": "Informações individuais da parcela.",
           "required": ["numeroParcela", "valor", "dataVencimento", "status"],
           "properties": {
             "numeroParcela": {
-              "bsonType": "int"
+              "bsonType": "int",
+              "description": "Número sequencial da parcela."
             },
             "valor": {
               "bsonType": "double",
-              "minimum": 0
+              "minimum": 0,
+              "description": "Valor da parcela."
             },
             "dataVencimento": {
-              "bsonType": "date"
+              "bsonType": "date",
+              "description": "Data de vencimento da parcela."
             },
             "status": {
-              "enum": ["Pendente", "Recebido", "Vencido", "Parcial"]
+              "enum": ["Pendente", "Recebido", "Vencido", "Parcial"],
+              "description": "Status atual da parcela."
             },
             "recebimento": {
               "bsonType": "object",
+              "description": "Informações do recebimento desta parcela (opcional).",
               "properties": {
                 "valor": {
                   "bsonType": "double",
-                  "minimum": 0
+                  "minimum": 0,
+                  "description": "Valor pago referente à parcela."
                 },
                 "data": {
-                  "bsonType": "date"
+                  "bsonType": "date",
+                  "description": "Data em que a parcela foi paga."
                 },
                 "formaPagamento": {
-                  "enum": ["Pix", "Cartão de Crédito", "Cartão de Débito", "Dinheiro", "Boleto", "Transferência", "Outro"]
+                  "enum": [
+                    "Pix",
+                    "Cartão de Crédito",
+                    "Cartão de Débito",
+                    "Dinheiro",
+                    "Boleto",
+                    "Transferência",
+                    "Outro"
+                  ],
+                  "description": "Forma de pagamento utilizada no recebimento da parcela."
                 },
                 "comprovante": {
-                  "bsonType": "string"
+                  "bsonType": "string",
+                  "description": "Caminho ou nome do comprovante desta parcela."
                 },
                 "observacoes": {
-                  "bsonType": "string"
+                  "bsonType": "string",
+                  "description": "Observações gerais sobre o recebimento da parcela."
                 }
               }
             }
           }
-        },
-        "description": "Lista de parcelas (apenas para tipo Parcelamento)"
+        }
       },
       "detalhesReplica": {
         "bsonType": "object",
+        "description": "Informações referentes à réplica (somente para tipoCriacao = Replica).",
         "properties": {
           "quantidadeReplicas": {
             "bsonType": "int",
-            "minimum": 1
+            "minimum": 1,
+            "description": "Quantidade de contas replicadas."
           },
           "valor": {
             "bsonType": "double",
-            "minimum": 0
+            "minimum": 0,
+            "description": "Valor da réplica gerada."
           }
-        },
-        "description": "Detalhes da réplica (apenas para tipo Replica)"
+        }
       },
       "replicaDe": {
         "bsonType": "string",
-        "description": "ID da conta pai que originou esta réplica"
+        "description": "ID da conta pai da qual esta conta foi replicada."
       },
       "dataCadastro": {
         "bsonType": "date",
-        "description": "Data de cadastro (gerada automaticamente)"
+        "description": "Data em que a conta foi registrada no sistema."
       },
       "dataAtualizacao": {
         "bsonType": "date",
-        "description": "Data de última atualização (gerada automaticamente)"
+        "description": "Data da última modificação da conta."
       }
     }
   }
