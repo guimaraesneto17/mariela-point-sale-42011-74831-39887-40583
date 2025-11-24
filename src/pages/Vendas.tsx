@@ -1,35 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Search, Tag, TrendingDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { vendasAPI } from "@/lib/api";
-import { toast } from "sonner";
 import { GlobalLoading } from "@/components/GlobalLoading";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useVendas } from "@/hooks/useQueryCache";
 
 const Vendas = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filtroData, setFiltroData] = useState("");
-  const [vendas, setVendas] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadVendas();
-  }, []);
-
-  const loadVendas = async () => {
-    try {
-      setLoading(true);
-      const data = await vendasAPI.getAll();
-      setVendas(data);
-    } catch (error) {
-      console.error('Erro ao carregar vendas:', error);
-      toast.error('Erro ao carregar vendas');
-    } finally {
-      setLoading(false);
-    }
-  };
+  
+  const { data: vendas = [], isLoading } = useVendas();
 
   // Helper function para converter data de forma segura
   const getValidDateString = (dateValue: any): string => {
@@ -65,7 +47,7 @@ const Vendas = () => {
     return matchSearch && matchData;
   });
 
-  if (loading) {
+  if (isLoading) {
     return <GlobalLoading message="Carregando vendas..." />;
   }
 
