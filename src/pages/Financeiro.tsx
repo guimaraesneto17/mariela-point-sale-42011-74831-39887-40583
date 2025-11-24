@@ -18,10 +18,9 @@ import { FinanceNotifications } from "@/components/FinanceNotifications";
 import { RegistrarPagamentoDialog } from "@/components/RegistrarPagamentoDialog";
 import { DetalhesParcelamentoDialog } from "@/components/DetalhesParcelamentoDialog";
 import { DashboardParcelamentos } from "@/components/DashboardParcelamentos";
-import { useNavigate } from "react-router-dom";
+import { formatCurrency } from "@/lib/utils";
 
 const Financeiro = () => {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [contasPagar, setContasPagar] = useState<any[]>([]);
   const [contasReceber, setContasReceber] = useState<any[]>([]);
@@ -70,13 +69,6 @@ const Financeiro = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
   };
 
   const getStatusBadge = (status: string) => {

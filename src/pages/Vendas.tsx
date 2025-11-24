@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
-import { Search, Filter, Tag, TrendingDown } from "lucide-react";
+import { Search, Tag, TrendingDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { vendasAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { GlobalLoading } from "@/components/GlobalLoading";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 const Vendas = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -38,35 +37,12 @@ const Vendas = () => {
     
     try {
       const date = new Date(dateValue);
-      // Verifica se a data é válida
       if (isNaN(date.getTime())) return '';
       return date.toISOString().split('T')[0];
     } catch (error) {
       console.error('Erro ao converter data:', dateValue, error);
       return '';
     }
-  };
-
-  // Helper para formatar data para exibição
-  const formatDisplayDate = (dateValue: any): string => {
-    if (!dateValue) return '—';
-    try {
-      const date = new Date(dateValue);
-      if (isNaN(date.getTime())) return '—';
-      return new Intl.DateTimeFormat('pt-BR', { 
-        day: '2-digit', 
-        month: '2-digit', 
-        year: 'numeric' 
-      }).format(date);
-    } catch (error) {
-      return '—';
-    }
-  };
-
-  // Helper para formatar valores monetários
-  const formatCurrency = (value: any): string => {
-    const numValue = Number(value ?? 0);
-    return isNaN(numValue) ? 'R$ 0,00' : `R$ ${numValue.toFixed(2).replace('.', ',')}`;
   };
 
   const filteredVendas = vendas.filter((venda: any) => {
@@ -127,10 +103,10 @@ const Vendas = () => {
       <div className="space-y-4">
         {filteredVendas.map((venda) => (
           <Card key={venda.codigo || venda.codigoVenda || venda._id} className="p-4 md:p-6 bg-gradient-card">
-            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-start justify-between mb-4">
               <div>
                 <h3 className="text-xl font-bold">{venda.codigo || venda.codigoVenda || venda._id}</h3>
-                <p className="text-muted-foreground text-sm">{formatDisplayDate(venda.data)}</p>
+                <p className="text-muted-foreground text-sm">{formatDate(venda.data)}</p>
               </div>
               <div className="flex gap-2">
                 <Badge className="bg-primary">{venda.formaPagamento || '—'}</Badge>
