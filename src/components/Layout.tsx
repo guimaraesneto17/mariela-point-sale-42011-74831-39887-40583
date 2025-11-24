@@ -155,7 +155,8 @@ const Layout = () => {
         {/* Copyright e Logout */}
         <div className="p-4 border-t border-white/20 space-y-2">
           {!isMobile && (
-            <div className="mb-2">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-white/70 text-xs">© 2025 Mariela Moda Feminina</p>
               <CacheIndicator />
             </div>
           )}
@@ -167,7 +168,9 @@ const Layout = () => {
             <LogOut className="h-4 w-4 mr-2" />
             Sair
           </Button>
-          <p className="text-white/70 text-xs text-center">© 2025 Mariela Moda Feminina</p>
+          {isMobile && (
+            <p className="text-white/70 text-xs text-center">© 2025 Mariela Moda Feminina</p>
+          )}
         </div>
       </aside>
 

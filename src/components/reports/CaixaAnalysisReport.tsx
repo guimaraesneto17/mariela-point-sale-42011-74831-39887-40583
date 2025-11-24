@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { format } from "date-fns";
+import { format, subDays, subMonths, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { TrendingUp, TrendingDown, Wallet, DollarSign, Activity, CalendarIcon, X } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, DollarSign, Activity, CalendarIcon, X, Download, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import jsPDF from "jspdf";
 
 interface Movimento {
   tipo: 'entrada' | 'saida';
@@ -52,6 +53,165 @@ export function CaixaAnalysisReport({ caixas }: CaixaAnalysisReportProps) {
     } catch {
       return data;
     }
+  };
+
+  // Função para definir período predefinido
+  const setPeriodoPredefinido = (tipo: 'semana' | 'mes' | '3meses') => {
+    const hoje = new Date();
+    
+    switch (tipo) {
+      case 'semana':
+        setDataInicio(subDays(hoje, 7));
+        setDataFim(hoje);
+        break;
+      case 'mes':
+        setDataInicio(subMonths(hoje, 1));
+        setDataFim(hoje);
+        break;
+      case '3meses':
+        setDataInicio(subMonths(hoje, 3));
+        setDataFim(hoje);
+        break;
+    }
+  };
+
+  // Função para exportar PDF
+  const exportarPDF = () => {
+    const doc = new jsPDF();
+    
+    // Configurações
+    const margemEsquerda = 15;
+    const margemDireita = 195;
+    let yPos = 20;
+    const lineHeight = 7;
+    
+    // Cabeçalho
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("RELATÓRIO DE ANÁLISE DE CAIXAS", margemEsquerda, yPos);
+    
+    yPos += 10;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`, margemEsquerda, yPos);
+    
+    yPos += 5;
+    if (dataInicio || dataFim) {
+      const periodo = `Período: ${dataInicio ? format(dataInicio, "dd/MM/yyyy", { locale: ptBR }) : 'Início'} até ${dataFim ? format(dataFim, "dd/MM/yyyy", { locale: ptBR }) : 'Hoje'}`;
+      doc.text(periodo, margemEsquerda, yPos);
+    } else {
+      doc.text("Período: Todos os caixas", margemEsquerda, yPos);
+    }
+    
+    yPos += 15;
+    
+    // Estatísticas Gerais
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Estatísticas Gerais", margemEsquerda, yPos);
+    
+    yPos += 10;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    doc.setFillColor(240, 240, 240);
+    doc.roundedRect(margemEsquerda, yPos - 5, 180, 30, 3, 3, 'FD');
+    
+    doc.text(`Total de Caixas: ${totalCaixas}`, margemEsquerda + 5, yPos);
+    yPos += lineHeight;
+    doc.text(`Média de Performance: ${formatarMoeda(mediaPerformance)}`, margemEsquerda + 5, yPos);
+    yPos += lineHeight;
+    doc.text(`Média de Entradas: ${formatarMoeda(mediaEntradas)}`, margemEsquerda + 5, yPos);
+    yPos += lineHeight;
+    doc.text(`Média de Saídas: ${formatarMoeda(mediaSaidas)}`, margemEsquerda + 5, yPos);
+    
+    yPos += 15;
+    
+    // Melhor e Pior Performance
+    if (melhorPerformance && piorPerformance) {
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Destaques", margemEsquerda, yPos);
+      
+      yPos += 10;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      
+      doc.setTextColor(34, 139, 34);
+      doc.text(`Melhor Performance: ${melhorPerformance.codigoCaixa} - ${formatarMoeda(melhorPerformance.performance)}`, margemEsquerda, yPos);
+      yPos += lineHeight;
+      
+      doc.setTextColor(220, 38, 38);
+      doc.text(`Pior Performance: ${piorPerformance.codigoCaixa} - ${formatarMoeda(piorPerformance.performance)}`, margemEsquerda, yPos);
+      
+      doc.setTextColor(0, 0, 0);
+      yPos += 15;
+    }
+    
+    // Listagem de Caixas
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Detalhamento dos Caixas", margemEsquerda, yPos);
+    
+    yPos += 10;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    
+    // Cabeçalho da tabela
+    doc.text("Código", margemEsquerda, yPos);
+    doc.text("Data", margemEsquerda + 40, yPos);
+    doc.text("Inicial", margemEsquerda + 75, yPos);
+    doc.text("Entradas", margemEsquerda + 105, yPos);
+    doc.text("Saídas", margemEsquerda + 135, yPos);
+    doc.text("Performance", margemEsquerda + 160, yPos);
+    yPos += 5;
+    
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margemEsquerda, yPos, margemDireita, yPos);
+    yPos += 5;
+    
+    doc.setFont("helvetica", "normal");
+    
+    caixasFechados.slice(-15).forEach((caixa) => {
+      if (yPos > 270) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      doc.text(caixa.codigoCaixa.replace('CAIXA', ''), margemEsquerda, yPos);
+      doc.text(formatarData(caixa.dataAbertura), margemEsquerda + 40, yPos);
+      doc.text(formatarMoeda(caixa.valorInicial), margemEsquerda + 75, yPos);
+      doc.setTextColor(34, 139, 34);
+      doc.text(formatarMoeda(caixa.entrada), margemEsquerda + 105, yPos);
+      doc.setTextColor(220, 38, 38);
+      doc.text(formatarMoeda(caixa.saida), margemEsquerda + 135, yPos);
+      
+      if (caixa.performance >= 0) {
+        doc.setTextColor(34, 139, 34);
+      } else {
+        doc.setTextColor(220, 38, 38);
+      }
+      doc.text(formatarMoeda(caixa.performance), margemEsquerda + 160, yPos);
+      doc.setTextColor(0, 0, 0);
+      
+      yPos += 6;
+    });
+    
+    // Rodapé
+    const totalPages = doc.internal.pages.length - 1;
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text(
+        `Mariela PDV - Análise de Caixas | Página ${i} de ${totalPages}`,
+        margemDireita,
+        290,
+        { align: 'right' }
+      );
+    }
+    
+    doc.save(`Analise_Caixas_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`);
   };
 
   // Preparar dados para os gráficos
@@ -149,11 +309,39 @@ export function CaixaAnalysisReport({ caixas }: CaixaAnalysisReportProps) {
             {/* Filtros de Período */}
             <Card className="bg-muted/50">
               <CardContent className="pt-6">
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <CalendarIcon className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-sm font-medium">Período de análise:</span>
+                <div className="space-y-4">
+                  {/* Atalhos de Período */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium text-muted-foreground">Atalhos:</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPeriodoPredefinido('semana')}
+                    >
+                      Última Semana
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPeriodoPredefinido('mes')}
+                    >
+                      Último Mês
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPeriodoPredefinido('3meses')}
+                    >
+                      Últimos 3 Meses
+                    </Button>
                   </div>
+
+                  {/* Seleção Manual de Datas */}
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-sm font-medium">Período customizado:</span>
+                    </div>
                   
                   <div className="flex items-center gap-2">
                     <Popover>
@@ -207,25 +395,26 @@ export function CaixaAnalysisReport({ caixas }: CaixaAnalysisReportProps) {
                     </Popover>
                   </div>
 
-                  {(dataInicio || dataFim) && (
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="gap-2">
-                        Período ativo
-                      </Badge>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setDataInicio(undefined);
-                          setDataFim(undefined);
-                        }}
-                        className="h-8 gap-1"
-                      >
-                        <X className="h-3 w-3" />
-                        Limpar filtros
-                      </Button>
-                    </div>
-                  )}
+                    {(dataInicio || dataFim) && (
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="gap-2">
+                          Período ativo
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setDataInicio(undefined);
+                            setDataFim(undefined);
+                          }}
+                          className="h-8 gap-1"
+                        >
+                          <X className="h-3 w-3" />
+                          Limpar filtros
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -244,11 +433,47 @@ export function CaixaAnalysisReport({ caixas }: CaixaAnalysisReportProps) {
       {/* Filtros de Período */}
       <Card className="bg-muted/50">
         <CardContent className="pt-6">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5 text-muted-foreground" />
-              <span className="text-sm font-medium">Período de análise:</span>
+          <div className="space-y-4">
+            {/* Botão de Exportar */}
+            <div className="flex justify-end">
+              <Button onClick={exportarPDF} className="gap-2">
+                <Download className="h-4 w-4" />
+                Exportar PDF
+              </Button>
             </div>
+
+            {/* Atalhos de Período */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground">Atalhos:</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPeriodoPredefinido('semana')}
+              >
+                Última Semana
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPeriodoPredefinido('mes')}
+              >
+                Último Mês
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPeriodoPredefinido('3meses')}
+              >
+                Últimos 3 Meses
+              </Button>
+            </div>
+
+            {/* Seleção Manual de Datas */}
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+                <span className="text-sm font-medium">Período customizado:</span>
+              </div>
             
             <div className="flex items-center gap-2">
               <Popover>
@@ -302,25 +527,26 @@ export function CaixaAnalysisReport({ caixas }: CaixaAnalysisReportProps) {
               </Popover>
             </div>
 
-            {(dataInicio || dataFim) && (
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="gap-2">
-                  Período ativo
-                </Badge>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setDataInicio(undefined);
-                    setDataFim(undefined);
-                  }}
-                  className="h-8 gap-1"
-                >
-                  <X className="h-3 w-3" />
-                  Limpar filtros
-                </Button>
-              </div>
-            )}
+              {(dataInicio || dataFim) && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="gap-2">
+                    Período ativo
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setDataInicio(undefined);
+                      setDataFim(undefined);
+                    }}
+                    className="h-8 gap-1"
+                  >
+                    <X className="h-3 w-3" />
+                    Limpar filtros
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
