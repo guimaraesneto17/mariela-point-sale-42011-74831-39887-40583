@@ -107,7 +107,6 @@ export const produtoSchema = z.object({
     .min(3, "Nome deve ter no mínimo 3 caracteres")
     .max(100, "Nome deve ter no máximo 100 caracteres"),
   descricao: optionalString(z.string()
-    .min(10, "Descrição deve ter no mínimo 10 caracteres")
     .max(500, "Descrição deve ter no máximo 500 caracteres")),
   categoria: z.enum(["Calça", "Saia", "Vestido", "Blusa", "Bolsa", "Acessório", "Outro"], {
     errorMap: () => ({ message: "Categoria é obrigatória" }),
