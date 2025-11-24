@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, TrendingUp, TrendingDown, AlertCircle, Plus, CreditCard, Calendar, Split, BarChart3, Edit, Trash2, Filter, Eye, Link as LinkIcon, ChevronDown } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, AlertCircle, Plus, CreditCard, Calendar, Split, BarChart3, Edit, Trash2, Filter, Eye, Link as LinkIcon, ChevronDown, FileImage } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -18,6 +18,7 @@ import { FinanceNotifications } from "@/components/FinanceNotifications";
 import { RegistrarPagamentoDialog } from "@/components/RegistrarPagamentoDialog";
 import { DetalhesParcelamentoDialog } from "@/components/DetalhesParcelamentoDialog";
 import { DashboardParcelamentos } from "@/components/DashboardParcelamentos";
+import { ComprovanteDialog } from "@/components/ComprovanteDialog";
 import { formatCurrency } from "@/lib/utils";
 
 const Financeiro = () => {
@@ -45,6 +46,8 @@ const Financeiro = () => {
   const [detalhesParcelamentoOpen, setDetalhesParcelamentoOpen] = useState(false);
   const [contaParcelamentoSelecionada, setContaParcelamentoSelecionada] = useState<any | null>(null);
   const [tipoParcelamento, setTipoParcelamento] = useState<'pagar'|'receber'>("pagar");
+  const [comprovanteViewerOpen, setComprovanteViewerOpen] = useState(false);
+  const [comprovanteAtual, setComprovanteAtual] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -454,6 +457,19 @@ const Financeiro = () => {
                             Ver Parcelas
                           </Button>
                         )}
+                        {conta.pagamento?.comprovante && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => {
+                              setComprovanteAtual(conta.pagamento.comprovante);
+                              setComprovanteViewerOpen(true);
+                            }}
+                          >
+                            <FileImage className="h-4 w-4 mr-1" />
+                            Comprovante
+                          </Button>
+                        )}
                         <Button 
                           size="sm" 
                           variant="ghost"
@@ -663,6 +679,19 @@ const Financeiro = () => {
                             Ver Parcelas
                           </Button>
                         )}
+                        {conta.recebimento?.comprovante && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => {
+                              setComprovanteAtual(conta.recebimento.comprovante);
+                              setComprovanteViewerOpen(true);
+                            }}
+                          >
+                            <FileImage className="h-4 w-4 mr-1" />
+                            Comprovante
+                          </Button>
+                        )}
                         <Button 
                           size="sm" 
                           variant="ghost"
@@ -731,6 +760,13 @@ const Financeiro = () => {
         onConfirm={handleDeleteConta}
         title={contaToDelete?.tipo === 'pagar' ? 'Deletar Conta a Pagar' : 'Deletar Conta a Receber'}
         description={`Tem certeza que deseja deletar a conta "${contaToDelete?.descricao}"? Esta ação não pode ser desfeita.`}
+      />
+
+      <ComprovanteDialog
+        open={comprovanteViewerOpen}
+        onOpenChange={setComprovanteViewerOpen}
+        comprovante={comprovanteAtual || undefined}
+        readonly={true}
       />
     </div>
   );
