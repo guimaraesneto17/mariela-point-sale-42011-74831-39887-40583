@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { TrendingUp, TrendingDown, Wallet, DollarSign, Activity } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, DollarSign, Activity, CalendarIcon, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface Movimento {
   tipo: 'entrada' | 'saida';
@@ -32,6 +36,9 @@ interface CaixaAnalysisReportProps {
 }
 
 export function CaixaAnalysisReport({ caixas }: CaixaAnalysisReportProps) {
+  const [dataInicio, setDataInicio] = useState<Date | undefined>(undefined);
+  const [dataFim, setDataFim] = useState<Date | undefined>(undefined);
+
   const formatarMoeda = (valor: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -50,6 +57,29 @@ export function CaixaAnalysisReport({ caixas }: CaixaAnalysisReportProps) {
   // Preparar dados para os gráficos
   const caixasFechados = caixas
     .filter(c => c.status === 'fechado')
+    .filter(c => {
+      // Filtrar por período se datas foram selecionadas
+      if (!dataInicio && !dataFim) return true;
+      
+      const dataAbertura = new Date(c.dataAbertura);
+      
+      if (dataInicio && dataFim) {
+        const inicio = new Date(dataInicio);
+        const fim = new Date(dataFim);
+        inicio.setHours(0, 0, 0, 0);
+        fim.setHours(23, 59, 59, 999);
+        return dataAbertura >= inicio && dataAbertura <= fim;
+      } else if (dataInicio) {
+        const inicio = new Date(dataInicio);
+        inicio.setHours(0, 0, 0, 0);
+        return dataAbertura >= inicio;
+      } else if (dataFim) {
+        const fim = new Date(dataFim);
+        fim.setHours(23, 59, 59, 999);
+        return dataAbertura <= fim;
+      }
+      return true;
+    })
     .sort((a, b) => new Date(a.dataAbertura).getTime() - new Date(b.dataAbertura).getTime());
 
   // Dados para gráfico de linha (evolução)
@@ -115,8 +145,94 @@ export function CaixaAnalysisReport({ caixas }: CaixaAnalysisReportProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            Nenhum caixa fechado encontrado para análise
+          <div className="space-y-4">
+            {/* Filtros de Período */}
+            <Card className="bg-muted/50">
+              <CardContent className="pt-6">
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-sm font-medium">Período de análise:</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "justify-start text-left font-normal",
+                            !dataInicio && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {dataInicio ? format(dataInicio, "dd/MM/yyyy", { locale: ptBR }) : "Data inicial"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={dataInicio}
+                          onSelect={setDataInicio}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+
+                    <span className="text-muted-foreground">até</span>
+
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "justify-start text-left font-normal",
+                            !dataFim && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {dataFim ? format(dataFim, "dd/MM/yyyy", { locale: ptBR }) : "Data final"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={dataFim}
+                          onSelect={setDataFim}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {(dataInicio || dataFim) && (
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="gap-2">
+                        Período ativo
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setDataInicio(undefined);
+                          setDataFim(undefined);
+                        }}
+                        className="h-8 gap-1"
+                      >
+                        <X className="h-3 w-3" />
+                        Limpar filtros
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="text-center py-8 text-muted-foreground">
+              Nenhum caixa fechado encontrado para o período selecionado
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -125,6 +241,89 @@ export function CaixaAnalysisReport({ caixas }: CaixaAnalysisReportProps) {
 
   return (
     <div className="space-y-6">
+      {/* Filtros de Período */}
+      <Card className="bg-muted/50">
+        <CardContent className="pt-6">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+              <span className="text-sm font-medium">Período de análise:</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !dataInicio && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dataInicio ? format(dataInicio, "dd/MM/yyyy", { locale: ptBR }) : "Data inicial"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dataInicio}
+                    onSelect={setDataInicio}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+
+              <span className="text-muted-foreground">até</span>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !dataFim && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dataFim ? format(dataFim, "dd/MM/yyyy", { locale: ptBR }) : "Data final"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dataFim}
+                    onSelect={setDataFim}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {(dataInicio || dataFim) && (
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="gap-2">
+                  Período ativo
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setDataInicio(undefined);
+                    setDataFim(undefined);
+                  }}
+                  className="h-8 gap-1"
+                >
+                  <X className="h-3 w-3" />
+                  Limpar filtros
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
       {/* Estatísticas Gerais */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-background dark:from-blue-950/20">
