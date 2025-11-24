@@ -35,6 +35,8 @@ import { ComparacaoPeriodoDialog } from "@/components/ComparacaoPeriodoDialog";
 import { DashboardWidgetCard } from "@/components/DashboardWidgetCard";
 import { DashboardWidgetConfig, WidgetConfig } from "@/components/DashboardWidgetConfig";
 import { DashboardAlertasCard } from "@/components/DashboardAlertasCard";
+import { DashboardClientesAnalise } from "@/components/DashboardClientesAnalise";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Dashboard = () => {
   const [dataInicio, setDataInicio] = useState<Date | undefined>(undefined);
@@ -93,6 +95,7 @@ const Dashboard = () => {
   const [vendasPorMes, setVendasPorMes] = useState<any[]>([]);
   const [vendasParaGrafico, setVendasParaGrafico] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<any>(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -110,6 +113,12 @@ const Dashboard = () => {
         contasPagarAPI.getAll(),
         contasReceberAPI.getAll(),
       ]);
+
+      // Armazenar dados para uso no componente de análise de clientes
+      setData({
+        clientes: Array.isArray(clientes) ? clientes : (clientes.clientes || []),
+        produtos: Array.isArray(produtos) ? produtos : (produtos.produtos || []),
+      });
 
       // Filtrar vendas por período se datas foram selecionadas
       let vendas = vendasAll;
@@ -835,6 +844,34 @@ const Dashboard = () => {
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* Análise de Clientes */}
+          <div className="mt-8">
+            <Tabs defaultValue="overview" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2 h-auto">
+                <TabsTrigger value="overview" className="gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Visão Geral
+                </TabsTrigger>
+                <TabsTrigger value="clientes" className="gap-2">
+                  <Users className="h-4 w-4" />
+                  Análise de Clientes
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="overview" className="space-y-0">
+                {/* Conteúdo já existente está acima */}
+              </TabsContent>
+
+              <TabsContent value="clientes">
+                <DashboardClientesAnalise 
+                  vendas={vendasParaGrafico}
+                  clientes={data?.clientes || []}
+                  produtos={produtos}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </Card>
