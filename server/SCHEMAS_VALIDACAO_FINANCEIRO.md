@@ -338,6 +338,151 @@ db.runCommand({
 2. **Campos opcionais explícitos**: `detalhesParcelamento`, `parcelas`, `detalhesReplica` marcados como `required: false`
 3. **Schemas MongoDB flexíveis**: Validação apenas dos campos obrigatórios, subdocumentos sem validação estrita
 4. **Arrays opcionais**: Campo `parcelas` pode ser `undefined` ou array vazio
+5. **Validação customizada por tipoCriacao**: Middleware Mongoose que valida campos baseado no tipo de conta
+
+---
+
+## 🔐 Validação Customizada por Tipo de Criação
+
+Os modelos Mongoose implementam validação customizada via middleware `pre('save')` que garante integridade dos dados baseado no campo `tipoCriacao`.
+
+### Fluxo de Validação
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Salvar Conta                             │
+│              (ContasPagar ou ContasReceber)                 │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+                     ▼
+        ┌────────────────────────┐
+        │  Verificar tipoCriacao │
+        └────────────┬───────────┘
+                     │
+        ┌────────────┴────────────┬──────────────┐
+        │                         │              │
+        ▼                         ▼              ▼
+   ┌────────┐            ┌──────────────┐  ┌─────────┐
+   │ Unica  │            │ Parcelamento │  │ Replica │
+   └────┬───┘            └──────┬───────┘  └────┬────┘
+        │                       │                │
+        ▼                       ▼                ▼
+   ┌─────────────────┐   ┌──────────────────┐  ┌────────────────┐
+   │ Validar campos  │   │ Validar campos   │  │ Validar campos │
+   │ permitidos:     │   │ obrigatórios:    │  │ obrigatórios:  │
+   │ • Básicos       │   │ • Básicos        │  │ • Básicos      │
+   │ • pagamento     │   │ • detalhes       │  │ • detalhes     │
+   │   (opcional)    │   │   Parcelamento   │  │   Replica      │
+   │                 │   │ • parcelas[]     │  │                │
+   │ Proibir:        │   │   (não vazio)    │  │ Proibir:       │
+   │ ✗ detalhes      │   │                  │  │ ✗ pagamento    │
+   │   Parcelamento  │   │ Proibir:         │  │ ✗ detalhes     │
+   │ ✗ parcelas      │   │ ✗ pagamento raiz │  │   Parcelamento │
+   │ ✗ detalhes      │   │ ✗ detalhes       │  │ ✗ parcelas     │
+   │   Replica       │   │   Replica        │  │                │
+   └─────┬───────────┘   └──────┬───────────┘  └────┬───────────┘
+         │                      │                    │
+         │                      ▼                    │
+         │          ┌────────────────────────┐       │
+         │          │ Validar quantidade de  │       │
+         │          │ parcelas no array ==   │       │
+         │          │ quantidadeParcelas     │       │
+         │          └────────────┬───────────┘       │
+         │                       │                   │
+         └───────────────────────┴───────────────────┘
+                                 │
+                                 ▼
+                    ┌────────────────────────┐
+                    │ Validação OK ✓         │
+                    │ Salvar no MongoDB      │
+                    └────────────────────────┘
+```
+
+### Regras de Validação
+
+#### Tipo: "Unica" (Conta Única)
+
+**Campos OBRIGATÓRIOS:**
+- Campos básicos (numeroDocumento, descricao, categoria, valor, dataVencimento, status)
+- tipoCriacao = "Unica"
+
+**Campos OPCIONAIS:**
+- pagamento (preenchido após o pagamento)
+- fornecedor/cliente
+- observacoes
+- replicaDe (se for réplica de outra conta)
+
+**Campos PROIBIDOS:**
+- ❌ detalhesParcelamento
+- ❌ parcelas
+- ❌ detalhesReplica
+
+**Mensagens de erro:**
+- "Conta do tipo Única não pode ter detalhesParcelamento"
+- "Conta do tipo Única não pode ter parcelas"
+- "Conta do tipo Única não pode ter detalhesReplica"
+
+---
+
+#### Tipo: "Parcelamento"
+
+**Campos OBRIGATÓRIOS:**
+- Campos básicos
+- tipoCriacao = "Parcelamento"
+- detalhesParcelamento (com quantidadeParcelas >= 1 e valorTotal >= 0)
+- parcelas[] (array não vazio com exatamente quantidadeParcelas elementos)
+
+**Campos OPCIONAIS:**
+- fornecedor/cliente
+- observacoes
+- pagamento dentro de cada parcela (preenchido após pagamento da parcela)
+
+**Campos PROIBIDOS:**
+- ❌ pagamento (no nível raiz - deve estar dentro de cada parcela)
+- ❌ detalhesReplica
+- ❌ replicaDe
+
+**Validações adicionais:**
+- Quantidade de elementos no array parcelas[] deve ser igual a detalhesParcelamento.quantidadeParcelas
+- Cada parcela deve ter: numeroParcela, valor, dataVencimento, status
+
+**Mensagens de erro:**
+- "Conta do tipo Parcelamento deve ter detalhesParcelamento"
+- "detalhesParcelamento.quantidadeParcelas deve ser >= 1"
+- "detalhesParcelamento.valorTotal deve ser >= 0"
+- "Conta do tipo Parcelamento deve ter ao menos uma parcela"
+- "Quantidade de parcelas no array não corresponde ao detalhesParcelamento.quantidadeParcelas"
+- "Conta do tipo Parcelamento não pode ter campo pagamento/recebimento no nível raiz"
+- "Conta do tipo Parcelamento não pode ter detalhesReplica"
+
+---
+
+#### Tipo: "Replica"
+
+**Campos OBRIGATÓRIOS:**
+- Campos básicos
+- tipoCriacao = "Replica"
+- detalhesReplica (com quantidadeReplicas >= 1 e valor >= 0)
+
+**Campos OPCIONAIS:**
+- fornecedor/cliente
+- observacoes
+
+**Campos PROIBIDOS:**
+- ❌ pagamento/recebimento
+- ❌ detalhesParcelamento
+- ❌ parcelas
+- ❌ replicaDe (conta pai não tem replicaDe, apenas as contas filhas)
+
+**Nota**: As contas geradas pela réplica são do tipo "Unica" e possuem o campo `replicaDe` preenchido com o ID da conta pai.
+
+**Mensagens de erro:**
+- "Conta do tipo Replica deve ter detalhesReplica"
+- "detalhesReplica.quantidadeReplicas deve ser >= 1"
+- "detalhesReplica.valor deve ser >= 0"
+- "Conta do tipo Replica não pode ter campo pagamento/recebimento"
+- "Conta do tipo Replica não pode ter detalhesParcelamento"
+- "Conta do tipo Replica não pode ter parcelas"
 
 ---
 
@@ -351,6 +496,50 @@ Após aplicar os schemas flexíveis, teste:
 4. ✅ Registrar pagamento em conta única
 5. ✅ Registrar pagamento de parcela específica
 6. ✅ Verificar se caixa aberto é obrigatório
+7. ❌ Tentar criar conta única COM detalhesParcelamento (deve falhar)
+8. ❌ Tentar criar parcelamento SEM parcelas (deve falhar)
+9. ❌ Tentar criar réplica SEM detalhesReplica (deve falhar)
+
+### Exemplos de Payloads Válidos
+
+#### Conta Única (ContasPagar)
+```json
+{
+  "descricao": "Pagamento fornecedor XYZ",
+  "categoria": "Fornecedores",
+  "valor": 1500.00,
+  "dataVencimento": "2024-12-31",
+  "tipoCriacao": "Unica",
+  "fornecedorCodigo": "F001"
+}
+```
+
+#### Parcelamento (ContasReceber)
+```json
+{
+  "descricao": "Venda parcelada",
+  "categoria": "Vendas",
+  "valorTotal": 3000.00,
+  "quantidadeParcelas": 3,
+  "dataVencimento": "2024-12-01",
+  "dataInicio": "2024-12-01",
+  "tipoCriacao": "Parcelamento",
+  "clienteCodigo": "C001"
+}
+```
+
+#### Réplica (ContasPagar)
+```json
+{
+  "descricao": "Aluguel mensal",
+  "categoria": "Aluguel",
+  "valor": 2000.00,
+  "quantidadeReplicas": 12,
+  "dataVencimento": "2024-12-10",
+  "dataInicio": "2024-12-10",
+  "tipoCriacao": "Replica"
+}
+```
 
 ---
 
