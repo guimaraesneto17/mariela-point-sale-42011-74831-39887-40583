@@ -1,4 +1,4 @@
-import { FileText, Download, TrendingUp } from "lucide-react";
+import { FileText, Download, TrendingUp, Wallet } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,6 +9,7 @@ import { SalesReport } from "@/components/reports/SalesReport";
 import { ProductsReport } from "@/components/reports/ProductsReport";
 import { ClientsReport } from "@/components/reports/ClientsReport";
 import { FinancialReport } from "@/components/reports/FinancialReport";
+import { CaixaAnalysisReport } from "@/components/reports/CaixaAnalysisReport";
 import { toast } from "sonner";
 
 const Relatorios = () => {
@@ -71,7 +72,7 @@ const Relatorios = () => {
       </Card>
 
       <Tabs defaultValue="vendas" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto">
           <TabsTrigger value="vendas" className="gap-2">
             <TrendingUp className="h-4 w-4" />
             Vendas
@@ -87,6 +88,10 @@ const Relatorios = () => {
           <TabsTrigger value="financeiro" className="gap-2">
             <FileText className="h-4 w-4" />
             Financeiro
+          </TabsTrigger>
+          <TabsTrigger value="caixas" className="gap-2">
+            <Wallet className="h-4 w-4" />
+            Análise de Caixas
           </TabsTrigger>
         </TabsList>
 
@@ -121,6 +126,10 @@ const Relatorios = () => {
             vendas={data.vendas}
             caixas={data.caixas}
           />
+        </TabsContent>
+
+        <TabsContent value="caixas" className="space-y-6">
+          <CaixaAnalysisReport caixas={data.caixas} />
         </TabsContent>
       </Tabs>
     </div>

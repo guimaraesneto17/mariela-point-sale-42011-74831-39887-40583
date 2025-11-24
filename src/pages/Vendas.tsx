@@ -1,17 +1,33 @@
 import { useState } from "react";
-import { Search, Tag, TrendingDown } from "lucide-react";
+import { Search, Tag, TrendingDown, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { GlobalLoading } from "@/components/GlobalLoading";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useVendas } from "@/hooks/useQueryCache";
+import { caixaAPI } from "@/lib/api";
+import { toast } from "sonner";
 
 const Vendas = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filtroData, setFiltroData] = useState("");
+  const [sincronizando, setSincronizando] = useState(false);
   
   const { data: vendas = [], isLoading } = useVendas();
+
+  const handleSincronizarVendas = async () => {
+    try {
+      setSincronizando(true);
+      const response = await caixaAPI.sincronizarVendas();
+      toast.success(response.message || "Vendas sincronizadas com sucesso!");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao sincronizar vendas");
+    } finally {
+      setSincronizando(false);
+    }
+  };
 
   // Helper function para converter data de forma segura
   const getValidDateString = (dateValue: any): string => {
@@ -53,11 +69,22 @@ const Vendas = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-foreground mb-2">Vendas</h1>
-        <p className="text-muted-foreground">
-          Histórico e gerenciamento de vendas
-        </p>
+      <div className="flex items-center justify-between">
+        <div className="text-center flex-1">
+          <h1 className="text-4xl font-bold text-foreground mb-2">Vendas</h1>
+          <p className="text-muted-foreground">
+            Histórico e gerenciamento de vendas
+          </p>
+        </div>
+        <Button
+          onClick={handleSincronizarVendas}
+          disabled={sincronizando}
+          variant="outline"
+          className="gap-2"
+        >
+          <RefreshCw className={`h-4 w-4 ${sincronizando ? 'animate-spin' : ''}`} />
+          {sincronizando ? 'Sincronizando...' : 'Sincronizar Vendas'}
+        </Button>
       </div>
 
       <Card className="p-4 md:p-6 shadow-card">
