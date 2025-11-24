@@ -25,20 +25,14 @@ const Relatorios = () => {
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <FileText className="h-8 w-8 text-primary" />
-            Relatórios
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Análises e insights completos do seu negócio
-          </p>
-        </div>
-        <Button onClick={handleExport} className="gap-2">
-          <Download className="h-4 w-4" />
-          Exportar Relatório
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+          <FileText className="h-8 w-8 text-primary" />
+          Relatórios
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Análises e insights completos do seu negócio
+        </p>
       </div>
 
       <Card className="bg-gradient-to-br from-primary/10 via-background to-background border-primary/20">
