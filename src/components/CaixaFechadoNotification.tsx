@@ -12,7 +12,7 @@ export function CaixaFechadoNotification() {
   const navigate = useNavigate();
 
   // Páginas onde a notificação deve aparecer
-  const paginasComNotificacao = ["/", "/vendas", "/vendas/nova", "/caixa"];
+  const paginasComNotificacao = ["/vendas", "/vendas/nova", "/caixa", "/financeiro"];
   const mostrarNotificacao = paginasComNotificacao.includes(location.pathname);
 
   useEffect(() => {
