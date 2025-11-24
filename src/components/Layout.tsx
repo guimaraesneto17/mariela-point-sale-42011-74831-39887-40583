@@ -24,6 +24,7 @@ import { useAPIWakeup } from "@/hooks/useAPIWakeup";
 import { GlobalLoading } from "@/components/GlobalLoading";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CacheIndicator } from "@/components/CacheIndicator";
+import { CaixaFechadoNotification } from "@/components/CaixaFechadoNotification";
 
 const Layout = () => {
   const navigate = useNavigate();
@@ -172,6 +173,7 @@ const Layout = () => {
 
       {/* Main Content */}
       <main className={`${isMobile ? 'pt-16' : 'ml-64'} min-h-screen`}>
+        <CaixaFechadoNotification />
         <div className="p-4 md:p-8">
           <Outlet />
         </div>
