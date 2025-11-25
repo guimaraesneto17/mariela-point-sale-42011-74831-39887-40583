@@ -11,8 +11,11 @@ import * as z from "zod";
 import { contasPagarAPI, contasReceberAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { CurrencyInput } from "@/components/ui/currency-input";
-import { ImagePlus, X, Loader2 } from "lucide-react";
+import { ImagePlus, X, Loader2, AlertTriangle } from "lucide-react";
 import { useImageCompression } from "@/hooks/useImageCompression";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { differenceInDays } from "date-fns";
+import { formatCurrency } from "@/lib/utils";
 
 const formas = ["Pix","Cartão de Crédito","Cartão de Débito","Dinheiro","Boleto","Transferência","Outro"] as const;
 
@@ -26,7 +29,8 @@ const schema = z.object({
   formaPagamento: z.enum(["Pix","Cartão de Crédito","Cartão de Débito","Dinheiro","Boleto","Transferência","Outro"], { required_error: "Selecione a forma de pagamento" }),
   observacoes: z.string().max(500).optional(),
   numeroParcela: z.number().optional(),
-  comprovante: z.string().optional()
+  comprovante: z.string().optional(),
+  jurosMulta: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -67,20 +71,66 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
     return Math.max(total - pago, 0);
   })();
   
+  // Calcula se está em atraso e os juros/multa
+  const calcularAtraso = () => {
+    if (!conta) return null;
+    
+    const dataVencimento = parcelaEspecifica 
+      ? new Date(parcelaEspecifica.dataVencimento)
+      : new Date(conta.dataVencimento);
+    
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    dataVencimento.setHours(0, 0, 0, 0);
+    
+    const diasAtraso = differenceInDays(hoje, dataVencimento);
+    
+    if (diasAtraso <= 0) return null;
+    
+    // Cálculo: 2% de multa + 0.033% de juros por dia
+    const valorOriginal = parcelaEspecifica ? parcelaEspecifica.valor : conta.valor;
+    const multa = valorOriginal * 0.02;
+    const jurosDiarios = valorOriginal * 0.00033 * diasAtraso;
+    const totalAcrescimo = multa + jurosDiarios;
+    const percentualTotal = (totalAcrescimo / valorOriginal) * 100;
+    
+    return {
+      diasAtraso,
+      multa,
+      juros: jurosDiarios,
+      totalAcrescimo,
+      percentualTotal,
+      valorComAcrescimo: valorOriginal + totalAcrescimo
+    };
+  };
+  
+  const infoAtraso = calcularAtraso();
+  
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { valor: "0", formaPagamento: undefined, observacoes: '', numeroParcela, comprovante: '' }
+    defaultValues: { 
+      valor: "0", 
+      formaPagamento: undefined, 
+      observacoes: '', 
+      numeroParcela, 
+      comprovante: '',
+      jurosMulta: infoAtraso ? infoAtraso.totalAcrescimo.toFixed(2) : "0"
+    }
   });
 
   // Atualiza o valor default quando a conta muda
   useEffect(() => {
     if (conta && open) {
+      const atraso = calcularAtraso();
+      const valorSugerido = atraso ? atraso.valorComAcrescimo : saldoRestante;
+      
       form.reset({
-        valor: saldoRestante.toFixed(2),
+        valor: valorSugerido.toFixed(2),
         formaPagamento: undefined,
-        observacoes: '',
+        observacoes: atraso ? `Pagamento em atraso - ${atraso.diasAtraso} dia(s)` : '',
         numeroParcela,
-        comprovante: ''
+        comprovante: '',
+        jurosMulta: atraso ? atraso.totalAcrescimo.toFixed(2) : "0"
       });
       setImagePreview(null);
     }
@@ -130,12 +180,6 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
         return;
       }
       
-      if (valorNumerico > saldoRestante) {
-        console.error('❌ [FRONTEND] Valor excede saldo restante:', { valorNumerico, saldoRestante });
-        toast.error('Valor excede o saldo restante');
-        return;
-      }
-      
       console.log('✅ [FRONTEND] Validações passaram. Enviando para API...');
       
       if (tipo === 'pagar') {
@@ -144,7 +188,8 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
           formaPagamento: values.formaPagamento,
           observacoes: values.observacoes,
           numeroParcela,
-          comprovante: values.comprovante
+          comprovante: values.comprovante,
+          jurosMulta: values.jurosMulta ? parseFloat(values.jurosMulta) : undefined
         };
         console.log('📤 [FRONTEND] Payload de pagamento:', payload);
         await contasPagarAPI.pagar(conta.numeroDocumento, payload);
@@ -154,7 +199,8 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
           formaPagamento: values.formaPagamento,
           observacoes: values.observacoes,
           numeroParcela,
-          comprovante: values.comprovante
+          comprovante: values.comprovante,
+          jurosMulta: values.jurosMulta ? parseFloat(values.jurosMulta) : undefined
         };
         console.log('📤 [FRONTEND] Payload de recebimento:', payload);
         await contasReceberAPI.receber(conta.numeroDocumento, payload);
@@ -201,6 +247,22 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
                 </p>
               </div>
             )}
+            
+            {infoAtraso && (
+              <Alert className="border-destructive/50 bg-destructive/10">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <AlertDescription className="text-sm text-destructive space-y-1">
+                  <p className="font-semibold">⚠️ Pagamento em Atraso - {infoAtraso.diasAtraso} dia(s)</p>
+                  <div className="text-xs space-y-0.5">
+                    <p>• Valor original: {formatCurrency(parcelaEspecifica?.valor || conta?.valor || 0)}</p>
+                    <p>• Multa (2%): {formatCurrency(infoAtraso.multa)}</p>
+                    <p>• Juros ({infoAtraso.diasAtraso} dias): {formatCurrency(infoAtraso.juros)}</p>
+                    <p className="font-semibold">• Total com acréscimos (+{infoAtraso.percentualTotal.toFixed(2)}%): {formatCurrency(infoAtraso.valorComAcrescimo)}</p>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+            
             <div className="text-sm text-muted-foreground">
               Saldo restante: <span className="font-semibold text-foreground">{saldoRestante.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
             </div>

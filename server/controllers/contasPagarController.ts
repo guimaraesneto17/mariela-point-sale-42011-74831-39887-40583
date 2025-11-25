@@ -45,7 +45,7 @@ export const createContaPagar = async (req: Request, res: Response) => {
     }
 
     if (tipoCriacao === 'Unica') {
-      // CONTA ÚNICA
+      // ========== CONTA ÚNICA ==========
       const last = await ContasPagar.findOne({ numeroDocumento: /^CP\d{3}$/ }).sort({ numeroDocumento: -1 });
       const next = last ? parseInt((last as any).numeroDocumento.slice(2), 10) + 1 : 1;
       const numero = `CP${String(next).padStart(3, '0')}`;
@@ -80,118 +80,117 @@ export const createContaPagar = async (req: Request, res: Response) => {
       console.log('✅ [CREATE CONTA PAGAR] Conta única criada:', conta.numeroDocumento);
       res.status(201).json(conta);
 
-    } else if (tipoCriacao === 'Parcelamento') {
-      // PARCELAMENTO
-      const { quantidadeParcelas, valorTotal, dataInicio } = req.body;
+    } else if (tipoCriacao === 'Parcelamento' || tipoCriacao === 'Replica') {
+      // ========== PARCELAMENTO ou RÉPLICA (MESMA ESTRUTURA) ==========
+      const { dataInicio } = req.body;
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
 
-      if (!quantidadeParcelas || quantidadeParcelas < 1) {
-        return res.status(400).json({ error: 'Quantidade de parcelas deve ser >= 1' });
+      let numeroBase: string;
+      let parcelas: any[];
+      let contaData: any;
+
+      if (tipoCriacao === 'Parcelamento') {
+        const { quantidadeParcelas, valorTotal } = req.body;
+
+        if (!quantidadeParcelas || quantidadeParcelas < 1) {
+          return res.status(400).json({ error: 'Quantidade de parcelas deve ser >= 1' });
+        }
+
+        // Gerar número documento
+        const last = await ContasPagar.findOne({ numeroDocumento: /^CPP-\d{3}$/ }).sort({ numeroDocumento: -1 });
+        const next = last ? parseInt((last as any).numeroDocumento.split('-')[1], 10) + 1 : 1;
+        numeroBase = `CPP-${String(next).padStart(3, '0')}`;
+
+        // Calcular parcelas (DIVIDE o valor total)
+        const valorParcela = valorTotal / quantidadeParcelas;
+        const dataInicioDate = new Date(dataInicio || req.body.dataVencimento);
+        
+        parcelas = [];
+        for (let i = 0; i < quantidadeParcelas; i++) {
+          const dataVenc = addMonths(dataInicioDate, i);
+          const venc = new Date(dataVenc);
+          venc.setHours(0, 0, 0, 0);
+
+          parcelas.push({
+            numeroParcela: i + 1,
+            valor: valorParcela,
+            dataVencimento: dataVenc,
+            status: venc < hoje ? 'Vencido' : 'Pendente'
+          });
+        }
+
+        contaData = {
+          numeroDocumento: numeroBase,
+          descricao: req.body.descricao,
+          categoria: req.body.categoria,
+          valor: valorTotal,
+          dataEmissao: new Date(),
+          dataVencimento: parcelas[0].dataVencimento,
+          status: 'Pendente',
+          tipoCriacao: 'Parcelamento',
+          detalhesParcelamento: {
+            quantidadeParcelas,
+            valorTotal
+          },
+          parcelas
+        };
+
+      } else {
+        // REPLICA
+        const { quantidadeReplicas, valor } = req.body;
+
+        if (!quantidadeReplicas || quantidadeReplicas < 1) {
+          return res.status(400).json({ error: 'Quantidade de réplicas deve ser >= 1' });
+        }
+
+        // Gerar número documento
+        const last = await ContasPagar.findOne({ numeroDocumento: /^CPR-\d{3}$/ }).sort({ numeroDocumento: -1 });
+        const next = last ? parseInt((last as any).numeroDocumento.split('-')[1], 10) + 1 : 1;
+        numeroBase = `CPR-${String(next).padStart(3, '0')}`;
+
+        // Calcular réplicas (MANTÉM o valor fixo)
+        const dataInicioDate = new Date(dataInicio || req.body.dataVencimento);
+        const valorTotal = valor * quantidadeReplicas;
+        
+        parcelas = [];
+        for (let i = 0; i < quantidadeReplicas; i++) {
+          const dataVenc = addMonths(dataInicioDate, i);
+          const venc = new Date(dataVenc);
+          venc.setHours(0, 0, 0, 0);
+
+          parcelas.push({
+            numeroParcela: i + 1,
+            valor: valor, // Valor fixo (não divide)
+            dataVencimento: dataVenc,
+            status: venc < hoje ? 'Vencido' : 'Pendente'
+          });
+        }
+
+        contaData = {
+          numeroDocumento: numeroBase,
+          descricao: req.body.descricao,
+          categoria: req.body.categoria,
+          valor: valorTotal,
+          dataEmissao: new Date(),
+          dataVencimento: parcelas[0].dataVencimento,
+          status: 'Pendente',
+          tipoCriacao: 'Replica',
+          detalhesReplica: {
+            quantidadeReplicas,
+            valor
+          },
+          parcelas
+        };
       }
 
-      const last = await ContasPagar.findOne({ numeroDocumento: /^CPP-\d{3}$/ }).sort({ numeroDocumento: -1 });
-      const next = last ? parseInt((last as any).numeroDocumento.split('-')[1], 10) + 1 : 1;
-      const numeroBase = `CPP-${String(next).padStart(3, '0')}`;
-
-      const valorParcela = valorTotal / quantidadeParcelas;
-      const dataInicioDate = new Date(dataInicio || req.body.dataVencimento);
-      
-      const parcelas = [];
-      for (let i = 0; i < quantidadeParcelas; i++) {
-        const dataVenc = addMonths(dataInicioDate, i);
-        const hoje = new Date();
-        hoje.setHours(0, 0, 0, 0);
-        const venc = new Date(dataVenc);
-        venc.setHours(0, 0, 0, 0);
-
-        parcelas.push({
-          numeroParcela: i + 1,
-          valor: valorParcela,
-          dataVencimento: dataVenc,
-          status: venc < hoje ? 'Vencido' : 'Pendente'
-        });
-      }
-
-      const contaData: any = {
-        numeroDocumento: numeroBase,
-        descricao: req.body.descricao,
-        categoria: req.body.categoria,
-        valor: valorTotal,
-        dataEmissao: new Date(),
-        dataVencimento: parcelas[0].dataVencimento,
-        status: 'Pendente',
-        tipoCriacao: 'Parcelamento',
-        detalhesParcelamento: {
-          quantidadeParcelas,
-          valorTotal
-        },
-        parcelas,
-        pagamento: undefined // Garante que não exista
-      };
-
+      // Adicionar fornecedor e observações (se houver)
       if (fornecedorObj) contaData.fornecedor = fornecedorObj;
       if (req.body.observacoes) contaData.observacoes = req.body.observacoes;
-      delete contaData.pagamento; // Remove explicitamente
 
       const conta = new ContasPagar(contaData);
       await conta.save();
-      console.log('✅ [CREATE CONTA PAGAR] Parcelamento criado:', conta.numeroDocumento);
-      res.status(201).json(conta);
-
-    } else if (tipoCriacao === 'Replica') {
-      // REPLICAÇÃO (mesmo padrão do Parcelamento, mas com valor fixo)
-      const { quantidadeReplicas, valor, dataInicio } = req.body;
-
-      if (!quantidadeReplicas || quantidadeReplicas < 1) {
-        return res.status(400).json({ error: 'Quantidade de réplicas deve ser >= 1' });
-      }
-
-      const last = await ContasPagar.findOne({ numeroDocumento: /^CPR-\d{3}$/ }).sort({ numeroDocumento: -1 });
-      const next = last ? parseInt((last as any).numeroDocumento.split('-')[1], 10) + 1 : 1;
-      const numeroBase = `CPR-${String(next).padStart(3, '0')}`;
-
-      const dataInicioDate = new Date(dataInicio || req.body.dataVencimento);
-      const valorTotal = valor * quantidadeReplicas;
-      
-      const parcelas = [];
-      for (let i = 0; i < quantidadeReplicas; i++) {
-        const dataVenc = addMonths(dataInicioDate, i);
-        const hoje = new Date();
-        hoje.setHours(0, 0, 0, 0);
-        const venc = new Date(dataVenc);
-        venc.setHours(0, 0, 0, 0);
-
-        parcelas.push({
-          numeroParcela: i + 1,
-          valor: valor, // Valor fixo (não divide)
-          dataVencimento: dataVenc,
-          status: venc < hoje ? 'Vencido' : 'Pendente'
-        });
-      }
-
-      const contaData: any = {
-        numeroDocumento: numeroBase,
-        descricao: req.body.descricao,
-        categoria: req.body.categoria,
-        valor: valorTotal,
-        dataEmissao: new Date(),
-        dataVencimento: parcelas[0].dataVencimento,
-        status: 'Pendente',
-        tipoCriacao: 'Replica',
-        detalhesReplica: {
-          quantidadeReplicas,
-          valor
-        },
-        parcelas,
-        pagamento: undefined // Garante que não exista
-      };
-
-      if (fornecedorObj) contaData.fornecedor = fornecedorObj;
-      if (req.body.observacoes) contaData.observacoes = req.body.observacoes;
-      delete contaData.pagamento; // Remove explicitamente
-
-      const conta = new ContasPagar(contaData);
-      await conta.save();
-      console.log('✅ [CREATE CONTA PAGAR] Réplica criada:', conta.numeroDocumento);
+      console.log(`✅ [CREATE CONTA PAGAR] ${tipoCriacao} criado:`, conta.numeroDocumento);
       res.status(201).json(conta);
 
     } else {
@@ -203,11 +202,7 @@ export const createContaPagar = async (req: Request, res: Response) => {
     if (error?.code === 11000) {
       return res.status(400).json({ error: 'Número de documento já existe' });
     }
-    if (error?.name === 'ValidationError') {
-      const messages = Object.values(error.errors || {}).map((e: any) => e.message);
-      return res.status(400).json({ error: messages.join('; ') });
-    }
-    res.status(400).json({ error: `Erro ao criar conta a pagar: ${error.message}` });
+    res.status(400).json({ error: error.message || 'Erro ao criar conta a pagar' });
   }
 };
 
@@ -218,18 +213,27 @@ export const updateContaPagar = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Conta a pagar não encontrada' });
     }
 
-    // Não permitir alterar tipoCriacao
-    if (req.body.tipoCriacao && req.body.tipoCriacao !== conta.tipoCriacao) {
-      return res.status(400).json({ error: 'Não é possível alterar o tipo de criação após criação' });
+    // Atualizar apenas campos permitidos
+    if (req.body.descricao !== undefined) conta.descricao = req.body.descricao;
+    if (req.body.valor !== undefined) conta.valor = Number(req.body.valor);
+    if (req.body.categoria !== undefined) conta.categoria = req.body.categoria;
+    if (req.body.dataVencimento !== undefined) conta.dataVencimento = new Date(req.body.dataVencimento);
+    if (req.body.observacoes !== undefined) conta.observacoes = req.body.observacoes;
+
+    // Atualizar fornecedor se enviado
+    if (req.body.fornecedorCodigo) {
+      const Fornecedor = (await import('../models/Fornecedor')).default;
+      const fornecedor = await Fornecedor.findOne({ codigoFornecedor: req.body.fornecedorCodigo });
+      if (fornecedor) {
+        conta.fornecedor = {
+          codigoFornecedor: fornecedor.codigoFornecedor,
+          nome: fornecedor.nome
+        };
+      }
     }
 
-    const contaAtualizada = await ContasPagar.findOneAndUpdate(
-      { numeroDocumento: req.params.numero },
-      req.body,
-      { new: true, runValidators: true }
-    );
-    
-    res.json(contaAtualizada);
+    await conta.save();
+    res.json(conta);
   } catch (error) {
     console.error('Erro ao atualizar conta a pagar:', error);
     res.status(400).json({ error: 'Erro ao atualizar conta a pagar' });
@@ -238,111 +242,123 @@ export const updateContaPagar = async (req: Request, res: Response) => {
 
 export const pagarConta = async (req: Request, res: Response) => {
   try {
-    const { valor, data, formaPagamento, observacoes, numeroParcela, comprovante } = req.body;
-
-    console.log('📝 [PAGAR CONTA] Payload recebido:', JSON.stringify(req.body, null, 2));
-
-    if (typeof valor !== 'number' || valor <= 0) {
-      return res.status(400).json({ error: 'Valor deve ser um número positivo' });
-    }
-
-    if (!formaPagamento) {
-      return res.status(400).json({ error: 'Forma de pagamento é obrigatória' });
-    }
-
-    // Verificar caixa aberto
-    const Caixa = (await import('../models/Caixa')).default;
-    const caixaAberto = await Caixa.findOne({ status: 'aberto' }).sort({ dataAbertura: -1 });
-    
-    if (!caixaAberto) {
-      return res.status(400).json({ 
-        error: 'Não é possível registrar pagamento sem um caixa aberto.' 
-      });
-    }
+    console.log('💰 [PAGAR CONTA] Iniciando pagamento');
+    console.log('💰 [PAGAR CONTA] Número da conta:', req.params.numero);
+    console.log('💰 [PAGAR CONTA] Body:', JSON.stringify(req.body, null, 2));
 
     const conta = await ContasPagar.findOne({ numeroDocumento: req.params.numero });
     if (!conta) {
+      console.error('❌ [PAGAR CONTA] Conta não encontrada');
       return res.status(404).json({ error: 'Conta a pagar não encontrada' });
     }
 
-    const dataConvertida = data ? new Date(data) : new Date();
+    const { valorPago, formaPagamento, observacoes, numeroParcela, comprovante, jurosMulta } = req.body;
 
-    if (conta.tipoCriacao === 'Unica') {
-      // PAGAR CONTA ÚNICA
-      conta.pagamento = {
-        valor,
-        data: dataConvertida,
-        formaPagamento,
-        observacoes,
-        comprovante
-      } as any;
-      conta.status = 'Pago';
+    if (!valorPago || valorPago <= 0) {
+      console.error('❌ [PAGAR CONTA] Valor inválido:', valorPago);
+      return res.status(400).json({ error: 'Valor pago deve ser maior que zero' });
+    }
+
+    if (!formaPagamento) {
+      console.error('❌ [PAGAR CONTA] Forma de pagamento não informada');
+      return res.status(400).json({ error: 'Forma de pagamento é obrigatória' });
+    }
+
+    const pagamentoData: any = {
+      valor: valorPago,
+      data: new Date(),
+      formaPagamento,
+      observacoes: observacoes || undefined,
+      comprovante: comprovante || undefined,
+      jurosMulta: jurosMulta || undefined
+    };
+
+    // Se for parcelamento/replica e tiver numeroParcela
+    if ((conta.tipoCriacao === 'Parcelamento' || conta.tipoCriacao === 'Replica') && numeroParcela !== undefined) {
+      console.log('💰 [PAGAR CONTA] Pagando parcela/réplica:', numeroParcela);
       
-    } else if (conta.tipoCriacao === 'Parcelamento') {
-      // PAGAR PARCELA
-      if (numeroParcela === undefined) {
-        return res.status(400).json({ error: 'Número da parcela é obrigatório para pagamento de parcelamento' });
-      }
-
-      const parcela = conta.parcelas.find((p: any) => p.numeroParcela === numeroParcela);
+      const parcela = conta.parcelas?.find((p: any) => p.numeroParcela === numeroParcela);
       if (!parcela) {
+        console.error('❌ [PAGAR CONTA] Parcela não encontrada');
         return res.status(404).json({ error: 'Parcela não encontrada' });
       }
 
-      (parcela as any).pagamento = {
-        valor,
-        data: dataConvertida,
-        formaPagamento,
-        observacoes,
-        comprovante
-      };
-      (parcela as any).status = 'Pago';
-
-      // Calcular status geral baseado nas parcelas
-      const todasPagas = conta.parcelas.every((p: any) => p.status === 'Pago');
-      const algumasPagas = conta.parcelas.some((p: any) => p.status === 'Pago');
+      // Atualizar parcela
+      parcela.pagamento = pagamentoData;
       
-      if (todasPagas) {
+      const valorParcela = parcela.valor || 0;
+      const totalPago = valorPago;
+
+      if (totalPago >= valorParcela) {
+        parcela.status = 'Pago';
+      } else {
+        parcela.status = 'Parcial';
+      }
+
+      console.log(`✅ [PAGAR CONTA] Parcela ${numeroParcela} atualizada:`, parcela.status);
+
+    } else {
+      // Conta única
+      console.log('💰 [PAGAR CONTA] Pagando conta única');
+      
+      conta.pagamento = pagamentoData;
+      
+      const valorTotal = conta.valor || 0;
+      const totalPago = valorPago;
+
+      if (totalPago >= valorTotal) {
         conta.status = 'Pago';
-      } else if (algumasPagas) {
+      } else {
         conta.status = 'Parcial';
       }
-      
-    } else {
-      return res.status(400).json({ error: 'Tipo de conta não suporta pagamento direto' });
+
+      console.log('✅ [PAGAR CONTA] Conta única atualizada:', conta.status);
+    }
+
+    // Atualizar status geral da conta se for parcelamento/replica
+    if (conta.tipoCriacao === 'Parcelamento' || conta.tipoCriacao === 'Replica') {
+      const todasPagas = conta.parcelas?.every((p: any) => p.status === 'Pago');
+      const algumaPaga = conta.parcelas?.some((p: any) => p.status === 'Pago' || p.status === 'Parcial');
+
+      if (todasPagas) {
+        conta.status = 'Pago';
+      } else if (algumaPaga) {
+        conta.status = 'Parcial';
+      }
     }
 
     await conta.save();
 
     // Registrar no caixa
-    const movimento = {
-      tipo: 'saida' as const,
-      valor,
-      data: dataConvertida.toISOString(),
-      codigoVenda: null,
-      formaPagamento,
-      observacao: `Pagamento: ${conta.descricao} - ${conta.numeroDocumento}${numeroParcela ? ` - Parcela ${numeroParcela}` : ''}`
-    };
+    try {
+      const Caixa = (await import('../models/Caixa')).default;
+      const caixaAberto = await Caixa.findOne({ status: 'Aberto' }).sort({ dataAbertura: -1 });
+      
+      if (!caixaAberto) {
+        console.warn('⚠️ [PAGAR CONTA] Nenhum caixa aberto encontrado');
+      } else {
+        caixaAberto.saidas.push({
+          descricao: numeroParcela !== undefined 
+            ? `${conta.descricao} - Parcela ${numeroParcela}/${conta.parcelas?.length}`
+            : conta.descricao,
+          valor: valorPago,
+          formaPagamento,
+          categoria: conta.categoria,
+          data: new Date(),
+          tipo: 'Conta a Pagar'
+        });
+        await caixaAberto.save();
+        console.log('✅ [PAGAR CONTA] Lançado no caixa:', caixaAberto.codigoCaixa);
+      }
+    } catch (caixaError) {
+      console.error('⚠️ [PAGAR CONTA] Erro ao registrar no caixa:', caixaError);
+    }
 
-    caixaAberto.movimentos.push(movimento);
-
-    caixaAberto.saida = caixaAberto.movimentos
-      .filter((m: any) => m.tipo === 'saida')
-      .reduce((sum: number, m: any) => sum + m.valor, 0);
-
-    caixaAberto.entrada = caixaAberto.movimentos
-      .filter((m: any) => m.tipo === 'entrada')
-      .reduce((sum: number, m: any) => sum + m.valor, 0);
-
-    caixaAberto.performance = caixaAberto.entrada - caixaAberto.saida;
-
-    await caixaAberto.save();
-    console.log('✅ [PAGAR CONTA] Operação finalizada com sucesso');
-
+    console.log('✅ [PAGAR CONTA] Operação concluída com sucesso');
     res.json(conta);
   } catch (error: any) {
     console.error('❌ [PAGAR CONTA] Erro:', error);
-    res.status(400).json({ error: `Erro ao registrar pagamento: ${error.message}` });
+    res.status(400).json({ error: error.message || 'Erro ao registrar pagamento' });
   }
 };
 
@@ -352,46 +368,62 @@ export const deleteContaPagar = async (req: Request, res: Response) => {
     if (!conta) {
       return res.status(404).json({ error: 'Conta a pagar não encontrada' });
     }
-    res.json({ message: 'Conta a pagar removida com sucesso' });
+    res.json({ message: 'Conta a pagar excluída com sucesso' });
   } catch (error) {
-    console.error('Erro ao remover conta a pagar:', error);
-    res.status(500).json({ error: 'Erro ao remover conta a pagar' });
+    console.error('Erro ao excluir conta a pagar:', error);
+    res.status(500).json({ error: 'Erro ao excluir conta a pagar' });
   }
 };
 
 export const getResumoContasPagar = async (req: Request, res: Response) => {
   try {
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
+    const contas = await ContasPagar.find();
     
-    const totalPendente = await ContasPagar.aggregate([
-      { $match: { status: { $in: ['Pendente', 'Parcial', 'Vencido'] } } },
-      { $group: { _id: null, total: { $sum: '$valor' } } }
-    ]);
-    
-    const totalPago = await ContasPagar.aggregate([
-      { $match: { status: 'Pago' } },
-      { $group: { _id: null, total: { $sum: '$valor' } } }
-    ]);
-    
-    const totalVencido = await ContasPagar.aggregate([
-      { $match: { status: 'Vencido' } },
-      { $group: { _id: null, total: { $sum: '$valor' } } }
-    ]);
-    
-    const porCategoria = await ContasPagar.aggregate([
-      { $group: { _id: '$categoria', total: { $sum: '$valor' } } },
-      { $sort: { total: -1 } }
-    ]);
-    
+    let totalPendente = 0;
+    let totalPago = 0;
+    let totalVencido = 0;
+
+    contas.forEach((conta: any) => {
+      if (conta.tipoCriacao === 'Parcelamento' || conta.tipoCriacao === 'Replica') {
+        // Para parcelamento/replica, soma parcelas
+        conta.parcelas?.forEach((parcela: any) => {
+          if (parcela.status === 'Pago') {
+            totalPago += parcela.pagamento?.valor || 0;
+          } else if (parcela.status === 'Vencido') {
+            totalVencido += parcela.valor - (parcela.pagamento?.valor || 0);
+          } else if (parcela.status === 'Pendente') {
+            totalPendente += parcela.valor - (parcela.pagamento?.valor || 0);
+          } else if (parcela.status === 'Parcial') {
+            const restante = parcela.valor - (parcela.pagamento?.valor || 0);
+            totalPago += parcela.pagamento?.valor || 0;
+            totalPendente += restante;
+          }
+        });
+      } else {
+        // Para conta única
+        if (conta.status === 'Pago') {
+          totalPago += conta.pagamento?.valor || conta.valor || 0;
+        } else if (conta.status === 'Vencido') {
+          totalVencido += conta.valor - (conta.pagamento?.valor || 0);
+        } else if (conta.status === 'Pendente') {
+          totalPendente += conta.valor - (conta.pagamento?.valor || 0);
+        } else if (conta.status === 'Parcial') {
+          const pago = conta.pagamento?.valor || 0;
+          const restante = conta.valor - pago;
+          totalPago += pago;
+          totalPendente += restante;
+        }
+      }
+    });
+
     res.json({
-      totalPendente: totalPendente[0]?.total || 0,
-      totalPago: totalPago[0]?.total || 0,
-      totalVencido: totalVencido[0]?.total || 0,
-      porCategoria
+      totalPendente,
+      totalPago,
+      totalVencido,
+      quantidadeContas: contas.length
     });
   } catch (error) {
-    console.error('Erro ao buscar resumo:', error);
+    console.error('Erro ao buscar resumo de contas a pagar:', error);
     res.status(500).json({ error: 'Erro ao buscar resumo' });
   }
 };
