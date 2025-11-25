@@ -152,7 +152,7 @@ ContasPagarSchema.pre('save', function(next) {
     if (!conta.detalhesParcelamento.quantidadeParcelas || conta.detalhesParcelamento.quantidadeParcelas < 1) {
       return next(new Error('detalhesParcelamento.quantidadeParcelas deve ser >= 1'));
     }
-    if (conta.detalhesParcelamento.valorTotal === undefined || conta.detalhesParcelamento.valorTotal < 0) {
+    if (conta.detalhesParcelamento.valorTotal === undefined || conta.detalhesParcelamento.valorTotal === null || conta.detalhesParcelamento.valorTotal < 0) {
       return next(new Error('detalhesParcelamento.valorTotal deve ser >= 0'));
     }
 
@@ -186,7 +186,7 @@ ContasPagarSchema.pre('save', function(next) {
     if (!conta.detalhesReplica.quantidadeReplicas || conta.detalhesReplica.quantidadeReplicas < 1) {
       return next(new Error('detalhesReplica.quantidadeReplicas deve ser >= 1'));
     }
-    if (conta.detalhesReplica.valor === undefined || conta.detalhesReplica.valor < 0) {
+    if (conta.detalhesReplica.valor === undefined || conta.detalhesReplica.valor === null || conta.detalhesReplica.valor < 0) {
       return next(new Error('detalhesReplica.valor deve ser >= 0'));
     }
 
