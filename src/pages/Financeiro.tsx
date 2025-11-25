@@ -482,7 +482,7 @@ const Financeiro = () => {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        {conta.tipoCriacao === 'Unica' && (conta.status === 'Pendente' || conta.status === 'Parcial') && (
+                        {conta.tipoCriacao === 'Unica' && (conta.status === 'Pendente' || conta.status === 'Parcial' || conta.status === 'Vencido') && (
                           <Button size="sm" variant="outline" onClick={() => { setRegistroTipo('pagar'); setRegistroConta(conta); setRegistroDialogOpen(true); }}>Registrar Pagamento</Button>
                         )}
                         <Button 
@@ -709,7 +709,7 @@ const Financeiro = () => {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        {conta.tipoCriacao === 'Unica' && (conta.status === 'Pendente' || conta.status === 'Parcial') && (
+                        {conta.tipoCriacao === 'Unica' && (conta.status === 'Pendente' || conta.status === 'Parcial' || conta.status === 'Vencido') && (
                           <Button size="sm" variant="outline" onClick={() => { setRegistroTipo('receber'); setRegistroConta(conta); setRegistroDialogOpen(true); }}>Registrar Recebimento</Button>
                         )}
                         <Button 

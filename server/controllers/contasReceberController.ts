@@ -45,7 +45,7 @@ export const createContaReceber = async (req: Request, res: Response) => {
     }
 
     if (tipoCriacao === 'Unica') {
-      // CONTA ÚNICA
+      // ========== CONTA ÚNICA ==========
       const last = await ContasReceber.findOne({ numeroDocumento: /^CR\d{3}$/ }).sort({ numeroDocumento: -1 });
       const next = last ? parseInt((last as any).numeroDocumento.slice(2), 10) + 1 : 1;
       const numero = `CR${String(next).padStart(3, '0')}`;
@@ -83,124 +83,120 @@ export const createContaReceber = async (req: Request, res: Response) => {
       console.log('✅ [CREATE CONTA RECEBER] Conta única criada:', conta.numeroDocumento);
       res.status(201).json(conta);
 
-    } else if (tipoCriacao === 'Parcelamento') {
-      // PARCELAMENTO
-      const { quantidadeParcelas, valorTotal, dataInicio } = req.body;
+    } else if (tipoCriacao === 'Parcelamento' || tipoCriacao === 'Replica') {
+      // ========== PARCELAMENTO ou RÉPLICA (MESMA ESTRUTURA) ==========
+      const { dataInicio } = req.body;
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
 
-      if (!quantidadeParcelas || quantidadeParcelas < 1) {
-        return res.status(400).json({ error: 'Quantidade de parcelas deve ser >= 1' });
+      let numeroBase: string;
+      let parcelas: any[];
+      let contaData: any;
+
+      if (tipoCriacao === 'Parcelamento') {
+        const { quantidadeParcelas, valorTotal } = req.body;
+
+        if (!quantidadeParcelas || quantidadeParcelas < 1) {
+          return res.status(400).json({ error: 'Quantidade de parcelas deve ser >= 1' });
+        }
+
+        // Gerar número documento
+        const last = await ContasReceber.findOne({ numeroDocumento: /^CRP-\d{3}$/ }).sort({ numeroDocumento: -1 });
+        const next = last ? parseInt((last as any).numeroDocumento.split('-')[1], 10) + 1 : 1;
+        numeroBase = `CRP-${String(next).padStart(3, '0')}`;
+
+        // Calcular parcelas (DIVIDE o valor total)
+        const valorParcela = valorTotal / quantidadeParcelas;
+        const dataInicioDate = new Date(dataInicio || req.body.dataVencimento);
+        
+        parcelas = [];
+        for (let i = 0; i < quantidadeParcelas; i++) {
+          const dataVenc = addMonths(dataInicioDate, i);
+          const venc = new Date(dataVenc);
+          venc.setHours(0, 0, 0, 0);
+
+          parcelas.push({
+            numeroParcela: i + 1,
+            valor: valorParcela,
+            dataVencimento: dataVenc,
+            status: venc < hoje ? 'Vencido' : 'Pendente'
+          });
+        }
+
+        contaData = {
+          numeroDocumento: numeroBase,
+          descricao: req.body.descricao,
+          categoria: req.body.categoria,
+          valor: valorTotal,
+          dataEmissao: new Date(),
+          dataVencimento: parcelas[0].dataVencimento,
+          status: 'Pendente',
+          tipoCriacao: 'Parcelamento',
+          detalhesParcelamento: {
+            quantidadeParcelas,
+            valorTotal
+          },
+          parcelas
+        };
+
+      } else {
+        // REPLICA
+        const { quantidadeReplicas, valor } = req.body;
+
+        if (!quantidadeReplicas || quantidadeReplicas < 1) {
+          return res.status(400).json({ error: 'Quantidade de réplicas deve ser >= 1' });
+        }
+
+        // Gerar número documento
+        const last = await ContasReceber.findOne({ numeroDocumento: /^CRR-\d{3}$/ }).sort({ numeroDocumento: -1 });
+        const next = last ? parseInt((last as any).numeroDocumento.split('-')[1], 10) + 1 : 1;
+        numeroBase = `CRR-${String(next).padStart(3, '0')}`;
+
+        // Calcular réplicas (MANTÉM o valor fixo)
+        const dataInicioDate = new Date(dataInicio || req.body.dataVencimento);
+        const valorTotal = valor * quantidadeReplicas;
+        
+        parcelas = [];
+        for (let i = 0; i < quantidadeReplicas; i++) {
+          const dataVenc = addMonths(dataInicioDate, i);
+          const venc = new Date(dataVenc);
+          venc.setHours(0, 0, 0, 0);
+
+          parcelas.push({
+            numeroParcela: i + 1,
+            valor: valor, // Valor fixo (não divide)
+            dataVencimento: dataVenc,
+            status: venc < hoje ? 'Vencido' : 'Pendente'
+          });
+        }
+
+        contaData = {
+          numeroDocumento: numeroBase,
+          descricao: req.body.descricao,
+          categoria: req.body.categoria,
+          valor: valorTotal,
+          dataEmissao: new Date(),
+          dataVencimento: parcelas[0].dataVencimento,
+          status: 'Pendente',
+          tipoCriacao: 'Replica',
+          detalhesReplica: {
+            quantidadeReplicas,
+            valor
+          },
+          parcelas
+        };
       }
 
-      const last = await ContasReceber.findOne({ numeroDocumento: /^CRP-\d{3}$/ }).sort({ numeroDocumento: -1 });
-      const next = last ? parseInt((last as any).numeroDocumento.split('-')[1], 10) + 1 : 1;
-      const numeroBase = `CRP-${String(next).padStart(3, '0')}`;
-
-      const valorParcela = valorTotal / quantidadeParcelas;
-      const dataInicioDate = new Date(dataInicio || req.body.dataVencimento);
-      
-      const parcelas = [];
-      for (let i = 0; i < quantidadeParcelas; i++) {
-        const dataVenc = addMonths(dataInicioDate, i);
-        const hoje = new Date();
-        hoje.setHours(0, 0, 0, 0);
-        const venc = new Date(dataVenc);
-        venc.setHours(0, 0, 0, 0);
-
-        parcelas.push({
-          numeroParcela: i + 1,
-          valor: valorParcela,
-          dataVencimento: dataVenc,
-          status: venc < hoje ? 'Vencido' : 'Pendente'
-        });
-      }
-
-      const contaData: any = {
-        numeroDocumento: numeroBase,
-        descricao: req.body.descricao,
-        categoria: req.body.categoria,
-        valor: valorTotal,
-        dataEmissao: new Date(),
-        dataVencimento: parcelas[0].dataVencimento,
-        status: 'Pendente',
-        tipoCriacao: 'Parcelamento',
-        detalhesParcelamento: {
-          quantidadeParcelas,
-          valorTotal
-        },
-        parcelas,
-        recebimento: undefined // Garante que não exista
-      };
-
+      // Adicionar cliente, venda relacionada e observações (se houver)
       if (clienteObj) contaData.cliente = clienteObj;
       if (req.body.codigoVenda) {
         contaData.vendaRelacionada = { codigoVenda: req.body.codigoVenda };
       }
       if (req.body.observacoes) contaData.observacoes = req.body.observacoes;
-      delete contaData.recebimento; // Remove explicitamente
 
       const conta = new ContasReceber(contaData);
       await conta.save();
-      console.log('✅ [CREATE CONTA RECEBER] Parcelamento criado:', conta.numeroDocumento);
-      res.status(201).json(conta);
-
-    } else if (tipoCriacao === 'Replica') {
-      // REPLICAÇÃO (mesmo padrão do Parcelamento, mas com valor fixo)
-      const { quantidadeReplicas, valor, dataInicio } = req.body;
-
-      if (!quantidadeReplicas || quantidadeReplicas < 1) {
-        return res.status(400).json({ error: 'Quantidade de réplicas deve ser >= 1' });
-      }
-
-      const last = await ContasReceber.findOne({ numeroDocumento: /^CRR-\d{3}$/ }).sort({ numeroDocumento: -1 });
-      const next = last ? parseInt((last as any).numeroDocumento.split('-')[1], 10) + 1 : 1;
-      const numeroBase = `CRR-${String(next).padStart(3, '0')}`;
-
-      const dataInicioDate = new Date(dataInicio || req.body.dataVencimento);
-      const valorTotal = valor * quantidadeReplicas;
-      
-      const parcelas = [];
-      for (let i = 0; i < quantidadeReplicas; i++) {
-        const dataVenc = addMonths(dataInicioDate, i);
-        const hoje = new Date();
-        hoje.setHours(0, 0, 0, 0);
-        const venc = new Date(dataVenc);
-        venc.setHours(0, 0, 0, 0);
-
-        parcelas.push({
-          numeroParcela: i + 1,
-          valor: valor, // Valor fixo (não divide)
-          dataVencimento: dataVenc,
-          status: venc < hoje ? 'Vencido' : 'Pendente'
-        });
-      }
-
-      const contaData: any = {
-        numeroDocumento: numeroBase,
-        descricao: req.body.descricao,
-        categoria: req.body.categoria,
-        valor: valorTotal,
-        dataEmissao: new Date(),
-        dataVencimento: parcelas[0].dataVencimento,
-        status: 'Pendente',
-        tipoCriacao: 'Replica',
-        detalhesReplica: {
-          quantidadeReplicas,
-          valor
-        },
-        parcelas,
-        recebimento: undefined // Garante que não exista
-      };
-
-      if (clienteObj) contaData.cliente = clienteObj;
-      if (req.body.codigoVenda) {
-        contaData.vendaRelacionada = { codigoVenda: req.body.codigoVenda };
-      }
-      if (req.body.observacoes) contaData.observacoes = req.body.observacoes;
-      delete contaData.recebimento; // Remove explicitamente
-
-      const conta = new ContasReceber(contaData);
-      await conta.save();
-      console.log('✅ [CREATE CONTA RECEBER] Réplica criada:', conta.numeroDocumento);
+      console.log(`✅ [CREATE CONTA RECEBER] ${tipoCriacao} criado:`, conta.numeroDocumento);
       res.status(201).json(conta);
 
     } else {
@@ -212,11 +208,7 @@ export const createContaReceber = async (req: Request, res: Response) => {
     if (error?.code === 11000) {
       return res.status(400).json({ error: 'Número de documento já existe' });
     }
-    if (error?.name === 'ValidationError') {
-      const messages = Object.values(error.errors || {}).map((e: any) => e.message);
-      return res.status(400).json({ error: messages.join('; ') });
-    }
-    res.status(400).json({ error: `Erro ao criar conta a receber: ${error.message}` });
+    res.status(400).json({ error: error.message || 'Erro ao criar conta a receber' });
   }
 };
 
@@ -227,18 +219,27 @@ export const updateContaReceber = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Conta a receber não encontrada' });
     }
 
-    // Não permitir alterar tipoCriacao
-    if (req.body.tipoCriacao && req.body.tipoCriacao !== conta.tipoCriacao) {
-      return res.status(400).json({ error: 'Não é possível alterar o tipo de criação após criação' });
+    // Atualizar apenas campos permitidos
+    if (req.body.descricao !== undefined) conta.descricao = req.body.descricao;
+    if (req.body.valor !== undefined) conta.valor = Number(req.body.valor);
+    if (req.body.categoria !== undefined) conta.categoria = req.body.categoria;
+    if (req.body.dataVencimento !== undefined) conta.dataVencimento = new Date(req.body.dataVencimento);
+    if (req.body.observacoes !== undefined) conta.observacoes = req.body.observacoes;
+
+    // Atualizar cliente se enviado
+    if (req.body.clienteCodigo) {
+      const Cliente = (await import('../models/Cliente')).default;
+      const cliente = await Cliente.findOne({ codigoCliente: req.body.clienteCodigo });
+      if (cliente) {
+        conta.cliente = {
+          codigoCliente: cliente.codigoCliente,
+          nome: cliente.nome
+        };
+      }
     }
 
-    const contaAtualizada = await ContasReceber.findOneAndUpdate(
-      { numeroDocumento: req.params.numero },
-      req.body,
-      { new: true, runValidators: true }
-    );
-    
-    res.json(contaAtualizada);
+    await conta.save();
+    res.json(conta);
   } catch (error) {
     console.error('Erro ao atualizar conta a receber:', error);
     res.status(400).json({ error: 'Erro ao atualizar conta a receber' });
@@ -247,111 +248,123 @@ export const updateContaReceber = async (req: Request, res: Response) => {
 
 export const receberConta = async (req: Request, res: Response) => {
   try {
-    const { valor, data, formaPagamento, observacoes, numeroParcela, comprovante } = req.body;
-
-    console.log('📝 [RECEBER CONTA] Payload recebido:', JSON.stringify(req.body, null, 2));
-
-    if (typeof valor !== 'number' || valor <= 0) {
-      return res.status(400).json({ error: 'Valor deve ser um número positivo' });
-    }
-
-    if (!formaPagamento) {
-      return res.status(400).json({ error: 'Forma de pagamento é obrigatória' });
-    }
-
-    // Verificar caixa aberto
-    const Caixa = (await import('../models/Caixa')).default;
-    const caixaAberto = await Caixa.findOne({ status: 'aberto' }).sort({ dataAbertura: -1 });
-    
-    if (!caixaAberto) {
-      return res.status(400).json({ 
-        error: 'Não é possível registrar recebimento sem um caixa aberto.' 
-      });
-    }
+    console.log('💰 [RECEBER CONTA] Iniciando recebimento');
+    console.log('💰 [RECEBER CONTA] Número da conta:', req.params.numero);
+    console.log('💰 [RECEBER CONTA] Body:', JSON.stringify(req.body, null, 2));
 
     const conta = await ContasReceber.findOne({ numeroDocumento: req.params.numero });
     if (!conta) {
+      console.error('❌ [RECEBER CONTA] Conta não encontrada');
       return res.status(404).json({ error: 'Conta a receber não encontrada' });
     }
 
-    const dataConvertida = data ? new Date(data) : new Date();
+    const { valorRecebido, formaPagamento, observacoes, numeroParcela, comprovante, jurosMulta } = req.body;
 
-    if (conta.tipoCriacao === 'Unica') {
-      // RECEBER CONTA ÚNICA
-      conta.recebimento = {
-        valor,
-        data: dataConvertida,
-        formaPagamento,
-        observacoes,
-        comprovante
-      } as any;
-      conta.status = 'Recebido';
+    if (!valorRecebido || valorRecebido <= 0) {
+      console.error('❌ [RECEBER CONTA] Valor inválido:', valorRecebido);
+      return res.status(400).json({ error: 'Valor recebido deve ser maior que zero' });
+    }
+
+    if (!formaPagamento) {
+      console.error('❌ [RECEBER CONTA] Forma de pagamento não informada');
+      return res.status(400).json({ error: 'Forma de pagamento é obrigatória' });
+    }
+
+    const recebimentoData: any = {
+      valor: valorRecebido,
+      data: new Date(),
+      formaPagamento,
+      observacoes: observacoes || undefined,
+      comprovante: comprovante || undefined,
+      jurosMulta: jurosMulta || undefined
+    };
+
+    // Se for parcelamento/replica e tiver numeroParcela
+    if ((conta.tipoCriacao === 'Parcelamento' || conta.tipoCriacao === 'Replica') && numeroParcela !== undefined) {
+      console.log('💰 [RECEBER CONTA] Recebendo parcela/réplica:', numeroParcela);
       
-    } else if (conta.tipoCriacao === 'Parcelamento') {
-      // RECEBER PARCELA
-      if (numeroParcela === undefined) {
-        return res.status(400).json({ error: 'Número da parcela é obrigatório para recebimento de parcelamento' });
-      }
-
-      const parcela = conta.parcelas.find((p: any) => p.numeroParcela === numeroParcela);
+      const parcela = conta.parcelas?.find((p: any) => p.numeroParcela === numeroParcela);
       if (!parcela) {
+        console.error('❌ [RECEBER CONTA] Parcela não encontrada');
         return res.status(404).json({ error: 'Parcela não encontrada' });
       }
 
-      (parcela as any).recebimento = {
-        valor,
-        data: dataConvertida,
-        formaPagamento,
-        observacoes,
-        comprovante
-      };
-      (parcela as any).status = 'Recebido';
-
-      // Calcular status geral baseado nas parcelas
-      const todasRecebidas = conta.parcelas.every((p: any) => p.status === 'Recebido');
-      const algumasRecebidas = conta.parcelas.some((p: any) => p.status === 'Recebido');
+      // Atualizar parcela
+      parcela.recebimento = recebimentoData;
       
-      if (todasRecebidas) {
+      const valorParcela = parcela.valor || 0;
+      const totalRecebido = valorRecebido;
+
+      if (totalRecebido >= valorParcela) {
+        parcela.status = 'Recebido';
+      } else {
+        parcela.status = 'Parcial';
+      }
+
+      console.log(`✅ [RECEBER CONTA] Parcela ${numeroParcela} atualizada:`, parcela.status);
+
+    } else {
+      // Conta única
+      console.log('💰 [RECEBER CONTA] Recebendo conta única');
+      
+      conta.recebimento = recebimentoData;
+      
+      const valorTotal = conta.valor || 0;
+      const totalRecebido = valorRecebido;
+
+      if (totalRecebido >= valorTotal) {
         conta.status = 'Recebido';
-      } else if (algumasRecebidas) {
+      } else {
         conta.status = 'Parcial';
       }
-      
-    } else {
-      return res.status(400).json({ error: 'Tipo de conta não suporta recebimento direto' });
+
+      console.log('✅ [RECEBER CONTA] Conta única atualizada:', conta.status);
+    }
+
+    // Atualizar status geral da conta se for parcelamento/replica
+    if (conta.tipoCriacao === 'Parcelamento' || conta.tipoCriacao === 'Replica') {
+      const todasRecebidas = conta.parcelas?.every((p: any) => p.status === 'Recebido');
+      const algumaRecebida = conta.parcelas?.some((p: any) => p.status === 'Recebido' || p.status === 'Parcial');
+
+      if (todasRecebidas) {
+        conta.status = 'Recebido';
+      } else if (algumaRecebida) {
+        conta.status = 'Parcial';
+      }
     }
 
     await conta.save();
 
     // Registrar no caixa
-    const movimento = {
-      tipo: 'entrada' as const,
-      valor,
-      data: dataConvertida.toISOString(),
-      codigoVenda: null,
-      formaPagamento,
-      observacao: `Recebimento: ${conta.descricao} - ${conta.numeroDocumento}${numeroParcela ? ` - Parcela ${numeroParcela}` : ''}`
-    };
+    try {
+      const Caixa = (await import('../models/Caixa')).default;
+      const caixaAberto = await Caixa.findOne({ status: 'Aberto' }).sort({ dataAbertura: -1 });
+      
+      if (!caixaAberto) {
+        console.warn('⚠️ [RECEBER CONTA] Nenhum caixa aberto encontrado');
+      } else {
+        caixaAberto.entradas.push({
+          descricao: numeroParcela !== undefined 
+            ? `${conta.descricao} - Parcela ${numeroParcela}/${conta.parcelas?.length}`
+            : conta.descricao,
+          valor: valorRecebido,
+          formaPagamento,
+          categoria: conta.categoria,
+          data: new Date(),
+          tipo: 'Conta a Receber'
+        });
+        await caixaAberto.save();
+        console.log('✅ [RECEBER CONTA] Lançado no caixa:', caixaAberto.codigoCaixa);
+      }
+    } catch (caixaError) {
+      console.error('⚠️ [RECEBER CONTA] Erro ao registrar no caixa:', caixaError);
+    }
 
-    caixaAberto.movimentos.push(movimento);
-
-    caixaAberto.entrada = caixaAberto.movimentos
-      .filter((m: any) => m.tipo === 'entrada')
-      .reduce((sum: number, m: any) => sum + m.valor, 0);
-
-    caixaAberto.saida = caixaAberto.movimentos
-      .filter((m: any) => m.tipo === 'saida')
-      .reduce((sum: number, m: any) => sum + m.valor, 0);
-
-    caixaAberto.performance = caixaAberto.entrada - caixaAberto.saida;
-
-    await caixaAberto.save();
-    console.log('✅ [RECEBER CONTA] Operação finalizada com sucesso');
-
+    console.log('✅ [RECEBER CONTA] Operação concluída com sucesso');
     res.json(conta);
   } catch (error: any) {
     console.error('❌ [RECEBER CONTA] Erro:', error);
-    res.status(400).json({ error: `Erro ao registrar recebimento: ${error.message}` });
+    res.status(400).json({ error: error.message || 'Erro ao registrar recebimento' });
   }
 };
 
@@ -361,46 +374,62 @@ export const deleteContaReceber = async (req: Request, res: Response) => {
     if (!conta) {
       return res.status(404).json({ error: 'Conta a receber não encontrada' });
     }
-    res.json({ message: 'Conta a receber removida com sucesso' });
+    res.json({ message: 'Conta a receber excluída com sucesso' });
   } catch (error) {
-    console.error('Erro ao remover conta a receber:', error);
-    res.status(500).json({ error: 'Erro ao remover conta a receber' });
+    console.error('Erro ao excluir conta a receber:', error);
+    res.status(500).json({ error: 'Erro ao excluir conta a receber' });
   }
 };
 
 export const getResumoContasReceber = async (req: Request, res: Response) => {
   try {
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
+    const contas = await ContasReceber.find();
     
-    const totalPendente = await ContasReceber.aggregate([
-      { $match: { status: { $in: ['Pendente', 'Parcial', 'Vencido'] } } },
-      { $group: { _id: null, total: { $sum: '$valor' } } }
-    ]);
-    
-    const totalRecebido = await ContasReceber.aggregate([
-      { $match: { status: 'Recebido' } },
-      { $group: { _id: null, total: { $sum: '$valor' } } }
-    ]);
-    
-    const totalVencido = await ContasReceber.aggregate([
-      { $match: { status: 'Vencido' } },
-      { $group: { _id: null, total: { $sum: '$valor' } } }
-    ]);
-    
-    const porCategoria = await ContasReceber.aggregate([
-      { $group: { _id: '$categoria', total: { $sum: '$valor' } } },
-      { $sort: { total: -1 } }
-    ]);
-    
+    let totalPendente = 0;
+    let totalRecebido = 0;
+    let totalVencido = 0;
+
+    contas.forEach((conta: any) => {
+      if (conta.tipoCriacao === 'Parcelamento' || conta.tipoCriacao === 'Replica') {
+        // Para parcelamento/replica, soma parcelas
+        conta.parcelas?.forEach((parcela: any) => {
+          if (parcela.status === 'Recebido') {
+            totalRecebido += parcela.recebimento?.valor || 0;
+          } else if (parcela.status === 'Vencido') {
+            totalVencido += parcela.valor - (parcela.recebimento?.valor || 0);
+          } else if (parcela.status === 'Pendente') {
+            totalPendente += parcela.valor - (parcela.recebimento?.valor || 0);
+          } else if (parcela.status === 'Parcial') {
+            const restante = parcela.valor - (parcela.recebimento?.valor || 0);
+            totalRecebido += parcela.recebimento?.valor || 0;
+            totalPendente += restante;
+          }
+        });
+      } else {
+        // Para conta única
+        if (conta.status === 'Recebido') {
+          totalRecebido += conta.recebimento?.valor || conta.valor || 0;
+        } else if (conta.status === 'Vencido') {
+          totalVencido += conta.valor - (conta.recebimento?.valor || 0);
+        } else if (conta.status === 'Pendente') {
+          totalPendente += conta.valor - (conta.recebimento?.valor || 0);
+        } else if (conta.status === 'Parcial') {
+          const recebido = conta.recebimento?.valor || 0;
+          const restante = conta.valor - recebido;
+          totalRecebido += recebido;
+          totalPendente += restante;
+        }
+      }
+    });
+
     res.json({
-      totalPendente: totalPendente[0]?.total || 0,
-      totalRecebido: totalRecebido[0]?.total || 0,
-      totalVencido: totalVencido[0]?.total || 0,
-      porCategoria
+      totalPendente,
+      totalRecebido,
+      totalVencido,
+      quantidadeContas: contas.length
     });
   } catch (error) {
-    console.error('Erro ao buscar resumo:', error);
+    console.error('Erro ao buscar resumo de contas a receber:', error);
     res.status(500).json({ error: 'Erro ao buscar resumo' });
   }
 };
