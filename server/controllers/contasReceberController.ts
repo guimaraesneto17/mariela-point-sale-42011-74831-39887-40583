@@ -127,7 +127,8 @@ export const createContaReceber = async (req: Request, res: Response) => {
           quantidadeParcelas,
           valorTotal
         },
-        parcelas
+        parcelas,
+        recebimento: undefined // Garante que não exista
       };
 
       if (clienteObj) contaData.cliente = clienteObj;
@@ -135,6 +136,7 @@ export const createContaReceber = async (req: Request, res: Response) => {
         contaData.vendaRelacionada = { codigoVenda: req.body.codigoVenda };
       }
       if (req.body.observacoes) contaData.observacoes = req.body.observacoes;
+      delete contaData.recebimento; // Remove explicitamente
 
       const conta = new ContasReceber(contaData);
       await conta.save();
@@ -185,7 +187,8 @@ export const createContaReceber = async (req: Request, res: Response) => {
           quantidadeReplicas,
           valor
         },
-        parcelas
+        parcelas,
+        recebimento: undefined // Garante que não exista
       };
 
       if (clienteObj) contaData.cliente = clienteObj;
@@ -193,6 +196,7 @@ export const createContaReceber = async (req: Request, res: Response) => {
         contaData.vendaRelacionada = { codigoVenda: req.body.codigoVenda };
       }
       if (req.body.observacoes) contaData.observacoes = req.body.observacoes;
+      delete contaData.recebimento; // Remove explicitamente
 
       const conta = new ContasReceber(contaData);
       await conta.save();

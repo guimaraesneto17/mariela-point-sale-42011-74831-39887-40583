@@ -124,11 +124,13 @@ export const createContaPagar = async (req: Request, res: Response) => {
           quantidadeParcelas,
           valorTotal
         },
-        parcelas
+        parcelas,
+        pagamento: undefined // Garante que não exista
       };
 
       if (fornecedorObj) contaData.fornecedor = fornecedorObj;
       if (req.body.observacoes) contaData.observacoes = req.body.observacoes;
+      delete contaData.pagamento; // Remove explicitamente
 
       const conta = new ContasPagar(contaData);
       await conta.save();
@@ -179,11 +181,13 @@ export const createContaPagar = async (req: Request, res: Response) => {
           quantidadeReplicas,
           valor
         },
-        parcelas
+        parcelas,
+        pagamento: undefined // Garante que não exista
       };
 
       if (fornecedorObj) contaData.fornecedor = fornecedorObj;
       if (req.body.observacoes) contaData.observacoes = req.body.observacoes;
+      delete contaData.pagamento; // Remove explicitamente
 
       const conta = new ContasPagar(contaData);
       await conta.save();
