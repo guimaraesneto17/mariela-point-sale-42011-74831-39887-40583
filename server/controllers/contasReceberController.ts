@@ -260,8 +260,10 @@ export const receberConta = async (req: Request, res: Response) => {
 
     const { valorRecebido, formaPagamento, observacoes, numeroParcela, comprovante, jurosMulta } = req.body;
 
-    if (!valorRecebido || valorRecebido <= 0) {
-      console.error('❌ [RECEBER CONTA] Valor inválido:', valorRecebido);
+    const valorNumerico = Number(valorRecebido);
+    
+    if (!valorRecebido || isNaN(valorNumerico) || valorNumerico <= 0) {
+      console.error('❌ [RECEBER CONTA] Valor inválido:', valorRecebido, 'Numérico:', valorNumerico);
       return res.status(400).json({ error: 'Valor recebido deve ser maior que zero' });
     }
 
@@ -271,7 +273,7 @@ export const receberConta = async (req: Request, res: Response) => {
     }
 
     const recebimentoData: any = {
-      valor: valorRecebido,
+      valor: valorNumerico,
       data: new Date(),
       formaPagamento,
       observacoes: observacoes || undefined,
@@ -293,7 +295,7 @@ export const receberConta = async (req: Request, res: Response) => {
       parcela.recebimento = recebimentoData;
       
       const valorParcela = parcela.valor || 0;
-      const totalRecebido = valorRecebido;
+      const totalRecebido = valorNumerico;
 
       if (totalRecebido >= valorParcela) {
         parcela.status = 'Recebido';
@@ -310,7 +312,7 @@ export const receberConta = async (req: Request, res: Response) => {
       conta.recebimento = recebimentoData;
       
       const valorTotal = conta.valor || 0;
-      const totalRecebido = valorRecebido;
+      const totalRecebido = valorNumerico;
 
       if (totalRecebido >= valorTotal) {
         conta.status = 'Recebido';
@@ -347,7 +349,7 @@ export const receberConta = async (req: Request, res: Response) => {
           descricao: numeroParcela !== undefined 
             ? `${conta.descricao} - Parcela ${numeroParcela}/${conta.parcelas?.length}`
             : conta.descricao,
-          valor: valorRecebido,
+          valor: valorNumerico,
           formaPagamento,
           categoria: conta.categoria,
           data: new Date(),

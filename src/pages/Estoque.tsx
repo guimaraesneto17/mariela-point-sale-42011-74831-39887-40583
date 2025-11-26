@@ -1382,7 +1382,19 @@ const Estoque = () => {
                   </div>
 
                   {/* Seletores de Cor e Tamanho */}
-                  <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                    <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg p-3 border-2 border-primary/20">
+                      <label className="text-xs font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">
+                        Disponível Cor
+                      </label>
+                      <div className="text-2xl font-bold text-primary">
+                        {varianteSelecionada?.quantidade || 0}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5 font-medium">
+                        {selectedCor}
+                      </div>
+                    </div>
+
                     <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg p-3 border-2 border-primary/20">
                       <label className="text-xs font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">
                         Disponível Cor/Tamanho
@@ -1497,18 +1509,6 @@ const Estoque = () => {
                             </button>
                           );
                         })}
-                      </div>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 rounded-lg p-3 border-2 border-amber-500/20">
-                      <label className="text-xs font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">
-                        Custo Unitário
-                      </label>
-                      <div className="text-2xl font-bold text-amber-600">
-                        R$ {item.precoCusto?.toFixed(2) || '0.00'}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground mt-0.5 font-medium">
-                        Por unidade
                       </div>
                     </div>
                   </div>

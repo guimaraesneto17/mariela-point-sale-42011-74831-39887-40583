@@ -254,8 +254,10 @@ export const pagarConta = async (req: Request, res: Response) => {
 
     const { valorPago, formaPagamento, observacoes, numeroParcela, comprovante, jurosMulta } = req.body;
 
-    if (!valorPago || valorPago <= 0) {
-      console.error('❌ [PAGAR CONTA] Valor inválido:', valorPago);
+    const valorNumerico = Number(valorPago);
+    
+    if (!valorPago || isNaN(valorNumerico) || valorNumerico <= 0) {
+      console.error('❌ [PAGAR CONTA] Valor inválido:', valorPago, 'Numérico:', valorNumerico);
       return res.status(400).json({ error: 'Valor pago deve ser maior que zero' });
     }
 
@@ -265,7 +267,7 @@ export const pagarConta = async (req: Request, res: Response) => {
     }
 
     const pagamentoData: any = {
-      valor: valorPago,
+      valor: valorNumerico,
       data: new Date(),
       formaPagamento,
       observacoes: observacoes || undefined,
@@ -287,7 +289,7 @@ export const pagarConta = async (req: Request, res: Response) => {
       parcela.pagamento = pagamentoData;
       
       const valorParcela = parcela.valor || 0;
-      const totalPago = valorPago;
+      const totalPago = valorNumerico;
 
       if (totalPago >= valorParcela) {
         parcela.status = 'Pago';
@@ -304,7 +306,7 @@ export const pagarConta = async (req: Request, res: Response) => {
       conta.pagamento = pagamentoData;
       
       const valorTotal = conta.valor || 0;
-      const totalPago = valorPago;
+      const totalPago = valorNumerico;
 
       if (totalPago >= valorTotal) {
         conta.status = 'Pago';
@@ -341,7 +343,7 @@ export const pagarConta = async (req: Request, res: Response) => {
           descricao: numeroParcela !== undefined 
             ? `${conta.descricao} - Parcela ${numeroParcela}/${conta.parcelas?.length}`
             : conta.descricao,
-          valor: valorPago,
+          valor: valorNumerico,
           formaPagamento,
           categoria: conta.categoria,
           data: new Date(),
