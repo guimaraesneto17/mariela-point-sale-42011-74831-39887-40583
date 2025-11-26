@@ -229,7 +229,8 @@ const Dashboard = () => {
 
       const faturamentoDiario = vendasHoje.reduce((acc: number, v: any) => acc + (v.total || 0), 0);
       const totalClientes = clientes.length;
-      const produtosEstoque = estoque.reduce((acc: number, item: any) => acc + (item.quantidadeTotal || 0), 0);
+      // Quantidade de produtos cadastrados em estoque (mesma lógica do badge de estoque)
+      const produtosEstoque = estoque.length;
       
       // Calcular Total Geral (todas as variantes)
       const totalGeralProdutos = estoque.reduce((acc: number, item: any) => {

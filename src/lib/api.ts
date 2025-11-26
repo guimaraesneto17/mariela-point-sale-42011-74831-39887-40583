@@ -204,16 +204,18 @@ export const contasPagarAPI = {
     registrarNoCaixa?: boolean;
     numeroParcela?: number;
     comprovante?: string;
+    jurosMulta?: number;
   }) => {
     console.log('📤 [FRONTEND] Enviando pagamento:', { numero, data });
-    // Mapear valorPago para valor que o backend espera
+    // Enviar no formato que o backend espera
     const payload = {
-      valor: data.valorPago,
-      data: data.dataPagamento,
+      valorPago: data.valorPago,
+      dataPagamento: data.dataPagamento,
       formaPagamento: data.formaPagamento,
       observacoes: data.observacoes,
       numeroParcela: data.numeroParcela,
-      comprovante: data.comprovante
+      comprovante: data.comprovante,
+      jurosMulta: data.jurosMulta,
     };
     return fetchAPI(`/contas-pagar/${numero}/pagar`, {
       method: 'POST',
@@ -250,16 +252,18 @@ export const contasReceberAPI = {
     registrarNoCaixa?: boolean;
     numeroParcela?: number;
     comprovante?: string;
+    jurosMulta?: number;
   }) => {
     console.log('📤 [FRONTEND] Enviando recebimento:', { numero, data });
-    // Mapear valorRecebido para valor que o backend espera
+    // Enviar no formato que o backend espera
     const payload = {
-      valor: data.valorRecebido,
-      data: data.dataRecebimento,
+      valorRecebido: data.valorRecebido,
+      dataRecebimento: data.dataRecebimento,
       formaPagamento: data.formaPagamento,
       observacoes: data.observacoes,
       numeroParcela: data.numeroParcela,
-      comprovante: data.comprovante
+      comprovante: data.comprovante,
+      jurosMulta: data.jurosMulta,
     };
     return fetchAPI(`/contas-receber/${numero}/receber`, {
       method: 'POST',
