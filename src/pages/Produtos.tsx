@@ -25,6 +25,7 @@ type ProdutoFormData = z.infer<typeof produtoSchema>;
 const Produtos = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const [categoriaFiltro, setCategoriaFiltro] = useState("todas");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
@@ -91,12 +92,17 @@ const Produtos = () => {
     }
   };
 
-  const filteredProdutos = produtos.filter(produto =>
-    produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    produto.codigoProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (produto.fornecedor?.nome && produto.fornecedor.nome.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (produto.fornecedor?.codigoFornecedor && produto.fornecedor.codigoFornecedor.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredProdutos = produtos.filter(produto => {
+    const matchesSearch = produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      produto.codigoProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (produto.fornecedor?.nome && produto.fornecedor.nome.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (produto.fornecedor?.codigoFornecedor && produto.fornecedor.codigoFornecedor.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const categoria = typeof produto.categoria === 'string' ? produto.categoria : produto.categoria?.nome;
+    const matchesCategoria = categoriaFiltro === "todas" || categoria === categoriaFiltro;
+    
+    return matchesSearch && matchesCategoria;
+  });
 
   const generateNextCode = () => {
     if (produtos.length === 0) return "P001";
@@ -561,14 +567,36 @@ const Produtos = () => {
       </div>
 
       <Card className="p-4 md:p-6 shadow-card">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
-          <Input
-            placeholder="Buscar por código, nome ou fornecedor..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
+            <Input
+              placeholder="Buscar por código, nome ou fornecedor..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="w-full md:w-64">
+            <Select value={categoriaFiltro} onValueChange={setCategoriaFiltro}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar por categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas as Categorias</SelectItem>
+                <SelectItem value="Calça">Calça</SelectItem>
+                <SelectItem value="Saia">Saia</SelectItem>
+                <SelectItem value="Vestido">Vestido</SelectItem>
+                <SelectItem value="Blusa">Blusa</SelectItem>
+                <SelectItem value="Bolsa">Bolsa</SelectItem>
+                <SelectItem value="Acessório">Acessório</SelectItem>
+                <SelectItem value="Short-Saia">Short-Saia</SelectItem>
+                <SelectItem value="Short">Short</SelectItem>
+                <SelectItem value="Conjunto">Conjunto</SelectItem>
+                <SelectItem value="Outro">Outro</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </Card>
 

@@ -38,6 +38,7 @@ import { DashboardWidgetCard } from "@/components/DashboardWidgetCard";
 import { DashboardWidgetConfig, WidgetConfig } from "@/components/DashboardWidgetConfig";
 import { DashboardAlertasCard } from "@/components/DashboardAlertasCard";
 import { DashboardClientesAnalise } from "@/components/DashboardClientesAnalise";
+import { CategoriasDistribuicaoCard } from "@/components/CategoriasDistribuicaoCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Dashboard = () => {
@@ -98,6 +99,7 @@ const Dashboard = () => {
   const [vendasParaGrafico, setVendasParaGrafico] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
+  const [estoque, setEstoque] = useState<any[]>([]);
 
   useEffect(() => {
     loadDashboardData();
@@ -121,6 +123,8 @@ const Dashboard = () => {
         clientes: Array.isArray(clientes) ? clientes : (clientes.clientes || []),
         produtos: Array.isArray(produtos) ? produtos : (produtos.produtos || []),
       });
+      
+      setEstoque(Array.isArray(estoque) ? estoque : (estoque.itens || estoque.estoque || []));
 
       // Filtrar vendas por período se datas foram selecionadas
       let vendas = vendasAll;
@@ -877,10 +881,14 @@ const Dashboard = () => {
           {/* Análise de Clientes */}
           <div className="mt-8">
             <Tabs defaultValue="overview" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-2 h-auto">
+              <TabsList className="grid w-full grid-cols-3 h-auto">
                 <TabsTrigger value="overview" className="gap-2">
                   <BarChart3 className="h-4 w-4" />
                   Visão Geral
+                </TabsTrigger>
+                <TabsTrigger value="categorias" className="gap-2">
+                  <Package className="h-4 w-4" />
+                  Categorias
                 </TabsTrigger>
                 <TabsTrigger value="clientes" className="gap-2">
                   <Users className="h-4 w-4" />
@@ -890,6 +898,13 @@ const Dashboard = () => {
 
               <TabsContent value="overview" className="space-y-0">
                 {/* Conteúdo já existente está acima */}
+              </TabsContent>
+
+              <TabsContent value="categorias">
+                <CategoriasDistribuicaoCard 
+                  produtos={produtos}
+                  estoque={estoque}
+                />
               </TabsContent>
 
               <TabsContent value="clientes">
