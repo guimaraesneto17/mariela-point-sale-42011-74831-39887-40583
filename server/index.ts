@@ -1,6 +1,7 @@
 import express, { Router } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 import connectDatabase from './config/database';
 import swaggerSpec from './config/swagger';
@@ -76,6 +77,27 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Rate Limiting - Proteção contra ataques DDoS
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 1000, // limite de 1000 requisições por IP
+  message: 'Muitas requisições deste IP, tente novamente após 15 minutos',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Rate limiting mais rigoroso para endpoints críticos
+const strictLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100, // limite de 100 requisições por IP
+  message: 'Limite de requisições excedido para esta operação',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Aplicar rate limiting geral
+app.use('/api/', apiLimiter);
 
 // Logging middleware
 app.use((req, res, next) => {

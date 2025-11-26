@@ -56,6 +56,7 @@ const Dashboard = () => {
     saidaMensal: 0,
     totalClientes: 0,
     produtosEstoque: 0,
+    totalGeralProdutos: 0,
     ticketMedio: 0,
     margemLucro: 0,
     crescimentoMensal: 0,
@@ -72,6 +73,7 @@ const Dashboard = () => {
     { id: "total-clientes", label: "Total de Clientes", category: "Clientes", visible: true },
     { id: "ticket-medio", label: "Ticket Médio", category: "Vendas", visible: true },
     { id: "produtos-estoque", label: "Produtos em Estoque", category: "Estoque", visible: true },
+    { id: "total-geral-produtos", label: "Total Geral (Variantes)", category: "Estoque", visible: true },
     { id: "valor-estoque-custo", label: "Valor Estoque (Custo)", category: "Estoque", visible: true },
     { id: "valor-estoque-venda", label: "Valor Estoque (Venda)", category: "Estoque", visible: true },
     { id: "margem-lucro", label: "Margem de Lucro Real", category: "Financeiro", visible: true },
@@ -229,14 +231,25 @@ const Dashboard = () => {
       const totalClientes = clientes.length;
       const produtosEstoque = estoque.reduce((acc: number, item: any) => acc + (item.quantidadeTotal || 0), 0);
       
-      // Calcular valor total do estoque pelo custo e venda
+      // Calcular Total Geral (todas as variantes)
+      const totalGeralProdutos = estoque.reduce((acc: number, item: any) => {
+        if (item.variantes && Array.isArray(item.variantes)) {
+          return acc + item.variantes.reduce((sum: number, v: any) => sum + (v.quantidade || 0), 0);
+        }
+        return acc + (item.quantidadeTotal || 0);
+      }, 0);
+      
+      // Calcular valor total do estoque (considerando preço promocional quando disponível)
       let valorEstoqueCusto = 0;
       let valorEstoqueVenda = 0;
       
       estoque.forEach((item: any) => {
         const quantidade = item.quantidadeTotal || 0;
         const precoCusto = item.precoCusto || 0;
-        const precoVenda = item.precoVenda || item.precoPromocional || 0;
+        // Usar preço promocional se disponível e menor que o preço de venda
+        const precoVenda = (item.precoPromocional && item.precoPromocional < item.precoVenda) 
+          ? item.precoPromocional 
+          : item.precoVenda || 0;
         
         valorEstoqueCusto += quantidade * precoCusto;
         valorEstoqueVenda += quantidade * precoVenda;
@@ -333,6 +346,7 @@ const Dashboard = () => {
         saidaMensal: vendas.reduce((acc: number, v: any) => acc + (v.total || 0), 0) * 0.3,
         totalClientes,
         produtosEstoque,
+        totalGeralProdutos, // Total de todas as variantes
         ticketMedio: vendas.length > 0 ? vendas.reduce((acc: number, v: any) => acc + (v.total || 0), 0) / vendas.length : 0,
         margemLucro,
         crescimentoMensal,
@@ -518,6 +532,17 @@ const Dashboard = () => {
           value={stats.produtosEstoque}
           icon={<Package className="h-5 w-5 text-orange-600" />}
           iconBgColor="bg-orange-500/10"
+        />
+      ),
+      "total-geral-produtos": (
+        <DashboardWidgetCard
+          id={widget.id}
+          title="Total Geral (Variantes)"
+          value={stats.totalGeralProdutos}
+          subtitle="Todas as variantes"
+          icon={<Package className="h-5 w-5 text-blue-600" />}
+          iconBgColor="bg-blue-500/10"
+          valueColor="text-blue-600"
         />
       ),
       "valor-estoque-custo": (

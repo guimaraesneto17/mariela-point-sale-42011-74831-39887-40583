@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis } from "recharts";
-import { Package, DollarSign } from "lucide-react";
+import { Package, DollarSign, Palette } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface CategoriasDistribuicaoCardProps {
   produtos: any[];
@@ -18,6 +20,8 @@ const COLORS = [
 ];
 
 export const CategoriasDistribuicaoCard = ({ produtos, estoque }: CategoriasDistribuicaoCardProps) => {
+  const [categoriaSelecionada, setCategoriaSelecionada] = useState<string>("");
+  
   // Distribuição de produtos por categoria
   const distribuicaoProdutos = produtos.reduce((acc: any, produto) => {
     const categoria = typeof produto.categoria === 'string' 
@@ -66,6 +70,49 @@ export const CategoriasDistribuicaoCard = ({ produtos, estoque }: CategoriasDist
     return `${name}: ${(percent * 100).toFixed(0)}%`;
   };
 
+  // Análise de variantes por categoria
+  const categorias = Array.from(new Set(produtos.map((p: any) => 
+    typeof p.categoria === 'string' ? p.categoria : p.categoria?.nome || 'Sem Categoria'
+  )));
+
+  const getDadosVariantes = (categoria: string) => {
+    const produtosDaCategoria = produtos.filter((p: any) => {
+      const cat = typeof p.categoria === 'string' ? p.categoria : p.categoria?.nome || 'Sem Categoria';
+      return cat === categoria;
+    });
+
+    const variantesPorCor: any = {};
+    const variantesPorTamanho: any = {};
+
+    produtosDaCategoria.forEach((produto: any) => {
+      const itemEstoque = estoque.find((e: any) => e.codigoProduto === produto.codigoProduto);
+      if (itemEstoque?.variantes && Array.isArray(itemEstoque.variantes)) {
+        itemEstoque.variantes.forEach((variante: any) => {
+          const cor = variante.cor || 'Sem Cor';
+          const tamanho = variante.tamanho || 'Sem Tamanho';
+          const quantidade = variante.quantidade || 0;
+
+          if (!variantesPorCor[cor]) {
+            variantesPorCor[cor] = { cor, quantidade: 0 };
+          }
+          variantesPorCor[cor].quantidade += quantidade;
+
+          if (!variantesPorTamanho[tamanho]) {
+            variantesPorTamanho[tamanho] = { tamanho, quantidade: 0 };
+          }
+          variantesPorTamanho[tamanho].quantidade += quantidade;
+        });
+      }
+    });
+
+    return {
+      cores: Object.values(variantesPorCor).sort((a: any, b: any) => b.quantidade - a.quantidade),
+      tamanhos: Object.values(variantesPorTamanho).sort((a: any, b: any) => b.quantidade - a.quantidade),
+    };
+  };
+
+  const dadosVariantes = categoriaSelecionada ? getDadosVariantes(categoriaSelecionada) : { cores: [], tamanhos: [] };
+
   return (
     <Card className="shadow-card">
       <CardHeader>
@@ -76,14 +123,18 @@ export const CategoriasDistribuicaoCard = ({ produtos, estoque }: CategoriasDist
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="quantidade" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="quantidade">
               <Package className="h-4 w-4 mr-2" />
-              Quantidade de Produtos
+              Quantidade
             </TabsTrigger>
             <TabsTrigger value="valor">
               <DollarSign className="h-4 w-4 mr-2" />
-              Valor em Estoque
+              Valor
+            </TabsTrigger>
+            <TabsTrigger value="variantes">
+              <Palette className="h-4 w-4 mr-2" />
+              Variantes
             </TabsTrigger>
           </TabsList>
 
@@ -213,6 +264,83 @@ export const CategoriasDistribuicaoCard = ({ produtos, estoque }: CategoriasDist
                 </div>
               ))}
             </div>
+          </TabsContent>
+
+          <TabsContent value="variantes" className="space-y-4">
+            <div className="mb-4">
+              <label className="text-sm font-medium mb-2 block">Selecionar Categoria</label>
+              <Select value={categoriaSelecionada} onValueChange={setCategoriaSelecionada}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Escolha uma categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categorias.map((cat: any) => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {categoriaSelecionada ? (
+              <div className="space-y-6">
+                {/* Distribuição por Cor */}
+                <div>
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <Palette className="h-4 w-4 text-primary" />
+                    Distribuição por Cor
+                  </h4>
+                  {dadosVariantes.cores.length > 0 ? (
+                    <div className="space-y-2">
+                      {dadosVariantes.cores.map((item: any, index: number) => (
+                        <div key={item.cor} className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-4 h-4 rounded border border-border"
+                              style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                            />
+                            <span className="text-sm font-medium">{item.cor}</span>
+                          </div>
+                          <span className="text-sm text-muted-foreground">{item.quantidade} unidades</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Nenhuma variante de cor encontrada</p>
+                  )}
+                </div>
+
+                {/* Distribuição por Tamanho */}
+                <div>
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <Package className="h-4 w-4 text-primary" />
+                    Distribuição por Tamanho
+                  </h4>
+                  {dadosVariantes.tamanhos.length > 0 ? (
+                    <div className="space-y-2">
+                      {dadosVariantes.tamanhos.map((item: any, index: number) => (
+                        <div key={item.tamanho} className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-4 h-4 rounded border border-border"
+                              style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                            />
+                            <span className="text-sm font-medium">{item.tamanho}</span>
+                          </div>
+                          <span className="text-sm text-muted-foreground">{item.quantidade} unidades</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Nenhuma variante de tamanho encontrada</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Palette className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>Selecione uma categoria para ver as variantes</p>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </CardContent>

@@ -177,10 +177,10 @@ ContasPagarSchema.pre('save', function(next) {
       return next(new Error('Quantidade de parcelas informada não corresponde ao array de parcelas'));
     }
     
-    // Validar valor total
+    // Validar valor total (tolerância de 0.10 para arredondamentos)
     const somaValorParcelas = conta.parcelas.reduce((sum: number, p: any) => sum + (p.valor || 0), 0);
-    const diff = Math.abs(conta.detalhesParcelamento.valorTotal || 0 - somaValorParcelas);
-    if (diff > 0.02) {
+    const diff = Math.abs((conta.detalhesParcelamento.valorTotal || 0) - somaValorParcelas);
+    if (diff > 0.10) {
       return next(new Error(`Soma dos valores das parcelas (${somaValorParcelas.toFixed(2)}) deve ser igual ao valor total (${(conta.detalhesParcelamento.valorTotal || 0).toFixed(2)})`));
     }
   }
