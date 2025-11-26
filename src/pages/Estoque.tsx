@@ -72,6 +72,8 @@ const Estoque = () => {
   // State para controlar seções colapsáveis por item
   const [movimentacoesOpen, setMovimentacoesOpen] = useState<{[key: string]: boolean}>({});
   const [promocoesOpen, setPromocoesOpen] = useState<{[key: string]: boolean}>({});
+  const [mostrarTodasCores, setMostrarTodasCores] = useState<{[key: string]: boolean}>({});
+  const [mostrarTodosTamanhos, setMostrarTodosTamanhos] = useState<{[key: string]: boolean}>({});
 
   useEffect(() => {
     loadEstoque();
@@ -1089,7 +1091,7 @@ const Estoque = () => {
                       Cores Disponíveis
                     </Label>
                     <div className="flex flex-wrap gap-2">
-                      {coresDisponiveis.slice(0, 4).map((cor: string) => (
+                      {(mostrarTodasCores[item.codigoProduto] ? coresDisponiveis : coresDisponiveis.slice(0, 4)).map((cor: string) => (
                         <button
                           key={cor}
                           onClick={() => handleColorChange(item.codigoProduto, cor, item)}
@@ -1108,8 +1110,12 @@ const Estoque = () => {
                         </button>
                       ))}
                       {coresDisponiveis.length > 4 && (
-                        <button className="px-4 py-2.5 text-xs font-bold rounded-lg bg-gradient-to-br from-secondary to-secondary/70 text-secondary-foreground border-2 border-border hover:border-secondary hover:scale-105 transition-all">
-                          +{coresDisponiveis.length - 4}
+                        <button 
+                          onClick={() => setMostrarTodasCores(prev => ({ ...prev, [item.codigoProduto]: !prev[item.codigoProduto] }))}
+                          className="px-4 py-2.5 text-xs font-bold rounded-lg bg-gradient-to-br from-secondary to-secondary/70 text-secondary-foreground border-2 border-border hover:border-secondary hover:scale-105 transition-all"
+                          title={mostrarTodasCores[item.codigoProduto] ? "Mostrar menos" : "Mostrar todas as cores"}
+                        >
+                          {mostrarTodasCores[item.codigoProduto] ? "Ver menos" : `+${coresDisponiveis.length - 4}`}
                         </button>
                       )}
                     </div>
@@ -1123,7 +1129,7 @@ const Estoque = () => {
                         Tamanhos Disponíveis
                       </Label>
                       <div className="flex flex-wrap gap-2">
-                        {tamanhosDisponiveis.map((tamanho: any) => {
+                        {(mostrarTodosTamanhos[item.codigoProduto] ? tamanhosDisponiveis : tamanhosDisponiveis.slice(0, 6)).map((tamanho: any) => {
                           const tamanhoStr = typeof tamanho === 'string' ? tamanho : tamanho.tamanho;
                           const qtd = typeof tamanho === 'object' ? tamanho.quantidade : 0;
                           return (
@@ -1148,6 +1154,15 @@ const Estoque = () => {
                             </button>
                           );
                         })}
+                        {tamanhosDisponiveis.length > 6 && (
+                          <button 
+                            onClick={() => setMostrarTodosTamanhos(prev => ({ ...prev, [item.codigoProduto]: !prev[item.codigoProduto] }))}
+                            className="px-4 py-2.5 text-xs font-bold rounded-lg bg-gradient-to-br from-secondary to-secondary/70 text-secondary-foreground border-2 border-border hover:border-secondary hover:scale-105 transition-all"
+                            title={mostrarTodosTamanhos[item.codigoProduto] ? "Mostrar menos" : "Mostrar todos os tamanhos"}
+                          >
+                            {mostrarTodosTamanhos[item.codigoProduto] ? "Ver menos" : `+${tamanhosDisponiveis.length - 6}`}
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}

@@ -19,7 +19,8 @@ const ProdutoSchema = new mongoose.Schema({
   categoria: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
+    enum: ['Calça', 'Saia', 'Vestido', 'Blusa', 'Bolsa', 'Acessório', 'Short-Saia', 'Short', 'Conjunto', 'Outro']
   },
   precoCusto: {
     type: Number,
