@@ -3,69 +3,90 @@ import mongoose from 'mongoose';
 const ContasReceberSchema = new mongoose.Schema({
   numeroDocumento: {
     type: String,
-    required: true,
+    required: [true, 'Número do documento é obrigatório'],
     unique: true,
-    trim: true
+    trim: true,
+    index: true
   },
+  
   descricao: {
     type: String,
-    required: true,
+    required: [true, 'Descrição é obrigatória'],
     trim: true,
-    minlength: 3
+    maxlength: [200, 'Descrição não pode ter mais que 200 caracteres']
   },
+  
   cliente: {
     codigoCliente: { type: String, trim: true },
     nome: { type: String, trim: true }
   },
+  
   vendaRelacionada: {
     codigoVenda: { type: String, trim: true }
   },
+  
   categoria: {
     type: String,
-    required: true,
-    trim: true
+    required: [true, 'Categoria é obrigatória'],
+    trim: true,
+    index: true
   },
+  
   valor: {
     type: Number,
-    required: true,
-    min: 0
+    required: [true, 'Valor é obrigatório'],
+    min: [0, 'Valor não pode ser negativo']
   },
+  
   dataEmissao: {
     type: Date,
-    default: Date.now
-  },
-  dataVencimento: {
-    type: Date,
+    default: Date.now,
     required: true
   },
+  
+  dataVencimento: {
+    type: Date,
+    required: [true, 'Data de vencimento é obrigatória'],
+    index: true
+  },
+  
   status: {
     type: String,
     enum: ['Pendente', 'Recebido', 'Vencido', 'Parcial'],
-    default: 'Pendente'
-  },
-  observacoes: {
-    type: String,
-    trim: true
+    default: 'Pendente',
+    required: true,
+    index: true
   },
   
-  // ============ TIPO DE CRIAÇÃO ============
+  observacoes: {
+    type: String,
+    trim: true,
+    maxlength: [500, 'Observações não podem ter mais que 500 caracteres']
+  },
+  
   tipoCriacao: {
     type: String,
     enum: ['Unica', 'Parcelamento', 'Replica'],
+    default: 'Unica',
     required: true,
-    default: 'Unica'
+    index: true
   },
   
   // ============ RECEBIMENTO (SOMENTE CONTA ÚNICA) ============
   recebimento: {
-    valor: { type: Number, min: 0 },
-    data: { type: Date },
-    formaPagamento: { 
-      type: String, 
-      enum: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto', 'Transferência', 'Outro']
+    type: {
+      valor: { type: Number, min: 0 },
+      data: { type: Date },
+      formaPagamento: { 
+        type: String, 
+        enum: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto', 'Transferência', 'Outro']
+      },
+      comprovante: { type: String },
+      observacoes: { type: String, trim: true },
+      jurosMulta: { type: Number, min: 0 }
     },
-    comprovante: { type: String },
-    observacoes: { type: String, trim: true }
+    required: false,
+    default: undefined
   },
   
   // ============ PARCELAMENTO ============
@@ -95,25 +116,21 @@ const ContasReceberSchema = new mongoose.Schema({
           enum: ['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro', 'Boleto', 'Transferência', 'Outro']
         },
         comprovante: { type: String },
-        observacoes: { type: String, trim: true }
+        observacoes: { type: String, trim: true },
+        jurosMulta: { type: Number, min: 0 }
       }
     }],
     required: false,
     default: undefined
   },
   
-  // ============ RÉPLICA ============
+  // ============ REPLICA ============
   detalhesReplica: {
     type: {
       quantidadeReplicas: { type: Number, min: 1 },
       valor: { type: Number, min: 0 }
     },
     required: false
-  },
-  
-  replicaDe: {
-    type: String,
-    trim: true
   }
 }, {
   timestamps: { createdAt: 'dataCadastro', updatedAt: 'dataAtualizacao' },
@@ -126,85 +143,80 @@ ContasReceberSchema.index({ status: 1 });
 ContasReceberSchema.index({ dataVencimento: 1 });
 ContasReceberSchema.index({ categoria: 1 });
 ContasReceberSchema.index({ tipoCriacao: 1 });
-ContasReceberSchema.index({ replicaDe: 1 });
 
-// Validação customizada baseada no tipoCriacao
+// Validação customizada
 ContasReceberSchema.pre('save', function(next) {
-  const conta = this;
-
-  // Validação para conta ÚNICA
+  const conta = this as any;
+  
+  // Validar conta única
   if (conta.tipoCriacao === 'Unica') {
-    // Não deve ter detalhesParcelamento, parcelas ou detalhesReplica
     if (conta.detalhesParcelamento) {
-      return next(new Error('Conta do tipo Única não pode ter detalhesParcelamento'));
+      return next(new Error('Conta do tipo Unica não pode ter detalhes de parcelamento'));
     }
     if (conta.parcelas && conta.parcelas.length > 0) {
-      return next(new Error('Conta do tipo Única não pode ter parcelas'));
+      return next(new Error('Conta do tipo Unica não pode ter parcelas'));
     }
     if (conta.detalhesReplica) {
-      return next(new Error('Conta do tipo Única não pode ter detalhesReplica'));
+      return next(new Error('Conta do tipo Unica não pode ter detalhes de réplica'));
     }
   }
-
-  // Validação para PARCELAMENTO
+  
+  // Validar parcelamento
   if (conta.tipoCriacao === 'Parcelamento') {
-    // Deve ter detalhesParcelamento
-    if (!conta.detalhesParcelamento) {
-      return next(new Error('Conta do tipo Parcelamento deve ter detalhesParcelamento'));
-    }
-    if (!conta.detalhesParcelamento.quantidadeParcelas || conta.detalhesParcelamento.quantidadeParcelas < 1) {
-      return next(new Error('detalhesParcelamento.quantidadeParcelas deve ser >= 1'));
-    }
-    if (conta.detalhesParcelamento.valorTotal === undefined || conta.detalhesParcelamento.valorTotal === null || conta.detalhesParcelamento.valorTotal < 0) {
-      return next(new Error('detalhesParcelamento.valorTotal deve ser >= 0'));
-    }
-
-    // Deve ter array de parcelas não vazio
-    if (!conta.parcelas || conta.parcelas.length === 0) {
-      return next(new Error('Conta do tipo Parcelamento deve ter ao menos uma parcela'));
-    }
-
-    // Validar que quantidade de parcelas bate com o array
-    if (conta.parcelas.length !== conta.detalhesParcelamento.quantidadeParcelas) {
-      return next(new Error('Quantidade de parcelas no array não corresponde ao detalhesParcelamento.quantidadeParcelas'));
-    }
-
-    // Não deve ter recebimento no nível raiz
-    if (conta.recebimento) {
+    if (conta.recebimento && Object.keys(conta.recebimento).length > 0) {
       return next(new Error('Conta do tipo Parcelamento não pode ter campo recebimento no nível raiz (use recebimento dentro de cada parcela)'));
     }
-
-    // Não deve ter detalhesReplica
+    if (!conta.detalhesParcelamento) {
+      return next(new Error('Conta do tipo Parcelamento deve ter detalhes de parcelamento'));
+    }
+    if (!conta.parcelas || conta.parcelas.length === 0) {
+      return next(new Error('Conta do tipo Parcelamento deve ter pelo menos uma parcela'));
+    }
     if (conta.detalhesReplica) {
-      return next(new Error('Conta do tipo Parcelamento não pode ter detalhesReplica'));
+      return next(new Error('Conta do tipo Parcelamento não pode ter detalhes de réplica'));
+    }
+    
+    // Validar quantidade de parcelas
+    if (conta.detalhesParcelamento.quantidadeParcelas !== conta.parcelas.length) {
+      return next(new Error('Quantidade de parcelas informada não corresponde ao array de parcelas'));
+    }
+    
+    // Validar valor total
+    const somaValorParcelas = conta.parcelas.reduce((sum: number, p: any) => sum + (p.valor || 0), 0);
+    const diff = Math.abs(conta.detalhesParcelamento.valorTotal || 0 - somaValorParcelas);
+    if (diff > 0.02) {
+      return next(new Error(`Soma dos valores das parcelas (${somaValorParcelas.toFixed(2)}) deve ser igual ao valor total (${(conta.detalhesParcelamento.valorTotal || 0).toFixed(2)})`));
     }
   }
-
-  // Validação para RÉPLICA
+  
+  // Validar replica
   if (conta.tipoCriacao === 'Replica') {
-    // Deve ter detalhesReplica
-    if (!conta.detalhesReplica) {
-      return next(new Error('Conta do tipo Replica deve ter detalhesReplica'));
-    }
-    if (!conta.detalhesReplica.quantidadeReplicas || conta.detalhesReplica.quantidadeReplicas < 1) {
-      return next(new Error('detalhesReplica.quantidadeReplicas deve ser >= 1'));
-    }
-    if (conta.detalhesReplica.valor === undefined || conta.detalhesReplica.valor === null || conta.detalhesReplica.valor < 0) {
-      return next(new Error('detalhesReplica.valor deve ser >= 0'));
-    }
-
-    // Não deve ter recebimento, detalhesParcelamento ou parcelas
-    if (conta.recebimento) {
+    if (conta.recebimento && Object.keys(conta.recebimento).length > 0) {
       return next(new Error('Conta do tipo Replica não pode ter campo recebimento'));
     }
-    if (conta.detalhesParcelamento) {
-      return next(new Error('Conta do tipo Replica não pode ter detalhesParcelamento'));
+    if (!conta.detalhesReplica) {
+      return next(new Error('Conta do tipo Replica deve ter detalhes de réplica'));
     }
-    if (conta.parcelas && conta.parcelas.length > 0) {
-      return next(new Error('Conta do tipo Replica não pode ter parcelas'));
+    if (!conta.parcelas || conta.parcelas.length === 0) {
+      return next(new Error('Conta do tipo Replica deve ter pelo menos uma réplica'));
+    }
+    if (conta.detalhesParcelamento) {
+      return next(new Error('Conta do tipo Replica não pode ter detalhes de parcelamento'));
+    }
+    
+    // Validar quantidade de réplicas
+    if (conta.detalhesReplica.quantidadeReplicas !== conta.parcelas.length) {
+      return next(new Error('Quantidade de réplicas informada não corresponde ao array de parcelas'));
+    }
+    
+    // Validar que todas as réplicas têm o mesmo valor
+    const valorBase = conta.detalhesReplica.valor;
+    const todasIguais = conta.parcelas.every((p: any) => Math.abs(p.valor - valorBase) < 0.01);
+    if (!todasIguais) {
+      return next(new Error('Todas as réplicas devem ter o mesmo valor'));
     }
   }
-
+  
   next();
 });
 

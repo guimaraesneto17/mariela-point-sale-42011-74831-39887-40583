@@ -10,6 +10,8 @@ import { ProductsReport } from "@/components/reports/ProductsReport";
 import { ClientsReport } from "@/components/reports/ClientsReport";
 import { FinancialReport } from "@/components/reports/FinancialReport";
 import { CaixaAnalysisReport } from "@/components/reports/CaixaAnalysisReport";
+import { InadimplenciaReport } from "@/components/reports/InadimplenciaReport";
+import { FluxoCaixaReport } from "@/components/reports/FluxoCaixaReport";
 import { toast } from "sonner";
 
 const Relatorios = () => {
@@ -66,7 +68,7 @@ const Relatorios = () => {
       </Card>
 
       <Tabs defaultValue="vendas" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-7 h-auto">
           <TabsTrigger value="vendas" className="gap-2">
             <TrendingUp className="h-4 w-4" />
             Vendas
@@ -86,6 +88,14 @@ const Relatorios = () => {
           <TabsTrigger value="caixas" className="gap-2">
             <Wallet className="h-4 w-4" />
             Análise de Caixas
+          </TabsTrigger>
+          <TabsTrigger value="inadimplencia" className="gap-2">
+            <FileText className="h-4 w-4" />
+            Inadimplência
+          </TabsTrigger>
+          <TabsTrigger value="fluxo-caixa" className="gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Fluxo de Caixa
           </TabsTrigger>
         </TabsList>
 
@@ -124,6 +134,20 @@ const Relatorios = () => {
 
         <TabsContent value="caixas" className="space-y-6">
           <CaixaAnalysisReport caixas={data.caixas} />
+        </TabsContent>
+
+        <TabsContent value="inadimplencia" className="space-y-6">
+          <InadimplenciaReport 
+            contasPagar={data.contasPagar}
+            contasReceber={data.contasReceber}
+          />
+        </TabsContent>
+
+        <TabsContent value="fluxo-caixa" className="space-y-6">
+          <FluxoCaixaReport 
+            contasPagar={data.contasPagar}
+            contasReceber={data.contasReceber}
+          />
         </TabsContent>
       </Tabs>
     </div>
