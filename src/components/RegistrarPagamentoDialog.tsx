@@ -109,7 +109,7 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { 
-      valor: "0", 
+      valor: saldoRestante > 0 ? saldoRestante.toFixed(2) : "0.01", 
       formaPagamento: undefined, 
       observacoes: '', 
       numeroParcela, 
@@ -124,8 +124,11 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
       const atraso = calcularAtraso();
       const valorSugerido = atraso ? atraso.valorComAcrescimo : saldoRestante;
       
+      // Garantir que sempre temos um valor válido maior que zero
+      const valorFinal = valorSugerido > 0 ? valorSugerido.toFixed(2) : "0.01";
+      
       form.reset({
-        valor: valorSugerido.toFixed(2),
+        valor: valorFinal,
         formaPagamento: undefined,
         observacoes: atraso ? `Pagamento em atraso - ${atraso.diasAtraso} dia(s)` : '',
         numeroParcela,
