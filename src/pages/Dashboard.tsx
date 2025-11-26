@@ -38,7 +38,9 @@ import { DashboardWidgetCard } from "@/components/DashboardWidgetCard";
 import { DashboardWidgetConfig, WidgetConfig } from "@/components/DashboardWidgetConfig";
 import { DashboardAlertasCard } from "@/components/DashboardAlertasCard";
 import { DashboardClientesAnalise } from "@/components/DashboardClientesAnalise";
+import { DashboardVendedoresAnalise } from "@/components/DashboardVendedoresAnalise";
 import { CategoriasDistribuicaoCard } from "@/components/CategoriasDistribuicaoCard";
+import { MargemLucroCategoriasCard } from "@/components/MargemLucroCategoriasCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Dashboard = () => {
@@ -91,6 +93,7 @@ const Dashboard = () => {
   const [produtos, setProdutos] = useState<any[]>([]);
   const [topClientes, setTopClientes] = useState<any[]>([]);
   const [topVendedores, setTopVendedores] = useState<any[]>([]);
+  const [vendedores, setVendedores] = useState<any[]>([]);
   const [recentSales, setRecentSales] = useState<any[]>([]);
   const [produtosBaixoEstoque, setProdutosBaixoEstoque] = useState<any[]>([]);
   const [movimentacoesEstoque, setMovimentacoesEstoque] = useState<any[]>([]);
@@ -108,7 +111,7 @@ const Dashboard = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const [vendasAll, clientes, produtos, estoque, vendedores, contasPagar, contasReceber] = await Promise.all([
+      const [vendasAll, clientes, produtos, estoque, vendedoresData, contasPagar, contasReceber] = await Promise.all([
         vendasAPI.getAll(),
         clientesAPI.getAll(),
         produtosAPI.getAll(),
@@ -125,6 +128,7 @@ const Dashboard = () => {
       });
       
       setEstoque(Array.isArray(estoque) ? estoque : (estoque.itens || estoque.estoque || []));
+      setVendedores(Array.isArray(vendedoresData) ? vendedoresData : (vendedoresData.vendedores || []));
 
       // Filtrar vendas por período se datas foram selecionadas
       let vendas = vendasAll;
@@ -878,10 +882,10 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Análise de Clientes */}
+          {/* Análise Avançada */}
           <div className="mt-8">
             <Tabs defaultValue="overview" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3 h-auto">
+              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto">
                 <TabsTrigger value="overview" className="gap-2">
                   <BarChart3 className="h-4 w-4" />
                   Visão Geral
@@ -894,16 +898,25 @@ const Dashboard = () => {
                   <Users className="h-4 w-4" />
                   Análise de Clientes
                 </TabsTrigger>
+                <TabsTrigger value="vendedores" className="gap-2">
+                  <UserCheck className="h-4 w-4" />
+                  Análise de Vendedores
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="space-y-0">
                 {/* Conteúdo já existente está acima */}
               </TabsContent>
 
-              <TabsContent value="categorias">
+              <TabsContent value="categorias" className="space-y-6">
                 <CategoriasDistribuicaoCard 
                   produtos={produtos}
                   estoque={estoque}
+                />
+                <MargemLucroCategoriasCard 
+                  produtos={produtos}
+                  estoque={estoque}
+                  vendas={vendasParaGrafico}
                 />
               </TabsContent>
 
@@ -912,6 +925,13 @@ const Dashboard = () => {
                   vendas={vendasParaGrafico}
                   clientes={data?.clientes || []}
                   produtos={produtos}
+                />
+              </TabsContent>
+
+              <TabsContent value="vendedores">
+                <DashboardVendedoresAnalise 
+                  vendas={vendasParaGrafico}
+                  vendedores={vendedores}
                 />
               </TabsContent>
             </Tabs>
