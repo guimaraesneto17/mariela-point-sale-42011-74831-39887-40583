@@ -45,7 +45,7 @@ const Estoque = () => {
   const [showHistoricoPrecos, setShowHistoricoPrecos] = useState(false);
   const [produtoHistorico, setProdutoHistorico] = useState<any>(null);
   const [showAlertasDialog, setShowAlertasDialog] = useState(false);
-  
+
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [inventory, setInventory] = useState<any[]>([]);
@@ -59,25 +59,25 @@ const Estoque = () => {
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
   const [sortBy, setSortBy] = useState<string>("nome"); // nome, preco-asc, preco-desc, quantidade-asc, quantidade-desc, data-entrada
   const [showAnalytics, setShowAnalytics] = useState(false);
-  
+
   // Novos filtros avançados
   const [filterPrecoMin, setFilterPrecoMin] = useState<string>("");
   const [filterPrecoMax, setFilterPrecoMax] = useState<string>("");
   const [filterDataEntrada, setFilterDataEntrada] = useState<string>("todas");
-  
+
   // State para selecionar cor/tamanho por item
-  const [selectedColorByItem, setSelectedColorByItem] = useState<{[key: string]: string}>({});
-  const [selectedSizeByItem, setSelectedSizeByItem] = useState<{[key: string]: string}>({});
-  
+  const [selectedColorByItem, setSelectedColorByItem] = useState<{ [key: string]: string }>({});
+  const [selectedSizeByItem, setSelectedSizeByItem] = useState<{ [key: string]: string }>({});
+
   // State para controlar seções colapsáveis por item
-  const [movimentacoesOpen, setMovimentacoesOpen] = useState<{[key: string]: boolean}>({});
-  const [promocoesOpen, setPromocoesOpen] = useState<{[key: string]: boolean}>({});
-  const [mostrarTodasCores, setMostrarTodasCores] = useState<{[key: string]: boolean}>({});
-  const [mostrarTodosTamanhos, setMostrarTodosTamanhos] = useState<{[key: string]: boolean}>({});
+  const [movimentacoesOpen, setMovimentacoesOpen] = useState<{ [key: string]: boolean }>({});
+  const [promocoesOpen, setPromocoesOpen] = useState<{ [key: string]: boolean }>({});
+  const [mostrarTodasCores, setMostrarTodasCores] = useState<{ [key: string]: boolean }>({});
+  const [mostrarTodosTamanhos, setMostrarTodosTamanhos] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
     loadEstoque();
-    
+
     // Verificar se tem filtro de produto na URL
     const params = new URLSearchParams(location.search);
     const produtoParam = params.get('produto');
@@ -96,11 +96,11 @@ const Estoque = () => {
         console.log('📝 logMovimentacao do primeiro item:', data[0].logMovimentacao);
       }
       setInventory(data);
-      
+
       // Inicializar seleção de cor e tamanho para cada item
-      const initialColors: {[key: string]: string} = {};
-      const initialSizes: {[key: string]: string} = {};
-      
+      const initialColors: { [key: string]: string } = {};
+      const initialSizes: { [key: string]: string } = {};
+
       data.forEach((item: any) => {
         if (item.variantes && item.variantes.length > 0) {
           initialColors[item.codigoProduto] = item.variantes[0].cor;
@@ -120,7 +120,7 @@ const Estoque = () => {
           initialSizes[item.codigoProduto] = primeiroTamanho;
         }
       });
-      
+
       setSelectedColorByItem(initialColors);
       setSelectedSizeByItem(initialSizes);
     } catch (error) {
@@ -136,13 +136,13 @@ const Estoque = () => {
     return inventory.filter(item => {
       const nomeProduto = item.nomeProduto || '';
       const codigoProduto = item.codigoProduto || '';
-      
+
       const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
         codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesPromocao = filterPromocao === null || item.emPromocao === filterPromocao;
       const matchesNovidade = filterNovidade === null || item.isNovidade === filterNovidade;
       const matchesCategoria = categoria === "todas" || item.categoria === categoria;
-      
+
       return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria;
     }).length;
   };
@@ -153,14 +153,14 @@ const Estoque = () => {
       const nomeProduto = item.nomeProduto || '';
       const codigoProduto = item.codigoProduto || '';
       const categoria = item.categoria || '';
-      
+
       const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
         codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesPromocao = filterPromocao === null || item.emPromocao === filterPromocao;
       const matchesNovidade = filterNovidade === null || item.isNovidade === filterNovidade;
       const matchesCategoria = filterCategoria === "todas" || categoria === filterCategoria;
       const matchesCor = cor === "todas" || item.variantes?.some((v: any) => v.cor === cor && v.quantidade > 0);
-      
+
       return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria && matchesCor;
     }).length;
   };
@@ -171,15 +171,15 @@ const Estoque = () => {
       const nomeProduto = item.nomeProduto || '';
       const codigoProduto = item.codigoProduto || '';
       const categoria = item.categoria || '';
-      
+
       const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
         codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesPromocao = filterPromocao === null || item.emPromocao === filterPromocao;
       const matchesNovidade = filterNovidade === null || item.isNovidade === filterNovidade;
       const matchesCategoria = filterCategoria === "todas" || categoria === filterCategoria;
-      const matchesCor = filterCor === "todas" || 
+      const matchesCor = filterCor === "todas" ||
         (item.variantes && item.variantes.some((v: any) => v.cor === filterCor && v.quantidade > 0));
-      const matchesTamanho = tamanho === "todos" || 
+      const matchesTamanho = tamanho === "todos" ||
         item.variantes?.some((v: any) => {
           if (!Array.isArray(v.tamanhos) || v.tamanhos.length === 0) {
             return v.tamanho === tamanho && v.quantidade > 0;
@@ -189,7 +189,7 @@ const Estoque = () => {
           }
           return v.tamanhos.includes(tamanho) && v.quantidade > 0;
         });
-      
+
       return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria && matchesCor && matchesTamanho;
     }).length;
   };
@@ -200,14 +200,14 @@ const Estoque = () => {
       const nomeProduto = item.nomeProduto || '';
       const codigoProduto = item.codigoProduto || '';
       const categoria = item.categoria || '';
-      
+
       const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
         codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesNovidade = filterNovidade === null || item.isNovidade === filterNovidade;
       const matchesCategoria = filterCategoria === "todas" || categoria === filterCategoria;
-      const matchesCor = filterCor === "todas" || 
+      const matchesCor = filterCor === "todas" ||
         (item.variantes && item.variantes.some((v: any) => v.cor === filterCor && v.quantidade > 0));
-      const matchesTamanho = filterTamanho === "todos" || 
+      const matchesTamanho = filterTamanho === "todos" ||
         item.variantes?.some((v: any) => {
           if (!Array.isArray(v.tamanhos) || v.tamanhos.length === 0) {
             return v.tamanho === filterTamanho && v.quantidade > 0;
@@ -217,7 +217,7 @@ const Estoque = () => {
           }
           return v.tamanhos.includes(filterTamanho) && v.quantidade > 0;
         });
-      
+
       return matchesSearch && matchesNovidade && matchesCategoria && matchesCor && matchesTamanho && item.emPromocao === true;
     }).length;
   };
@@ -228,14 +228,14 @@ const Estoque = () => {
       const nomeProduto = item.nomeProduto || '';
       const codigoProduto = item.codigoProduto || '';
       const categoria = item.categoria || '';
-      
+
       const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
         codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesPromocao = filterPromocao === null || item.emPromocao === filterPromocao;
       const matchesCategoria = filterCategoria === "todas" || categoria === filterCategoria;
-      const matchesCor = filterCor === "todas" || 
+      const matchesCor = filterCor === "todas" ||
         (item.variantes && item.variantes.some((v: any) => v.cor === filterCor && v.quantidade > 0));
-      const matchesTamanho = filterTamanho === "todos" || 
+      const matchesTamanho = filterTamanho === "todos" ||
         item.variantes?.some((v: any) => {
           if (!Array.isArray(v.tamanhos) || v.tamanhos.length === 0) {
             return v.tamanho === filterTamanho && v.quantidade > 0;
@@ -245,7 +245,7 @@ const Estoque = () => {
           }
           return v.tamanhos.includes(filterTamanho) && v.quantidade > 0;
         });
-      
+
       return matchesSearch && matchesPromocao && matchesCategoria && matchesCor && matchesTamanho && item.isNovidade === true;
     }).length;
   };
@@ -254,30 +254,30 @@ const Estoque = () => {
     const nomeProduto = item.nomeProduto || '';
     const codigoProduto = item.codigoProduto || '';
     const categoria = item.categoria || '';
-    
+
     // Filtro de texto
     const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
       codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     // Filtro de promoção
     const matchesPromocao = filterPromocao === null || item.emPromocao === filterPromocao;
-    
+
     // Filtro de novidade
     const matchesNovidade = filterNovidade === null || item.isNovidade === filterNovidade;
-    
+
     // Filtro de categoria
     const matchesCategoria = filterCategoria === "todas" || categoria === filterCategoria;
-    
+
     // Ocultar produtos completamente zerados
     const quantidadeTotal = item.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0;
     if (quantidadeTotal === 0) return false;
-    
+
     // Filtro de cor
-    const matchesCor = filterCor === "todas" || 
+    const matchesCor = filterCor === "todas" ||
       (item.variantes && item.variantes.some((v: any) => v.cor === filterCor && v.quantidade > 0));
-    
+
     // Filtro de tamanho - agora verifica o array de tamanhos
-    const matchesTamanho = filterTamanho === "todos" || 
+    const matchesTamanho = filterTamanho === "todos" ||
       (item.variantes && item.variantes.some((v: any) => {
         if (!Array.isArray(v.tamanhos) || v.tamanhos.length === 0) {
           return v.tamanho === filterTamanho && v.quantidade > 0;
@@ -289,7 +289,7 @@ const Estoque = () => {
         // Estrutura antiga: array de strings
         return v.tamanhos.includes(filterTamanho) && v.quantidade > 0;
       }));
-    
+
     // Filtro de quantidade por range personalizado
     const matchesQuantidadeRange = filterQuantidadeRange === "todos" ||
       (filterQuantidadeRange === "0-5" && quantidadeTotal >= 0 && quantidadeTotal <= 5) ||
@@ -302,29 +302,29 @@ const Estoque = () => {
     const precoVenda = item.precoPromocional || item.precoVenda || 0;
     const matchesPrecoMin = !filterPrecoMin || precoVenda >= parseFloat(filterPrecoMin);
     const matchesPrecoMax = !filterPrecoMax || precoVenda <= parseFloat(filterPrecoMax);
-    
+
     // Filtro de data de entrada
     const matchesDataEntrada = filterDataEntrada === "todas" || (() => {
       if (!item.variantes || item.variantes.length === 0) return false;
-      
+
       const hoje = new Date();
       const dataVariante = item.variantes.some((v: any) => {
         if (!v.dataEntrada) return false;
         const dataEntradaVariante = new Date(v.dataEntrada);
         const diffDias = Math.floor((hoje.getTime() - dataEntradaVariante.getTime()) / (1000 * 60 * 60 * 24));
-        
+
         if (filterDataEntrada === "ultimos7dias") return diffDias <= 7;
         if (filterDataEntrada === "ultimos30dias") return diffDias <= 30;
         if (filterDataEntrada === "ultimos90dias") return diffDias <= 90;
         return false;
       });
-      
+
       return dataVariante;
     })();
-    
-    return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria && 
-           matchesCor && matchesTamanho && matchesQuantidadeRange &&
-           matchesPrecoMin && matchesPrecoMax && matchesDataEntrada;
+
+    return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria &&
+      matchesCor && matchesTamanho && matchesQuantidadeRange &&
+      matchesPrecoMin && matchesPrecoMax && matchesDataEntrada;
   });
 
   // Aplicar ordenação
@@ -432,9 +432,9 @@ const Estoque = () => {
   const getSelectedVariant = (item: any) => {
     const cor = selectedColorByItem[item.codigoProduto];
     const tamanho = selectedSizeByItem[item.codigoProduto];
-    
+
     if (!item.variantes || !cor) return null;
-    
+
     // Encontrar variante pela cor (já que agora cada cor tem um array de tamanhos)
     return item.variantes.find((v: any) => v.cor === cor);
   };
@@ -444,13 +444,13 @@ const Estoque = () => {
     if (!item.variantes) return 0;
     const variante = item.variantes.find((v: any) => v.cor === cor);
     if (!variante) return 0;
-    
+
     // Nova estrutura: tamanhos é array de objetos {tamanho, quantidade}
     if (Array.isArray(variante.tamanhos) && variante.tamanhos.length > 0 && typeof variante.tamanhos[0] === 'object') {
       const tamanhoObj = variante.tamanhos.find((t: any) => t.tamanho === tamanho);
       return tamanhoObj ? tamanhoObj.quantidade : 0;
     }
-    
+
     // Estrutura antiga: retorna quantidade total da variante se o tamanho bater
     if (Array.isArray(variante.tamanhos) && variante.tamanhos.includes(tamanho)) {
       return variante.quantidade || 0;
@@ -458,14 +458,14 @@ const Estoque = () => {
     if (variante.tamanho === tamanho) {
       return variante.quantidade || 0;
     }
-    
+
     return 0;
   };
 
   // Atualizar cor selecionada
   const handleColorChange = (codigoProduto: string, cor: string, item: any) => {
     setSelectedColorByItem(prev => ({ ...prev, [codigoProduto]: cor }));
-    
+
     // Ajustar tamanho para o primeiro disponível nesta cor
     const tamanhosDisponiveis = getTamanhosDisponiveis(item, cor);
     if (tamanhosDisponiveis.length > 0) {
@@ -486,13 +486,13 @@ const Estoque = () => {
       const nomeProduto = item.nomeProduto || '';
       const codigoProduto = item.codigoProduto || '';
       const categoria = item.categoria || '';
-      
+
       const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
         codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesPromocao = filterPromocao === null || item.emPromocao === filterPromocao;
       const matchesNovidade = filterNovidade === null || item.isNovidade === filterNovidade;
       const matchesCategoria = filterCategoria === "todas" || categoria === filterCategoria;
-      
+
       const precoVenda = item.precoPromocional || item.precoVenda || 0;
       const matchesPrecoMin = !filterPrecoMin || precoVenda >= parseFloat(filterPrecoMin);
       const matchesPrecoMax = !filterPrecoMax || precoVenda <= parseFloat(filterPrecoMax);
@@ -509,11 +509,11 @@ const Estoque = () => {
           return false;
         });
       })();
-      
-      return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria && 
-             matchesPrecoMin && matchesPrecoMax && matchesDataEntrada;
+
+      return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria &&
+        matchesPrecoMin && matchesPrecoMax && matchesDataEntrada;
     });
-    
+
     inventoryParaCores.forEach((item) => {
       item.variantes?.forEach((v: any) => {
         if (v.quantidade > 0) {
@@ -532,15 +532,15 @@ const Estoque = () => {
       const nomeProduto = item.nomeProduto || '';
       const codigoProduto = item.codigoProduto || '';
       const categoria = item.categoria || '';
-      
+
       const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
         codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesPromocao = filterPromocao === null || item.emPromocao === filterPromocao;
       const matchesNovidade = filterNovidade === null || item.isNovidade === filterNovidade;
       const matchesCategoria = filterCategoria === "todas" || categoria === filterCategoria;
-      const matchesCor = filterCor === "todas" || 
+      const matchesCor = filterCor === "todas" ||
         (item.variantes && item.variantes.some((v: any) => v.cor === filterCor && v.quantidade > 0));
-      
+
       const precoVenda = item.precoPromocional || item.precoVenda || 0;
       const matchesPrecoMin = !filterPrecoMin || precoVenda >= parseFloat(filterPrecoMin);
       const matchesPrecoMax = !filterPrecoMax || precoVenda <= parseFloat(filterPrecoMax);
@@ -557,17 +557,17 @@ const Estoque = () => {
           return false;
         });
       })();
-      
-      return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria && 
-             matchesCor && matchesPrecoMin && matchesPrecoMax && 
-             matchesDataEntrada;
+
+      return matchesSearch && matchesPromocao && matchesNovidade && matchesCategoria &&
+        matchesCor && matchesPrecoMin && matchesPrecoMax &&
+        matchesDataEntrada;
     });
-    
+
     inventoryParaTamanhos.forEach((item) => {
       item.variantes?.forEach((v: any) => {
         // Filtrar pela cor se houver filtro de cor ativo
         if (filterCor !== "todas" && v.cor !== filterCor) return;
-        
+
         if (v.quantidade > 0) {
           // Nova estrutura: tamanhos é array de objetos {tamanho, quantidade}
           if (Array.isArray(v.tamanhos) && v.tamanhos.length > 0) {
@@ -707,7 +707,7 @@ const Estoque = () => {
               className="pl-10"
             />
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <div className="relative overflow-hidden">
               <Label className="text-sm font-bold text-primary mb-2 block uppercase tracking-wide flex items-center gap-2">
@@ -962,34 +962,34 @@ const Estoque = () => {
               </Select>
             </div>
 
-            {(filterPrecoMin || filterPrecoMax || 
+            {(filterPrecoMin || filterPrecoMax ||
               filterDataEntrada !== "todas" || filterCategoria !== "todas" ||
-              filterCor !== "todas" || filterTamanho !== "todos" || 
+              filterCor !== "todas" || filterTamanho !== "todos" ||
               filterQuantidadeRange !== "todos" ||
               filterPromocao !== null || filterNovidade !== null) && (
-              <div className="flex items-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setFilterPrecoMin("");
-                    setFilterPrecoMax("");
-                    setFilterDataEntrada("todas");
-                    setFilterCategoria("todas");
-                    setFilterCor("todas");
-                    setFilterTamanho("todos");
-                    setFilterQuantidadeRange("todos");
-                    setFilterPromocao(null);
-                    setFilterNovidade(null);
-                    setSortBy("nome");
-                  }}
-                  className="w-full h-9"
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Limpar Filtros
-                </Button>
-              </div>
-            )}
+                <div className="flex items-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setFilterPrecoMin("");
+                      setFilterPrecoMax("");
+                      setFilterDataEntrada("todas");
+                      setFilterCategoria("todas");
+                      setFilterCor("todas");
+                      setFilterTamanho("todos");
+                      setFilterQuantidadeRange("todos");
+                      setFilterPromocao(null);
+                      setFilterNovidade(null);
+                      setSortBy("nome");
+                    }}
+                    className="w-full h-9"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Limpar Filtros
+                  </Button>
+                </div>
+              )}
           </div>
         </div>
       </Card>
@@ -1015,7 +1015,7 @@ const Estoque = () => {
             const selectedTamanho = String(selectedSizeByItem[item.codigoProduto] || '');
             const varianteSelecionada = getSelectedVariant(item);
             const tamanhosDisponiveis = getTamanhosDisponiveis(item, selectedCor);
-            
+
             // Calcular quantidade da cor-tamanho selecionada
             let quantidadeCorTamanho = 0;
             if (varianteSelecionada && selectedTamanho) {
@@ -1027,7 +1027,7 @@ const Estoque = () => {
                 quantidadeCorTamanho = typeof tamanhoObj === 'object' ? tamanhoObj.quantidade : 1;
               }
             }
-            
+
             return (
               <Card key={item.codigoProduto} className="p-4 shadow-card hover:shadow-lg transition-all">
                 <div className="space-y-3">
@@ -1042,7 +1042,7 @@ const Estoque = () => {
                           showControls={true}
                           showStarOnFirst={true}
                         />
-                        
+
                         {/* Badge de quantidade de imagens */}
                         <div className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground rounded-full p-1.5 shadow-lg border-2 border-background flex items-center gap-0.5 text-xs font-bold z-10">
                           <ImageIcon className="h-3 w-3" />
@@ -1051,8 +1051,8 @@ const Estoque = () => {
                       </div>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <img 
-                          src={getDefaultImageByCategory(item.categoria)} 
+                        <img
+                          src={getDefaultImageByCategory(item.categoria)}
                           alt={item.categoria}
                           className="w-20 h-20 object-contain opacity-30"
                         />
@@ -1125,11 +1125,10 @@ const Estoque = () => {
                         <button
                           key={cor}
                           onClick={() => handleColorChange(item.codigoProduto, cor, item)}
-                          className={`relative px-4 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 min-w-[70px] ${
-                            selectedCor === cor 
-                              ? 'bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] animate-pulse-glow text-primary-foreground shadow-xl scale-105 border-2 border-primary' 
+                          className={`relative px-4 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 min-w-[70px] ${selectedCor === cor
+                              ? 'bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] animate-pulse-glow text-primary-foreground shadow-xl scale-105 border-2 border-primary'
                               : 'bg-gradient-to-br from-muted to-muted/50 text-foreground hover:from-primary/20 hover:to-accent/20 hover:text-primary hover:scale-105 border-2 border-border hover:border-primary/50 hover:shadow-lg'
-                          }`}
+                            }`}
                         >
                           {cor}
                           {selectedCor === cor && (
@@ -1140,7 +1139,7 @@ const Estoque = () => {
                         </button>
                       ))}
                       {coresDisponiveis.length > 4 && (
-                        <button 
+                        <button
                           onClick={() => setMostrarTodasCores(prev => ({ ...prev, [item.codigoProduto]: !prev[item.codigoProduto] }))}
                           className="px-4 py-2.5 text-xs font-bold rounded-lg bg-gradient-to-br from-secondary to-secondary/70 text-secondary-foreground border-2 border-border hover:border-secondary hover:scale-105 transition-all"
                           title={mostrarTodasCores[item.codigoProduto] ? "Mostrar menos" : "Mostrar todas as cores"}
@@ -1166,11 +1165,10 @@ const Estoque = () => {
                             <button
                               key={tamanhoStr}
                               onClick={() => handleSizeChange(item.codigoProduto, tamanhoStr)}
-                              className={`relative px-4 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 min-w-[65px] ${
-                                selectedTamanho === tamanhoStr 
-                                  ? 'bg-gradient-to-r from-accent via-primary to-accent bg-[length:200%_auto] animate-pulse-glow text-accent-foreground shadow-xl scale-105 border-2 border-accent' 
+                              className={`relative px-4 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 min-w-[65px] ${selectedTamanho === tamanhoStr
+                                  ? 'bg-gradient-to-r from-accent via-primary to-accent bg-[length:200%_auto] animate-pulse-glow text-accent-foreground shadow-xl scale-105 border-2 border-accent'
                                   : 'bg-gradient-to-br from-muted to-muted/50 text-foreground hover:from-accent/20 hover:to-primary/20 hover:text-accent hover:scale-105 border-2 border-border hover:border-accent/50 hover:shadow-lg'
-                              }`}
+                                }`}
                             >
                               <span className="flex flex-col items-center gap-0.5">
                                 <span className="font-bold">{tamanhoStr}</span>
@@ -1185,7 +1183,7 @@ const Estoque = () => {
                           );
                         })}
                         {tamanhosDisponiveis.length > 6 && (
-                          <button 
+                          <button
                             onClick={() => setMostrarTodosTamanhos(prev => ({ ...prev, [item.codigoProduto]: !prev[item.codigoProduto] }))}
                             className="px-4 py-2.5 text-xs font-bold rounded-lg bg-gradient-to-br from-secondary to-secondary/70 text-secondary-foreground border-2 border-border hover:border-secondary hover:scale-105 transition-all"
                             title={mostrarTodosTamanhos[item.codigoProduto] ? "Mostrar menos" : "Mostrar todos os tamanhos"}
@@ -1324,8 +1322,8 @@ const Estoque = () => {
                   {/* Header com imagem, nome e badges */}
                   <div className="flex items-start gap-4">
                     {varianteSelecionada && varianteSelecionada.imagens && varianteSelecionada.imagens.length > 0 ? (
-                      <div 
-                        className="relative group cursor-pointer w-24 h-24 rounded-lg overflow-hidden" 
+                      <div
+                        className="relative group cursor-pointer w-24 h-24 rounded-lg overflow-hidden"
                         onClick={() => openLightbox(varianteSelecionada.imagens)}
                         title="Clique para ver todas as imagens"
                       >
@@ -1337,7 +1335,7 @@ const Estoque = () => {
                           showControls={varianteSelecionada.imagens.length > 1}
                           showStarOnFirst={true}
                         />
-                        
+
                         {/* Badge com ícone de imagem e quantidade */}
                         <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-1.5 shadow-lg border-2 border-background flex items-center justify-center gap-1 min-w-[28px] z-30">
                           <ImageIcon className="h-3 w-3" />
@@ -1346,8 +1344,8 @@ const Estoque = () => {
                       </div>
                     ) : (
                       <div className="w-24 h-24 bg-gradient-to-br from-muted/50 to-muted/20 rounded-lg flex items-center justify-center border-2 border-dashed border-border">
-                        <img 
-                          src={getDefaultImageByCategory(item.categoria)} 
+                        <img
+                          src={getDefaultImageByCategory(item.categoria)}
                           alt={`${item.categoria || 'Produto'} - Logo Mariela`}
                           className="w-14 h-14 object-contain opacity-30"
                           onError={(e) => {
@@ -1382,19 +1380,7 @@ const Estoque = () => {
                   </div>
 
                   {/* Seletores de Cor e Tamanho */}
-                  <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                    <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg p-3 border-2 border-primary/20">
-                      <label className="text-xs font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">
-                        Disponível Cor
-                      </label>
-                      <div className="text-2xl font-bold text-primary">
-                        {varianteSelecionada?.quantidade || 0}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground mt-0.5 font-medium">
-                        {selectedCor}
-                      </div>
-                    </div>
-
+                  <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
                     <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg p-3 border-2 border-primary/20">
                       <label className="text-xs font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">
                         Disponível Cor/Tamanho
@@ -1407,25 +1393,15 @@ const Estoque = () => {
                       </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-green-500/10 to-green-500/5 rounded-lg p-3 border-2 border-green-500/20">
+                    <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-lg p-3 border-2 border-blue-500/20">
                       <label className="text-xs font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">
-                        Preço de Venda
+                        Disponível Cor
                       </label>
-                      <div className="space-y-0.5">
-                        {item.emPromocao && item.precoPromocional ? (
-                          <>
-                            <div className="text-sm font-semibold text-muted-foreground line-through">
-                              R$ {item.precoVenda?.toFixed(2) || '0.00'}
-                            </div>
-                            <div className="text-2xl font-bold text-green-600">
-                              R$ {item.precoPromocional.toFixed(2)}
-                            </div>
-                          </>
-                        ) : (
-                          <div className="text-2xl font-bold text-green-600">
-                            R$ {item.precoVenda?.toFixed(2) || '0.00'}
-                          </div>
-                        )}
+                      <div className="text-2xl font-bold text-blue-600">
+                        {varianteSelecionada?.quantidade || 0}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5 font-medium">
+                        Todas os tamanhos - {selectedCor}
                       </div>
                     </div>
 
@@ -1457,8 +1433,8 @@ const Estoque = () => {
                               border-2 shadow-sm
                               hover:scale-105 hover:shadow-lg
                               active:scale-95
-                              ${selectedCor === cor 
-                                ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-primary shadow-primary/30 ring-2 ring-primary ring-offset-2' 
+                              ${selectedCor === cor
+                                ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-primary shadow-primary/30 ring-2 ring-primary ring-offset-2'
                                 : 'bg-background text-foreground border-primary/30 hover:border-primary/60 hover:bg-primary/5'
                               }
                             `}
@@ -1491,8 +1467,8 @@ const Estoque = () => {
                                 border-2 shadow-sm
                                 hover:scale-105 hover:shadow-lg
                                 active:scale-95
-                                ${isSelected 
-                                  ? 'bg-gradient-to-br from-accent to-accent/80 text-accent-foreground border-accent shadow-accent/30 ring-2 ring-accent ring-offset-2' 
+                                ${isSelected
+                                  ? 'bg-gradient-to-br from-accent to-accent/80 text-accent-foreground border-accent shadow-accent/30 ring-2 ring-accent ring-offset-2'
                                   : 'bg-background text-foreground border-accent/30 hover:border-accent/60 hover:bg-accent/5'
                                 }
                               `}
@@ -1509,6 +1485,26 @@ const Estoque = () => {
                             </button>
                           );
                         })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-semibold text-muted-foreground mb-2 block">Preço de Venda</label>
+                      <div className="space-y-1">
+                        {item.emPromocao && item.precoPromocional ? (
+                          <>
+                            <div className="text-lg font-semibold text-muted-foreground line-through">
+                              R$ {item.precoVenda?.toFixed(2) || '0.00'}
+                            </div>
+                            <div className="text-2xl font-bold text-accent">
+                              R$ {item.precoPromocional.toFixed(2)}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-2xl font-bold text-foreground">
+                            R$ {item.precoVenda?.toFixed(2) || '0.00'}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1597,7 +1593,7 @@ const Estoque = () => {
 
                   {/* Histórico de Promoções - Colapsável */}
                   {item.logPromocao && item.logPromocao.length > 0 && (
-                    <Collapsible 
+                    <Collapsible
                       open={promocoesOpen[item.codigoProduto] ?? false}
                       onOpenChange={(open) => setPromocoesOpen(prev => ({ ...prev, [item.codigoProduto]: open }))}
                       className="pt-4 border-t border-border/50"
@@ -1648,7 +1644,7 @@ const Estoque = () => {
 
                   {/* Últimas Movimentações - Colapsável */}
                   {item.logMovimentacao && item.logMovimentacao.length > 0 && (
-                    <Collapsible 
+                    <Collapsible
                       open={movimentacoesOpen[item.codigoProduto] ?? false}
                       onOpenChange={(open) => setMovimentacoesOpen(prev => ({ ...prev, [item.codigoProduto]: open }))}
                       className="pt-4 border-t border-border/50"
@@ -1668,11 +1664,10 @@ const Estoque = () => {
                         <div className="space-y-2">
                           {item.logMovimentacao.slice(-3).reverse().map((log: any, idx: number) => (
                             <div key={idx} className="flex items-center gap-3 text-sm p-2 bg-muted/30 rounded">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                log.tipo === 'entrada' 
-                                  ? 'bg-green-500/10 text-green-600' 
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${log.tipo === 'entrada'
+                                  ? 'bg-green-500/10 text-green-600'
                                   : 'bg-red-500/10 text-red-600'
-                              }`}>
+                                }`}>
                                 {log.tipo === 'entrada' ? '↑' : '↓'}
                               </div>
                               <div className="flex-1">
@@ -1722,7 +1717,7 @@ const Estoque = () => {
             tamanho={selectedVariant.tamanho}
             onSuccess={handleEntrySuccess}
           />
-          
+
           <StockExitDialog
             open={showExitDialog}
             onOpenChange={setShowExitDialog}
@@ -1796,7 +1791,7 @@ const Estoque = () => {
         initialIndex={lightboxIndex}
         title={selectedItem?.nomeProduto}
       />
-      
+
       <AddMultipleVariantsDialog
         open={showMultipleVariantsDialog}
         onOpenChange={setShowMultipleVariantsDialog}
