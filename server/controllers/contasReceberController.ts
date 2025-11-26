@@ -260,10 +260,14 @@ export const receberConta = async (req: Request, res: Response) => {
 
     const { valorRecebido, formaPagamento, observacoes, numeroParcela, comprovante, jurosMulta } = req.body;
 
-    const valorNumerico = Number(valorRecebido);
+    // Normalizar valor recebido (aceita número ou string como "10,00")
+    const bruto = typeof valorRecebido === 'string'
+      ? valorRecebido.replace(/[^\d,.-]/g, '').replace(',', '.')
+      : valorRecebido;
+    const valorNumerico = Number(bruto);
     
-    if (!valorRecebido || isNaN(valorNumerico) || valorNumerico <= 0) {
-      console.error('❌ [RECEBER CONTA] Valor inválido:', valorRecebido, 'Numérico:', valorNumerico);
+    if (valorNumerico === undefined || isNaN(valorNumerico) || valorNumerico <= 0) {
+      console.error('❌ [RECEBER CONTA] Valor inválido:', valorRecebido, 'Normalizado:', bruto, 'Numérico:', valorNumerico);
       return res.status(400).json({ error: 'Valor recebido deve ser maior que zero' });
     }
 
@@ -340,21 +344,34 @@ export const receberConta = async (req: Request, res: Response) => {
     // Registrar no caixa
     try {
       const Caixa = (await import('../models/Caixa')).default;
-      const caixaAberto = await Caixa.findOne({ status: 'Aberto' }).sort({ dataAbertura: -1 });
+      const caixaAberto = await Caixa.findOne({ status: 'aberto' });
       
       if (!caixaAberto) {
         console.warn('⚠️ [RECEBER CONTA] Nenhum caixa aberto encontrado');
       } else {
-        caixaAberto.entradas.push({
-          descricao: numeroParcela !== undefined 
-            ? `${conta.descricao} - Parcela ${numeroParcela}/${conta.parcelas?.length}`
-            : conta.descricao,
+        // Registrar como entrada no movimento do caixa
+        caixaAberto.movimentos.push({
+          tipo: 'entrada',
           valor: valorNumerico,
+          data: new Date().toISOString(),
+          codigoVenda: null,
           formaPagamento,
-          categoria: conta.categoria,
-          data: new Date(),
-          tipo: 'Conta a Receber'
+          observacao: numeroParcela !== undefined 
+            ? `Recebimento conta a receber ${conta.numeroDocumento} - Parcela ${numeroParcela}/${conta.parcelas?.length}`
+            : `Recebimento conta a receber ${conta.numeroDocumento}`
         });
+
+        // Recalcular totais do caixa
+        caixaAberto.entrada = caixaAberto.movimentos
+          .filter((m: any) => m.tipo === 'entrada')
+          .reduce((sum: number, m: any) => sum + m.valor, 0);
+
+        caixaAberto.saida = caixaAberto.movimentos
+          .filter((m: any) => m.tipo === 'saida')
+          .reduce((sum: number, m: any) => sum + m.valor, 0);
+
+        caixaAberto.performance = caixaAberto.entrada - caixaAberto.saida;
+
         await caixaAberto.save();
         console.log('✅ [RECEBER CONTA] Lançado no caixa:', caixaAberto.codigoCaixa);
       }

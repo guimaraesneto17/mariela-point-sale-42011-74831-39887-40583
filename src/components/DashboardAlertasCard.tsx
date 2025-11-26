@@ -30,13 +30,18 @@ export function DashboardAlertasCard() {
       ]);
 
       const hoje = new Date();
+      const limite30Dias = new Date();
+      const limite60Dias = new Date();
       const limite90Dias = new Date();
+
+      limite30Dias.setDate(hoje.getDate() - 30);
+      limite60Dias.setDate(hoje.getDate() - 60);
       limite90Dias.setDate(hoje.getDate() - 90);
 
       let total = 0;
-      let criticos = 0;
-      let alto = 0;
-      let medio = 0;
+      let criticos = 0;   // >= 90 dias
+      let alto = 0;       // 60-89 dias
+      let medio = 0;      // 30-59 dias
       let valorTotal = 0;
 
       estoque.forEach((item: any) => {
@@ -56,20 +61,30 @@ export function DashboardAlertasCard() {
           });
         });
 
-        // Se não teve venda ou última venda foi há mais de 90 dias
         const dataReferencia = ultimaVenda || (item.dataCadastro ? new Date(item.dataCadastro) : null);
-        
-        if (!dataReferencia || dataReferencia < limite90Dias) {
-          const diasParado = dataReferencia 
-            ? Math.floor((hoje.getTime() - dataReferencia.getTime()) / (1000 * 60 * 60 * 24))
-            : 999;
 
+        if (!dataReferencia) {
+          // Sem referência de movimentação, considerar como crítico (90+ dias)
+          total++;
+          criticos++;
+          valorTotal += item.quantidadeTotal * (item.precoVenda || item.precoPromocional || 0);
+          return;
+        }
+
+        const diasParado = Math.floor((hoje.getTime() - dataReferencia.getTime()) / (1000 * 60 * 60 * 24));
+
+        // Considerar apenas produtos parados há pelo menos 30 dias
+        if (diasParado >= 30) {
           total++;
           valorTotal += item.quantidadeTotal * (item.precoVenda || item.precoPromocional || 0);
 
-          if (diasParado >= 180) criticos++;
-          else if (diasParado >= 120) alto++;
-          else medio++;
+          if (diasParado >= 90) {
+            criticos++;
+          } else if (diasParado >= 60) {
+            alto++;
+          } else {
+            medio++;
+          }
         }
       });
 
@@ -146,22 +161,22 @@ export function DashboardAlertasCard() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-3 gap-3">
-            <div className="text-center p-3 bg-red-50 dark:bg-red-950/20 rounded-lg">
-              <div className="text-2xl font-bold text-red-600">{alertas.criticos}</div>
-              <div className="text-xs text-muted-foreground mt-1">Críticos</div>
-              <div className="text-xs text-red-600 font-medium">180+ dias</div>
+            <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg">
+              <div className="text-2xl font-bold text-yellow-600">{alertas.medio}</div>
+              <div className="text-xs text-muted-foreground mt-1">Atenção</div>
+              <div className="text-xs text-yellow-600 font-medium">30-59 dias</div>
             </div>
             
             <div className="text-center p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
               <div className="text-2xl font-bold text-orange-600">{alertas.alto}</div>
-              <div className="text-xs text-muted-foreground mt-1">Alto Risco</div>
-              <div className="text-xs text-orange-600 font-medium">120-179 dias</div>
+              <div className="text-xs text-muted-foreground mt-1">Alerta</div>
+              <div className="text-xs text-orange-600 font-medium">60-89 dias</div>
             </div>
             
-            <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{alertas.medio}</div>
-              <div className="text-xs text-muted-foreground mt-1">Médio</div>
-              <div className="text-xs text-blue-600 font-medium">90-119 dias</div>
+            <div className="text-center p-3 bg-red-50 dark:bg-red-950/20 rounded-lg">
+              <div className="text-2xl font-bold text-red-600">{alertas.criticos}</div>
+              <div className="text-xs text-muted-foreground mt-1">Crítico</div>
+              <div className="text-xs text-red-600 font-medium">90+ dias</div>
             </div>
           </div>
 

@@ -254,10 +254,14 @@ export const pagarConta = async (req: Request, res: Response) => {
 
     const { valorPago, formaPagamento, observacoes, numeroParcela, comprovante, jurosMulta } = req.body;
 
-    const valorNumerico = Number(valorPago);
+    // Normalizar valor recebido (aceita número ou string como "10,00")
+    const bruto = typeof valorPago === 'string'
+      ? valorPago.replace(/[^\d,.-]/g, '').replace(',', '.')
+      : valorPago;
+    const valorNumerico = Number(bruto);
     
-    if (!valorPago || isNaN(valorNumerico) || valorNumerico <= 0) {
-      console.error('❌ [PAGAR CONTA] Valor inválido:', valorPago, 'Numérico:', valorNumerico);
+    if (valorNumerico === undefined || isNaN(valorNumerico) || valorNumerico <= 0) {
+      console.error('❌ [PAGAR CONTA] Valor inválido:', valorPago, 'Normalizado:', bruto, 'Numérico:', valorNumerico);
       return res.status(400).json({ error: 'Valor pago deve ser maior que zero' });
     }
 
@@ -334,21 +338,34 @@ export const pagarConta = async (req: Request, res: Response) => {
     // Registrar no caixa
     try {
       const Caixa = (await import('../models/Caixa')).default;
-      const caixaAberto = await Caixa.findOne({ status: 'Aberto' }).sort({ dataAbertura: -1 });
+      const caixaAberto = await Caixa.findOne({ status: 'aberto' });
       
       if (!caixaAberto) {
         console.warn('⚠️ [PAGAR CONTA] Nenhum caixa aberto encontrado');
       } else {
-        caixaAberto.saidas.push({
-          descricao: numeroParcela !== undefined 
-            ? `${conta.descricao} - Parcela ${numeroParcela}/${conta.parcelas?.length}`
-            : conta.descricao,
+        // Registrar como saída no movimento do caixa
+        caixaAberto.movimentos.push({
+          tipo: 'saida',
           valor: valorNumerico,
+          data: new Date().toISOString(),
+          codigoVenda: null,
           formaPagamento,
-          categoria: conta.categoria,
-          data: new Date(),
-          tipo: 'Conta a Pagar'
+          observacao: numeroParcela !== undefined 
+            ? `Pagamento conta a pagar ${conta.numeroDocumento} - Parcela ${numeroParcela}/${conta.parcelas?.length}`
+            : `Pagamento conta a pagar ${conta.numeroDocumento}`
         });
+
+        // Recalcular totais do caixa
+        caixaAberto.entrada = caixaAberto.movimentos
+          .filter((m: any) => m.tipo === 'entrada')
+          .reduce((sum: number, m: any) => sum + m.valor, 0);
+
+        caixaAberto.saida = caixaAberto.movimentos
+          .filter((m: any) => m.tipo === 'saida')
+          .reduce((sum: number, m: any) => sum + m.valor, 0);
+
+        caixaAberto.performance = caixaAberto.entrada - caixaAberto.saida;
+
         await caixaAberto.save();
         console.log('✅ [PAGAR CONTA] Lançado no caixa:', caixaAberto.codigoCaixa);
       }

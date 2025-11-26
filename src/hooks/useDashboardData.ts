@@ -73,7 +73,9 @@ export function useDashboardData(dataInicio?: Date, dataFim?: Date) {
 
     const faturamentoDiario = vendasHoje.reduce((acc: number, v: any) => acc + (v.total || 0), 0);
     const totalClientes = clientesData.length;
-    const produtosEstoque = estoqueData.reduce((acc: number, item: any) => acc + (item.quantidadeTotal || 0), 0);
+
+    // Quantidade de produtos que possuem estoque (SKU com quantidadeTotal > 0)
+    const produtosEstoque = estoqueData.filter((item: any) => (item.quantidadeTotal || 0) > 0).length;
     
     // Calcular Total Geral (todas as variantes)
     const totalGeralProdutos = estoqueData.reduce((acc: number, item: any) => {
