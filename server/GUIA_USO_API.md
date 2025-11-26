@@ -49,6 +49,8 @@ curl -X POST http://localhost:3001/api/produtos \
     "precoPromocional": 120.00,
     "imagens": ["vestido1.jpg", "vestido2.jpg"]
   }'
+
+# Categorias válidas: Calça, Saia, Vestido, Blusa, Bolsa, Acessório, Short-Saia, Short, Conjunto, Outro
 ```
 
 ### 3. Registrar Entrada no Estoque

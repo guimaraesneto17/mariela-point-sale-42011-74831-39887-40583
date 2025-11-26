@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History, Image as ImageIcon, ChevronDown, Star, X, ArrowUpDown, Package2, Grid3X3, Bell } from "lucide-react";
+import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History, Image as ImageIcon, ChevronDown, Star, X, ArrowUpDown, Package2, Grid3X3, Bell, DollarSign } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -644,6 +644,22 @@ const Estoque = () => {
           <p className="text-muted-foreground">
             Controle de inventário e movimentações
           </p>
+          <div className="flex items-center justify-center gap-2 mt-2">
+            <Badge variant="secondary" className="text-sm">
+              <Package className="h-3 w-3 mr-1" />
+              {inventory.length} {inventory.length === 1 ? 'produto em estoque' : 'produtos em estoque'}
+            </Badge>
+            <Badge variant="secondary" className="text-sm">
+              <DollarSign className="h-3 w-3 mr-1" />
+              Valor Total: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                inventory.reduce((total, item) => {
+                  const precoVenda = item.precoPromocional || item.precoVenda || 0;
+                  const quantidadeTotal = item.variantes?.reduce((sum: number, v: any) => sum + (v.quantidade || 0), 0) || 0;
+                  return total + (precoVenda * quantidadeTotal);
+                }, 0)
+              )}
+            </Badge>
+          </div>
         </div>
         <div className="flex gap-2">
           <Button

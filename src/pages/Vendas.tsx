@@ -75,6 +75,12 @@ const Vendas = () => {
           <p className="text-muted-foreground">
             Histórico e gerenciamento de vendas
           </p>
+          <div className="flex items-center justify-center gap-2 mt-2">
+            <Badge variant="secondary" className="text-sm">
+              <Tag className="h-3 w-3 mr-1" />
+              {vendas.length} {vendas.length === 1 ? 'venda realizada' : 'vendas realizadas'}
+            </Badge>
+          </div>
         </div>
         <Button
           onClick={handleSincronizarVendas}

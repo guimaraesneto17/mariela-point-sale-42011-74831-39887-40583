@@ -240,6 +240,12 @@ const Produtos = () => {
           <p className="text-muted-foreground">
             Catálogo e gerenciamento de produtos
           </p>
+          <div className="flex items-center gap-2 mt-2">
+            <Badge variant="secondary" className="text-sm">
+              <Package className="h-3 w-3 mr-1" />
+              {produtos.length} {produtos.length === 1 ? 'produto cadastrado' : 'produtos cadastrados'}
+            </Badge>
+          </div>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -370,6 +376,9 @@ const Produtos = () => {
                                 <SelectItem value="Blusa">Blusa</SelectItem>
                                 <SelectItem value="Bolsa">Bolsa</SelectItem>
                                 <SelectItem value="Acessório">Acessório</SelectItem>
+                                <SelectItem value="Short-Saia">Short-Saia</SelectItem>
+                                <SelectItem value="Short">Short</SelectItem>
+                                <SelectItem value="Conjunto">Conjunto</SelectItem>
                                 <SelectItem value="Outro">Outro</SelectItem>
                               </SelectContent>
                             </Select>

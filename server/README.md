@@ -120,6 +120,8 @@ Você também pode acessar a especificação OpenAPI em formato JSON:
   "imagens": ["url1.jpg", "url2.jpg"],
   "dataCadastro": "2025-01-17T10:00:00Z"
 }
+
+Categorias válidas: Calça, Saia, Vestido, Blusa, Bolsa, Acessório, Short-Saia, Short, Conjunto, Outro
 ```
 
 ### Estoque
@@ -383,7 +385,7 @@ npm install
 Todos os models seguem validações rigorosas baseadas nos schemas fornecidos:
 
 - **Clientes**: Código no formato C###, telefone formatado, datas válidas
-- **Produtos**: Código no formato P###, categorias pré-definidas, preços positivos
+- **Produtos**: Código no formato P###, categorias pré-definidas (Calça, Saia, Vestido, Blusa, Bolsa, Acessório, Short-Saia, Short, Conjunto, Outro), preços positivos
 - **Estoque**: Tamanhos válidos (PP, P, M, G, GG, U), quantidades não negativas
 - **Vendas**: Código no formato VENDA########-###, validação de itens
 - **Vendedores**: Código no formato V###, metas positivas

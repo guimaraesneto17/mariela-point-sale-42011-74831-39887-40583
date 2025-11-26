@@ -153,7 +153,7 @@ const Validations = {
     if (!data.nome || data.nome.length < 3 || data.nome.length > 100)
       erros.push('nome é obrigatório e deve ter entre 3 e 100 caracteres.');
 
-    if (!data.categoria || !['Calça', 'Saia', 'Vestido', 'Blusa', 'Bolsa', 'Acessório', 'Outro'].includes(data.categoria))
+    if (!data.categoria || !['Calça', 'Saia', 'Vestido', 'Blusa', 'Bolsa', 'Acessório', 'Short-Saia', 'Short', 'Conjunto', 'Outro'].includes(data.categoria))
       erros.push('categoria é obrigatória e deve ser um dos valores válidos.');
 
     ['precoCusto', 'margemDeLucro', 'precoVenda'].forEach((campo) => {

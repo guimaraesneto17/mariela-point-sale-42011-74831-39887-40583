@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
@@ -202,6 +203,12 @@ const Clientes = () => {
           <p className="text-muted-foreground">
             Gerenciamento de clientes
           </p>
+          <div className="flex items-center gap-2 mt-2">
+            <Badge variant="secondary" className="text-sm">
+              <User className="h-3 w-3 mr-1" />
+              {clientes.length} {clientes.length === 1 ? 'cliente cadastrado' : 'clientes cadastrados'}
+            </Badge>
+          </div>
         </div>
         <div className="flex gap-2">
           <Button 

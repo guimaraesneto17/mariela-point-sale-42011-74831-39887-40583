@@ -206,6 +206,12 @@ const Vendedores = () => {
           <p className="text-muted-foreground">
             Gerenciamento de vendedores
           </p>
+          <div className="flex items-center gap-2 mt-2">
+            <Badge variant="secondary" className="text-sm">
+              <UserCheck className="h-3 w-3 mr-1" />
+              {vendedores.length} {vendedores.length === 1 ? 'vendedor cadastrado' : 'vendedores cadastrados'}
+            </Badge>
+          </div>
         </div>
         <div className="flex gap-2">
           <Button 
