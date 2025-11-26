@@ -56,7 +56,7 @@ const Estoque = () => {
   const [filterTamanho, setFilterTamanho] = useState<string>("todos");
   const [filterCategoria, setFilterCategoria] = useState<string>("todas");
   const [filterQuantidadeRange, setFilterQuantidadeRange] = useState<string>("todos");
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
   const [sortBy, setSortBy] = useState<string>("nome"); // nome, preco-asc, preco-desc, quantidade-asc, quantidade-desc, data-entrada
   const [showAnalytics, setShowAnalytics] = useState(false);
   
@@ -644,10 +644,16 @@ const Estoque = () => {
           <p className="text-muted-foreground">
             Controle de inventário e movimentações
           </p>
-          <div className="flex items-center justify-center gap-2 mt-2">
+          <div className="flex items-center justify-center gap-2 mt-2 flex-wrap">
             <Badge variant="secondary" className="text-sm">
               <Package className="h-3 w-3 mr-1" />
               {inventory.length} {inventory.length === 1 ? 'produto em estoque' : 'produtos em estoque'}
+            </Badge>
+            <Badge variant="secondary" className="text-sm">
+              <Package2 className="h-3 w-3 mr-1" />
+              {inventory.reduce((total, item) => {
+                return total + (item.variantes?.length || 0);
+              }, 0)} variantes cadastradas
             </Badge>
             <Badge variant="secondary" className="text-sm">
               <DollarSign className="h-3 w-3 mr-1" />
@@ -850,8 +856,16 @@ const Estoque = () => {
                 </Button>
               </div>
             </div>
-            <div className="text-sm text-muted-foreground">
-              {sortedInventory.length} {sortedInventory.length === 1 ? 'produto' : 'produtos'} encontrado{sortedInventory.length === 1 ? '' : 's'}
+            <div className="flex items-center gap-3">
+              <div className="text-sm text-muted-foreground">
+                {sortedInventory.length} {sortedInventory.length === 1 ? 'produto' : 'produtos'} encontrado{sortedInventory.length === 1 ? '' : 's'}
+              </div>
+              <Badge variant="outline" className="text-xs">
+                <Package2 className="h-3 w-3 mr-1" />
+                {sortedInventory.reduce((total, item) => {
+                  return total + (item.variantes?.length || 0);
+                }, 0)} variantes
+              </Badge>
             </div>
           </div>
 
@@ -1381,15 +1395,25 @@ const Estoque = () => {
                       </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-lg p-3 border-2 border-blue-500/20">
+                    <div className="bg-gradient-to-br from-green-500/10 to-green-500/5 rounded-lg p-3 border-2 border-green-500/20">
                       <label className="text-xs font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">
-                        Disponível Cor
+                        Preço de Venda
                       </label>
-                      <div className="text-2xl font-bold text-blue-600">
-                        {varianteSelecionada?.quantidade || 0}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground mt-0.5 font-medium">
-                        Todas os tamanhos - {selectedCor}
+                      <div className="space-y-0.5">
+                        {item.emPromocao && item.precoPromocional ? (
+                          <>
+                            <div className="text-sm font-semibold text-muted-foreground line-through">
+                              R$ {item.precoVenda?.toFixed(2) || '0.00'}
+                            </div>
+                            <div className="text-2xl font-bold text-green-600">
+                              R$ {item.precoPromocional.toFixed(2)}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-2xl font-bold text-green-600">
+                            R$ {item.precoVenda?.toFixed(2) || '0.00'}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1476,23 +1500,15 @@ const Estoque = () => {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="text-sm font-semibold text-muted-foreground mb-2 block">Preço de Venda</label>
-                      <div className="space-y-1">
-                        {item.emPromocao && item.precoPromocional ? (
-                          <>
-                            <div className="text-lg font-semibold text-muted-foreground line-through">
-                              R$ {item.precoVenda?.toFixed(2) || '0.00'}
-                            </div>
-                            <div className="text-2xl font-bold text-accent">
-                              R$ {item.precoPromocional.toFixed(2)}
-                            </div>
-                          </>
-                        ) : (
-                          <div className="text-2xl font-bold text-foreground">
-                            R$ {item.precoVenda?.toFixed(2) || '0.00'}
-                          </div>
-                        )}
+                    <div className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 rounded-lg p-3 border-2 border-amber-500/20">
+                      <label className="text-xs font-semibold text-muted-foreground mb-1 block uppercase tracking-wide">
+                        Custo Unitário
+                      </label>
+                      <div className="text-2xl font-bold text-amber-600">
+                        R$ {item.precoCusto?.toFixed(2) || '0.00'}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5 font-medium">
+                        Por unidade
                       </div>
                     </div>
                   </div>

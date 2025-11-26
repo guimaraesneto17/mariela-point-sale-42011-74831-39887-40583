@@ -23,9 +23,10 @@ const schema = z.object({
   valor: z.string()
     .min(1, "Informe o valor")
     .refine((val) => {
-      const num = parseFloat(val);
-      return !isNaN(num) && num > 0;
-    }, "Valor deve ser maior que zero"),
+      const cleaned = val.replace(/[^\d,.-]/g, '').replace(',', '.');
+      const num = parseFloat(cleaned);
+      return !isNaN(num) && num > 0.01;
+    }, "Valor deve ser maior que R$ 0,01"),
   formaPagamento: z.enum(["Pix","Cartão de Crédito","Cartão de Débito","Dinheiro","Boleto","Transferência","Outro"], { required_error: "Selecione a forma de pagamento" }),
   observacoes: z.string().max(500).optional(),
   numeroParcela: z.number().optional(),
@@ -176,10 +177,18 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
       console.log('📝 [FRONTEND] Parcela:', numeroParcela);
       console.log('📝 [FRONTEND] Valores do formulário:', values);
       
-      const valorNumerico = parseFloat(values.valor);
-      if (isNaN(valorNumerico) || valorNumerico <= 0) {
-        console.error('❌ [FRONTEND] Valor inválido:', values.valor);
-        toast.error('Valor inválido');
+      // Limpar valor removendo caracteres não numéricos (exceto , e .)
+      const valorLimpo = values.valor.replace(/[^\d,.-]/g, '').replace(',', '.');
+      const valorNumerico = parseFloat(valorLimpo);
+      
+      if (isNaN(valorNumerico) || valorNumerico <= 0.01) {
+        console.error('❌ [FRONTEND] Valor inválido:', values.valor, 'Limpo:', valorLimpo, 'Numérico:', valorNumerico);
+        toast.error('Valor deve ser maior que R$ 0,01');
+        return;
+      }
+      
+      if (valorNumerico > saldoRestante * 2) {
+        toast.error(`Valor muito alto. Saldo restante é ${saldoRestante.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
         return;
       }
       

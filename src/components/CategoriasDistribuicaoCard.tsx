@@ -81,37 +81,67 @@ export const CategoriasDistribuicaoCard = ({ produtos, estoque }: CategoriasDist
       return cat === categoria;
     });
 
-    const variantesPorCor: any = {};
-    const variantesPorTamanho: any = {};
+    // Estrutura hierárquica: Cor -> Tamanhos -> Quantidade
+    const dadosHierarquicos: any = {};
 
     produtosDaCategoria.forEach((produto: any) => {
       const itemEstoque = estoque.find((e: any) => e.codigoProduto === produto.codigoProduto);
       if (itemEstoque?.variantes && Array.isArray(itemEstoque.variantes)) {
         itemEstoque.variantes.forEach((variante: any) => {
           const cor = variante.cor || 'Sem Cor';
-          const tamanho = variante.tamanho || 'Sem Tamanho';
-          const quantidade = variante.quantidade || 0;
-
-          if (!variantesPorCor[cor]) {
-            variantesPorCor[cor] = { cor, quantidade: 0 };
+          
+          if (!dadosHierarquicos[cor]) {
+            dadosHierarquicos[cor] = {
+              cor,
+              quantidadeTotal: 0,
+              tamanhos: {}
+            };
           }
-          variantesPorCor[cor].quantidade += quantidade;
 
-          if (!variantesPorTamanho[tamanho]) {
-            variantesPorTamanho[tamanho] = { tamanho, quantidade: 0 };
+          // Processar tamanhos
+          if (Array.isArray(variante.tamanhos) && variante.tamanhos.length > 0) {
+            // Nova estrutura: array de objetos {tamanho, quantidade}
+            if (typeof variante.tamanhos[0] === 'object' && variante.tamanhos[0].tamanho) {
+              variante.tamanhos.forEach((t: any) => {
+                const tamanho = t.tamanho;
+                const quantidade = t.quantidade || 0;
+                
+                if (!dadosHierarquicos[cor].tamanhos[tamanho]) {
+                  dadosHierarquicos[cor].tamanhos[tamanho] = 0;
+                }
+                dadosHierarquicos[cor].tamanhos[tamanho] += quantidade;
+                dadosHierarquicos[cor].quantidadeTotal += quantidade;
+              });
+            } else {
+              // Estrutura antiga: array de strings (usar quantidade da variante)
+              const quantidadePorTamanho = Math.floor((variante.quantidade || 0) / variante.tamanhos.length);
+              variante.tamanhos.forEach((tamanho: string) => {
+                if (!dadosHierarquicos[cor].tamanhos[tamanho]) {
+                  dadosHierarquicos[cor].tamanhos[tamanho] = 0;
+                }
+                dadosHierarquicos[cor].tamanhos[tamanho] += quantidadePorTamanho;
+                dadosHierarquicos[cor].quantidadeTotal += quantidadePorTamanho;
+              });
+            }
+          } else {
+            // Sem tamanhos específicos, usar quantidade total da variante
+            const tamanho = variante.tamanho || 'Único';
+            const quantidade = variante.quantidade || 0;
+            
+            if (!dadosHierarquicos[cor].tamanhos[tamanho]) {
+              dadosHierarquicos[cor].tamanhos[tamanho] = 0;
+            }
+            dadosHierarquicos[cor].tamanhos[tamanho] += quantidade;
+            dadosHierarquicos[cor].quantidadeTotal += quantidade;
           }
-          variantesPorTamanho[tamanho].quantidade += quantidade;
         });
       }
     });
 
-    return {
-      cores: Object.values(variantesPorCor).sort((a: any, b: any) => b.quantidade - a.quantidade),
-      tamanhos: Object.values(variantesPorTamanho).sort((a: any, b: any) => b.quantidade - a.quantidade),
-    };
+    return Object.values(dadosHierarquicos).sort((a: any, b: any) => b.quantidadeTotal - a.quantidadeTotal);
   };
 
-  const dadosVariantes = categoriaSelecionada ? getDadosVariantes(categoriaSelecionada) : { cores: [], tamanhos: [] };
+  const dadosVariantes = categoriaSelecionada ? getDadosVariantes(categoriaSelecionada) : [];
 
   return (
     <Card className="shadow-card">
@@ -236,16 +266,20 @@ export const CategoriasDistribuicaoCard = ({ produtos, estoque }: CategoriasDist
                       const value = payload[0].value;
                       const numValue = typeof value === 'number' ? value : Number(value) || 0;
                       return (
-                        <div className="bg-background border rounded-lg p-2 shadow-lg">
+                        <div className="bg-background border rounded-lg p-3 shadow-lg">
                           <p className="font-medium">{String(payload[0].payload.categoria)}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Valor: {formatCurrency(numValue)}
+                          <p className="text-sm text-green-600 font-semibold">
+                            {formatCurrency(numValue)}
                           </p>
                         </div>
                       );
                     }}
                   />
-                  <Bar dataKey="valor" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="valor" radius={[8, 8, 0, 0]}>
+                    {dadosBarras.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
@@ -282,58 +316,84 @@ export const CategoriasDistribuicaoCard = ({ produtos, estoque }: CategoriasDist
             </div>
 
             {categoriaSelecionada ? (
-              <div className="space-y-6">
-                {/* Distribuição por Cor */}
-                <div>
-                  <h4 className="font-semibold mb-3 flex items-center gap-2">
-                    <Palette className="h-4 w-4 text-primary" />
-                    Distribuição por Cor
-                  </h4>
-                  {dadosVariantes.cores.length > 0 ? (
-                    <div className="space-y-2">
-                      {dadosVariantes.cores.map((item: any, index: number) => (
-                        <div key={item.cor} className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-4 h-4 rounded border border-border"
-                              style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                            />
-                            <span className="text-sm font-medium">{item.cor}</span>
-                          </div>
-                          <span className="text-sm text-muted-foreground">{item.quantidade} unidades</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Nenhuma variante de cor encontrada</p>
-                  )}
-                </div>
+              <div className="space-y-4">
+                {dadosVariantes.length > 0 ? (
+                  dadosVariantes.map((corData: any, corIndex: number) => {
+                    const tamanhosList = Object.entries(corData.tamanhos).sort(
+                      (a: any, b: any) => b[1] - a[1]
+                    );
 
-                {/* Distribuição por Tamanho */}
-                <div>
-                  <h4 className="font-semibold mb-3 flex items-center gap-2">
-                    <Package className="h-4 w-4 text-primary" />
-                    Distribuição por Tamanho
-                  </h4>
-                  {dadosVariantes.tamanhos.length > 0 ? (
-                    <div className="space-y-2">
-                      {dadosVariantes.tamanhos.map((item: any, index: number) => (
-                        <div key={item.tamanho} className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                          <div className="flex items-center gap-2">
+                    return (
+                      <div 
+                        key={corData.cor} 
+                        className="p-4 rounded-lg border-2 bg-gradient-to-br from-background to-muted/20"
+                        style={{ borderColor: COLORS[corIndex % COLORS.length] + '40' }}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
                             <div
-                              className="w-4 h-4 rounded border border-border"
-                              style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                              className="w-6 h-6 rounded-lg border-2 border-background shadow-md"
+                              style={{ backgroundColor: COLORS[corIndex % COLORS.length] }}
                             />
-                            <span className="text-sm font-medium">{item.tamanho}</span>
+                            <div>
+                              <h4 className="font-bold text-foreground">{corData.cor}</h4>
+                              <p className="text-xs text-muted-foreground">
+                                {tamanhosList.length} {tamanhosList.length === 1 ? 'tamanho' : 'tamanhos'}
+                              </p>
+                            </div>
                           </div>
-                          <span className="text-sm text-muted-foreground">{item.quantidade} unidades</span>
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-primary">
+                              {corData.quantidadeTotal}
+                            </p>
+                            <p className="text-xs text-muted-foreground">unidades</p>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Nenhuma variante de tamanho encontrada</p>
-                  )}
-                </div>
+
+                        <div className="space-y-2 mt-3 pt-3 border-t border-border">
+                          {tamanhosList.map(([tamanho, quantidade]: [string, any], index: number) => (
+                            <div 
+                              key={tamanho} 
+                              className="flex items-center justify-between p-2 rounded bg-muted/30 hover:bg-muted/50 transition-colors"
+                            >
+                              <div className="flex items-center gap-2">
+                                <div className={`w-5 h-5 rounded flex items-center justify-center text-xs font-bold ${
+                                  index === 0 ? 'bg-primary/20 text-primary' :
+                                  index === 1 ? 'bg-blue-500/20 text-blue-600' :
+                                  'bg-muted text-muted-foreground'
+                                }`}>
+                                  {index + 1}
+                                </div>
+                                <span className="font-medium text-sm">{tamanho}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-bold text-foreground">
+                                  {quantidade} un
+                                </span>
+                                <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-gradient-to-r from-primary to-accent"
+                                    style={{
+                                      width: `${(quantidade / corData.quantidadeTotal) * 100}%`,
+                                    }}
+                                  />
+                                </div>
+                                <span className="text-xs text-muted-foreground w-12 text-right">
+                                  {((quantidade / corData.quantidadeTotal) * 100).toFixed(0)}%
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>Nenhuma variante encontrada para esta categoria</p>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
