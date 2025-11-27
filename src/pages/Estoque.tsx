@@ -413,19 +413,21 @@ const Estoque = () => {
   };
 
   // Obter tamanhos disponíveis para uma cor específica (apenas com quantidade > 0)
-  const getTamanhosDisponiveis = (item: any, cor: string): string[] => {
+  const getTamanhosDisponiveis = (item: any, cor: string): any[] => {
     if (!item.variantes) return [];
     const variante = item.variantes.find((v: any) => v.cor === cor && v.quantidade > 0);
     if (!variante) return [];
     // Nova estrutura: tamanhos é array de objetos {tamanho, quantidade}
     if (Array.isArray(variante.tamanhos) && variante.tamanhos.length > 0 && typeof variante.tamanhos[0] === 'object') {
-      // Filtrar apenas tamanhos com quantidade > 0
-      return variante.tamanhos
-        .filter((t: any) => t.quantidade > 0)
-        .map((t: any) => String(t.tamanho));
+      // Retornar objetos completos com tamanho e quantidade
+      return variante.tamanhos.filter((t: any) => t.quantidade > 0);
     }
-    // Estrutura antiga: tamanhos é array de strings
-    return Array.isArray(variante.tamanhos) ? variante.tamanhos.map(String) : (variante.tamanho ? [String(variante.tamanho)] : []);
+    // Estrutura antiga: tamanhos é array de strings ou campo único
+    if (Array.isArray(variante.tamanhos)) {
+      return variante.tamanhos.map((t: string) => ({ tamanho: String(t), quantidade: variante.quantidade }));
+    }
+    // Estrutura mais antiga: campo tamanho único
+    return variante.tamanho ? [{ tamanho: String(variante.tamanho), quantidade: variante.quantidade }] : [];
   };
 
   // Obter variante atual selecionada
@@ -477,7 +479,10 @@ const Estoque = () => {
     // Ajustar tamanho para o primeiro disponível nesta cor
     const tamanhosDisponiveis = getTamanhosDisponiveis(item, cor);
     if (tamanhosDisponiveis.length > 0) {
-      setSelectedSizeByItem(prev => ({ ...prev, [codigoProduto]: tamanhosDisponiveis[0] }));
+      const primeiroTamanho = typeof tamanhosDisponiveis[0] === 'object' 
+        ? String(tamanhosDisponiveis[0].tamanho) 
+        : String(tamanhosDisponiveis[0]);
+      setSelectedSizeByItem(prev => ({ ...prev, [codigoProduto]: primeiroTamanho }));
     }
   };
 
