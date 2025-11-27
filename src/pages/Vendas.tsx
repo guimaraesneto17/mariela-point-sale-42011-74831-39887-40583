@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Tag, TrendingDown, RefreshCw, Edit2 } from "lucide-react";
+import { Search, Tag, TrendingDown, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,16 +9,13 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { useVendas } from "@/hooks/useQueryCache";
 import { caixaAPI } from "@/lib/api";
 import { toast } from "sonner";
-import { EditarVendaDialog } from "@/components/EditarVendaDialog";
 
 const Vendas = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filtroData, setFiltroData] = useState("");
   const [sincronizando, setSincronizando] = useState(false);
-  const [editarVendaDialog, setEditarVendaDialog] = useState(false);
-  const [vendaSelecionada, setVendaSelecionada] = useState<any>(null);
   
-  const { data: vendas = [], isLoading, refetch } = useVendas();
+  const { data: vendas = [], isLoading } = useVendas();
 
   const handleSincronizarVendas = async () => {
     try {
@@ -126,23 +123,11 @@ const Vendas = () => {
                 <h3 className="text-xl font-bold">{venda.codigo || venda.codigoVenda || venda._id}</h3>
                 <p className="text-muted-foreground text-sm">{formatDate(venda.data)}</p>
               </div>
-              <div className="flex flex-wrap gap-2 items-center">
+              <div className="flex gap-2">
                 <Badge className="bg-primary">{venda.formaPagamento || '—'}</Badge>
                 {venda.formaPagamento === "Cartão de Crédito" && Number(venda.parcelas || 1) > 1 && (
                   <Badge variant="outline">{venda.parcelas}x de {formatCurrency((venda.total || 0) / (venda.parcelas || 1))}</Badge>
                 )}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 gap-1.5"
-                  onClick={() => {
-                    setVendaSelecionada(venda);
-                    setEditarVendaDialog(true);
-                  }}
-                >
-                  <Edit2 className="h-3.5 w-3.5" />
-                  Editar
-                </Button>
               </div>
             </div>
             
@@ -338,18 +323,6 @@ const Vendas = () => {
           </Card>
         ))}
       </div>
-
-      {vendaSelecionada && (
-        <EditarVendaDialog
-          open={editarVendaDialog}
-          onOpenChange={setEditarVendaDialog}
-          venda={vendaSelecionada}
-          onSuccess={() => {
-            refetch();
-            setVendaSelecionada(null);
-          }}
-        />
-      )}
     </div>
   );
 };
