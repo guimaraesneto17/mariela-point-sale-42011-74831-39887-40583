@@ -1035,9 +1035,17 @@ const Estoque = () => {
             const quantidadeTotal = item.variantes?.reduce((total: number, v: any) => total + (v.quantidade || 0), 0) || 0;
             const coresDisponiveis = getCoresDisponiveis(item);
             const selectedCor = String(selectedColorByItem[item.codigoProduto] || coresDisponiveis[0] || '');
-            const selectedTamanho = String(selectedSizeByItem[item.codigoProduto] || '');
+            const tamanhosDisponiveisTemp = getTamanhosDisponiveis(item, selectedCor);
+            
+            // Initialize selectedTamanho with first available size if not set, extracting string from object
+            let initialTamanho = '';
+            if (tamanhosDisponiveisTemp.length > 0) {
+              const firstSize = tamanhosDisponiveisTemp[0];
+              initialTamanho = typeof firstSize === 'object' ? String(firstSize.tamanho) : String(firstSize);
+            }
+            const selectedTamanho = String(selectedSizeByItem[item.codigoProduto] || initialTamanho);
             const varianteSelecionada = getSelectedVariant(item);
-            const tamanhosDisponiveis = getTamanhosDisponiveis(item, selectedCor);
+            const tamanhosDisponiveis = tamanhosDisponiveisTemp;
 
             // Calcular quantidade da cor-tamanho selecionada
             let quantidadeCorTamanho = 0;
@@ -1337,8 +1345,16 @@ const Estoque = () => {
           {sortedInventory.map((item) => {
             const coresDisponiveis = getCoresDisponiveis(item);
             const selectedCor = selectedColorByItem[item.codigoProduto] || '';
-            const selectedTamanho = selectedSizeByItem[item.codigoProduto] || '';
-            const tamanhosDisponiveis = getTamanhosDisponiveis(item, selectedCor);
+            const tamanhosDisponiveisTemp = getTamanhosDisponiveis(item, selectedCor);
+            
+            // Initialize selectedTamanho with first available size if not set, extracting string from object
+            let initialTamanho = '';
+            if (tamanhosDisponiveisTemp.length > 0) {
+              const firstSize = tamanhosDisponiveisTemp[0];
+              initialTamanho = typeof firstSize === 'object' ? String(firstSize.tamanho) : String(firstSize);
+            }
+            const selectedTamanho = selectedSizeByItem[item.codigoProduto] || initialTamanho;
+            const tamanhosDisponiveis = tamanhosDisponiveisTemp;
             const varianteSelecionada = getSelectedVariant(item);
 
             return (
