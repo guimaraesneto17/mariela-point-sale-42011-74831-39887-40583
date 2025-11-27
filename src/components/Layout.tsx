@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   Package,
@@ -181,6 +181,11 @@ const Layout = () => {
           <Outlet />
         </div>
       </main>
+      <CaixaFechadoNotification />
+      <FinanceiroAlertasDialog 
+        open={showFinanceiroAlertas} 
+        onOpenChange={setShowFinanceiroAlertas} 
+      />
     </div>
   );
 };

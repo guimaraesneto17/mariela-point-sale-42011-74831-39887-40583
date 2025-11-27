@@ -652,15 +652,25 @@ const Estoque = () => {
             <Badge variant="secondary" className="text-sm">
               <Package2 className="h-3 w-3 mr-1" />
               {inventory.reduce((total, item) => {
-                return total + (item.variantes?.length || 0);
-              }, 0)} variantes cadastradas
+                return total + (item.quantidadeTotal || 0);
+              }, 0)} total em estoque
             </Badge>
-            <Badge variant="secondary" className="text-sm">
+            <Badge variant="outline" className="text-sm border-green-500/50 text-green-700 dark:text-green-400">
               <DollarSign className="h-3 w-3 mr-1" />
-              Valor Total: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+              Valor de Compra: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                inventory.reduce((total, item) => {
+                  const precoCusto = item.precoCusto || 0;
+                  const quantidadeTotal = item.quantidadeTotal || 0;
+                  return total + (precoCusto * quantidadeTotal);
+                }, 0)
+              )}
+            </Badge>
+            <Badge variant="outline" className="text-sm border-blue-500/50 text-blue-700 dark:text-blue-400">
+              <DollarSign className="h-3 w-3 mr-1" />
+              Valor de Venda: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
                 inventory.reduce((total, item) => {
                   const precoVenda = item.precoPromocional || item.precoVenda || 0;
-                  const quantidadeTotal = item.variantes?.reduce((sum: number, v: any) => sum + (v.quantidade || 0), 0) || 0;
+                  const quantidadeTotal = item.quantidadeTotal || 0;
                   return total + (precoVenda * quantidadeTotal);
                 }, 0)
               )}
@@ -863,8 +873,8 @@ const Estoque = () => {
               <Badge variant="outline" className="text-xs">
                 <Package2 className="h-3 w-3 mr-1" />
                 {sortedInventory.reduce((total, item) => {
-                  return total + (item.variantes?.length || 0);
-                }, 0)} variantes
+                  return total + (item.quantidadeTotal || 0);
+                }, 0)} total em estoque
               </Badge>
             </div>
           </div>
@@ -1094,23 +1104,19 @@ const Estoque = () => {
                     </div>
                   </div>
 
-                  {/* Quantidades compactas com Cor-Tamanho */}
-                  <div className="grid grid-cols-4 gap-1.5 text-center">
-                    <div className="bg-primary/10 rounded p-1.5 border border-primary/20">
-                      <div className="text-xs font-bold text-primary">{varianteSelecionada?.quantidade || 0}</div>
-                      <div className="text-[9px] text-muted-foreground truncate">Cor</div>
+                  {/* Quantidades compactas e modernas */}
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg p-2.5 border-2 border-primary/30 shadow-sm">
+                      <div className="text-xl font-bold text-primary">{varianteSelecionada?.quantidade || 0}</div>
+                      <div className="text-[10px] font-semibold text-primary/80 uppercase tracking-wide">Cor</div>
                     </div>
-                    <div className="bg-orange-500/10 rounded p-1.5 border border-orange-500/20">
-                      <div className="text-xs font-bold text-orange-600">{quantidadeCorTamanho}</div>
-                      <div className="text-[9px] text-muted-foreground truncate">C-T</div>
+                    <div className="bg-gradient-to-br from-orange-500/20 to-orange-500/10 rounded-lg p-2.5 border-2 border-orange-500/30 shadow-sm">
+                      <div className="text-xl font-bold text-orange-600">{quantidadeCorTamanho}</div>
+                      <div className="text-[10px] font-semibold text-orange-600/80 uppercase tracking-wide">C-T</div>
                     </div>
-                    <div className="bg-blue-500/10 rounded p-1.5 border border-blue-500/20">
-                      <div className="text-xs font-bold text-blue-600">{quantidadeTotal}</div>
-                      <div className="text-[9px] text-muted-foreground truncate">Total</div>
-                    </div>
-                    <div className="bg-secondary/10 rounded p-1.5 border border-secondary/20">
-                      <div className="text-xs font-bold text-secondary">{coresDisponiveis.length}</div>
-                      <div className="text-[9px] text-muted-foreground truncate">Cores</div>
+                    <div className="bg-gradient-to-br from-blue-500/20 to-blue-500/10 rounded-lg p-2.5 border-2 border-blue-500/30 shadow-sm">
+                      <div className="text-xl font-bold text-blue-600">{quantidadeTotal}</div>
+                      <div className="text-[10px] font-semibold text-blue-600/80 uppercase tracking-wide">Total</div>
                     </div>
                   </div>
 

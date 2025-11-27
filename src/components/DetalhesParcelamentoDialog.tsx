@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, CreditCard, CheckCircle2, Clock, AlertCircle, FileImage, ImagePlus } from "lucide-react";
+import { Calendar, CreditCard, CheckCircle2, Clock, AlertCircle, FileImage, ImagePlus, Download } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useState } from "react";
@@ -87,14 +87,21 @@ export function DetalhesParcelamentoDialog({ open, onOpenChange, conta, tipo, on
   };
 
   const handleSuccessRegistro = () => {
-    onSuccess();
-    setRegistroDialogOpen(false);
-    setParcelaParaPagar(undefined);
+    onSuccess(); // Atualiza instantaneamente
   };
 
   const handleViewComprovante = (comprovante: string) => {
     setComprovanteAtual(comprovante);
     setComprovanteDialogOpen(true);
+  };
+
+  const handleDownloadComprovante = (comprovante: string, numeroParcela: number) => {
+    const link = document.createElement('a');
+    link.href = comprovante;
+    link.download = `comprovante-${conta.numeroDocumento}-parcela-${numeroParcela}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -209,15 +216,26 @@ export function DetalhesParcelamentoDialog({ open, onOpenChange, conta, tipo, on
                               </p>
                             )}
                             {pagamentoParcela?.comprovante && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
-                                onClick={() => handleViewComprovante(pagamentoParcela.comprovante)}
-                              >
-                                <FileImage className="h-3 w-3 mr-1" />
-                                Ver comprovante
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="mt-1 h-auto p-0 text-xs text-primary hover:text-primary/80"
+                                  onClick={() => handleViewComprovante(pagamentoParcela.comprovante)}
+                                >
+                                  <FileImage className="h-3 w-3 mr-1" />
+                                  Ver comprovante
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="mt-1 h-auto p-0 text-xs text-green-600 hover:text-green-700"
+                                  onClick={() => handleDownloadComprovante(pagamentoParcela.comprovante, parcela.numeroParcela)}
+                                >
+                                  <Download className="h-3 w-3 mr-1" />
+                                  Baixar
+                                </Button>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -236,7 +254,7 @@ export function DetalhesParcelamentoDialog({ open, onOpenChange, conta, tipo, on
                               </p>
                             </div>
                           )}
-                          {!isPaga && saldoParcela > 0 && (
+                          {!isPaga && saldoParcela > 0 && parcela.status !== 'Parcial' && (
                             <Button 
                               size="sm" 
                               variant="outline"
@@ -244,6 +262,11 @@ export function DetalhesParcelamentoDialog({ open, onOpenChange, conta, tipo, on
                             >
                               {tipo === 'pagar' ? 'Pagar' : 'Receber'}
                             </Button>
+                          )}
+                          {parcela.status === 'Parcial' && (
+                            <Badge variant="outline" className="text-xs">
+                              Edição bloqueada
+                            </Badge>
                           )}
                         </div>
                       </div>
