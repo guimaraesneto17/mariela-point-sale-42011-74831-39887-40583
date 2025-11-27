@@ -50,10 +50,7 @@ const NovaVenda = () => {
   const [tipoDesconto, setTipoDesconto] = useState<"porcentagem" | "valor">("porcentagem");
   const [descontoTotal, setDescontoTotal] = useState(0);
   const [itensVenda, setItensVenda] = useState<ItemVenda[]>([]);
-  // Taxa fixa da maquininha (salva no código, não no banco)
-  const TAXA_MAQUININHA_PADRAO = 3.5; // Taxa padrão de 3.5%
-  const [taxaMaquininha, setTaxaMaquininha] = useState(TAXA_MAQUININHA_PADRAO);
-  const [editandoTaxa, setEditandoTaxa] = useState(false);
+  const [taxaMaquininha, setTaxaMaquininha] = useState(0);
   const [parcelas, setParcelas] = useState(1);
   
   // Estados para adicionar/editar produto
@@ -646,19 +643,7 @@ const NovaVenda = () => {
               {/* Taxa da Maquininha - para Cartão de Crédito e Débito */}
               {(formaPagamento === "Cartão de Crédito" || formaPagamento === "Cartão de Débito") && (
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label>Taxa da Maquininha (%)</Label>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 text-xs"
-                      onClick={() => setEditandoTaxa(!editandoTaxa)}
-                    >
-                      <Edit2 className="h-3 w-3 mr-1" />
-                      {editandoTaxa ? "Salvar" : "Editar"}
-                    </Button>
-                  </div>
+                  <Label>Taxa da Maquininha (%)</Label>
                   <Input
                     type="number"
                     min="0"
@@ -667,12 +652,7 @@ const NovaVenda = () => {
                     value={taxaMaquininha}
                     onChange={(e) => setTaxaMaquininha(parseFloat(e.target.value) || 0)}
                     placeholder="0.00"
-                    disabled={!editandoTaxa}
-                    className={!editandoTaxa ? "bg-muted" : ""}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Taxa padrão: {TAXA_MAQUININHA_PADRAO}% (editável apenas nesta tela)
-                  </p>
                   {taxaMaquininha > 0 && (
                     <div className="mt-2 space-y-1">
                       <div className="flex justify-between text-sm text-muted-foreground">
