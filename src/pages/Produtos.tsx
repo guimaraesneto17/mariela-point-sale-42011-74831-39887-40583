@@ -646,63 +646,66 @@ const Produtos = () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4 text-sm">{produto.descricao}</p>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Código:</span>
-                  <span className="font-medium">{produto.codigoProduto}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Preço de Custo:</span>
-                  <span className="font-medium">R$ {Number(produto.precoCusto ?? 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Preço de Venda:</span>
-                  <span className="font-medium">R$ {Number(produto.precoVenda ?? produto.preco ?? 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Lucro (%):</span>
-                  <span className="font-semibold text-green-600">
-                    {produto.precoCusto 
-                      ? ((((Number(produto.precoVenda ?? produto.preco ?? 0) - Number(produto.precoCusto)) / Number(produto.precoCusto)) * 100)).toFixed(2)
-                      : '0.00'}%
-                  </span>
-                </div>
-              </div>
-
-              {produto.fornecedor && (
-                <div className="flex items-center gap-2 p-2 rounded-md bg-primary/5 border border-primary/20 mt-3">
-                  <Building className="h-4 w-4 text-primary flex-shrink-0" />
-                  <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                    <span className="text-xs text-muted-foreground">Fornecedor</span>
-                    <span className="font-medium text-sm text-foreground truncate">
-                      {produto.fornecedor.nome}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {produto.fornecedor.codigoFornecedor}
+            <CardContent className="flex flex-col h-full">
+              <div className="flex-1 space-y-3">
+                {produto.descricao && (
+                  <p className="text-muted-foreground text-sm line-clamp-2">{produto.descricao}</p>
+                )}
+                
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="bg-muted/30 p-2 rounded">
+                    <span className="text-muted-foreground text-xs block">Código</span>
+                    <span className="font-medium">{produto.codigoProduto}</span>
+                  </div>
+                  <div className="bg-muted/30 p-2 rounded">
+                    <span className="text-muted-foreground text-xs block">Lucro</span>
+                    <span className="font-semibold text-green-600">
+                      {produto.precoCusto 
+                        ? ((((Number(produto.precoVenda ?? produto.preco ?? 0) - Number(produto.precoCusto)) / Number(produto.precoCusto)) * 100)).toFixed(1)
+                        : '0.0'}%
                     </span>
                   </div>
                 </div>
-              )}
 
-              <div className="flex gap-2 mt-4">
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground">Custo</span>
+                    <span className="font-medium">R$ {Number(produto.precoCusto ?? 0).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground">Venda</span>
+                    <span className="font-bold text-primary">R$ {Number(produto.precoVenda ?? produto.preco ?? 0).toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {produto.fornecedor && (
+                  <div className="flex items-center gap-2 p-2 rounded-md bg-primary/5 border border-primary/20">
+                    <Building className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                    <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                      <span className="text-xs text-muted-foreground">Fornecedor</span>
+                      <span className="font-medium text-xs text-foreground truncate">
+                        {produto.fornecedor.nome}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t">
                 <Button
                   size="sm"
                   variant="outline"
-                  className="flex-1 gap-2"
+                  className="flex-1 gap-1.5 text-xs"
                   onClick={() => {
                     setSelectedProductForStock(produto);
                     setShowAddToStockDialog(true);
                   }}
                 >
-                  <PackagePlus className="h-4 w-4" />
-                  Adicionar ao Estoque
+                  <PackagePlus className="h-3.5 w-3.5" />
+                  Add. Estoque
                 </Button>
-                {/* Botão para ver no estoque - só aparece se tem estoque */}
                 {(() => {
                   const estoqueItem = estoque.find((e: any) => e.codigoProduto === produto.codigoProduto);
-                  // Calcular quantidade total somando todas as variantes
                   let quantidadeTotal = 0;
                   if (estoqueItem && estoqueItem.variantes && Array.isArray(estoqueItem.variantes)) {
                     quantidadeTotal = estoqueItem.variantes.reduce((total: number, v: any) => {
@@ -715,11 +718,11 @@ const Produtos = () => {
                       <Button
                         size="sm"
                         variant="default"
-                        className="flex-1 gap-2"
+                        className="flex-1 gap-1.5 text-xs"
                         onClick={() => navigate(`/estoque?produto=${produto.codigoProduto}`)}
                       >
-                        <Package className="h-4 w-4" />
-                        Ver no Estoque
+                        <Package className="h-3.5 w-3.5" />
+                        Ver Estoque ({quantidadeTotal})
                       </Button>
                     );
                   }
