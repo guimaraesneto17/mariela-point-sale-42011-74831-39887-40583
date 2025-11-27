@@ -462,6 +462,14 @@ const Estoque = () => {
     return 0;
   };
 
+  // Obter quantidade total disponível para uma cor específica (soma de todos os tamanhos)
+  const getQuantidadeByCor = (item: any, cor: string): number => {
+    if (!item.variantes) return 0;
+    const variante = item.variantes.find((v: any) => v.cor === cor);
+    if (!variante) return 0;
+    return variante.quantidade || 0;
+  };
+
   // Atualizar cor selecionada
   const handleColorChange = (codigoProduto: string, cor: string, item: any) => {
     setSelectedColorByItem(prev => ({ ...prev, [codigoProduto]: cor }));
@@ -1127,23 +1135,29 @@ const Estoque = () => {
                       Cores Disponíveis
                     </Label>
                     <div className="flex flex-wrap gap-2">
-                      {(mostrarTodasCores[item.codigoProduto] ? coresDisponiveis : coresDisponiveis.slice(0, 4)).map((cor: string) => (
-                        <button
-                          key={cor}
-                          onClick={() => handleColorChange(item.codigoProduto, cor, item)}
-                          className={`relative px-4 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 min-w-[70px] ${selectedCor === cor
-                              ? 'bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] animate-pulse-glow text-primary-foreground shadow-xl scale-105 border-2 border-primary'
-                              : 'bg-gradient-to-br from-muted to-muted/50 text-foreground hover:from-primary/20 hover:to-accent/20 hover:text-primary hover:scale-105 border-2 border-border hover:border-primary/50 hover:shadow-lg'
-                            }`}
-                        >
-                          {cor}
-                          {selectedCor === cor && (
-                            <span className="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 bg-green-500 rounded-full animate-bounce shadow-lg flex items-center justify-center">
-                              <span className="h-2 w-2 bg-white rounded-full"></span>
+                      {(mostrarTodasCores[item.codigoProduto] ? coresDisponiveis : coresDisponiveis.slice(0, 4)).map((cor: string) => {
+                        const quantidadeCor = getQuantidadeByCor(item, cor);
+                        return (
+                          <button
+                            key={cor}
+                            onClick={() => handleColorChange(item.codigoProduto, cor, item)}
+                            className={`relative px-4 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 min-w-[70px] ${selectedCor === cor
+                                ? 'bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] animate-pulse-glow text-primary-foreground shadow-xl scale-105 border-2 border-primary'
+                                : 'bg-gradient-to-br from-muted to-muted/50 text-foreground hover:from-primary/20 hover:to-accent/20 hover:text-primary hover:scale-105 border-2 border-border hover:border-primary/50 hover:shadow-lg'
+                              }`}
+                          >
+                            <span className="flex flex-col items-center gap-0.5">
+                              <span className="font-bold">{cor}</span>
+                              {quantidadeCor > 0 && <span className="text-[9px] opacity-80 font-normal">({quantidadeCor} un)</span>}
                             </span>
-                          )}
-                        </button>
-                      ))}
+                            {selectedCor === cor && (
+                              <span className="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 bg-green-500 rounded-full animate-bounce shadow-lg flex items-center justify-center">
+                                <span className="h-2 w-2 bg-white rounded-full"></span>
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                       {coresDisponiveis.length > 4 && (
                         <button
                           onClick={() => setMostrarTodasCores(prev => ({ ...prev, [item.codigoProduto]: !prev[item.codigoProduto] }))}
@@ -1429,28 +1443,36 @@ const Estoque = () => {
                         Cores Disponíveis
                       </label>
                       <div className="flex flex-wrap gap-2.5">
-                        {coresDisponiveis.map((cor: string) => (
-                          <button
-                            key={cor}
-                            onClick={() => handleColorChange(item.codigoProduto, cor, item)}
-                            className={`
-                              relative px-5 py-2.5 rounded-lg font-semibold text-sm
-                              transition-all duration-300 ease-out
-                              border-2 shadow-sm
-                              hover:scale-105 hover:shadow-lg
-                              active:scale-95
-                              ${selectedCor === cor
-                                ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-primary shadow-primary/30 ring-2 ring-primary ring-offset-2'
-                                : 'bg-background text-foreground border-primary/30 hover:border-primary/60 hover:bg-primary/5'
-                              }
-                            `}
-                          >
-                            <span className="relative z-10">{cor}</span>
-                            {selectedCor === cor && (
-                              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg animate-pulse-glow"></div>
-                            )}
-                          </button>
-                        ))}
+                        {coresDisponiveis.map((cor: string) => {
+                          const quantidadeCor = getQuantidadeByCor(item, cor);
+                          return (
+                            <button
+                              key={cor}
+                              onClick={() => handleColorChange(item.codigoProduto, cor, item)}
+                              className={`
+                                relative px-5 py-2.5 rounded-lg font-semibold text-sm
+                                transition-all duration-300 ease-out
+                                border-2 shadow-sm
+                                hover:scale-105 hover:shadow-lg
+                                active:scale-95
+                                ${selectedCor === cor
+                                  ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-primary shadow-primary/30 ring-2 ring-primary ring-offset-2'
+                                  : 'bg-background text-foreground border-primary/30 hover:border-primary/60 hover:bg-primary/5'
+                                }
+                              `}
+                            >
+                              <span className="relative z-10 flex items-center gap-1.5">
+                                <span className="font-bold">{cor}</span>
+                                <span className={`text-xs ${selectedCor === cor ? 'opacity-100 font-semibold' : 'opacity-70'}`}>
+                                  ({quantidadeCor})
+                                </span>
+                              </span>
+                              {selectedCor === cor && (
+                                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg animate-pulse-glow"></div>
+                              )}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 
