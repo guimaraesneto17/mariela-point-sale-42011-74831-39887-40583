@@ -1503,13 +1503,14 @@ const Estoque = () => {
                         Tamanhos Disponíveis
                       </label>
                       <div className="flex flex-wrap gap-2.5">
-                        {tamanhosDisponiveis.map((tamanho: string) => {
-                          const qtd = getQuantidadeByTamanho(item, selectedCor, tamanho);
-                          const isSelected = selectedTamanho === tamanho;
+                        {tamanhosDisponiveis.map((tamanho: any) => {
+                          const tamanhoStr = typeof tamanho === 'object' ? String(tamanho.tamanho) : String(tamanho);
+                          const qtd = typeof tamanho === 'object' ? tamanho.quantidade : getQuantidadeByTamanho(item, selectedCor, tamanhoStr);
+                          const isSelected = selectedTamanho === tamanhoStr;
                           return (
                             <button
-                              key={tamanho}
-                              onClick={() => handleSizeChange(item.codigoProduto, tamanho)}
+                              key={tamanhoStr}
+                              onClick={() => handleSizeChange(item.codigoProduto, tamanhoStr)}
                               className={`
                                 relative px-5 py-2.5 rounded-lg font-semibold text-sm
                                 transition-all duration-300 ease-out
@@ -1523,7 +1524,7 @@ const Estoque = () => {
                               `}
                             >
                               <span className="relative z-10 flex items-center gap-1.5">
-                                <span className="font-bold">{tamanho}</span>
+                                <span className="font-bold">{tamanhoStr}</span>
                                 <span className={`text-xs ${isSelected ? 'opacity-100 font-semibold' : 'opacity-70'}`}>
                                   ({qtd})
                                 </span>
