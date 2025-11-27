@@ -19,6 +19,46 @@ router.get('/', produtoController.getAllProdutos);
 
 /**
  * @swagger
+ * /api/produtos/novidades:
+ *   get:
+ *     summary: Lista produtos marcados como novidade
+ *     description: Retorna todos os produtos que possuem ao menos uma variante marcada como novidade no estoque
+ *     tags: [Produtos]
+ *     responses:
+ *       200:
+ *         description: Lista de novidades retornada com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   codigoProduto:
+ *                     type: string
+ *                     example: 'P001'
+ *                   nome:
+ *                     type: string
+ *                     example: 'Vestido Floral'
+ *                   categoria:
+ *                     type: string
+ *                     example: 'Vestido'
+ *                   precoVenda:
+ *                     type: number
+ *                     example: 199.90
+ *                   descricao:
+ *                     type: string
+ *                   imagens:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *       500:
+ *         description: Erro ao buscar novidades
+ */
+router.get('/novidades', produtoController.getNovidades);
+
+/**
+ * @swagger
  * /api/produtos/{codigo}:
  *   get:
  *     summary: Busca um produto por código

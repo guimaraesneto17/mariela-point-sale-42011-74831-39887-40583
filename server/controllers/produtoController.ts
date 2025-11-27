@@ -260,3 +260,24 @@ export const deleteProduto = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Erro ao remover produto' });
   }
 };
+
+/**
+ * Lista produtos que possuem ao menos uma variante marcada como novidade
+ */
+export const getNovidades = async (req: Request, res: Response) => {
+  try {
+    // Buscar todos os produtos que têm pelo menos um registro de estoque marcado como novidade
+    const estoqueComNovidade = await Estoque.find({ isNovidade: true, ativo: true }).select('codigoProduto').distinct('codigoProduto');
+    
+    if (estoqueComNovidade.length === 0) {
+      return res.json([]);
+    }
+    
+    const produtos = await Produto.find({ codigoProduto: { $in: estoqueComNovidade } }).sort({ dataCadastro: -1 });
+    
+    res.json(produtos);
+  } catch (error) {
+    console.error('Erro ao buscar novidades:', error);
+    res.status(500).json({ error: 'Erro ao buscar novidades' });
+  }
+};
