@@ -192,7 +192,17 @@ router.post('/saida', estoqueController.registrarSaida);
  * @swagger
  * /api/estoque/novidade/{codigo}:
  *   patch:
- *     summary: Atualiza o status de novidade de um produto
+ *     summary: Atualiza o status de novidade de todas as variantes de um produto
+ *     description: |
+ *       Marca ou desmarca TODAS as variantes de um produto como novidade no estoque.
+ *       Este endpoint é usado pela funcionalidade de novidades do sistema.
+ *       
+ *       **Como funciona:**
+ *       - Recebe o código do produto e um booleano `isNovidade`
+ *       - Atualiza TODAS as variantes daquele produto no estoque
+ *       - O produto aparecerá na vitrine virtual com `isNew = true` se tiver pelo menos uma variante marcada como novidade
+ *       - Use `GET /api/vitrine/novidades` para listar produtos marcados como novidade na vitrine
+ *       - Use `GET /api/produtos/novidades` para listar produtos base marcados como novidade
  *     tags: [Estoque]
  *     parameters:
  *       - in: path
@@ -200,8 +210,9 @@ router.post('/saida', estoqueController.registrarSaida);
  *         required: true
  *         schema:
  *           type: string
- *         example: P101
- *         description: Código do produto
+ *           pattern: '^P\\d{3}$'
+ *           example: 'P001'
+ *         description: Código do produto (formato P + 3 dígitos)
  *     requestBody:
  *       required: true
  *       content:
@@ -214,14 +225,31 @@ router.post('/saida', estoqueController.registrarSaida);
  *               isNovidade:
  *                 type: boolean
  *                 example: true
- *                 description: Status de novidade (true ou false)
+ *                 description: |
+ *                   Status de novidade para aplicar a todas as variantes do produto:
+ *                   - `true`: Marca o produto como novidade
+ *                   - `false`: Remove o produto das novidades
  *     responses:
  *       200:
  *         description: Status de novidade atualizado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: 'Produto marcado como novidade'
+ *                 estoque:
+ *                   type: array
+ *                   items:
+ *                     type: object
  *       404:
  *         description: Produto não encontrado no estoque
  *       400:
  *         description: Erro ao atualizar novidade
+ *       500:
+ *         description: Erro interno do servidor
  */
 router.patch('/novidade/:codigo', estoqueController.toggleNovidade);
 
