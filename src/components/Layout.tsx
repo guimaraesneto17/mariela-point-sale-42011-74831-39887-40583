@@ -25,12 +25,54 @@ import { GlobalLoading } from "@/components/GlobalLoading";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CacheIndicator } from "@/components/CacheIndicator";
 import { CaixaFechadoNotification } from "@/components/CaixaFechadoNotification";
+import { FinanceiroAlertasDialog } from "@/components/FinanceiroAlertasDialog";
+import { useContasPagar, useContasReceber } from "@/hooks/useQueryCache";
 
 const Layout = () => {
   const navigate = useNavigate();
   const { isWakingUp } = useAPIWakeup();
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showFinanceiroAlertas, setShowFinanceiroAlertas] = useState(false);
+  
+  const { data: contasPagarData = [] } = useContasPagar();
+  const { data: contasReceberData = [] } = useContasReceber();
+
+  // Verificar contas urgentes ao abrir o sistema
+  useEffect(() => {
+    const verificarContasUrgentes = () => {
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+
+      const contasPagarUrgentes = contasPagarData.filter((conta: any) => {
+        const statusLower = (conta.status || '').toLowerCase();
+        if (statusLower === 'pago' || statusLower === 'paga') return false;
+        
+        const dataVencimento = new Date(conta.dataVencimento);
+        dataVencimento.setHours(0, 0, 0, 0);
+        return dataVencimento <= hoje;
+      });
+
+      const contasReceberUrgentes = contasReceberData.filter((conta: any) => {
+        const statusLower = (conta.status || '').toLowerCase();
+        if (statusLower === 'recebido' || statusLower === 'recebida') return false;
+        
+        const dataVencimento = new Date(conta.dataVencimento);
+        dataVencimento.setHours(0, 0, 0, 0);
+        return dataVencimento <= hoje;
+      });
+
+      const totalUrgentes = contasPagarUrgentes.length + contasReceberUrgentes.length;
+
+      if (totalUrgentes > 0) {
+        setShowFinanceiroAlertas(true);
+      }
+    };
+
+    if (contasPagarData.length > 0 || contasReceberData.length > 0) {
+      verificarContasUrgentes();
+    }
+  }, [contasPagarData, contasReceberData]);
 
   const handleLogout = async () => {
     try {
