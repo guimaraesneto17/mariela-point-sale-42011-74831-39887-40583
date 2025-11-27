@@ -48,7 +48,7 @@ export function EstoqueAlertasDialog({ open, onOpenChange }: EstoqueAlertasDialo
 
       const hoje = new Date();
       const limite90Dias = new Date();
-      limite90Dias.setDate(hoje.getDate() - 90);
+      limite90Dias.setDate(hoje.getDate() - 30);
 
       const produtosComAlerta: ProdutoParado[] = [];
 
@@ -69,7 +69,7 @@ export function EstoqueAlertasDialog({ open, onOpenChange }: EstoqueAlertasDialo
           });
         });
 
-        // Se não teve venda ou última venda foi há mais de 90 dias
+        // Se não teve venda ou última venda foi há mais de 30 dias
         const dataReferencia = ultimaVenda || (item.dataCadastro ? new Date(item.dataCadastro) : null);
         
         if (!dataReferencia || dataReferencia < limite90Dias) {
@@ -126,15 +126,15 @@ export function EstoqueAlertasDialog({ open, onOpenChange }: EstoqueAlertasDialo
   };
 
   const getSeveridade = (diasParado: number) => {
-    if (diasParado >= 180) return { color: 'destructive', label: 'CRÍTICO', icon: AlertTriangle };
-    if (diasParado >= 120) return { color: 'warning', label: 'ALTO', icon: TrendingDown };
+    if (diasParado >= 90) return { color: 'destructive', label: 'CRÍTICO', icon: AlertTriangle };
+    if (diasParado >= 60) return { color: 'warning', label: 'ALTO', icon: TrendingDown };
     return { color: 'secondary', label: 'MÉDIO', icon: Package };
   };
 
   const produtosPorSeveridade = {
-    critico: produtosParados.filter(p => p.diasParado >= 180),
-    alto: produtosParados.filter(p => p.diasParado >= 120 && p.diasParado < 180),
-    medio: produtosParados.filter(p => p.diasParado >= 90 && p.diasParado < 120)
+    critico: produtosParados.filter(p => p.diasParado >= 90),
+    alto: produtosParados.filter(p => p.diasParado >= 60 && p.diasParado < 90),
+    medio: produtosParados.filter(p => p.diasParado >= 30 && p.diasParado < 60)
   };
 
   const valorTotalParado = produtosParados.reduce((acc, p) => acc + p.valorEstoque, 0);
@@ -149,7 +149,7 @@ export function EstoqueAlertasDialog({ open, onOpenChange }: EstoqueAlertasDialo
               Alertas de Estoque Parado
             </DialogTitle>
             <DialogDescription>
-              Produtos sem movimentação há mais de 90 dias que precisam de atenção
+              Produtos sem movimentação há mais de 30 dias que precisam de atenção
             </DialogDescription>
           </DialogHeader>
 
@@ -162,7 +162,7 @@ export function EstoqueAlertasDialog({ open, onOpenChange }: EstoqueAlertasDialo
               <Package className="h-16 w-16 text-green-500 mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">Tudo em ordem! 🎉</h3>
               <p className="text-muted-foreground">
-                Não há produtos parados há mais de 90 dias.
+                Não há produtos parados há mais de 30 dias.
               </p>
             </div>
           ) : (
@@ -185,7 +185,7 @@ export function EstoqueAlertasDialog({ open, onOpenChange }: EstoqueAlertasDialo
                 <Card className="border-red-200 dark:border-red-900">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
-                      Críticos (180+ dias)
+                      Críticos (90+ dias)
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -198,7 +198,7 @@ export function EstoqueAlertasDialog({ open, onOpenChange }: EstoqueAlertasDialo
                 <Card className="border-orange-200 dark:border-orange-900">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
-                      Alto Risco (120-179 dias)
+                      Alto Risco (60-89 dias)
                     </CardTitle>
                   </CardHeader>
                   <CardContent>

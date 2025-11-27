@@ -19,6 +19,7 @@ import {
   Percent,
   AlertCircle,
   Plus,
+  Tag,
 } from "lucide-react";
 import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
@@ -56,6 +57,7 @@ const Dashboard = () => {
     saidaMensal: 0,
     totalClientes: 0,
     produtosEstoque: 0,
+    produtosPromocao: 0,
     totalGeralProdutos: 0,
     ticketMedio: 0,
     margemLucro: 0,
@@ -73,6 +75,7 @@ const Dashboard = () => {
     { id: "total-clientes", label: "Total de Clientes", category: "Clientes", visible: true },
     { id: "ticket-medio", label: "Ticket Médio", category: "Vendas", visible: true },
     { id: "produtos-estoque", label: "Produtos em Estoque", category: "Estoque", visible: true },
+    { id: "produtos-promocao", label: "Produtos em Promoção", category: "Estoque", visible: true },
     { id: "total-geral-produtos", label: "Total Geral (Variantes)", category: "Estoque", visible: true },
     { id: "valor-estoque-custo", label: "Valor Estoque (Custo)", category: "Estoque", visible: true },
     { id: "valor-estoque-venda", label: "Valor Estoque (Venda)", category: "Estoque", visible: true },
@@ -232,6 +235,9 @@ const Dashboard = () => {
       // Quantidade de produtos cadastrados em estoque (mesma lógica do badge de estoque)
       const produtosEstoque = estoque.length;
       
+      // Calcular produtos em promoção
+      const produtosPromocao = estoque.filter((item: any) => item.emPromocao === true).length;
+      
       // Calcular Total Geral (todas as variantes)
       const totalGeralProdutos = estoque.reduce((acc: number, item: any) => {
         if (item.variantes && Array.isArray(item.variantes)) {
@@ -347,6 +353,7 @@ const Dashboard = () => {
         saidaMensal: vendas.reduce((acc: number, v: any) => acc + (v.total || 0), 0) * 0.3,
         totalClientes,
         produtosEstoque,
+        produtosPromocao,
         totalGeralProdutos, // Total de todas as variantes
         ticketMedio: vendas.length > 0 ? vendas.reduce((acc: number, v: any) => acc + (v.total || 0), 0) / vendas.length : 0,
         margemLucro,
@@ -566,6 +573,17 @@ const Dashboard = () => {
           icon={<ShoppingBag className="h-5 w-5 text-emerald-600" />}
           iconBgColor="bg-emerald-500/10"
           valueColor="text-emerald-600"
+        />
+      ),
+      "produtos-promocao": (
+        <DashboardWidgetCard
+          id={widget.id}
+          title="Produtos em Promoção"
+          value={stats.produtosPromocao}
+          subtitle="Produtos com desconto ativo"
+          icon={<Tag className="h-5 w-5 text-red-600" />}
+          iconBgColor="bg-red-500/10"
+          valueColor="text-red-600"
         />
       ),
       "margem-lucro": (
