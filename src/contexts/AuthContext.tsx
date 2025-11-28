@@ -13,6 +13,16 @@ export interface User {
   codigoVendedor?: string;
 }
 
+interface AuthResponse {
+  accessToken: string;
+  refreshToken: string;
+  user: User;
+}
+
+interface RefreshResponse {
+  accessToken: string;
+}
+
 interface AuthContextType {
   user: User | null;
   token: string | null;
@@ -71,7 +81,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const intervalId = setInterval(async () => {
       try {
-        const response = await api.post('/auth/refresh', { refreshToken });
+        const response = await api.post<RefreshResponse>('/auth/refresh', { refreshToken });
         const { accessToken } = response.data;
         
         localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
@@ -97,7 +107,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await api.post('/auth/login', { email, password });
+      const response = await api.post<AuthResponse>('/auth/login', { email, password });
 
       const { accessToken, refreshToken, user: newUser } = response.data;
 
@@ -131,7 +141,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     codigoVendedor?: string
   ) => {
     try {
-      const response = await api.post('/auth/register', {
+      const response = await api.post<AuthResponse>('/auth/register', {
         email,
         password,
         nome,
