@@ -1,20 +1,30 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import { UserRole } from '../models/User';
+import RefreshToken from '../models/RefreshToken';
 
-// Estender o tipo Request para incluir userId
+// Estender o tipo Request para incluir userId e userRole
 declare global {
   namespace Express {
     interface Request {
       userId?: string;
+      userRole?: UserRole;
     }
   }
 }
 
 const JWT_SECRET = process.env.JWT_SECRET || 'mariela-pdv-secret-key-change-in-production';
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'mariela-pdv-refresh-secret-change-in-production';
+const ACCESS_TOKEN_EXPIRY = '1h'; // Token de acesso: 1 hora
+const REFRESH_TOKEN_EXPIRY = '7d'; // Refresh token: 7 dias
 
 export interface JWTPayload {
   userId: string;
   email?: string;
+  role?: UserRole;
+  nome?: string;
+  type?: 'access' | 'refresh';
 }
 
 /**
@@ -45,6 +55,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
       const payload = decoded as JWTPayload;
       req.userId = payload.userId;
+      req.userRole = payload.role;
       next();
     });
   } catch (error) {
@@ -56,11 +67,72 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 };
 
 /**
- * Gera um token JWT para um usuário
+ * Gera um token de acesso (curta duração)
  */
-export const generateToken = (userId: string, email?: string): string => {
-  const payload: JWTPayload = { userId, email };
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
+export const generateAccessToken = (userId: string, email?: string, role?: UserRole, nome?: string): string => {
+  const payload: JWTPayload = { userId, email, role, nome, type: 'access' };
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRY });
+};
+
+/**
+ * Gera um refresh token (longa duração)
+ */
+export const generateRefreshToken = async (userId: string): Promise<string> => {
+  const token = crypto.randomBytes(64).toString('hex');
+  
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 7); // 7 dias
+
+  // Salvar no banco
+  await RefreshToken.create({
+    userId,
+    token,
+    expiresAt
+  });
+
+  return token;
+};
+
+/**
+ * Valida refresh token e retorna userId
+ */
+export const validateRefreshToken = async (token: string): Promise<string | null> => {
+  try {
+    const refreshToken = await RefreshToken.findOne({ 
+      token,
+      expiresAt: { $gt: new Date() }
+    });
+
+    if (!refreshToken) {
+      return null;
+    }
+
+    return refreshToken.userId.toString();
+  } catch (error) {
+    return null;
+  }
+};
+
+/**
+ * Remove refresh token do banco
+ */
+export const revokeRefreshToken = async (token: string): Promise<void> => {
+  await RefreshToken.deleteOne({ token });
+};
+
+/**
+ * Remove todos os refresh tokens de um usuário
+ */
+export const revokeAllUserTokens = async (userId: string): Promise<void> => {
+  await RefreshToken.deleteMany({ userId });
+};
+
+/**
+ * Gera um token JWT para um usuário (compatibilidade)
+ * @deprecated Use generateAccessToken + generateRefreshToken
+ */
+export const generateToken = (userId: string, email?: string, role?: UserRole, nome?: string): string => {
+  return generateAccessToken(userId, email, role, nome);
 };
 
 /**

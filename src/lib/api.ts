@@ -1,7 +1,81 @@
+import axios from 'axios';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://mariela-pdv-backend.onrender.com/api';
 const API_TIMEOUT = 30000; // 30 segundos
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 segundo entre tentativas
+
+// Criar instância do Axios com configurações
+export const axiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: API_TIMEOUT,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Interceptor para adicionar token automaticamente
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('mariela_access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Interceptor para tratamento de erros e renovação de token
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Se receber 401 e não for tentativa de refresh, tentar renovar token
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/refresh')) {
+      originalRequest._retry = true;
+
+      try {
+        const refreshToken = localStorage.getItem('mariela_refresh_token');
+        if (refreshToken) {
+          const response = await axiosInstance.post<{ success: boolean; accessToken: string; expiresIn: string }>('/auth/refresh', { refreshToken });
+          const { accessToken } = response.data;
+
+          localStorage.setItem('mariela_access_token', accessToken);
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+
+          return axiosInstance(originalRequest);
+        }
+      } catch (refreshError) {
+        // Falhou ao renovar, fazer logout
+        localStorage.removeItem('mariela_access_token');
+        localStorage.removeItem('mariela_refresh_token');
+        localStorage.removeItem('mariela_user');
+        
+        if (!window.location.pathname.includes('/auth')) {
+          window.location.href = '/auth';
+        }
+      }
+    }
+
+    // Se receber 403 ou outros erros de autenticação
+    if (error.response?.status === 403) {
+      localStorage.removeItem('mariela_access_token');
+      localStorage.removeItem('mariela_refresh_token');
+      localStorage.removeItem('mariela_user');
+      
+      if (!window.location.pathname.includes('/auth')) {
+        window.location.href = '/auth';
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+// Export default da instância axios
+export default axiosInstance;
 
 // Helper para delay entre tentativas
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

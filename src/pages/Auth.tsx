@@ -1,32 +1,28 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
 import { toast } from "sonner";
 import { Eye, EyeOff, Lock } from "lucide-react";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const { login, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
-  const [loginEmail, setLoginEmail] = useState("marielamodaf@gmail.com");
+  const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
   useEffect(() => {
-    // Verificar se já está logado
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/");
-      }
-    };
-    checkUser();
-  }, [navigate]);
+    // Se já está autenticado, redirecionar
+    if (isAuthenticated) {
+      navigate("/");
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,32 +34,13 @@ const Auth = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
-        password: loginPassword,
-      });
-
-      if (error) {
-        if (error.message.includes("Invalid login credentials")) {
-          toast.error("Email ou senha incorretos");
-        } else {
-          toast.error(error.message);
-        }
-        return;
-      }
-
-      if (data.session) {
-        toast.success("Login realizado com sucesso!");
-        navigate("/");
-      }
-    } catch (error: any) {
-      toast.error("Erro ao fazer login");
-      console.error("Login error:", error);
+      await login(loginEmail, loginPassword);
+    } catch (error) {
+      // Erro já tratado no contexto
     } finally {
       setLoading(false);
     }
   };
-
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/20 via-background to-accent/20 p-4">
@@ -123,6 +100,11 @@ const Auth = () => {
               {loading ? "Entrando..." : "Entrar"}
             </Button>
           </form>
+          
+          <div className="mt-6 text-center text-sm text-muted-foreground">
+            <p>Não possui acesso?</p>
+            <p className="mt-1">Entre em contato com o administrador do sistema.</p>
+          </div>
         </CardContent>
       </Card>
     </div>

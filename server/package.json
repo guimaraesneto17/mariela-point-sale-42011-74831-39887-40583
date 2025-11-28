@@ -8,7 +8,8 @@
     "dev": "tsx watch index.ts",
     "start": "node dist/index.js",
     "build": "tsc",
-    "postinstall": "npm run build"
+    "postinstall": "npm run build",
+    "create-admin": "tsx scripts/createAdminUser.ts"
   },
   "keywords": [
     "pdv",
@@ -20,6 +21,7 @@
   "author": "Mariela Moda",
   "license": "ISC",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "date-fns": "^3.6.0",
     "dotenv": "^17.2.3",
@@ -31,6 +33,7 @@
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/jsonwebtoken": "^9.0.10",

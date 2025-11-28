@@ -1,33 +1,13 @@
-import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { Session } from "@supabase/supabase-js";
+import { useAuth, UserRole } from "@/contexts/AuthContext";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  requiredRoles?: UserRole[];
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Configurar listener de mudança de auth
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setLoading(false);
-      }
-    );
-
-    // Verificar sessão atual
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+export function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps) {
+  const { isAuthenticated, loading, hasRole } = useAuth();
 
   if (loading) {
     return (
@@ -37,8 +17,22 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  if (!session) {
+  if (!isAuthenticated) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Verificar roles se especificadas
+  if (requiredRoles && requiredRoles.length > 0 && !hasRole(...requiredRoles)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center p-8 bg-destructive/10 rounded-lg border border-destructive">
+          <h2 className="text-2xl font-bold text-destructive mb-2">Acesso Negado</h2>
+          <p className="text-muted-foreground">
+            Você não tem permissão para acessar esta página.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;

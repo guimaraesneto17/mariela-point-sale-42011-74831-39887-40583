@@ -14,11 +14,12 @@ import {
   Wallet,
   TrendingUp,
   Menu,
-  X
+  X,
+  UserCog
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 import logo from "@/logo.png";
 import { useAPIWakeup } from "@/hooks/useAPIWakeup";
 import { GlobalLoading } from "@/components/GlobalLoading";
@@ -31,6 +32,7 @@ import { ConnectionStatus } from "@/components/ConnectionStatus";
 
 const Layout = () => {
   const navigate = useNavigate();
+  const { logout, isAdmin } = useAuth();
   const { isWakingUp } = useAPIWakeup();
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -77,9 +79,7 @@ const Layout = () => {
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
-      toast.success("Logout realizado com sucesso!");
-      navigate("/auth");
+      await logout();
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
       toast.error("Erro ao fazer logout");
@@ -103,6 +103,7 @@ const Layout = () => {
     { to: "/vendas", icon: ShoppingCart, label: "Vendas" },
     { to: "/caixa", icon: Wallet, label: "Caixa" },
     { to: "/financeiro", icon: TrendingUp, label: "Financeiro" },
+    ...(isAdmin ? [{ to: "/usuarios", icon: UserCog, label: "Usuários" }] : []),
   ];
 
   return (

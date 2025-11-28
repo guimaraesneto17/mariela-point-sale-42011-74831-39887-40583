@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
 import Layout from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
@@ -19,6 +20,7 @@ import VitrineVirtual from "./pages/VitrineVirtual";
 import Caixa from "./pages/Caixa";
 import Financeiro from "./pages/Financeiro";
 import BackendStatus from "./pages/BackendStatus";
+import Usuarios from "./pages/Usuarios";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -78,26 +80,29 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/auth" element={<Auth />} />
-          <Route element={<Layout />}>
-             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/produtos" element={<ProtectedRoute><Produtos /></ProtectedRoute>} />
-            <Route path="/vendas" element={<ProtectedRoute><Vendas /></ProtectedRoute>} />
-            <Route path="/vendas/nova" element={<ProtectedRoute><NovaVenda /></ProtectedRoute>} />
-            <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
-            <Route path="/estoque" element={<ProtectedRoute><Estoque /></ProtectedRoute>} />
-            <Route path="/fornecedores" element={<ProtectedRoute><Fornecedores /></ProtectedRoute>} />
-            <Route path="/vendedores" element={<ProtectedRoute><Vendedores /></ProtectedRoute>} />
-            <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
-            <Route path="/vitrine-virtual" element={<ProtectedRoute><VitrineVirtual /></ProtectedRoute>} />
-            <Route path="/caixa" element={<ProtectedRoute><Caixa /></ProtectedRoute>} />
-            <Route path="/financeiro" element={<ProtectedRoute><Financeiro /></ProtectedRoute>} />
-            <Route path="/backend-status" element={<ProtectedRoute><BackendStatus /></ProtectedRoute>} />
-          </Route>
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route element={<Layout />}>
+               <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/produtos" element={<ProtectedRoute><Produtos /></ProtectedRoute>} />
+              <Route path="/vendas" element={<ProtectedRoute><Vendas /></ProtectedRoute>} />
+              <Route path="/vendas/nova" element={<ProtectedRoute><NovaVenda /></ProtectedRoute>} />
+              <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
+              <Route path="/estoque" element={<ProtectedRoute><Estoque /></ProtectedRoute>} />
+              <Route path="/fornecedores" element={<ProtectedRoute><Fornecedores /></ProtectedRoute>} />
+              <Route path="/vendedores" element={<ProtectedRoute><Vendedores /></ProtectedRoute>} />
+              <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
+              <Route path="/vitrine-virtual" element={<ProtectedRoute><VitrineVirtual /></ProtectedRoute>} />
+              <Route path="/caixa" element={<ProtectedRoute><Caixa /></ProtectedRoute>} />
+              <Route path="/financeiro" element={<ProtectedRoute><Financeiro /></ProtectedRoute>} />
+              <Route path="/usuarios" element={<ProtectedRoute requiredRoles={['admin']}><Usuarios /></ProtectedRoute>} />
+              <Route path="/backend-status" element={<ProtectedRoute><BackendStatus /></ProtectedRoute>} />
+            </Route>
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </PersistQueryClientProvider>

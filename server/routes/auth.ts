@@ -1,7 +1,61 @@
 import express from 'express';
-import { generateToken } from '../middleware/auth';
+import * as authController from '../controllers/authController';
+import { authenticateToken } from '../middleware/auth';
+import { requireAdmin } from '../middleware/roles';
 
 const router = express.Router();
+
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Registra um novo usuário
+ *     description: |
+ *       Cria um novo usuário no sistema com hash de senha bcrypt.
+ *       Role padrão é "vendedor" se não especificado.
+ *     tags: [Autenticação]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - nome
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "vendedor@mariela.com"
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 6
+ *                 example: "senha123"
+ *               nome:
+ *                 type: string
+ *                 minLength: 3
+ *                 example: "João Silva"
+ *               role:
+ *                 type: string
+ *                 enum: [admin, gerente, vendedor]
+ *                 example: "vendedor"
+ *               codigoVendedor:
+ *                 type: string
+ *                 pattern: '^V\d{3}$'
+ *                 example: "V001"
+ *                 description: "Obrigatório se role = vendedor"
+ *     responses:
+ *       201:
+ *         description: Usuário criado com sucesso
+ *       400:
+ *         description: Dados inválidos
+ *       409:
+ *         description: Email já cadastrado
+ */
+router.post('/register', authController.register);
 
 /**
  * @swagger
@@ -9,10 +63,8 @@ const router = express.Router();
  *   post:
  *     summary: Realiza login e retorna token JWT
  *     description: |
- *       Autentica o usuário e retorna um token JWT válido por 24 horas.
- *       
- *       **IMPORTANTE**: Por enquanto, aceita qualquer email/senha para desenvolvimento.
- *       Em produção, deve ser integrado com sistema de autenticação real.
+ *       Autentica o usuário validando email e senha com hash bcrypt.
+ *       Retorna token JWT válido por 24 horas.
  *     tags: [Autenticação]
  *     requestBody:
  *       required: true
@@ -35,107 +87,198 @@ const router = express.Router();
  *     responses:
  *       200:
  *         description: Login realizado com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 token:
- *                   type: string
- *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
- *                 expiresIn:
- *                   type: string
- *                   example: "24h"
  *       400:
  *         description: Dados inválidos
  *       401:
  *         description: Credenciais inválidas
+ *       403:
+ *         description: Usuário desativado
  */
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ 
-        error: 'Email e senha são obrigatórios' 
-      });
-    }
-
-    // TODO: Implementar validação real de credenciais com banco de dados
-    // Por enquanto, aceita qualquer login para desenvolvimento
-    // Em produção, deve validar contra banco de dados com hash bcrypt
-    
-    const token = generateToken(email, email);
-
-    res.json({
-      success: true,
-      token,
-      expiresIn: '24h',
-      message: 'Login realizado com sucesso'
-    });
-  } catch (error) {
-    console.error('Erro ao fazer login:', error);
-    res.status(500).json({ error: 'Erro ao processar login' });
-  }
-});
+router.post('/login', authController.login);
 
 /**
  * @swagger
- * /api/auth/validate:
+ * /api/auth/profile:
  *   get:
- *     summary: Valida se o token JWT é válido
- *     description: Endpoint para verificar se o token ainda é válido
+ *     summary: Obtém perfil do usuário autenticado
+ *     description: Retorna informações do usuário logado
  *     tags: [Autenticação]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Token válido
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 valid:
- *                   type: boolean
- *                   example: true
- *                 userId:
- *                   type: string
- *                   example: "user@example.com"
+ *         description: Perfil do usuário
  *       401:
- *         description: Token não fornecido
- *       403:
- *         description: Token inválido ou expirado
+ *         description: Não autenticado
+ *       404:
+ *         description: Usuário não encontrado
  */
-router.get('/validate', (req, res) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+router.get('/profile', authenticateToken, authController.getProfile);
 
-  if (!token) {
-    return res.status(401).json({ 
-      valid: false,
-      error: 'Token não fornecido' 
-    });
-  }
+/**
+ * @swagger
+ * /api/auth/update-password:
+ *   put:
+ *     summary: Atualiza senha do usuário
+ *     description: Permite ao usuário alterar sua própria senha
+ *     tags: [Autenticação]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentPassword
+ *               - newPassword
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *                 format: password
+ *               newPassword:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 6
+ *     responses:
+ *       200:
+ *         description: Senha atualizada
+ *       401:
+ *         description: Senha atual incorreta
+ */
+router.put('/update-password', authenticateToken, authController.updatePassword);
 
-  const jwt = require('jsonwebtoken');
-  const JWT_SECRET = process.env.JWT_SECRET || 'mariela-pdv-secret-key-change-in-production';
+/**
+ * @swagger
+ * /api/auth/users:
+ *   get:
+ *     summary: Lista todos os usuários (apenas admin)
+ *     description: Retorna lista completa de usuários cadastrados
+ *     tags: [Autenticação]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de usuários
+ *       403:
+ *         description: Acesso negado (requer admin)
+ */
+router.get('/users', authenticateToken, requireAdmin, authController.listUsers);
 
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    res.json({
-      valid: true,
-      userId: decoded.userId
-    });
-  } catch (error) {
-    res.status(403).json({ 
-      valid: false,
-      error: 'Token inválido ou expirado' 
-    });
-  }
-});
+/**
+ * @swagger
+ * /api/auth/users/{userId}/role:
+ *   put:
+ *     summary: Atualiza role de usuário (apenas admin)
+ *     description: Permite admin alterar a role de um usuário
+ *     tags: [Autenticação]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - role
+ *             properties:
+ *               role:
+ *                 type: string
+ *                 enum: [admin, gerente, vendedor]
+ *               codigoVendedor:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Role atualizada
+ *       403:
+ *         description: Acesso negado
+ *       404:
+ *         description: Usuário não encontrado
+ */
+router.put('/users/:userId/role', authenticateToken, requireAdmin, authController.updateUserRole);
+
+/**
+ * @swagger
+ * /api/auth/users/{userId}/toggle-status:
+ *   put:
+ *     summary: Ativa/desativa usuário (apenas admin)
+ *     description: Permite admin ativar ou desativar um usuário
+ *     tags: [Autenticação]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Status alterado
+ *       403:
+ *         description: Acesso negado
+ *       404:
+ *         description: Usuário não encontrado
+ */
+router.put('/users/:userId/toggle-status', authenticateToken, requireAdmin, authController.toggleUserStatus);
+
+/**
+ * @swagger
+ * /api/auth/refresh:
+ *   post:
+ *     summary: Renova access token usando refresh token
+ *     description: Gera novo access token sem precisar fazer login novamente
+ *     tags: [Autenticação]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: Refresh token obtido no login
+ *     responses:
+ *       200:
+ *         description: Token renovado
+ *       400:
+ *         description: Refresh token não fornecido
+ *       401:
+ *         description: Refresh token inválido ou expirado
+ */
+router.post('/refresh', authController.refreshAccessToken);
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Faz logout e revoga refresh token
+ *     description: Invalida o refresh token do usuário
+ *     tags: [Autenticação]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Logout realizado
+ */
+router.post('/logout', authController.logout);
 
 export default router;

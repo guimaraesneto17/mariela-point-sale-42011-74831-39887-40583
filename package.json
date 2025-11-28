@@ -49,6 +49,7 @@
     "@types/express": "^5.0.3",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
+    "axios": "^1.13.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -85,6 +86,7 @@
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@tailwindcss/typography": "^0.5.16",
+    "@types/axios": "^0.9.36",
     "@types/node": "^24.7.2",
     "@types/react": "^18.3.26",
     "@types/react-dom": "^18.3.7",
