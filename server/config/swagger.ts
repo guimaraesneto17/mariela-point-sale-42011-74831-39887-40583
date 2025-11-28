@@ -1,10 +1,4 @@
 import swaggerJsdoc from 'swagger-jsdoc';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-// Obter __dirname em ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const options: swaggerJsdoc.Options = {
   definition: {
@@ -666,8 +660,9 @@ const options: swaggerJsdoc.Options = {
       }
     },
     apis: [
-      path.join(__dirname, '../routes/*.ts'),
-      path.join(__dirname, '../routes/*.js')
+      './routes/*.ts',
+      './routes/*.js',
+      './dist/routes/*.js'
     ]
   }
 };

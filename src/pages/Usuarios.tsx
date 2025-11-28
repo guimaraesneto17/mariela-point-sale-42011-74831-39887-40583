@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import api from "@/lib/api";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,16 +23,10 @@ interface User {
   role: UserRole;
   codigoVendedor?: string;
   ativo: boolean;
-  dataCriacao: string;
-  ultimoAcesso?: string;
+  created_at: string;
+  last_sign_in_at?: string;
 }
 
-// Tipo da resposta do endpoint /auth/users
-interface UsersResponse {
-  users: User[];
-}
-
-// Tipo do novo usuário
 interface NewUser {
   email: string;
   password: string;
@@ -59,21 +53,67 @@ const Usuarios = () => {
   }
 
   // ========== QUERY USERS ==========
-  const { data: usersData, isLoading } = useQuery<UsersResponse>({
+  const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ['users'],
     queryFn: async () => {
-      const response = await api.get<UsersResponse>('/auth/users');
-      return response.data;
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*');
+
+      if (profilesError) throw profilesError;
+
+      const { data: roles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('*');
+
+      if (rolesError) throw rolesError;
+
+      const userEmails: Record<string, { email: string; last_sign_in_at?: string }> = {};
+      
+      for (const profile of profiles) {
+        try {
+          const { data: userData } = await supabase.auth.admin.getUserById(profile.id);
+          if (userData.user) {
+            userEmails[profile.id] = {
+              email: userData.user.email || '',
+              last_sign_in_at: userData.user.last_sign_in_at
+            };
+          }
+        } catch (error) {
+          console.error(`Erro ao buscar dados do usuário ${profile.id}:`, error);
+          userEmails[profile.id] = { email: 'Erro ao carregar email' };
+        }
+      }
+
+      const usersData: User[] = profiles.map(profile => {
+        const userRole = roles.find(r => r.user_id === profile.id);
+        const authData = userEmails[profile.id];
+        
+        return {
+          id: profile.id,
+          email: authData?.email || '',
+          nome: profile.nome,
+          role: (userRole?.role || 'vendedor') as UserRole,
+          codigoVendedor: profile.codigo_vendedor,
+          ativo: profile.ativo,
+          created_at: profile.created_at,
+          last_sign_in_at: authData?.last_sign_in_at
+        };
+      });
+
+      return usersData;
     }
   });
-
-  const users: User[] = usersData?.users || [];
 
   // ========== MUTATIONS ==========
   const updateRoleMutation = useMutation({
     mutationFn: async ({ userId, role }: { userId: string; role: UserRole }) => {
-      const response = await api.put<{ success: boolean }>(`/auth/users/${userId}/role`, { role });
-      return response.data;
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ role })
+        .eq('user_id', userId);
+      
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -81,28 +121,47 @@ const Usuarios = () => {
       setEditingRole(null);
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.error || 'Erro ao atualizar role');
+      toast.error(error.message || 'Erro ao atualizar role');
     }
   });
 
   const toggleStatusMutation = useMutation({
-    mutationFn: async (userId: string) => {
-      const response = await api.put<{ success: boolean }>(`/auth/users/${userId}/toggle-status`);
-      return response.data;
+    mutationFn: async ({ userId, currentStatus }: { userId: string; currentStatus: boolean }) => {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ ativo: !currentStatus })
+        .eq('id', userId);
+      
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('Status atualizado com sucesso!');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.error || 'Erro ao atualizar status');
+      toast.error(error.message || 'Erro ao atualizar status');
     }
   });
 
   const createUserMutation = useMutation({
     mutationFn: async (userData: NewUser) => {
-      const response = await api.post<{ user: User }>('/auth/register', userData);
-      return response.data;
+      const { data, error } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            nome: userData.nome,
+            role: userData.role,
+            codigo_vendedor: userData.codigoVendedor
+          }
+        }
+      });
+
+      if (error) throw error;
+      if (!data.user) throw new Error('Erro ao criar usuário');
+
+      return data.user;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -111,11 +170,10 @@ const Usuarios = () => {
       setNewUser({ email: '', password: '', nome: '', role: 'vendedor', codigoVendedor: '' });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.error || 'Erro ao criar usuário');
+      toast.error(error.message || 'Erro ao criar usuário');
     }
   });
 
-  // ========== FUNÇÕES AUXILIARES ==========
   const handleCreateUser = () => {
     if (!newUser.email || !newUser.password || !newUser.nome) {
       toast.error('Preencha todos os campos obrigatórios');
@@ -148,10 +206,8 @@ const Usuarios = () => {
     return new Date(dateString).toLocaleString('pt-BR');
   };
 
-  // ========== JSX ==========
   return (
     <div className="container mx-auto p-6 space-y-6">
-      {/* Header e botão criar usuário */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -210,7 +266,6 @@ const Usuarios = () => {
         </Dialog>
       </div>
 
-      {/* Lista de usuários */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><UserCog className="h-5 w-5" /> Usuários Cadastrados</CardTitle>
@@ -258,9 +313,14 @@ const Usuarios = () => {
                     </TableCell>
                     <TableCell>{user.codigoVendedor || '-'}</TableCell>
                     <TableCell>{user.ativo ? <Badge variant="default">Ativo</Badge> : <Badge variant="destructive">Inativo</Badge>}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{formatDate(user.ultimoAcesso)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{formatDate(user.last_sign_in_at)}</TableCell>
                     <TableCell>
-                      <Button variant={user.ativo ? "destructive" : "default"} size="sm" onClick={() => toggleStatusMutation.mutate(user.id)} disabled={toggleStatusMutation.isPending}>
+                      <Button 
+                        variant={user.ativo ? "destructive" : "default"} 
+                        size="sm" 
+                        onClick={() => toggleStatusMutation.mutate({ userId: user.id, currentStatus: user.ativo })} 
+                        disabled={toggleStatusMutation.isPending}
+                      >
                         {user.ativo ? 'Desativar' : 'Ativar'}
                       </Button>
                     </TableCell>
