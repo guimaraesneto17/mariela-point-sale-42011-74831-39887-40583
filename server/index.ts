@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 import connectDatabase from './config/database';
 import swaggerSpec from './config/swagger';
+import { authenticateToken } from './middleware/auth';
 
 // Importar rotas
 import produtosRouter from './routes/produtos';
@@ -20,6 +21,7 @@ import contasPagarRouter from './routes/contasPagar';
 import contasReceberRouter from './routes/contasReceber';
 import categoriasFinanceirasRouter from './routes/categoriasFinanceiras';
 import healthRouter from './routes/health';
+import authRouter from './routes/auth';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -120,19 +122,23 @@ app.get('/api-docs.json', (req, res) => {
 });
 
 // Rotas da API
+// Rotas públicas (sem autenticação)
 app.use('/api/health', healthRouter);
-app.use('/api/produtos', produtosRouter);
-app.use('/api/clientes', clientesRouter);
-app.use('/api/vendas', vendasRouter);
-app.use('/api/estoque', estoqueRouter);
-app.use('/api/fornecedores', fornecedoresRouter);
-app.use('/api/vendedores', vendedoresRouter);
 app.use('/api/vitrine', vitrineVirtualRouter);
-app.use('/api/recalculo', recalculoRouter);
-app.use('/api/caixa', caixaRouter);
-app.use('/api/contas-pagar', contasPagarRouter);
-app.use('/api/contas-receber', contasReceberRouter);
-app.use('/api/categorias-financeiras', categoriasFinanceirasRouter);
+app.use('/api/auth', authRouter);
+
+// Rotas protegidas (com autenticação JWT e rate limiting rigoroso)
+app.use('/api/produtos', strictLimiter, authenticateToken, produtosRouter);
+app.use('/api/clientes', strictLimiter, authenticateToken, clientesRouter);
+app.use('/api/vendas', strictLimiter, authenticateToken, vendasRouter);
+app.use('/api/estoque', strictLimiter, authenticateToken, estoqueRouter);
+app.use('/api/fornecedores', strictLimiter, authenticateToken, fornecedoresRouter);
+app.use('/api/vendedores', strictLimiter, authenticateToken, vendedoresRouter);
+app.use('/api/recalculo', strictLimiter, authenticateToken, recalculoRouter);
+app.use('/api/caixa', strictLimiter, authenticateToken, caixaRouter);
+app.use('/api/contas-pagar', strictLimiter, authenticateToken, contasPagarRouter);
+app.use('/api/contas-receber', strictLimiter, authenticateToken, contasReceberRouter);
+app.use('/api/categorias-financeiras', strictLimiter, authenticateToken, categoriasFinanceirasRouter);
 
 // Rota 404
 app.use(/.*/, (req, res) => {
