@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import api from '@/lib/api';
+import { supabase } from '@/integrations/supabase/client';
+import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 
 export type UserRole = 'admin' | 'gerente' | 'vendedor';
 
@@ -11,21 +12,12 @@ export interface User {
   nome: string;
   role: UserRole;
   codigoVendedor?: string;
-}
-
-interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: User;
-}
-
-interface RefreshResponse {
-  accessToken: string;
+  ativo: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
+  session: Session | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, nome: string, role?: UserRole, codigoVendedor?: string) => Promise<void>;
@@ -33,101 +25,115 @@ interface AuthContextType {
   isAuthenticated: boolean;
   hasRole: (...roles: UserRole[]) => boolean;
   isAdmin: boolean;
-  isGerente: boolean;
   isVendedor: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const ACCESS_TOKEN_KEY = 'mariela_access_token';
-const REFRESH_TOKEN_KEY = 'mariela_refresh_token';
-const USER_KEY = 'mariela_user';
-
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Carregar usuário do localStorage ao iniciar
-  useEffect(() => {
-    const storedAccessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
-    const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-    const storedUser = localStorage.getItem(USER_KEY);
+  // Carregar perfil completo do usuário
+  const loadUserProfile = async (supabaseUser: SupabaseUser) => {
+    try {
+      // Buscar perfil
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', supabaseUser.id)
+        .single();
 
-    if (storedAccessToken && storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setToken(storedAccessToken);
-        setUser(parsedUser);
-        
-        // Configurar renovação automática do token
-        setupTokenRefresh(storedRefreshToken);
-      } catch (error) {
-        console.error('Erro ao carregar usuário do localStorage:', error);
-        clearAuthData();
-      }
+      if (profileError) throw profileError;
+
+      // Buscar role
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', supabaseUser.id)
+        .single();
+
+      if (roleError) throw roleError;
+
+      const userData: User = {
+        id: supabaseUser.id,
+        email: supabaseUser.email!,
+        nome: profile.nome,
+        role: roleData.role as UserRole,
+        codigoVendedor: profile.codigo_vendedor,
+        ativo: profile.ativo,
+      };
+
+      setUser(userData);
+    } catch (error) {
+      console.error('Erro ao carregar perfil:', error);
+      toast.error('Erro ao carregar dados do usuário');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    setLoading(false);
-  }, []);
-
-  // Função para configurar renovação automática do token
-  const setupTokenRefresh = (refreshToken: string | null) => {
-    if (!refreshToken) return;
-
-    // Renovar token 5 minutos antes de expirar (token expira em 1h)
-    const refreshInterval = 55 * 60 * 1000; // 55 minutos
-
-    const intervalId = setInterval(async () => {
-      try {
-        const response = await api.post<RefreshResponse>('/auth/refresh', { refreshToken });
-        const { accessToken } = response.data;
+  // Carregar dados de autenticação do Supabase
+  useEffect(() => {
+    // Configurar listener de mudanças de autenticação PRIMEIRO
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event);
+        setSession(session);
         
-        localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-        setToken(accessToken);
-      } catch (error) {
-        console.error('Erro ao renovar token:', error);
-        clearAuthData();
-        navigate('/auth');
+        if (session?.user) {
+          // Usar setTimeout para evitar deadlock
+          setTimeout(() => {
+            loadUserProfile(session.user);
+          }, 0);
+        } else {
+          setUser(null);
+          setLoading(false);
+        }
       }
-    }, refreshInterval);
+    );
 
-    // Limpar intervalo quando componente desmontar
-    return () => clearInterval(intervalId);
-  };
+    // DEPOIS verificar sessão existente
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        loadUserProfile(session.user);
+      } else {
+        setLoading(false);
+      }
+    });
 
-  const clearAuthData = () => {
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    setToken(null);
-    setUser(null);
-  };
+    return () => subscription.unsubscribe();
+  }, []);
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await api.post<AuthResponse>('/auth/login', { email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-      const { accessToken, refreshToken, user: newUser } = response.data;
+      if (error) throw error;
 
-      // Salvar no localStorage
-      localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-      localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-      localStorage.setItem(USER_KEY, JSON.stringify(newUser));
+      // Verificar se usuário está ativo
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('ativo')
+        .eq('id', data.user.id)
+        .single();
 
-      // Atualizar estado
-      setToken(accessToken);
-      setUser(newUser);
-
-      // Configurar renovação automática
-      setupTokenRefresh(refreshToken);
+      if (profile && !profile.ativo) {
+        await supabase.auth.signOut();
+        throw new Error('Usuário desativado. Entre em contato com o administrador.');
+      }
 
       toast.success('Login realizado com sucesso!');
       navigate('/');
     } catch (error: any) {
       console.error('Erro ao fazer login:', error);
-      const errorMessage = error.response?.data?.error || 'Erro ao fazer login';
+      const errorMessage = error.message || 'Erro ao fazer login';
       toast.error(errorMessage);
       throw error;
     }
@@ -137,87 +143,78 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     email: string, 
     password: string, 
     nome: string, 
-    role?: UserRole, 
+    role: UserRole = 'vendedor', 
     codigoVendedor?: string
   ) => {
     try {
-      const response = await api.post<AuthResponse>('/auth/register', {
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        nome,
-        role,
-        codigoVendedor
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            nome,
+            role,
+            codigo_vendedor: codigoVendedor,
+          }
+        }
       });
 
-      const { accessToken, refreshToken, user: newUser } = response.data;
+      if (error) throw error;
 
-      // Salvar no localStorage
-      localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-      localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-      localStorage.setItem(USER_KEY, JSON.stringify(newUser));
-
-      // Atualizar estado
-      setToken(accessToken);
-      setUser(newUser);
-
-      // Configurar renovação automática
-      setupTokenRefresh(refreshToken);
-
-      toast.success('Cadastro realizado com sucesso!');
+      toast.success('Usuário registrado com sucesso!');
       navigate('/');
     } catch (error: any) {
       console.error('Erro ao registrar:', error);
-      const errorMessage = error.response?.data?.error || 'Erro ao criar conta';
+      const errorMessage = error.message || 'Erro ao registrar usuário';
       toast.error(errorMessage);
       throw error;
     }
   };
 
   const logout = async () => {
-    try {
-      const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-      
-      // Revogar refresh token no backend
-      if (refreshToken) {
-        await api.post('/auth/logout', { refreshToken }).catch(() => {
-          // Ignorar erro se não conseguir revogar
-        });
-      }
-    } finally {
-      // Limpar dados localmente mesmo se falhar no backend
-      clearAuthData();
-      toast.info('Logout realizado com sucesso');
-      navigate('/auth');
-    }
+    await supabase.auth.signOut();
+    setUser(null);
+    setSession(null);
+    toast.success('Logout realizado com sucesso!');
+    navigate('/auth');
   };
+
+  const isAuthenticated = !!session && !!user;
+  const isAdmin = user?.role === 'admin';
+  const isVendedor = user?.role === 'vendedor';
 
   const hasRole = (...roles: UserRole[]): boolean => {
     if (!user) return false;
-    if (user.role === 'admin') return true; // Admin tem acesso a tudo
     return roles.includes(user.role);
   };
 
-  const value: AuthContextType = {
-    user,
-    token,
-    loading,
-    login,
-    register,
-    logout,
-    isAuthenticated: !!user && !!token,
-    hasRole,
-    isAdmin: user?.role === 'admin',
-    isGerente: user?.role === 'gerente',
-    isVendedor: user?.role === 'vendedor'
-  };
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        loading,
+        login,
+        register,
+        logout,
+        isAuthenticated,
+        hasRole,
+        isAdmin,
+        isVendedor,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth deve ser usado dentro de um AuthProvider');
   }
   return context;
-};
+}
