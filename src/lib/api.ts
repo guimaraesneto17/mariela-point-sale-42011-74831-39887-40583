@@ -1,21 +1,39 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://mariela-pdv-backend.onrender.com/api';
+const API_TIMEOUT = 30000; // 30 segundos
 
-// Helper para fazer requisições HTTP
+// Helper para fazer requisições HTTP com timeout
 async function fetchAPI(endpoint: string, options?: RequestInit) {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Erro desconhecido' }));
-    throw new Error(error.error || `HTTP error! status: ${response.status}`);
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Erro desconhecido' }));
+      throw new Error(error.error || `HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    
+    if (error.name === 'AbortError') {
+      const serviceName = endpoint.split('/')[1] || 'API';
+      throw new Error(`Timeout: O serviço "${serviceName}" não respondeu em ${API_TIMEOUT / 1000} segundos. Verifique sua conexão ou tente novamente.`);
+    }
+    
+    throw error;
   }
-
-  return response.json();
 }
 
 // ============= CLIENTES =============
