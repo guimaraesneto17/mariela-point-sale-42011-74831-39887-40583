@@ -1,8 +1,13 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://mariela-pdv-backend.onrender.com/api';
 const API_TIMEOUT = 30000; // 30 segundos
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 segundo entre tentativas
 
-// Helper para fazer requisições HTTP com timeout
-async function fetchAPI(endpoint: string, options?: RequestInit) {
+// Helper para delay entre tentativas
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Helper para fazer requisições HTTP com timeout e retry
+async function fetchAPI(endpoint: string, options?: RequestInit, retryCount = 0): Promise<any> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
 
@@ -29,7 +34,15 @@ async function fetchAPI(endpoint: string, options?: RequestInit) {
     
     if (error.name === 'AbortError') {
       const serviceName = endpoint.split('/')[1] || 'API';
-      throw new Error(`Timeout: O serviço "${serviceName}" não respondeu em ${API_TIMEOUT / 1000} segundos. Verifique sua conexão ou tente novamente.`);
+      
+      // Tentar novamente se ainda tiver tentativas disponíveis
+      if (retryCount < MAX_RETRIES) {
+        console.warn(`⏱️ Timeout no serviço "${serviceName}". Tentativa ${retryCount + 1}/${MAX_RETRIES}...`);
+        await delay(RETRY_DELAY * (retryCount + 1)); // Aumenta o delay a cada tentativa
+        return fetchAPI(endpoint, options, retryCount + 1);
+      }
+      
+      throw new Error(`Timeout: O serviço "${serviceName}" não respondeu após ${MAX_RETRIES} tentativas. Verifique sua conexão ou tente novamente.`);
     }
     
     throw error;
