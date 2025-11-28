@@ -9,7 +9,8 @@
     "start": "node dist/index.js",
     "build": "tsc",
     "postinstall": "npm run build",
-    "create-admin": "tsx scripts/createAdminUser.ts"
+    "create-admin": "tsx scripts/createAdminUser.ts",
+    "migrate-images": "tsx scripts/migrateImagesToBlob.ts"
   },
   "keywords": [
     "pdv",
@@ -21,7 +22,6 @@
   "author": "Mariela Moda",
   "license": "ISC",
   "dependencies": {
-    "@vercel/blob": "^2.0.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "date-fns": "^3.6.0",

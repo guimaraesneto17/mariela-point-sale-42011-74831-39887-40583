@@ -658,13 +658,13 @@ const options: swaggerJsdoc.Options = {
           }
         }
       }
-    },
-    apis: [
-      './routes/*.ts',
-      './routes/*.js',
-      './dist/routes/*.js'
-    ]
-  }
+    }
+  },
+  apis: [
+    './routes/*.ts',
+    './routes/*.js',
+    './dist/routes/*.js'
+  ]
 };
 const swaggerSpec = swaggerJsdoc(options);
 
