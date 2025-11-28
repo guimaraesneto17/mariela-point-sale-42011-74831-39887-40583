@@ -135,30 +135,3 @@ export const getVitrineVirtualByCodigo = async (req: Request, res: Response) => 
     res.status(500).json({ error: 'Erro ao buscar produto da vitrine' });
   }
 };
-
-export const createVitrineVirtual = async (req: Request, res: Response) => {
-  try {
-    res.status(501).json({ error: 'Vitrine Virtual é somente leitura - use Estoque e Produto para modificar dados' });
-  } catch (error) {
-    console.error('Erro ao criar produto na vitrine:', error);
-    res.status(400).json({ error: 'Erro ao criar produto na vitrine' });
-  }
-};
-
-export const updateVitrineVirtual = async (req: Request, res: Response) => {
-  try {
-    res.status(501).json({ error: 'Vitrine Virtual é somente leitura - use Estoque e Produto para modificar dados' });
-  } catch (error) {
-    console.error('Erro ao atualizar produto na vitrine:', error);
-    res.status(400).json({ error: 'Erro ao atualizar produto na vitrine' });
-  }
-};
-
-export const deleteVitrineVirtual = async (req: Request, res: Response) => {
-  try {
-    res.status(501).json({ error: 'Vitrine Virtual é somente leitura - use Estoque e Produto para modificar dados' });
-  } catch (error) {
-    console.error('Erro ao remover produto da vitrine:', error);
-    res.status(500).json({ error: 'Erro ao remover produto da vitrine' });
-  }
-};
