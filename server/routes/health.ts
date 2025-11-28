@@ -8,10 +8,21 @@ const router = Router();
  * /api/health:
  *   get:
  *     summary: Verifica o status do backend e conexão com MongoDB
+ *     description: |
+ *       Endpoint de health check que retorna informações sobre:
+ *       - Status do servidor
+ *       - Conexão com o banco de dados MongoDB
+ *       - Tempo de atividade do servidor (uptime)
+ *       - Uso de memória
+ *       
+ *       **Status Codes:**
+ *       - 200: Sistema operacional
+ *       - 503: Sistema degradado (banco de dados desconectado)
+ *       - 500: Erro no servidor
  *     tags: [Health]
  *     responses:
  *       200:
- *         description: Status do sistema
+ *         description: Sistema operacional
  *         content:
  *           application/json:
  *             schema:
@@ -19,21 +30,58 @@ const router = Router();
  *               properties:
  *                 status:
  *                   type: string
- *                   example: ok
+ *                   example: "ok"
+ *                   description: Status geral do sistema
  *                 timestamp:
  *                   type: string
  *                   format: date-time
+ *                   example: "2025-01-28T10:30:00.000Z"
  *                 database:
  *                   type: object
  *                   properties:
  *                     status:
  *                       type: string
- *                       example: connected
+ *                       enum: [connected, disconnected, connecting, disconnecting]
+ *                       example: "connected"
  *                     name:
  *                       type: string
- *                       example: mariela-db
+ *                       example: "mariela-db"
+ *                     host:
+ *                       type: string
+ *                       example: "cluster0.mongodb.net"
+ *                 uptime:
+ *                   type: number
+ *                   example: 86400.5
+ *                   description: Tempo de atividade em segundos
+ *                 memory:
+ *                   type: object
+ *                   description: Uso de memória do processo Node.js
+ *       503:
+ *         description: Sistema degradado - banco de dados desconectado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "degraded"
+ *                 message:
+ *                   type: string
+ *                   example: "Banco de dados não está conectado"
  *       500:
  *         description: Erro no servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "error"
+ *                 error:
+ *                   type: string
+ *                   example: "Erro ao verificar status"
  */
 router.get('/', async (req, res) => {
   try {

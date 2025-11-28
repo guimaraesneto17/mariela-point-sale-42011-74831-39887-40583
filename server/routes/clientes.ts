@@ -52,10 +52,61 @@ router.get('/:codigo', clienteController.getClienteByCodigo);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Cliente'
+ *             type: object
+ *             required:
+ *               - nome
+ *               - telefone
+ *             properties:
+ *               codigoCliente:
+ *                 type: string
+ *                 example: "C001"
+ *                 description: Código do cliente (gerado automaticamente se não informado)
+ *               nome:
+ *                 type: string
+ *                 example: "Maria Silva"
+ *                 description: Nome completo do cliente
+ *               telefone:
+ *                 type: string
+ *                 example: "(11) 98765-4321"
+ *                 description: Telefone no formato (XX) XXXXX-XXXX
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "maria.silva@email.com"
+ *               cpf:
+ *                 type: string
+ *                 example: "123.456.789-00"
+ *                 description: CPF no formato XXX.XXX.XXX-XX
+ *               endereco:
+ *                 type: string
+ *                 example: "Rua das Flores, 123"
+ *               cidade:
+ *                 type: string
+ *                 example: "São Paulo"
+ *               estado:
+ *                 type: string
+ *                 example: "SP"
+ *               cep:
+ *                 type: string
+ *                 example: "01234-567"
+ *               dataNascimento:
+ *                 type: string
+ *                 format: date
+ *                 example: "1990-05-15"
  *     responses:
  *       201:
  *         description: Cliente criado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 codigoCliente:
+ *                   type: string
+ *                   example: "C001"
+ *                 nome:
+ *                   type: string
+ *                   example: "Maria Silva"
  *       400:
  *         description: Erro na validação dos dados
  *         content:

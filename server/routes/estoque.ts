@@ -62,13 +62,65 @@ router.get('/:id', estoqueController.getEstoqueById);
  * /api/estoque:
  *   post:
  *     summary: Cria um novo item de estoque
+ *     description: Cria um registro de estoque para um produto com suas variantes (cores, tamanhos e quantidades)
  *     tags: [Estoque]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Estoque'
+ *             type: object
+ *             required:
+ *               - codigoProduto
+ *               - variantes
+ *             properties:
+ *               codigoProduto:
+ *                 type: string
+ *                 example: "P001"
+ *                 description: Código do produto
+ *               variantes:
+ *                 type: array
+ *                 description: Lista de variantes do produto
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - cor
+ *                     - tamanhos
+ *                   properties:
+ *                     cor:
+ *                       type: string
+ *                       example: "Azul"
+ *                     quantidade:
+ *                       type: number
+ *                       example: 15
+ *                       description: Quantidade total desta cor
+ *                     tamanhos:
+ *                       type: array
+ *                       description: Distribuição por tamanho
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           tamanho:
+ *                             type: string
+ *                             example: "M"
+ *                           quantidade:
+ *                             type: number
+ *                             example: 5
+ *                     imagens:
+ *                       type: array
+ *                       description: URLs das imagens desta variante
+ *                       items:
+ *                         type: string
+ *                       example: ["https://example.com/image1.jpg"]
+ *               emPromocao:
+ *                 type: boolean
+ *                 example: false
+ *               precoPromocional:
+ *                 type: number
+ *                 example: 159.90
+ *               isNovidade:
+ *                 type: boolean
+ *                 example: true
  *     responses:
  *       201:
  *         description: Item de estoque criado com sucesso

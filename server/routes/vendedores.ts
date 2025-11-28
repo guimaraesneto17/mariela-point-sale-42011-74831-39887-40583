@@ -115,7 +115,7 @@ router.post('/', vendedorController.createVendedor);
  *         description: Vendedor atualizado com sucesso
  *       404:
  *         description: Vendedor não encontrado
-*       400:
+ *       400:
  *         description: Erro na validação dos dados
  *         content:
  *           application/json:

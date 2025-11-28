@@ -84,16 +84,63 @@ router.get('/:codigo', produtoController.getProdutoByCodigo);
  * /api/produtos:
  *   post:
  *     summary: Cria um novo produto e registro de estoque
+ *     description: Cria um produto base e automaticamente cria um registro de estoque associado com variantes (cores e tamanhos)
  *     tags: [Produtos]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Produto'
+ *             type: object
+ *             required:
+ *               - nome
+ *               - categoria
+ *               - precoVenda
+ *             properties:
+ *               codigoProduto:
+ *                 type: string
+ *                 example: "P001"
+ *                 description: Código do produto (gerado automaticamente se não informado)
+ *               nome:
+ *                 type: string
+ *                 example: "Vestido Floral"
+ *                 description: Nome do produto
+ *               descricao:
+ *                 type: string
+ *                 example: "Vestido floral em tecido leve, ideal para verão"
+ *               categoria:
+ *                 type: string
+ *                 example: "Vestido"
+ *                 description: Categoria do produto
+ *               precoVenda:
+ *                 type: number
+ *                 example: 199.90
+ *                 description: Preço de venda do produto
+ *               precoCusto:
+ *                 type: number
+ *                 example: 89.90
+ *                 description: Preço de custo (opcional)
+ *               fornecedor:
+ *                 type: string
+ *                 example: "F001"
+ *                 description: Código do fornecedor (opcional)
  *     responses:
  *       201:
  *         description: Produto criado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 codigoProduto:
+ *                   type: string
+ *                   example: "P001"
+ *                 nome:
+ *                   type: string
+ *                   example: "Vestido Floral"
+ *                 categoria:
+ *                   type: string
+ *                   example: "Vestido"
  *       400:
  *         description: Erro na validação dos dados
  *         content:

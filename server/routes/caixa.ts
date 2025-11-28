@@ -62,6 +62,7 @@ router.get('/:codigo', caixaController.getByCodigo);
  * /api/caixa/abrir:
  *   post:
  *     summary: Abrir novo caixa
+ *     description: Abre um novo caixa para o dia. Apenas um caixa pode estar aberto por vez.
  *     tags: [Caixa]
  *     requestBody:
  *       required: true
@@ -75,16 +76,43 @@ router.get('/:codigo', caixaController.getByCodigo);
  *               valorInicial:
  *                 type: number
  *                 minimum: 0
- *                 description: Valor inicial em dinheiro no caixa
+ *                 example: 200.00
+ *                 description: Valor inicial em dinheiro no caixa (troco)
+ *               responsavel:
+ *                 type: string
+ *                 example: "João Silva"
+ *                 description: Nome do responsável pela abertura
  *     responses:
  *       201:
  *         description: Caixa aberto com sucesso
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Caixa'
+ *               type: object
+ *               properties:
+ *                 codigoCaixa:
+ *                   type: string
+ *                   example: "CX20250128-001"
+ *                 valorInicial:
+ *                   type: number
+ *                   example: 200.00
+ *                 dataAbertura:
+ *                   type: string
+ *                   format: date-time
+ *                   example: "2025-01-28T08:00:00Z"
+ *                 status:
+ *                   type: string
+ *                   example: "aberto"
  *       400:
  *         description: Já existe caixa aberto ou valor inválido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Já existe um caixa aberto"
  */
 router.post('/abrir', caixaController.abrirCaixa);
 
@@ -92,7 +120,8 @@ router.post('/abrir', caixaController.abrirCaixa);
  * @swagger
  * /api/caixa/movimento:
  *   post:
- *     summary: Adicionar movimentação ao caixa (entrada/saída)
+ *     summary: Adicionar movimentação ao caixa (sangria/suprimento)
+ *     description: Registra uma entrada (suprimento) ou saída (sangria) de valores no caixa aberto
  *     tags: [Caixa]
  *     requestBody:
  *       required: true
@@ -107,23 +136,47 @@ router.post('/abrir', caixaController.abrirCaixa);
  *               tipo:
  *                 type: string
  *                 enum: [entrada, saida]
- *                 description: Tipo da movimentação (entrada para injeção, saida para sangria)
+ *                 example: "saida"
+ *                 description: |
+ *                   Tipo da movimentação:
+ *                   - entrada: Suprimento (adiciona dinheiro ao caixa)
+ *                   - saida: Sangria (remove dinheiro do caixa)
  *               valor:
  *                 type: number
  *                 minimum: 0
+ *                 example: 500.00
  *                 description: Valor da movimentação
  *               observacao:
  *                 type: string
- *                 description: Observação opcional sobre a movimentação
+ *                 example: "Sangria para depósito bancário"
+ *                 description: Observação sobre a movimentação
  *     responses:
  *       200:
  *         description: Movimentação adicionada com sucesso
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Caixa'
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Movimentação registrada com sucesso"
+ *                 caixa:
+ *                   type: object
+ *                   properties:
+ *                     saldoAtual:
+ *                       type: number
+ *                       example: 1200.00
  *       400:
  *         description: Não há caixa aberto ou dados inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Não há caixa aberto"
  */
 router.post('/movimento', caixaController.adicionarMovimento);
 
