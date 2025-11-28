@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Estoque from '../models/Estoque';
 import Validations from '../utils/validations';
+import { processImages } from '../services/imageUploadService';
 
 // Helper para formatar erros de validação do Mongoose
 const formatValidationError = (error: any) => {
@@ -394,7 +395,10 @@ export const createEstoque = async (req: Request, res: Response) => {
       tamanhosProcessados = [{ tamanho: req.body.tamanho, quantidade: quantidadeVariante }];
     }
     
-    const imagens = primeiraVariante.imagens ?? req.body.imagens ?? [];
+    // Processar imagens - converter base64 para URLs
+    const imagensRaw = primeiraVariante.imagens ?? req.body.imagens ?? [];
+    const imagens = await processImages(imagensRaw);
+    
     const { codigoProduto } = req.body;
 
     // Verificar se já existe estoque para este produto

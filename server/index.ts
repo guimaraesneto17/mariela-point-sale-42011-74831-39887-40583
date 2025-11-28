@@ -22,6 +22,7 @@ import contasReceberRouter from './routes/contasReceber';
 import categoriasFinanceirasRouter from './routes/categoriasFinanceiras';
 import healthRouter from './routes/health';
 import authRouter from './routes/auth';
+import uploadRouter from './routes/upload';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -78,8 +79,8 @@ app.use(cors({
   exposedHeaders: ['Content-Range', 'X-Content-Range'],
   maxAge: 86400 // 24 horas
 }));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '50mb' })); // Aumentado para suportar imagens base64 temporariamente
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Rate Limiting - Proteção contra ataques DDoS
 const apiLimiter = rateLimit({
@@ -128,6 +129,7 @@ app.use('/api/vitrine', vitrineVirtualRouter);
 app.use('/api/auth', authRouter);
 
 // Rotas protegidas (com autenticação JWT e rate limiting rigoroso)
+app.use('/api/upload', strictLimiter, authenticateToken, uploadRouter);
 app.use('/api/produtos', strictLimiter, authenticateToken, produtosRouter);
 app.use('/api/clientes', strictLimiter, authenticateToken, clientesRouter);
 app.use('/api/vendas', strictLimiter, authenticateToken, vendasRouter);
