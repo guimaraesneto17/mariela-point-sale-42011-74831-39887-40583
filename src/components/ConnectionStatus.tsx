@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Wifi, WifiOff, Clock } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { connectionLogger } from '@/lib/connectionLogger';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://mariela-pdv-backend.onrender.com/api';
 const CHECK_INTERVAL = 30000; // Verificar a cada 30 segundos
@@ -14,6 +15,7 @@ export function ConnectionStatus() {
   const [status, setStatus] = useState<ConnectionStatus>('online');
   const [lastCheckTime, setLastCheckTime] = useState<number>(0);
   const [errorDetails, setErrorDetails] = useState<string>('');
+  const previousStatus = useRef<ConnectionStatus>('online');
 
   const checkConnection = async () => {
     const startTime = Date.now();
@@ -31,28 +33,71 @@ export function ConnectionStatus() {
       setLastCheckTime(responseTime);
       setErrorDetails('');
 
+      // Registrar latência
+      connectionLogger.addLatencyPoint(responseTime);
+
       // Se demorar mais de 5 segundos, considerar como lento
       if (responseTime > 5000) {
         setStatus('slow');
         setErrorDetails('Conexão lenta detectada');
+        
+        // Log evento de conexão lenta
+        if (previousStatus.current !== 'slow') {
+          connectionLogger.logEvent({
+            type: 'slow',
+            message: 'Conexão lenta detectada',
+            details: `Tempo de resposta: ${responseTime}ms`,
+            responseTime,
+          });
+        }
       } else {
+        // Log recuperação para online
+        if (previousStatus.current !== 'online') {
+          connectionLogger.logEvent({
+            type: 'online',
+            message: 'Conexão restabelecida',
+            details: `Tempo de resposta: ${responseTime}ms`,
+            responseTime,
+          });
+        }
         setStatus('online');
       }
+      
+      previousStatus.current = status;
     } catch (error: any) {
       clearTimeout(timeoutId);
       setStatus('offline');
       setLastCheckTime(0);
       
       // Capturar detalhes do erro
+      let errorMessage = '';
+      let errorType: 'timeout' | 'error' = 'error';
+      
       if (error.name === 'AbortError') {
-        setErrorDetails('Timeout na requisição (>10s)');
+        errorMessage = 'Timeout na requisição (>10s)';
+        errorType = 'timeout';
+        setErrorDetails(errorMessage);
       } else if (error.message?.includes('Failed to fetch')) {
-        setErrorDetails('Falha na conexão com servidor');
+        errorMessage = 'Falha na conexão com servidor';
+        setErrorDetails(errorMessage);
       } else if (error.message?.includes('Network')) {
-        setErrorDetails('Erro de rede');
+        errorMessage = 'Erro de rede';
+        setErrorDetails(errorMessage);
       } else {
-        setErrorDetails(error.message || 'Erro desconhecido');
+        errorMessage = error.message || 'Erro desconhecido';
+        setErrorDetails(errorMessage);
       }
+
+      // Log evento de falha
+      if (previousStatus.current !== 'offline') {
+        connectionLogger.logEvent({
+          type: errorType,
+          message: 'Conexão perdida',
+          details: errorMessage,
+        });
+      }
+      
+      previousStatus.current = 'offline';
     }
   };
 

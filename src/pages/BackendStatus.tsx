@@ -4,7 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, CheckCircle2, XCircle, Clock, RefreshCw, Database, Server, AlertCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, Clock, RefreshCw, Database, Server, AlertCircle, Activity, History, Trash2 } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
+import { connectionLogger, ConnectionEvent, LatencyDataPoint } from '@/lib/connectionLogger';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://mariela-pdv-backend.onrender.com/api';
 
@@ -31,6 +35,8 @@ export default function BackendStatus() {
   const navigate = useNavigate();
   const [checking, setChecking] = useState(false);
   const [healthData, setHealthData] = useState<HealthResponse | null>(null);
+  const [latencyData, setLatencyData] = useState<LatencyDataPoint[]>([]);
+  const [connectionLogs, setConnectionLogs] = useState<ConnectionEvent[]>([]);
   const [endpoints, setEndpoints] = useState<EndpointStatus[]>([
     { name: 'Produtos', endpoint: '/produtos', status: 'checking' },
     { name: 'Clientes', endpoint: '/clientes', status: 'checking' },
@@ -123,7 +129,48 @@ export default function BackendStatus() {
 
   useEffect(() => {
     runChecks();
+    loadHistoricalData();
   }, []);
+
+  const loadHistoricalData = () => {
+    setLatencyData(connectionLogger.getLatencyData());
+    setConnectionLogs(connectionLogger.getLogs());
+  };
+
+  const clearHistoricalData = () => {
+    connectionLogger.clearLogs();
+    connectionLogger.clearLatencyData();
+    loadHistoricalData();
+  };
+
+  const getEventIcon = (type: ConnectionEvent['type']) => {
+    switch (type) {
+      case 'online':
+        return <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />;
+      case 'offline':
+      case 'error':
+        return <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />;
+      case 'slow':
+        return <Clock className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />;
+      case 'timeout':
+        return <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />;
+    }
+  };
+
+  const getEventBadge = (type: ConnectionEvent['type']) => {
+    switch (type) {
+      case 'online':
+        return <Badge variant="default" className="bg-green-50 dark:bg-green-950 text-green-600 dark:text-green-400">Online</Badge>;
+      case 'offline':
+        return <Badge variant="destructive">Offline</Badge>;
+      case 'error':
+        return <Badge variant="destructive">Erro</Badge>;
+      case 'slow':
+        return <Badge variant="secondary" className="bg-yellow-50 dark:bg-yellow-950 text-yellow-600 dark:text-yellow-400">Lento</Badge>;
+      case 'timeout':
+        return <Badge variant="secondary" className="bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400">Timeout</Badge>;
+    }
+  };
 
   const getStatusIcon = (status: EndpointStatus['status']) => {
     switch (status) {
@@ -304,6 +351,132 @@ export default function BackendStatus() {
         </CardContent>
       </Card>
 
+      {/* Gráfico de Latência */}
+      {latencyData.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5" />
+                  Latência em Tempo Real
+                </CardTitle>
+                <CardDescription>Evolução do tempo de resposta das APIs</CardDescription>
+              </div>
+              <Button variant="outline" size="sm" onClick={clearHistoricalData}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Limpar Histórico
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={latencyData}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis 
+                  dataKey="label" 
+                  className="text-xs"
+                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                />
+                <YAxis 
+                  className="text-xs"
+                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                  label={{ 
+                    value: 'ms', 
+                    angle: -90, 
+                    position: 'insideLeft',
+                    style: { fill: 'hsl(var(--muted-foreground))' }
+                  }}
+                />
+                <RechartsTooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--background))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                  labelStyle={{ color: 'hsl(var(--foreground))' }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="responseTime" 
+                  stroke="hsl(var(--primary))" 
+                  strokeWidth={2}
+                  dot={{ fill: 'hsl(var(--primary))', r: 3 }}
+                  activeDot={{ r: 5 }}
+                  name="Latência"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+            <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="text-muted-foreground">Média:</span>
+                <p className="font-medium">
+                  {Math.round(latencyData.reduce((acc, d) => acc + d.responseTime, 0) / latencyData.length)}ms
+                </p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Mínimo:</span>
+                <p className="font-medium">
+                  {Math.min(...latencyData.map(d => d.responseTime))}ms
+                </p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Máximo:</span>
+                <p className="font-medium">
+                  {Math.max(...latencyData.map(d => d.responseTime))}ms
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Histórico de Eventos */}
+      {connectionLogs.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Histórico de Conexão
+            </CardTitle>
+            <CardDescription>
+              Registro de quedas, timeouts e mudanças de status ({connectionLogs.length} eventos)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3 max-h-[400px] overflow-y-auto">
+              {connectionLogs.map((log, index) => (
+                <div key={index}>
+                  <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="mt-0.5">
+                      {getEventIcon(log.type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-medium">{log.message}</p>
+                        {getEventBadge(log.type)}
+                      </div>
+                      {log.details && (
+                        <p className="text-sm text-muted-foreground">{log.details}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {format(new Date(log.timestamp), "dd/MM/yyyy 'às' HH:mm:ss", { locale: ptBR })}
+                      </p>
+                    </div>
+                    {log.responseTime && (
+                      <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                        {log.responseTime}ms
+                      </span>
+                    )}
+                  </div>
+                  {index < connectionLogs.length - 1 && <Separator className="my-1" />}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Informações Adicionais */}
       <Card>
         <CardHeader>
@@ -313,6 +486,8 @@ export default function BackendStatus() {
           <p>• Timeout configurado: 10 segundos por requisição</p>
           <p>• Conexão considerada lenta: &gt;5 segundos de resposta</p>
           <p>• Verificação automática: a cada 30 segundos no indicador</p>
+          <p>• Histórico mantido: últimos 7 dias ou 100 eventos</p>
+          <p>• Dados de latência: últimas 24 horas ou 50 pontos</p>
           <p>• URL da API: {API_BASE_URL}</p>
         </CardContent>
       </Card>
