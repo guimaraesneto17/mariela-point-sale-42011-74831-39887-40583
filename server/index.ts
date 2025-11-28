@@ -19,6 +19,7 @@ import caixaRouter from './routes/caixa';
 import contasPagarRouter from './routes/contasPagar';
 import contasReceberRouter from './routes/contasReceber';
 import categoriasFinanceirasRouter from './routes/categoriasFinanceiras';
+import healthRouter from './routes/health';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -118,12 +119,8 @@ app.get('/api-docs.json', (req, res) => {
   res.send(swaggerSpec);
 });
 
-// Rota de health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
 // Rotas da API
+app.use('/api/health', healthRouter);
 app.use('/api/produtos', produtosRouter);
 app.use('/api/clientes', clientesRouter);
 app.use('/api/vendas', vendasRouter);
