@@ -18,6 +18,7 @@ import Relatorios from "./pages/Relatorios";
 import VitrineVirtual from "./pages/VitrineVirtual";
 import Caixa from "./pages/Caixa";
 import Financeiro from "./pages/Financeiro";
+import BackendStatus from "./pages/BackendStatus";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -92,6 +93,7 @@ const App = () => (
             <Route path="/vitrine-virtual" element={<ProtectedRoute><VitrineVirtual /></ProtectedRoute>} />
             <Route path="/caixa" element={<ProtectedRoute><Caixa /></ProtectedRoute>} />
             <Route path="/financeiro" element={<ProtectedRoute><Financeiro /></ProtectedRoute>} />
+            <Route path="/backend-status" element={<ProtectedRoute><BackendStatus /></ProtectedRoute>} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
