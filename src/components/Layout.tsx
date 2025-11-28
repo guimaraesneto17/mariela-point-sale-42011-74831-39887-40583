@@ -27,6 +27,7 @@ import { CacheIndicator } from "@/components/CacheIndicator";
 import { CaixaFechadoNotification } from "@/components/CaixaFechadoNotification";
 import { FinanceiroAlertasDialog } from "@/components/FinanceiroAlertasDialog";
 import { useContasPagar, useContasReceber } from "@/hooks/useQueryCache";
+import { ConnectionStatus } from "@/components/ConnectionStatus";
 
 const Layout = () => {
   const navigate = useNavigate();
@@ -228,6 +229,7 @@ const Layout = () => {
         open={showFinanceiroAlertas} 
         onOpenChange={setShowFinanceiroAlertas} 
       />
+      <ConnectionStatus />
     </div>
   );
 };
