@@ -1,8 +1,9 @@
-import { put, del } from '@vercel/blob';
+// NOTA: Serviço desativado - @vercel/blob removido para deploy no Render
+// import { put, del } from '@vercel/blob';
 
 /**
- * Serviço de upload de imagens para Vercel Blob Storage
- * Otimiza o armazenamento removendo base64 do MongoDB
+ * Serviço de upload de imagens (DESATIVADO)
+ * TODO: Implementar alternativa ao Vercel Blob Storage
  */
 
 interface UploadResult {
@@ -21,6 +22,10 @@ export async function uploadImageToBlob(
     base64Image: string,
     filename?: string
 ): Promise<UploadResult> {
+    // DESATIVADO: Vercel Blob não disponível
+    throw new Error('Upload de imagens desativado - implementar alternativa ao Vercel Blob');
+    
+    /* CÓDIGO ORIGINAL COMENTADO
     try {
         // Extrair tipo MIME e dados base64
         let base64Data: string;
@@ -63,7 +68,7 @@ export async function uploadImageToBlob(
             throw new Error('Falha no upload da imagem: erro desconhecido');
         }
     }
-
+    */
 }
 
 /**
@@ -84,12 +89,16 @@ export async function uploadMultipleImages(
  * @param imageUrl URL da imagem a ser deletada
  */
 export async function deleteImageFromBlob(imageUrl: string): Promise<void> {
+    // DESATIVADO: Vercel Blob não disponível
+    console.warn('Delete de imagem desativado - Vercel Blob não disponível');
+    /* CÓDIGO ORIGINAL COMENTADO
     try {
         await del(imageUrl);
     } catch (error) {
         console.error('Erro ao deletar imagem:', error);
         // Não lançar erro para não bloquear operações
     }
+    */
 }
 
 /**
