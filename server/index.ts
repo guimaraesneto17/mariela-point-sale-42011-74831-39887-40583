@@ -23,6 +23,7 @@ import categoriasFinanceirasRouter from './routes/categoriasFinanceiras';
 import healthRouter from './routes/health';
 import authRouter from './routes/auth';
 import uploadRouter from './routes/upload';
+import permissionsRouter from './routes/permissions';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -141,6 +142,7 @@ app.use('/api/caixa', strictLimiter, authenticateToken, caixaRouter);
 app.use('/api/contas-pagar', strictLimiter, authenticateToken, contasPagarRouter);
 app.use('/api/contas-receber', strictLimiter, authenticateToken, contasReceberRouter);
 app.use('/api/categorias-financeiras', strictLimiter, authenticateToken, categoriasFinanceirasRouter);
+app.use('/api/permissions', strictLimiter, authenticateToken, permissionsRouter);
 
 // Rota 404
 app.use(/.*/, (req, res) => {
