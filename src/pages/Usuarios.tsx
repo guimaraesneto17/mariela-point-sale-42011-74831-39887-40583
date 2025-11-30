@@ -13,6 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Shield, ShieldAlert, ShieldCheck, UserCog, Users, UserPlus, Search, Filter } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PermissionsManager } from "@/components/PermissionsManager";
 
 type UserRole = 'admin' | 'gerente' | 'vendedor';
 
@@ -163,9 +165,9 @@ const Usuarios = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Users className="h-8 w-8" /> Gerenciamento de Usuários
+            <Users className="h-8 w-8" /> Gerenciamento do Sistema
           </h1>
-          <p className="text-muted-foreground mt-1">Gerencie usuários, roles e permissões do sistema</p>
+          <p className="text-muted-foreground mt-1">Gerencie usuários e permissões do sistema</p>
         </div>
 
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
@@ -218,8 +220,15 @@ const Usuarios = () => {
         </Dialog>
       </div>
 
-      {/* Filtros e Busca */}
-      <Card>
+      <Tabs defaultValue="users" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="users">Usuários</TabsTrigger>
+          <TabsTrigger value="permissions">Permissões</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users" className="space-y-6">
+          {/* Filtros e Busca */}
+          <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" /> Filtros
@@ -333,6 +342,12 @@ const Usuarios = () => {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="permissions">
+          <PermissionsManager />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
