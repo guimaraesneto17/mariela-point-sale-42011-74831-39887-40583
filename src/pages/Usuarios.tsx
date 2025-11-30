@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import axiosInstance from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,21 +10,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shield, ShieldAlert, ShieldCheck, UserCog, Users, UserPlus } from "lucide-react";
+import { Shield, ShieldAlert, ShieldCheck, UserCog, Users, UserPlus, Search, Filter } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 
 type UserRole = 'admin' | 'gerente' | 'vendedor';
 
 interface User {
-  id: string;
+  _id: string;
   email: string;
   nome: string;
   role: UserRole;
   codigoVendedor?: string;
   ativo: boolean;
-  created_at: string;
-  last_sign_in_at?: string;
+  dataCriacao: string;
+  ultimoAcesso?: string;
 }
 
 interface NewUser {
@@ -48,6 +48,10 @@ const Usuarios = () => {
     codigoVendedor: ''
   });
 
+  // Filtros e busca
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState<UserRole | 'todos'>('todos');
+
   if (!isAdmin) {
     return <Navigate to="/" replace />;
   }
@@ -56,64 +60,31 @@ const Usuarios = () => {
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ['users'],
     queryFn: async () => {
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*');
-
-      if (profilesError) throw profilesError;
-
-      const { data: roles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('*');
-
-      if (rolesError) throw rolesError;
-
-      const userEmails: Record<string, { email: string; last_sign_in_at?: string }> = {};
-      
-      for (const profile of profiles) {
-        try {
-          const { data: userData } = await supabase.auth.admin.getUserById(profile.id);
-          if (userData.user) {
-            userEmails[profile.id] = {
-              email: userData.user.email || '',
-              last_sign_in_at: userData.user.last_sign_in_at
-            };
-          }
-        } catch (error) {
-          console.error(`Erro ao buscar dados do usuário ${profile.id}:`, error);
-          userEmails[profile.id] = { email: 'Erro ao carregar email' };
-        }
-      }
-
-      const usersData: User[] = profiles.map(profile => {
-        const userRole = roles.find(r => r.user_id === profile.id);
-        const authData = userEmails[profile.id];
-        
-        return {
-          id: profile.id,
-          email: authData?.email || '',
-          nome: profile.nome,
-          role: (userRole?.role || 'vendedor') as UserRole,
-          codigoVendedor: profile.codigo_vendedor,
-          ativo: profile.ativo,
-          created_at: profile.created_at,
-          last_sign_in_at: authData?.last_sign_in_at
-        };
-      });
-
-      return usersData;
+      const response = await axiosInstance.get<User[]>('/auth/users');
+      return response.data;
     }
   });
 
+  // ========== FILTROS E BUSCA ==========
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      // Filtro de busca (nome ou email)
+      const matchesSearch = searchTerm === '' || 
+        user.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase());
+
+      // Filtro de role
+      const matchesRole = roleFilter === 'todos' || user.role === roleFilter;
+
+      return matchesSearch && matchesRole;
+    });
+  }, [users, searchTerm, roleFilter]);
+
   // ========== MUTATIONS ==========
   const updateRoleMutation = useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: UserRole }) => {
-      const { error } = await supabase
-        .from('user_roles')
-        .update({ role })
-        .eq('user_id', userId);
-      
-      if (error) throw error;
+    mutationFn: async ({ userId, role, codigoVendedor }: { userId: string; role: UserRole; codigoVendedor?: string }) => {
+      const response = await axiosInstance.put(`/auth/users/${userId}/role`, { role, codigoVendedor });
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -121,47 +92,28 @@ const Usuarios = () => {
       setEditingRole(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Erro ao atualizar role');
+      toast.error(error.response?.data?.error || 'Erro ao atualizar role');
     }
   });
 
   const toggleStatusMutation = useMutation({
-    mutationFn: async ({ userId, currentStatus }: { userId: string; currentStatus: boolean }) => {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ ativo: !currentStatus })
-        .eq('id', userId);
-      
-      if (error) throw error;
+    mutationFn: async (userId: string) => {
+      const response = await axiosInstance.put(`/auth/users/${userId}/toggle-status`);
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('Status atualizado com sucesso!');
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Erro ao atualizar status');
+      toast.error(error.response?.data?.error || 'Erro ao atualizar status');
     }
   });
 
   const createUserMutation = useMutation({
     mutationFn: async (userData: NewUser) => {
-      const { data, error } = await supabase.auth.signUp({
-        email: userData.email,
-        password: userData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            nome: userData.nome,
-            role: userData.role,
-            codigo_vendedor: userData.codigoVendedor
-          }
-        }
-      });
-
-      if (error) throw error;
-      if (!data.user) throw new Error('Erro ao criar usuário');
-
-      return data.user;
+      const response = await axiosInstance.post('/auth/register', userData);
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -170,7 +122,7 @@ const Usuarios = () => {
       setNewUser({ email: '', password: '', nome: '', role: 'vendedor', codigoVendedor: '' });
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Erro ao criar usuário');
+      toast.error(error.response?.data?.error || 'Erro ao criar usuário');
     }
   });
 
@@ -266,10 +218,52 @@ const Usuarios = () => {
         </Dialog>
       </div>
 
+      {/* Filtros e Busca */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" /> Filtros
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome ou email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <div className="w-full sm:w-48">
+              <Select value={roleFilter} onValueChange={(value: UserRole | 'todos') => setRoleFilter(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrar por role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os perfis</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="gerente">Gerente</SelectItem>
+                  <SelectItem value="vendedor">Vendedor</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><UserCog className="h-5 w-5" /> Usuários Cadastrados</CardTitle>
-          <CardDescription>Total de {users.length} usuário(s) no sistema</CardDescription>
+          <CardDescription>
+            {filteredUsers.length === users.length 
+              ? `Total de ${users.length} usuário(s) no sistema`
+              : `Mostrando ${filteredUsers.length} de ${users.length} usuário(s)`
+            }
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -290,42 +284,50 @@ const Usuarios = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.nome}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      {editingRole === user.id ? (
-                        <div className="flex gap-2">
-                          <Select defaultValue={user.role} onValueChange={(value: UserRole) => updateRoleMutation.mutate({ userId: user.id, role: value })}>
-                            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="vendedor">Vendedor</SelectItem>
-                              <SelectItem value="gerente">Gerente</SelectItem>
-                              <SelectItem value="admin">Admin</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Button variant="ghost" size="sm" onClick={() => setEditingRole(null)}>Cancelar</Button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">{getRoleBadge(user.role)} <Button variant="ghost" size="sm" onClick={() => setEditingRole(user.id)}>Editar</Button></div>
-                      )}
-                    </TableCell>
-                    <TableCell>{user.codigoVendedor || '-'}</TableCell>
-                    <TableCell>{user.ativo ? <Badge variant="default">Ativo</Badge> : <Badge variant="destructive">Inativo</Badge>}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{formatDate(user.last_sign_in_at)}</TableCell>
-                    <TableCell>
-                      <Button 
-                        variant={user.ativo ? "destructive" : "default"} 
-                        size="sm" 
-                        onClick={() => toggleStatusMutation.mutate({ userId: user.id, currentStatus: user.ativo })} 
-                        disabled={toggleStatusMutation.isPending}
-                      >
-                        {user.ativo ? 'Desativar' : 'Ativar'}
-                      </Button>
+                {filteredUsers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                      Nenhum usuário encontrado com os filtros aplicados
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  filteredUsers.map((user) => (
+                    <TableRow key={user._id}>
+                      <TableCell className="font-medium">{user.nome}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        {editingRole === user._id ? (
+                          <div className="flex gap-2">
+                            <Select defaultValue={user.role} onValueChange={(value: UserRole) => updateRoleMutation.mutate({ userId: user._id, role: value, codigoVendedor: user.codigoVendedor })}>
+                              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="vendedor">Vendedor</SelectItem>
+                                <SelectItem value="gerente">Gerente</SelectItem>
+                                <SelectItem value="admin">Admin</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button variant="ghost" size="sm" onClick={() => setEditingRole(null)}>Cancelar</Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">{getRoleBadge(user.role)} <Button variant="ghost" size="sm" onClick={() => setEditingRole(user._id)}>Editar</Button></div>
+                        )}
+                      </TableCell>
+                      <TableCell>{user.codigoVendedor || '-'}</TableCell>
+                      <TableCell>{user.ativo ? <Badge variant="default">Ativo</Badge> : <Badge variant="destructive">Inativo</Badge>}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{formatDate(user.ultimoAcesso)}</TableCell>
+                      <TableCell>
+                        <Button 
+                          variant={user.ativo ? "destructive" : "default"} 
+                          size="sm" 
+                          onClick={() => toggleStatusMutation.mutate(user._id)} 
+                          disabled={toggleStatusMutation.isPending}
+                        >
+                          {user.ativo ? 'Desativar' : 'Ativar'}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           )}
