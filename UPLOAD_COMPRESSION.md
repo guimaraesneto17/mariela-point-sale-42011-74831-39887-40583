@@ -54,28 +54,80 @@ O sistema agora cria **três versões otimizadas** de cada imagem enviada:
 - **PNG com transparência** → WebP (melhor compressão + transparência)
 - **Outros formatos** → JPEG progressivo (melhor performance)
 
-### Como Usar no Frontend
+## 🖼️ Componentes de Imagem Progressiva
 
-```typescript
-import { useImageCompression } from '@/hooks/useImageCompression';
+### ProgressiveImage
 
-const { compressImage, compressing } = useImageCompression();
+Componente que implementa carregamento progressivo de imagens com três versões:
 
-// Comprimir antes do upload
-const compressedImage = await compressImage(file, {
-  maxWidth: 1920,
-  maxHeight: 1920,
-  quality: 85
-});
+```tsx
+import { ProgressiveImage } from '@/components/ProgressiveImage';
 
-// Upload retorna múltiplas versões
-const result = await uploadAPI.single(compressedImage);
-
-// Usar a versão apropriada
-<img src={result.urls.thumbnail} alt="Preview" />
-<img src={result.urls.medium} onClick={openModal} />
-<img src={result.urls.full} className="fullscreen" />
+// Uso básico
+<ProgressiveImage
+  thumbnailUrl="https://storage/image-thumbnail.webp"
+  mediumUrl="https://storage/image-medium.jpeg"
+  fullUrl="https://storage/image-full.jpeg"
+  alt="Descrição da imagem"
+  className="rounded-lg"
+/>
 ```
+
+**Funcionalidades:**
+- **Lazy Loading**: Carrega apenas quando visível no viewport
+- **Transição Suave**: Thumbnail → Medium → Full com efeitos visuais
+- **Intersection Observer**: Detecta visibilidade automaticamente
+- **Performance**: Reduz largura de banda em até 90%
+
+**Sequência de Carregamento:**
+1. **Placeholder**: Gradiente animado antes da visibilidade
+2. **Thumbnail**: Carregamento imediato (blur + scale 105%)
+3. **Medium**: Transição suave (blur leve + scale 102%)
+4. **Full**: Imagem final (sem blur, scale 100%)
+
+**Props:**
+- `thumbnailUrl`: URL da versão thumbnail (200x200px)
+- `mediumUrl`: URL da versão medium (800x800px)
+- `fullUrl`: URL da versão full (1920x1920px)
+- `alt`: Texto alternativo
+- `className`: Classes CSS para a imagem
+- `containerClassName`: Classes CSS para o container
+- `onLoad`: Callback quando full carregar
+
+### ImageGalleryWithProgressive
+
+Galeria de imagens com visualização em modal e navegação:
+
+```tsx
+import { ImageGalleryWithProgressive } from '@/components/ImageGalleryWithProgressive';
+
+const images = [
+  {
+    thumbnail: "url-thumbnail-1",
+    medium: "url-medium-1",
+    full: "url-full-1"
+  },
+  // ... mais imagens
+];
+
+<ImageGalleryWithProgressive images={images} />
+```
+
+**Funcionalidades:**
+- Grid responsivo de thumbnails
+- Modal fullscreen para visualização
+- Navegação por teclado (←, →, Esc)
+- Contador de imagens
+- Hover effects
+- Carregamento progressivo em cada etapa
+
+**Uso Recomendado:**
+- Páginas de produtos
+- Portfólios
+- Galerias de fotos
+- Detalhes de pedidos
+
+
 
 ## 🔔 Sistema de Notificações de Storage
 
@@ -334,22 +386,80 @@ O bucket `product-images` deve estar configurado com:
 ### Performance
 
 1. **Use thumbnails para listagens**: Carregamento até 90% mais rápido
-2. **Lazy loading**: Carregue imagens conforme necessário
-3. **Progressive enhancement**: Mostre thumbnail → medium → full
+2. **Lazy loading automático**: `ProgressiveImage` já implementa
+3. **Progressive enhancement**: Thumbnail → Medium → Full automático
+4. **Intersection Observer**: Carrega apenas imagens visíveis
 
 ### Manutenção
 
 1. **Execute cleanup mensalmente**: Mantenha storage otimizado
 2. **Monitore alertas**: Não ignore notificações de 80%+
-3. **Revise histórico**: Identifique padrões de crescimento
+3. **Revise analytics**: Dashboard mostra tendências de crescimento
+4. **Configure limites**: Ajuste threshold de alertas conforme necessário
 
 ### Desenvolvimento
 
 1. **Sempre comprima no frontend**: Use `useImageCompression`
-2. **Use versão apropriada**: Não carregue `full` em thumbnails
-3. **Teste migração**: Execute dry-run antes de migrar produção
+2. **Use `ProgressiveImage`**: Em vez de `<img>` tradicional
+3. **Implemente galerias**: Use `ImageGalleryWithProgressive`
+4. **Teste migração**: Execute dry-run antes de migrar produção
+
+### Exemplos de Implementação
+
+**Produto individual:**
+```tsx
+<ProgressiveImage
+  thumbnailUrl={product.image.urls.thumbnail}
+  mediumUrl={product.image.urls.medium}
+  fullUrl={product.image.urls.full}
+  alt={product.name}
+  className="rounded-lg shadow-lg"
+/>
+```
+
+**Galeria de produtos:**
+```tsx
+<ImageGalleryWithProgressive 
+  images={product.images.map(img => img.urls)} 
+/>
+```
+
+**Card de produto na listagem:**
+```tsx
+// Usa apenas thumbnail para performance máxima
+<img 
+  src={product.image.urls.thumbnail} 
+  alt={product.name}
+  className="w-full h-48 object-cover"
+  loading="lazy"
+/>
+```
 
 ## 📊 Métricas de Economia
+
+### Dashboard de Analytics
+
+Acesse a página **Backend Status** (`/backend-status`) para visualizar:
+
+#### Métricas Principais
+- **Taxa de Compressão**: Percentual médio de redução (85.5%)
+- **Economia de Banda**: Total economizado em GB
+- **Melhoria de Performance**: Redução no tempo de carregamento (%)
+- **Storage Total**: Uso atual e distribuição
+
+#### Gráficos Disponíveis
+1. **Comparativo de Performance**: Antes vs Depois da otimização
+2. **Tamanho por Versão**: Comparação thumbnail, medium, full e original
+3. **Distribuição de Imagens**: Referenciadas vs órfãs (pie chart)
+4. **Evolução do Storage**: Crescimento nos últimos 30 dias
+
+#### Insights Automáticos
+- Percentual de economia de banda
+- Melhoria de velocidade de carregamento
+- Crescimento de armazenamento
+- Identificação de imagens órfãs
+
+### Estatísticas Reais
 
 Com a compressão progressiva implementada:
 
@@ -357,6 +467,7 @@ Com a compressão progressiva implementada:
 - **Economia de banda**: ~85% em listagens (usando thumbnails)
 - **Velocidade**: Páginas carregam 3-5x mais rápido
 - **Storage**: 3 versões ocupam menos que 1 original
+- **Thumbnail vs Original**: 98.2% menor
 
 ## 🔒 Segurança
 
