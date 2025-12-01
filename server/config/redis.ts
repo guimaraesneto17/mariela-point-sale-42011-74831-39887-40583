@@ -21,7 +21,7 @@ export async function initializeRedis(): Promise<void> {
       url: redisUrl,
       socket: {
         connectTimeout: 10000,
-        reconnectStrategy: (retries) => {
+        reconnectStrategy: (retries: number) => {
           if (retries > 10) {
             console.error('❌ Redis: Máximo de tentativas de reconexão atingido');
             return new Error('Máximo de tentativas atingido');
@@ -31,7 +31,7 @@ export async function initializeRedis(): Promise<void> {
       }
     });
 
-    redisClient.on('error', (err) => {
+    redisClient.on('error', (err: Error) => {
       console.error('❌ Redis Error:', err);
       isRedisAvailable = false;
     });
