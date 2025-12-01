@@ -159,7 +159,7 @@ export const getStorageStats = async (req: Request, res: Response) => {
     const referencedUrls = await getAllReferencedImageUrls();
 
     // Calcular tamanho total
-    const totalSize = blobs.reduce((sum, blob) => sum + blob.size, 0);
+    const totalSize = blobs.reduce((sum: number, blob: any) => sum + blob.size, 0);
 
     const stats = {
       totalImages: blobs.length,

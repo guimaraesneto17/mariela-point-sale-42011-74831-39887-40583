@@ -22,6 +22,7 @@
   "author": "Mariela Moda",
   "license": "ISC",
   "dependencies": {
+    "@vercel/blob": "^0.30.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "date-fns": "^3.6.0",
@@ -32,8 +33,7 @@
     "mongoose": "^8.19.1",
     "sharp": "^0.33.5",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
-    "@supabase/supabase-js": "^2.78.0"
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
