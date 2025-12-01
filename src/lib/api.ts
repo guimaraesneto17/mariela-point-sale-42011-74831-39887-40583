@@ -413,18 +413,3 @@ export const categoriasFinanceirasAPI = {
     body: JSON.stringify({ categorias }),
   }),
 };
-
-// ============= PERMISSÕES =============
-export const permissoesAPI = {
-  getAll: () => fetchAPI('/permissions'),
-  getByRole: (role: string) => fetchAPI(`/permissions/role/${role}`),
-  batchUpdate: (permissions: any[]) => fetchAPI('/permissions/batch', {
-    method: 'POST',
-    body: JSON.stringify({ permissions })
-  }),
-  initializeDefaults: (role: string) => fetchAPI(`/permissions/initialize/${role}`, {
-    method: 'POST'
-  }),
-  checkPermission: (role: string, module: string, action: string) => 
-    fetchAPI(`/permissions/check?role=${role}&module=${module}&action=${action}`)
-};
