@@ -76,7 +76,10 @@ const ProdutoSchema = new mongoose.Schema({
 });
 
 // Índices para melhor performance
+ProdutoSchema.index({ codigoProduto: 1 }); // Já existe unique no schema
 ProdutoSchema.index({ nome: 'text', descricao: 'text' });
 ProdutoSchema.index({ categoria: 1 });
+ProdutoSchema.index({ dataCadastro: -1 }); // Para ordenação por data
+ProdutoSchema.index({ categoria: 1, dataCadastro: -1 }); // Índice composto para filtros + ordenação
 
 export default mongoose.models.Produto || mongoose.model('Produto', ProdutoSchema);

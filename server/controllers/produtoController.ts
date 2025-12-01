@@ -35,7 +35,15 @@ const formatValidationError = (error: any) => {
 
 export const getAllProdutos = async (req: Request, res: Response) => {
   try {
-    const produtos = await Produto.find().sort({ dataCadastro: -1 });
+    // Otimização: usar lean() para retornar objetos JS puros (mais rápido que documentos Mongoose)
+    // Projeção: excluir campos pesados desnecessários do histórico de preços
+    const produtos = await Produto
+      .find()
+      .select('-historicoPrecosn') // Excluir histórico completo (campo pesado)
+      .sort({ dataCadastro: -1 })
+      .lean()
+      .exec();
+    
     res.json(produtos);
   } catch (error) {
     console.error('Erro ao buscar produtos:', error);
@@ -45,7 +53,12 @@ export const getAllProdutos = async (req: Request, res: Response) => {
 
 export const getProdutoByCodigo = async (req: Request, res: Response) => {
   try {
-    const produto = await Produto.findOne({ codigoProduto: req.params.codigo });
+    // Busca individual mantém todos os campos (incluindo histórico) pois é consulta pontual
+    const produto = await Produto
+      .findOne({ codigoProduto: req.params.codigo })
+      .lean()
+      .exec();
+      
     if (!produto) {
       return res.status(404).json({ error: 'Produto não encontrado' });
     }
@@ -266,14 +279,23 @@ export const deleteProduto = async (req: Request, res: Response) => {
  */
 export const getNovidades = async (req: Request, res: Response) => {
   try {
-    // Buscar todos os produtos que têm pelo menos um registro de estoque marcado como novidade
-    const estoqueComNovidade = await Estoque.find({ isNovidade: true, ativo: true }).select('codigoProduto').distinct('codigoProduto');
+    // Otimização: usar distinct direto é mais rápido que select + distinct
+    const estoqueComNovidade = await Estoque
+      .find({ isNovidade: true, ativo: true })
+      .distinct('codigoProduto')
+      .exec();
     
     if (estoqueComNovidade.length === 0) {
       return res.json([]);
     }
     
-    const produtos = await Produto.find({ codigoProduto: { $in: estoqueComNovidade } }).sort({ dataCadastro: -1 });
+    // Otimização: excluir histórico de preços (campo pesado) para listagem
+    const produtos = await Produto
+      .find({ codigoProduto: { $in: estoqueComNovidade } })
+      .select('-historicoPrecosn')
+      .sort({ dataCadastro: -1 })
+      .lean()
+      .exec();
     
     res.json(produtos);
   } catch (error) {

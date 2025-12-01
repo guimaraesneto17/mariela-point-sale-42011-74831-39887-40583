@@ -1,5 +1,6 @@
 import express from 'express';
 import * as vitrineVirtualController from '../controllers/vitrineVirtualController';
+import { cacheMiddleware, CACHE_TTL } from '../middleware/cache';
 
 const router = express.Router();
 
@@ -7,8 +8,10 @@ const router = express.Router();
  * @swagger
  * /api/vitrine:
  *   get:
- *     summary: Lista todos os produtos da vitrine virtual
- *     description: Retorna uma view agregada da collection vitrineVirtual do MongoDB, formatada para exibição na vitrine
+ *     summary: Lista todos os produtos da vitrine virtual (cached por 5 minutos)
+ *     description: |
+ *       Retorna uma view agregada da collection vitrineVirtual do MongoDB, formatada para exibição na vitrine.
+ *       Utiliza cache de 5 minutos para melhorar performance em endpoint público.
  *     tags: [Vitrine Virtual]
  *     responses:
  *       200:
@@ -22,13 +25,13 @@ const router = express.Router();
  *       500:
  *         description: Erro ao buscar produtos
  */
-router.get('/', vitrineVirtualController.getAllVitrineVirtual);
+router.get('/', cacheMiddleware(CACHE_TTL.VITRINE), vitrineVirtualController.getAllVitrineVirtual);
 
 /**
  * @swagger
  * /api/vitrine/json:
  *   get:
- *     summary: JSON público da vitrine virtual (sem autenticação)
+ *     summary: JSON público da vitrine virtual (sem autenticação, cached)
  *     description: Endpoint público que retorna todos os produtos da vitrine em formato JSON, acessível sem autenticação, incluindo descrição detalhada
  *     tags: [Vitrine Virtual]
  *     responses:
@@ -83,13 +86,13 @@ router.get('/', vitrineVirtualController.getAllVitrineVirtual);
  *       500:
  *         description: Erro ao gerar JSON da vitrine
  */
-router.get('/json', vitrineVirtualController.getAllVitrineVirtual);
+router.get('/json', cacheMiddleware(CACHE_TTL.VITRINE), vitrineVirtualController.getAllVitrineVirtual);
 
 /**
  * @swagger
  * /api/vitrine/novidades:
  *   get:
- *     summary: Lista as novidades da vitrine virtual
+ *     summary: Lista as novidades da vitrine virtual (cached)
  *     description: Retorna apenas produtos marcados como novidade (isNew = true) com descrição detalhada
  *     tags: [Vitrine Virtual]
  *     responses:
@@ -118,7 +121,7 @@ router.get('/json', vitrineVirtualController.getAllVitrineVirtual);
  *       500:
  *         description: Erro ao buscar novidades
  */
-router.get('/novidades', vitrineVirtualController.getNovidades);
+router.get('/novidades', cacheMiddleware(CACHE_TTL.VITRINE), vitrineVirtualController.getNovidades);
 
 /**
  * @swagger
@@ -157,7 +160,7 @@ router.get('/novidades', vitrineVirtualController.getNovidades);
  *       500:
  *         description: Erro ao buscar promoções
  */
-router.get('/promocoes', vitrineVirtualController.getPromocoes);
+router.get('/promocoes', cacheMiddleware(CACHE_TTL.VITRINE), vitrineVirtualController.getPromocoes);
 
 /**
  * @swagger

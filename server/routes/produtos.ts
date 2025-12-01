@@ -1,6 +1,7 @@
 import express from 'express';
 import * as produtoController from '../controllers/produtoController';
 import { requirePermission } from '../middleware/permissions';
+import { cacheMiddleware, invalidateCacheMiddleware, CACHE_TTL } from '../middleware/cache';
 
 const router = express.Router();
 
@@ -8,7 +9,8 @@ const router = express.Router();
  * @swagger
  * /api/produtos:
  *   get:
- *     summary: Lista todos os produtos
+ *     summary: Lista todos os produtos (cached por 5 minutos)
+ *     description: Utiliza cache em memória para melhorar performance em consultas frequentes
  *     tags: [Produtos]
  *     responses:
  *       200:
@@ -16,13 +18,13 @@ const router = express.Router();
  *       500:
  *         description: Erro ao buscar produtos
  */
-router.get('/', requirePermission('produtos', 'view'), produtoController.getAllProdutos);
+router.get('/', requirePermission('produtos', 'view'), cacheMiddleware(CACHE_TTL.PRODUTOS), produtoController.getAllProdutos);
 
 /**
  * @swagger
  * /api/produtos/novidades:
  *   get:
- *     summary: Lista produtos marcados como novidade
+ *     summary: Lista produtos marcados como novidade (cached)
  *     description: Retorna todos os produtos que possuem ao menos uma variante marcada como novidade no estoque
  *     tags: [Produtos]
  *     responses:
@@ -56,13 +58,13 @@ router.get('/', requirePermission('produtos', 'view'), produtoController.getAllP
  *       500:
  *         description: Erro ao buscar novidades
  */
-router.get('/novidades', requirePermission('produtos', 'view'), produtoController.getNovidades);
+router.get('/novidades', requirePermission('produtos', 'view'), cacheMiddleware(CACHE_TTL.PRODUTOS), produtoController.getNovidades);
 
 /**
  * @swagger
  * /api/produtos/{codigo}:
  *   get:
- *     summary: Busca um produto por código
+ *     summary: Busca um produto por código (cached)
  *     tags: [Produtos]
  *     parameters:
  *       - in: path
@@ -78,7 +80,7 @@ router.get('/novidades', requirePermission('produtos', 'view'), produtoControlle
  *       404:
  *         description: Produto não encontrado
  */
-router.get('/:codigo', requirePermission('produtos', 'view'), produtoController.getProdutoByCodigo);
+router.get('/:codigo', requirePermission('produtos', 'view'), cacheMiddleware(CACHE_TTL.PRODUTOS), produtoController.getProdutoByCodigo);
 
 /**
  * @swagger
@@ -170,7 +172,7 @@ router.get('/:codigo', requirePermission('produtos', 'view'), produtoController.
  *                         type: string
  *                         example: "P1"
  */
-router.post('/', requirePermission('produtos', 'create'), produtoController.createProduto);
+router.post('/', requirePermission('produtos', 'create'), invalidateCacheMiddleware(['/api/produtos', '/api/estoque', '/api/vitrine']), produtoController.createProduto);
 
 /**
  * @swagger
@@ -221,7 +223,7 @@ router.post('/', requirePermission('produtos', 'create'), produtoController.crea
  *                       value:
  *                         type: string
  */
-router.put('/:codigo', requirePermission('produtos', 'edit'), produtoController.updateProduto);
+router.put('/:codigo', requirePermission('produtos', 'edit'), invalidateCacheMiddleware(['/api/produtos', '/api/estoque', '/api/vitrine']), produtoController.updateProduto);
 
 /**
  * @swagger
@@ -244,6 +246,6 @@ router.put('/:codigo', requirePermission('produtos', 'edit'), produtoController.
  *       500:
  *         description: Erro ao remover produto
  */
-router.delete('/:codigo', requirePermission('produtos', 'delete'), produtoController.deleteProduto);
+router.delete('/:codigo', requirePermission('produtos', 'delete'), invalidateCacheMiddleware(['/api/produtos', '/api/estoque', '/api/vitrine']), produtoController.deleteProduto);
 
 export default router;

@@ -1,5 +1,6 @@
 import express from 'express';
 import caixaController from '../controllers/caixaController';
+import { cacheMiddleware, invalidateCacheMiddleware, CACHE_TTL } from '../middleware/cache';
 
 const router = express.Router();
 
@@ -25,7 +26,10 @@ router.get('/', caixaController.getAll);
  * @swagger
  * /api/caixa/aberto:
  *   get:
- *     summary: Buscar caixa aberto
+ *     summary: Buscar caixa aberto (cached por 1 minuto)
+ *     description: |
+ *       Retorna o caixa atualmente aberto. Esta rota é altamente acessada e 
+ *       utiliza cache de 1 minuto para reduzir carga no MongoDB.
  *     tags: [Caixa]
  *     responses:
  *       200:
@@ -35,7 +39,7 @@ router.get('/', caixaController.getAll);
  *             schema:
  *               $ref: '#/components/schemas/Caixa'
  */
-router.get('/aberto', caixaController.getCaixaAberto);
+router.get('/aberto', cacheMiddleware(CACHE_TTL.CAIXA_ABERTO), caixaController.getCaixaAberto);
 
 /**
  * @swagger
