@@ -30,21 +30,29 @@ class MemoryCache {
   private bytesServedFromCache: number = 0;
 
   /**
+   * Criar chave com namespace
+   */
+  private createKey(namespace: string, key: string): string {
+    return `${namespace}:${key}`;
+  }
+
+  /**
    * Buscar item do cache (memória ou Redis)
    */
-  async get(key: string): Promise<any | null> {
+  async get(key: string, namespace?: string): Promise<any | null> {
+    const cacheKey = namespace ? this.createKey(namespace, key) : key;
     this.totalRequests++;
     
     // Tentar Redis primeiro se disponível
     const redisClient = getRedisClient();
     if (redisClient) {
       try {
-        const cachedData = await redisClient.get(key);
+        const cachedData = await redisClient.get(cacheKey);
         if (cachedData) {
           this.hits++;
           const parsed = JSON.parse(cachedData);
           this.bytesServedFromCache += cachedData.length;
-          console.log(`✅ Redis Cache HIT: ${key}`);
+          console.log(`✅ Redis Cache HIT: ${cacheKey}`);
           return parsed;
         }
       } catch (error) {
@@ -53,7 +61,7 @@ class MemoryCache {
     }
 
     // Fallback para cache em memória
-    const entry = this.cache.get(key);
+    const entry = this.cache.get(cacheKey);
     
     if (!entry) {
       this.misses++;
@@ -78,9 +86,11 @@ class MemoryCache {
   /**
    * Armazenar item no cache (memória e Redis)
    */
-  async set(key: string, data: any, ttl: number): Promise<void> {
+  async set(key: string, data: any, ttl: number, namespace?: string): Promise<void> {
+    const cacheKey = namespace ? this.createKey(namespace, key) : key;
+    
     // Salvar em memória
-    this.cache.set(key, {
+    this.cache.set(cacheKey, {
       data,
       timestamp: Date.now(),
       ttl,
@@ -91,8 +101,8 @@ class MemoryCache {
     if (redisClient) {
       try {
         const serialized = JSON.stringify(data);
-        await redisClient.setEx(key, Math.floor(ttl / 1000), serialized);
-        console.log(`💾 Redis Cache STORED: ${key} (TTL: ${ttl / 1000}s)`);
+        await redisClient.setEx(cacheKey, Math.floor(ttl / 1000), serialized);
+        console.log(`💾 Redis Cache STORED: ${cacheKey} (TTL: ${ttl / 1000}s)`);
       } catch (error) {
         console.error('Erro ao salvar no Redis:', error);
       }
@@ -102,14 +112,15 @@ class MemoryCache {
   /**
    * Invalidar cache por chave exata
    */
-  async invalidate(key: string): Promise<void> {
-    this.cache.delete(key);
+  async invalidate(key: string, namespace?: string): Promise<void> {
+    const cacheKey = namespace ? this.createKey(namespace, key) : key;
+    this.cache.delete(cacheKey);
 
     // Invalidar no Redis
     const redisClient = getRedisClient();
     if (redisClient) {
       try {
-        await redisClient.del(key);
+        await redisClient.del(cacheKey);
       } catch (error) {
         console.error('Erro ao invalidar no Redis:', error);
       }
@@ -154,6 +165,46 @@ class MemoryCache {
         count: keysToDelete.length,
       });
     }
+  }
+
+  /**
+   * Limpar cache por namespace
+   */
+  async clearNamespace(namespace: string): Promise<number> {
+    const prefix = `${namespace}:`;
+    let cleared = 0;
+
+    // Limpar memória
+    for (const key of Array.from(this.cache.keys())) {
+      if (key.startsWith(prefix)) {
+        this.cache.delete(key);
+        cleared++;
+      }
+    }
+
+    // Limpar Redis
+    const redisClient = getRedisClient();
+    if (redisClient) {
+      try {
+        const keys = await redisClient.keys(`${prefix}*`);
+        if (keys.length > 0) {
+          await redisClient.del(keys);
+          cleared += keys.length;
+        }
+      } catch (error) {
+        console.error('Erro ao limpar namespace no Redis:', error);
+      }
+    }
+
+    console.log(`🗑️ Cache: ${cleared} entradas do namespace "${namespace}" foram limpas`);
+    
+    // Publicar evento
+    await publishCacheEvent('namespace_cleared', {
+      namespace,
+      count: cleared,
+    });
+
+    return cleared;
   }
 
   /**
@@ -227,6 +278,42 @@ export const CACHE_TTL = {
   CONTAS: 5 * 60 * 1000,
 };
 
+// Namespaces por módulo
+export const CACHE_NAMESPACES = {
+  PRODUTOS: 'produtos',
+  ESTOQUE: 'estoque',
+  VENDAS: 'vendas',
+  CLIENTES: 'clientes',
+  FORNECEDORES: 'fornecedores',
+  VENDEDORES: 'vendedores',
+  CAIXA: 'caixa',
+  FINANCEIRO: 'financeiro',
+  VITRINE: 'vitrine',
+  RELATORIOS: 'relatorios',
+};
+
+/**
+ * Extrair namespace do caminho da requisição
+ */
+function extractNamespace(path: string): string | undefined {
+  // Remover /api/ do início
+  const cleanPath = path.replace(/^\/api\//, '');
+  
+  // Mapear endpoints para namespaces
+  if (cleanPath.startsWith('produtos')) return CACHE_NAMESPACES.PRODUTOS;
+  if (cleanPath.startsWith('estoque')) return CACHE_NAMESPACES.ESTOQUE;
+  if (cleanPath.startsWith('vendas')) return CACHE_NAMESPACES.VENDAS;
+  if (cleanPath.startsWith('clientes')) return CACHE_NAMESPACES.CLIENTES;
+  if (cleanPath.startsWith('fornecedores')) return CACHE_NAMESPACES.FORNECEDORES;
+  if (cleanPath.startsWith('vendedores')) return CACHE_NAMESPACES.VENDEDORES;
+  if (cleanPath.startsWith('caixa')) return CACHE_NAMESPACES.CAIXA;
+  if (cleanPath.startsWith('contas')) return CACHE_NAMESPACES.FINANCEIRO;
+  if (cleanPath.startsWith('categorias-financeiras')) return CACHE_NAMESPACES.FINANCEIRO;
+  if (cleanPath.startsWith('vitrine-virtual')) return CACHE_NAMESPACES.VITRINE;
+  
+  return undefined;
+}
+
 /**
  * Obter TTL configurado para um endpoint
  */
@@ -250,6 +337,7 @@ export function cacheMiddleware(defaultTTL: number) {
 
     const cacheKey = `${req.originalUrl}`;
     const endpoint = req.path;
+    const namespace = extractNamespace(req.path);
 
     // Verificar se cache está habilitado para este endpoint
     try {
@@ -265,10 +353,10 @@ export function cacheMiddleware(defaultTTL: number) {
     // Incrementar contador de acesso
     incrementAccessCount(endpoint).catch(console.error);
 
-    // Tentar buscar do cache
-    const cachedData = await memoryCache.get(cacheKey);
+    // Tentar buscar do cache com namespace
+    const cachedData = await memoryCache.get(cacheKey, namespace);
     if (cachedData) {
-      console.log(`✅ Cache HIT: ${cacheKey}`);
+      console.log(`✅ Cache HIT: ${namespace ? namespace + ':' : ''}${cacheKey}`);
       
       if (res.getHeader('content-encoding') === 'gzip') {
         memoryCache.recordCompression();
@@ -277,15 +365,15 @@ export function cacheMiddleware(defaultTTL: number) {
       return res.json(cachedData);
     }
 
-    console.log(`❌ Cache MISS: ${cacheKey}`);
+    console.log(`❌ Cache MISS: ${namespace ? namespace + ':' : ''}${cacheKey}`);
 
     // Interceptar res.json para cachear
     const originalJson = res.json.bind(res);
     res.json = function(data: any) {
       // Obter TTL configurado
       getConfiguredTTL(endpoint, defaultTTL).then(ttl => {
-        memoryCache.set(cacheKey, data, ttl).catch(console.error);
-        console.log(`💾 Cache STORED: ${cacheKey} (TTL: ${ttl / 1000}s)`);
+        memoryCache.set(cacheKey, data, ttl, namespace).catch(console.error);
+        console.log(`💾 Cache STORED: ${namespace ? namespace + ':' : ''}${cacheKey} (TTL: ${ttl / 1000}s)`);
       });
       
       if (res.getHeader('content-encoding') === 'gzip') {

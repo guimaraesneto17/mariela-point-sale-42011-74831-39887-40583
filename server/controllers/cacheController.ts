@@ -129,6 +129,37 @@ export async function clearAllCache(req: Request, res: Response) {
 }
 
 /**
+ * Limpar cache por namespace (módulo)
+ */
+export async function clearNamespaceCache(req: Request, res: Response) {
+  try {
+    const { namespace } = req.params;
+
+    if (!namespace) {
+      return res.status(400).json({
+        success: false,
+        message: 'Namespace é obrigatório',
+      });
+    }
+
+    // Limpar cache do namespace
+    const cleared = await memoryCache.clearNamespace(namespace);
+
+    res.json({
+      success: true,
+      message: `Cache do módulo "${namespace}" limpo com sucesso`,
+      cleared,
+    });
+  } catch (error) {
+    console.error('Erro ao limpar cache do namespace:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao limpar cache do namespace',
+    });
+  }
+}
+
+/**
  * Warm up do cache - pré-carregar endpoints mais acessados
  */
 export async function warmupCache(req: Request, res: Response) {
