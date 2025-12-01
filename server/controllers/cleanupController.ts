@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { createClient } from '@supabase/supabase-js';
 import VitrineVirtual from '../models/VitrineVirtual';
+import StorageStats from '../models/StorageStats';
 import { listAllImages, deleteImageFromBlob } from '../services/imageUploadService';
 
 // Configuração do Supabase
@@ -159,20 +160,60 @@ export const getStorageStats = async (req: Request, res: Response) => {
 
     const totalSize = files?.reduce((sum, file) => sum + (file.metadata?.size || 0), 0) || 0;
 
+    const stats = {
+      totalImages: storageImages.length,
+      referencedImages: referencedUrls.size,
+      orphanImages: storageImages.length - referencedUrls.size,
+      totalSizeBytes: totalSize,
+      totalSizeMB: (totalSize / (1024 * 1024)).toFixed(2),
+    };
+
+    // Salvar estatísticas históricas
+    try {
+      await StorageStats.create({
+        timestamp: new Date(),
+        ...stats,
+      });
+    } catch (histError) {
+      console.warn('Erro ao salvar estatísticas históricas:', histError);
+    }
+
     res.json({
       success: true,
-      stats: {
-        totalImages: storageImages.length,
-        referencedImages: referencedUrls.size,
-        orphanImages: storageImages.length - referencedUrls.size,
-        totalSizeBytes: totalSize,
-        totalSizeMB: (totalSize / (1024 * 1024)).toFixed(2),
-      },
+      stats,
     });
   } catch (error: any) {
     console.error('Erro ao buscar estatísticas de storage:', error);
     res.status(500).json({
       error: 'Erro ao buscar estatísticas de storage',
+      message: error.message,
+    });
+  }
+};
+
+/**
+ * Retorna histórico de estatísticas de storage
+ */
+export const getStorageHistory = async (req: Request, res: Response) => {
+  try {
+    const { days = 30 } = req.query;
+    const daysNum = parseInt(days as string, 10);
+    
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysNum);
+
+    const history = await StorageStats.find({
+      timestamp: { $gte: startDate }
+    }).sort({ timestamp: 1 }).limit(100);
+
+    res.json({
+      success: true,
+      history,
+    });
+  } catch (error: any) {
+    console.error('Erro ao buscar histórico de storage:', error);
+    res.status(500).json({
+      error: 'Erro ao buscar histórico de storage',
       message: error.message,
     });
   }
