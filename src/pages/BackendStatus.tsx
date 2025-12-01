@@ -10,6 +10,7 @@ import { StorageAnalyticsDashboard } from "@/components/StorageAnalyticsDashboar
 import { ImageSEOAnalyzer } from "@/components/ImageSEOAnalyzer";
 import WatermarkSettings from "@/components/WatermarkSettings";
 import CleanupScheduler from "@/components/CleanupScheduler";
+import EnvironmentVariablesAlert from "@/components/EnvironmentVariablesAlert";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { connectionLogger, ConnectionEvent, LatencyDataPoint } from '@/lib/connectionLogger';
 import { format } from 'date-fns';
@@ -224,6 +225,9 @@ export default function BackendStatus() {
           Verificar Novamente
         </Button>
       </div>
+
+      {/* Alertas de Variáveis de Ambiente */}
+      <EnvironmentVariablesAlert />
 
       {/* Resumo Geral */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
