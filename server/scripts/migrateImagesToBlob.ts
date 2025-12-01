@@ -23,6 +23,31 @@ interface MigrationStats {
   errors: string[];
 }
 
+// Configurações de migração
+const BATCH_SIZE = 5; // Processar 5 documentos por vez
+const DELAY_BETWEEN_BATCHES = 2000; // 2 segundos entre batches
+const MAX_RETRIES = 3; // Número máximo de tentativas por operação
+
+// Função para delay
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Função para retry com backoff exponencial
+async function retryOperation<T>(
+  operation: () => Promise<T>,
+  retries: number = MAX_RETRIES,
+  delayMs: number = 1000
+): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (retries === 0) throw error;
+    
+    console.log(`  ⚠️  Tentativa falhou, tentando novamente em ${delayMs}ms... (${retries} tentativas restantes)`);
+    await delay(delayMs);
+    return retryOperation(operation, retries - 1, delayMs * 2);
+  }
+}
+
 async function migrateEstoqueImages(): Promise<MigrationStats> {
   const stats: MigrationStats = {
     totalDocuments: 0,
@@ -35,52 +60,84 @@ async function migrateEstoqueImages(): Promise<MigrationStats> {
   try {
     console.log('\n📦 Migrando imagens do Estoque...');
     
-    const estoques = await Estoque.find({});
-    stats.totalDocuments = estoques.length;
+    // Buscar total de documentos primeiro
+    const totalCount = await Estoque.countDocuments({});
+    console.log(`  📊 Total de documentos: ${totalCount}`);
     
-    for (const estoque of estoques) {
-      let hasChanges = false;
+    // Processar em batches
+    for (let skip = 0; skip < totalCount; skip += BATCH_SIZE) {
+      const batchNumber = Math.floor(skip / BATCH_SIZE) + 1;
+      const totalBatches = Math.ceil(totalCount / BATCH_SIZE);
       
-      // Processar imagens das variantes
-      if (estoque.variantes && Array.isArray(estoque.variantes)) {
-        for (const variante of estoque.variantes) {
-          if (variante.imagens && Array.isArray(variante.imagens)) {
-            const newImagens: string[] = [];
-            
-            for (const imagem of variante.imagens) {
-              stats.totalImages++;
+      console.log(`\n  📦 Processando batch ${batchNumber}/${totalBatches} (documentos ${skip + 1}-${Math.min(skip + BATCH_SIZE, totalCount)})`);
+      
+      // Buscar batch de documentos com retry
+      const estoques = await retryOperation(() => 
+        Estoque.find({})
+          .skip(skip)
+          .limit(BATCH_SIZE)
+          .maxTimeMS(60000) // 60 segundos de timeout por query
+          .exec()
+      );
+      
+      stats.totalDocuments += estoques.length;
+      
+      for (const estoque of estoques) {
+        let hasChanges = false;
+        
+        // Processar imagens das variantes
+        if (estoque.variantes && Array.isArray(estoque.variantes)) {
+          for (const variante of estoque.variantes) {
+            if (variante.imagens && Array.isArray(variante.imagens)) {
+              const newImagens: string[] = [];
               
-              if (isBase64Image(imagem)) {
-                try {
-                  console.log(`  ↑ Uploading image for ${estoque.codigoProduto} - ${variante.cor}...`);
-                  const result = await uploadImageToBlob(imagem);
-                  newImagens.push(result.urls.full); // Usar a versão full da imagem
-                  stats.migratedImages++;
-                  hasChanges = true;
-                } catch (error: any) {
-                  console.error(`  ✗ Failed to upload image: ${error.message}`);
-                  stats.failedImages++;
-                  stats.errors.push(`${estoque.codigoProduto} - ${variante.cor}: ${error.message}`);
-                  newImagens.push(imagem); // Mantém a imagem original em caso de erro
+              for (const imagem of variante.imagens) {
+                stats.totalImages++;
+                
+                if (isBase64Image(imagem)) {
+                  try {
+                    console.log(`    ↑ Uploading image for ${estoque.codigoProduto} - ${variante.cor}...`);
+                    const result = await retryOperation(() => uploadImageToBlob(imagem));
+                    newImagens.push(result.urls.full);
+                    stats.migratedImages++;
+                    hasChanges = true;
+                    console.log(`    ✓ Uploaded successfully`);
+                  } catch (error: any) {
+                    console.error(`    ✗ Failed to upload image after retries: ${error.message}`);
+                    stats.failedImages++;
+                    stats.errors.push(`${estoque.codigoProduto} - ${variante.cor}: ${error.message}`);
+                    newImagens.push(imagem);
+                  }
+                } else {
+                  newImagens.push(imagem);
                 }
-              } else {
-                newImagens.push(imagem); // Já é URL, mantém
               }
+              
+              variante.imagens = newImagens;
             }
-            
-            variante.imagens = newImagens;
+          }
+        }
+        
+        // Salvar se houve mudanças com retry
+        if (hasChanges) {
+          try {
+            await retryOperation(() => estoque.save());
+            console.log(`    ✓ Saved ${estoque.codigoProduto}`);
+          } catch (error: any) {
+            console.error(`    ✗ Failed to save ${estoque.codigoProduto}: ${error.message}`);
+            stats.errors.push(`Save error for ${estoque.codigoProduto}: ${error.message}`);
           }
         }
       }
       
-      // Salvar se houve mudanças
-      if (hasChanges) {
-        await estoque.save();
-        console.log(`  ✓ Saved ${estoque.codigoProduto}`);
+      // Delay entre batches para não sobrecarregar o servidor
+      if (skip + BATCH_SIZE < totalCount) {
+        console.log(`  ⏳ Aguardando ${DELAY_BETWEEN_BATCHES}ms antes do próximo batch...`);
+        await delay(DELAY_BETWEEN_BATCHES);
       }
     }
     
-    console.log('✅ Migração do Estoque concluída!');
+    console.log('\n✅ Migração do Estoque concluída!');
   } catch (error: any) {
     console.error('❌ Erro na migração do Estoque:', error);
     stats.errors.push(`Estoque migration error: ${error.message}`);
@@ -101,52 +158,84 @@ async function migrateVitrineImages(): Promise<MigrationStats> {
   try {
     console.log('\n🛍️  Migrando imagens da Vitrine Virtual...');
     
-    const produtos = await VitrineVirtual.find({});
-    stats.totalDocuments = produtos.length;
+    // Buscar total de documentos primeiro
+    const totalCount = await VitrineVirtual.countDocuments({});
+    console.log(`  📊 Total de documentos: ${totalCount}`);
     
-    for (const produto of produtos) {
-      let hasChanges = false;
+    // Processar em batches
+    for (let skip = 0; skip < totalCount; skip += BATCH_SIZE) {
+      const batchNumber = Math.floor(skip / BATCH_SIZE) + 1;
+      const totalBatches = Math.ceil(totalCount / BATCH_SIZE);
       
-      // Processar imagens das variantes
-      if (produto.variantes && Array.isArray(produto.variantes)) {
-        for (const variante of produto.variantes) {
-          if (variante.imagens && Array.isArray(variante.imagens)) {
-            const newImagens: string[] = [];
-            
-            for (const imagem of variante.imagens) {
-              stats.totalImages++;
+      console.log(`\n  🛍️  Processando batch ${batchNumber}/${totalBatches} (documentos ${skip + 1}-${Math.min(skip + BATCH_SIZE, totalCount)})`);
+      
+      // Buscar batch de documentos com retry
+      const produtos = await retryOperation(() => 
+        VitrineVirtual.find({})
+          .skip(skip)
+          .limit(BATCH_SIZE)
+          .maxTimeMS(60000) // 60 segundos de timeout por query
+          .exec()
+      );
+      
+      stats.totalDocuments += produtos.length;
+      
+      for (const produto of produtos) {
+        let hasChanges = false;
+        
+        // Processar imagens das variantes
+        if (produto.variantes && Array.isArray(produto.variantes)) {
+          for (const variante of produto.variantes) {
+            if (variante.imagens && Array.isArray(variante.imagens)) {
+              const newImagens: string[] = [];
               
-              if (isBase64Image(imagem)) {
-                try {
-                  console.log(`  ↑ Uploading image for ${produto.codigoProduto} - ${variante.cor}...`);
-                  const result = await uploadImageToBlob(imagem);
-                  newImagens.push(result.urls.full); // Usar a versão full da imagem
-                  stats.migratedImages++;
-                  hasChanges = true;
-                } catch (error: any) {
-                  console.error(`  ✗ Failed to upload image: ${error.message}`);
-                  stats.failedImages++;
-                  stats.errors.push(`${produto.codigoProduto} - ${variante.cor}: ${error.message}`);
-                  newImagens.push(imagem); // Mantém a imagem original em caso de erro
+              for (const imagem of variante.imagens) {
+                stats.totalImages++;
+                
+                if (isBase64Image(imagem)) {
+                  try {
+                    console.log(`    ↑ Uploading image for ${produto.codigoProduto} - ${variante.cor}...`);
+                    const result = await retryOperation(() => uploadImageToBlob(imagem));
+                    newImagens.push(result.urls.full);
+                    stats.migratedImages++;
+                    hasChanges = true;
+                    console.log(`    ✓ Uploaded successfully`);
+                  } catch (error: any) {
+                    console.error(`    ✗ Failed to upload image after retries: ${error.message}`);
+                    stats.failedImages++;
+                    stats.errors.push(`${produto.codigoProduto} - ${variante.cor}: ${error.message}`);
+                    newImagens.push(imagem);
+                  }
+                } else {
+                  newImagens.push(imagem);
                 }
-              } else {
-                newImagens.push(imagem); // Já é URL, mantém
               }
+              
+              variante.imagens = newImagens;
             }
-            
-            variante.imagens = newImagens;
+          }
+        }
+        
+        // Salvar se houve mudanças com retry
+        if (hasChanges) {
+          try {
+            await retryOperation(() => produto.save());
+            console.log(`    ✓ Saved ${produto.codigoProduto}`);
+          } catch (error: any) {
+            console.error(`    ✗ Failed to save ${produto.codigoProduto}: ${error.message}`);
+            stats.errors.push(`Save error for ${produto.codigoProduto}: ${error.message}`);
           }
         }
       }
       
-      // Salvar se houve mudanças
-      if (hasChanges) {
-        await produto.save();
-        console.log(`  ✓ Saved ${produto.codigoProduto}`);
+      // Delay entre batches para não sobrecarregar o servidor
+      if (skip + BATCH_SIZE < totalCount) {
+        console.log(`  ⏳ Aguardando ${DELAY_BETWEEN_BATCHES}ms antes do próximo batch...`);
+        await delay(DELAY_BETWEEN_BATCHES);
       }
     }
     
-    console.log('✅ Migração da Vitrine Virtual concluída!');
+    console.log('\n✅ Migração da Vitrine Virtual concluída!');
   } catch (error: any) {
     console.error('❌ Erro na migração da Vitrine Virtual:', error);
     stats.errors.push(`Vitrine migration error: ${error.message}`);
