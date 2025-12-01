@@ -1,54 +1,107 @@
-# 📸 Sistema de Upload e Compressão de Imagens
+# 🖼️ Sistema de Compressão e Armazenamento de Imagens
 
-## 🎯 Funcionalidades Implementadas
+## 📋 Visão Geral
 
-### 1. Compressão Automática de Imagens
+Sistema completo de otimização de imagens com compressão automática no frontend e backend, armazenamento em Supabase Storage, e ferramentas de gerenciamento e limpeza.
 
-O sistema agora comprime automaticamente todas as imagens antes do upload usando a biblioteca **Sharp**, garantindo otimização de storage e melhor performance.
+## 🎯 Arquitetura
 
-#### Características:
-- ✅ **Redimensionamento inteligente**: Máximo de 1920x1920px mantendo aspect ratio
-- ✅ **Compressão adaptativa**:
-  - PNG com transparência → WebP (85% qualidade)
-  - Outros formatos → JPEG progressivo (85% qualidade)
-- ✅ **Logging detalhado**: Exibe tamanho original, comprimido e taxa de compressão
-- ✅ **Storage otimizado**: Supabase Storage com cache de 1 ano
+### Frontend - Compressão Antes do Upload
 
-#### Exemplo de Uso:
+**Hook: `useImageCompression`**
+
+Localização: `src/hooks/useImageCompression.ts`
 
 ```typescript
-import { uploadImageToBlob } from './services/imageUploadService';
+const { compressing, compressImage, compressImages } = useImageCompression();
 
-// Upload com compressão automática
-const result = await uploadImageToBlob(base64Image);
-console.log('URL:', result.url);
-console.log('Tamanho:', result.size);
-console.log('Tipo:', result.contentType);
+// Comprimir uma única imagem
+const compressed = await compressImage(file, {
+  maxWidth: 1200,      // Largura máxima
+  maxHeight: 1200,     // Altura máxima
+  quality: 0.85,       // Qualidade JPEG (0-1)
+  maxSizeMB: 5         // Tamanho máximo do arquivo
+});
+
+// Comprimir múltiplas imagens
+const compressedArray = await compressImages(files);
 ```
 
-#### Configurações de Compressão:
+**Componentes que usam compressão:**
+- `AddMultipleVariantsDialog` - Upload de imagens de variantes de produtos
+- `AddToStockDialog` - Upload ao adicionar produtos ao estoque
+- `EditVariantImagesDialog` - Edição de imagens de variantes
+- `ComprovanteDialog` - Upload de comprovantes financeiros
+- `RegistrarPagamentoDialog` - Upload de comprovantes de pagamento
 
-```typescript
-// Valores padrão
-const compressionOptions = {
-  maxWidth: 1920,
-  maxHeight: 1920,
-  quality: 85,
-};
+### Backend - Compressão e Upload para Supabase
+
+**Serviço: `imageUploadService.ts`**
+
+Localização: `server/services/imageUploadService.ts`
+
+#### Funcionalidades
+
+1. **Compressão Automática com Sharp**
+   - Redimensiona para máximo 1920x1920px
+   - Converte PNG transparente → WebP
+   - Converte outros formatos → JPEG com 85% de qualidade
+   - Mantém aspect ratio original
+
+2. **Upload para Supabase Storage**
+   ```typescript
+   import { uploadImageToBlob, processImages } from '../services/imageUploadService';
+
+   // Upload de imagem base64
+   const result = await uploadImageToBlob(base64Image);
+   console.log(result.url); // URL pública da imagem
+
+   // Processar array de imagens (base64 ou URLs)
+   const urls = await processImages(imagensArray);
+   ```
+
+3. **Gerenciamento**
+   - `deleteImageFromBlob(url)` - Deletar imagem individual
+   - `deleteMultipleImages(urls)` - Deletar múltiplas imagens
+   - `listAllImages()` - Listar todas as imagens no storage
+   - `isBase64Image(str)` - Verificar se string é base64
+
+## 🧹 Sistema de Cleanup
+
+### Interface Visual
+
+**Componente:** `StorageCleanup`
+
+Localização: `src/components/StorageCleanup.tsx`
+
+Acesse via: `/backend-status`
+
+#### Recursos
+
+1. **Estatísticas em Tempo Real**
+   - Total de imagens no storage
+   - Imagens referenciadas no banco
+   - Imagens órfãs (não referenciadas)
+   - Tamanho total em MB
+   - Tendência de crescimento/redução
+
+2. **Gráfico de Evolução**
+   - Histórico de 30 dias
+   - Evolução do tamanho total
+   - Evolução do número de imagens
+   - Identificação de tendências
+
+3. **Cleanup de Imagens Órfãs**
+   - **Dry Run**: Analisa sem deletar
+   - **Executar**: Remove imagens órfãs permanentemente
+   - Lista detalhada de imagens a serem removidas
+   - Relatório de falhas
+
+### Endpoints da API
+
+#### 1. Estatísticas de Storage
 ```
-
----
-
-### 2. Cleanup Automático de Imagens Órfãs
-
-Sistema inteligente para identificar e remover imagens no Supabase Storage que não estão mais referenciadas no banco de dados MongoDB.
-
-#### Endpoints Disponíveis:
-
-##### 📊 Estatísticas de Storage
-```http
 GET /api/cleanup/storage-stats
-Authorization: Bearer <token>
 ```
 
 **Resposta:**
@@ -57,184 +110,241 @@ Authorization: Bearer <token>
   "success": true,
   "stats": {
     "totalImages": 150,
-    "referencedImages": 142,
-    "orphanImages": 8,
-    "totalSizeBytes": 45678912,
-    "totalSizeMB": "43.55"
+    "referencedImages": 140,
+    "orphanImages": 10,
+    "totalSizeBytes": 52428800,
+    "totalSizeMB": "50.00"
   }
 }
 ```
 
-##### 🧹 Cleanup de Imagens Órfãs
-
-**Modo Dry-Run** (apenas lista, não deleta):
-```http
-POST /api/cleanup/orphan-images?dryRun=true
-Authorization: Bearer <token>
+#### 2. Histórico de Estatísticas
+```
+GET /api/cleanup/storage-history?days=30
 ```
 
 **Resposta:**
+```json
+{
+  "success": true,
+  "history": [
+    {
+      "timestamp": "2025-12-01T10:00:00Z",
+      "totalImages": 145,
+      "totalSizeMB": 48.5,
+      "referencedImages": 138,
+      "orphanImages": 7
+    }
+  ]
+}
+```
+
+#### 3. Cleanup de Imagens Órfãs
+```
+POST /api/cleanup/orphan-images?dryRun=true
+```
+
+**Parâmetros:**
+- `dryRun` (query, opcional): `true` para apenas analisar
+
+**Resposta (Dry Run):**
 ```json
 {
   "success": true,
   "dryRun": true,
   "totalStorageImages": 150,
-  "totalReferencedImages": 142,
-  "orphanImagesCount": 8,
+  "totalReferencedImages": 140,
+  "orphanImagesCount": 10,
   "orphanImages": [
     {
-      "path": "products/produto-1234567890-abc123.jpeg",
-      "url": "https://your-project.supabase.co/storage/v1/object/public/product-images/products/produto-1234567890-abc123.jpeg"
+      "path": "products/produto-123-xyz.jpg",
+      "url": "https://..."
     }
   ]
 }
 ```
 
-**Modo Execução** (deleta imagens órfãs):
-```http
-POST /api/cleanup/orphan-images
-Authorization: Bearer <token>
-```
-
-**Resposta:**
+**Resposta (Execução):**
 ```json
 {
   "success": true,
-  "totalStorageImages": 150,
-  "totalReferencedImages": 142,
-  "orphanImagesCount": 8,
-  "deletedImagesCount": 7,
-  "failedDeletionsCount": 1,
-  "deletedImages": [
-    "products/produto-1234567890-abc123.jpeg",
-    "products/produto-9876543210-xyz789.jpeg"
-  ],
-  "failedDeletions": [
-    {
-      "path": "products/produto-error-file.jpeg",
-      "error": "File not found"
-    }
-  ]
+  "deletedImagesCount": 10,
+  "failedDeletionsCount": 0,
+  "deletedImages": ["products/..."],
+  "failedDeletions": []
 }
 ```
 
----
+## 📊 Rastreamento Histórico
 
-## 🔧 Configuração
+**Model:** `StorageStats`
 
-### Variáveis de Ambiente (Backend)
+Localização: `server/models/StorageStats.ts`
 
-No arquivo `server/.env`:
+Armazena snapshots periódicos das estatísticas de storage para análise de tendências:
+
+```typescript
+{
+  timestamp: Date,
+  totalImages: Number,
+  totalSizeBytes: Number,
+  totalSizeMB: Number,
+  referencedImages: Number,
+  orphanImages: Number
+}
+```
+
+## 🔄 Migração de Imagens Base64
+
+**Script:** `migrateImagesToBlob.ts`
+
+Localização: `server/scripts/migrateImagesToBlob.ts`
+
+### Como Executar
+
+```bash
+cd server
+npm run migrate-images
+```
+
+### O que faz
+
+1. Conecta ao MongoDB
+2. Busca todas as imagens base64 nas collections:
+   - `estoque` (variantes de produtos)
+   - `vitrineVirtual` (produtos da vitrine)
+3. Faz upload para Supabase Storage com compressão
+4. Substitui base64 pelas URLs públicas
+5. Salva alterações no MongoDB
+6. Exibe relatório detalhado
+
+### Exemplo de Output
+
+```
+🚀 Iniciando migração de imagens para Supabase Storage...
+
+📦 Estoque:
+  • Documentos processados: 50
+  • Total de imagens: 150
+  • Imagens migradas: 150
+  • Falhas: 0
+
+🛍️ Vitrine Virtual:
+  • Documentos processados: 50
+  • Total de imagens: 150
+  • Imagens migradas: 150
+  • Falhas: 0
+
+✅ Migração concluída!
+```
+
+## ⚙️ Configuração
+
+### Variáveis de Ambiente
+
+**Backend (`server/.env`):**
 ```env
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+SUPABASE_URL=https://seu-projeto.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=sua-service-role-key
 ```
 
-### Deploy no Render.com
+### Supabase Storage
 
-No arquivo `render.yaml`:
-```yaml
-envVars:
-  - key: SUPABASE_URL
-    sync: false
-  - key: SUPABASE_SERVICE_ROLE_KEY
-    sync: false
-```
+**Bucket:** `product-images`
 
-⚠️ **IMPORTANTE**: Configure estas variáveis no dashboard do Render antes do deploy!
-
----
-
-## 🗄️ Storage Bucket (Supabase)
-
-### Configuração Automática:
-O bucket `product-images` foi criado automaticamente com:
-
-- ✅ **Acesso público** para leitura de imagens
-- ✅ **Limite de tamanho**: 5MB por arquivo
-- ✅ **Tipos permitidos**: JPEG, JPG, PNG, WebP, GIF
-- ✅ **RLS habilitado**: Apenas usuários autenticados podem fazer upload/update/delete
-
-### Estrutura de Pastas:
+**Estrutura:**
 ```
 product-images/
 └── products/
-    ├── produto-1234567890-abc123.jpeg
-    ├── produto-1234567891-def456.webp
-    └── produto-1234567892-ghi789.jpeg
+    ├── produto-1234-abc.jpg
+    ├── produto-5678-def.webp
+    └── ...
 ```
 
----
+**RLS Policies:**
+- Read (SELECT): Público
+- Upload (INSERT): Usuários autenticados
+- Update (UPDATE): Usuários autenticados
+- Delete (DELETE): Usuários autenticados
 
-## 📋 Permissões Necessárias
+## 📈 Benefícios
 
-Para acessar os endpoints de cleanup, o usuário precisa ter permissões de:
+### Performance
 
-- **Estatísticas**: Permissão de `view` no módulo `produtos`
-- **Cleanup**: Permissão de `delete` no módulo `produtos`
+**Antes:**
+- ❌ Documentos MongoDB: 5-10 MB cada
+- ❌ Queries lentas: 2-5 segundos
+- ❌ Timeouts frequentes
+- ❌ Alto uso de memória
 
----
+**Depois:**
+- ✅ Documentos MongoDB: < 50 KB
+- ✅ Queries rápidas: < 100ms
+- ✅ Sem timeouts
+- ✅ Imagens servidas via CDN global
 
-## 🚀 Como Usar
+### Armazenamento
 
-### 1. Verificar Estatísticas:
-```bash
-curl -X GET https://seu-backend.onrender.com/api/cleanup/storage-stats \
-  -H "Authorization: Bearer SEU_TOKEN"
-```
+**Compressão no Frontend:**
+- Reduz tamanho antes do upload
+- Economiza largura de banda
+- Upload mais rápido
 
-### 2. Simular Cleanup (Dry-Run):
-```bash
-curl -X POST "https://seu-backend.onrender.com/api/cleanup/orphan-images?dryRun=true" \
-  -H "Authorization: Bearer SEU_TOKEN"
-```
+**Compressão no Backend:**
+- Otimização adicional com Sharp
+- Formatos modernos (WebP)
+- Reduz custos de storage
 
-### 3. Executar Cleanup:
-```bash
-curl -X POST https://seu-backend.onrender.com/api/cleanup/orphan-images \
-  -H "Authorization: Bearer SEU_TOKEN"
-```
+### Gerenciamento
 
----
+**Dashboard Visual:**
+- Monitora crescimento de storage
+- Identifica imagens órfãs
+- Remove arquivos não utilizados
+- Análise de tendências
 
-## 🎨 Benefícios
+## 🔒 Segurança
 
-### Compressão Automática:
-- 📦 **Economia de storage**: Redução média de 50-70% no tamanho das imagens
-- ⚡ **Performance melhorada**: Carregamento mais rápido das imagens
-- 💰 **Redução de custos**: Menos uso de storage e banda
+1. **Autenticação obrigatória** para upload/deleção
+2. **Validação de tipo** de arquivo (apenas imagens)
+3. **Limite de tamanho** (5MB por arquivo)
+4. **Service Role Key** protegida em variáveis de ambiente
+5. **Permissões granulares** baseadas em roles
 
-### Cleanup de Imagens Órfãs:
-- 🧹 **Storage limpo**: Remove imagens não utilizadas
-- 📊 **Visibilidade**: Estatísticas claras de uso
-- 🔒 **Segurança**: Controle via permissões granulares
-- 🎯 **Flexibilidade**: Dry-run antes de executar
+## 🐛 Troubleshooting
 
----
+### Erro: "SUPABASE_URL not configured"
+→ Configure `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` no `.env`
 
-## 📝 Logs e Monitoramento
+### Imagem não carrega após upload
+→ Verifique se o bucket `product-images` tem policy de leitura pública
 
-O sistema registra automaticamente:
+### Cleanup não remove imagens
+→ Verifique se o usuário tem permissão de deleção no Supabase
 
-```
-✅ Imagem original: { width: 3000, height: 2000, format: png, size: 2456789 }
-✅ Imagem comprimida: { originalSize: 2456789, compressedSize: 456789, compressionRatio: 81.41%, format: webp }
-✅ Imagem órfã deletada: products/produto-1234567890-abc123.jpeg
-```
+### Migração falha em algumas imagens
+→ Execute o script novamente (ele pula URLs já migradas)
 
----
+## 📝 Manutenção
 
-## 🔐 Segurança
+### Limpeza Regular
 
-- ✅ Todos os endpoints protegidos por autenticação JWT
-- ✅ Permissões granulares baseadas em roles
-- ✅ RLS habilitado no Supabase Storage
-- ✅ Rate limiting para prevenir abuso
+Execute cleanup mensalmente para remover imagens órfãs:
+1. Acesse `/backend-status`
+2. Role até a seção "Gerenciamento de Imagens"
+3. Clique em "Analisar (Dry Run)"
+4. Revise a lista de imagens
+5. Clique em "Executar Limpeza"
 
----
+### Monitoramento
 
-## 📚 Referências
+Acompanhe o gráfico de evolução para:
+- Identificar crescimento anormal
+- Detectar problemas de cleanup
+- Planejar upgrades de armazenamento
 
-- [Sharp Documentation](https://sharp.pixelplumbing.com/)
-- [Supabase Storage](https://supabase.com/docs/guides/storage)
-- [Supabase RLS Policies](https://supabase.com/docs/guides/auth/row-level-security)
+## 🔗 Links Úteis
+
+- [Supabase Storage Docs](https://supabase.com/docs/guides/storage)
+- [Sharp Image Processing](https://sharp.pixelplumbing.com/)
+- [MongoDB GridFS Alternative](https://www.mongodb.com/docs/manual/core/gridfs/)

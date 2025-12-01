@@ -1,5 +1,5 @@
 import express from 'express';
-import { cleanupOrphanImages, getStorageStats } from '../controllers/cleanupController';
+import { cleanupOrphanImages, getStorageStats, getStorageHistory } from '../controllers/cleanupController';
 import { authenticateToken } from '../middleware/auth';
 import { checkPermission } from '../middleware/permissions';
 
@@ -62,6 +62,35 @@ router.get(
   authenticateToken,
   checkPermission('produtos', 'view'),
   getStorageStats
+);
+
+/**
+ * @swagger
+ * /api/cleanup/storage-history:
+ *   get:
+ *     summary: Retorna histórico de estatísticas de storage
+ *     tags: [Cleanup]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: days
+ *         schema:
+ *           type: number
+ *         description: Número de dias de histórico (padrão 30)
+ *     responses:
+ *       200:
+ *         description: Histórico retornado com sucesso
+ *       401:
+ *         description: Não autorizado
+ *       500:
+ *         description: Erro no servidor
+ */
+router.get(
+  '/storage-history',
+  authenticateToken,
+  checkPermission('produtos', 'view'),
+  getStorageHistory
 );
 
 export default router;

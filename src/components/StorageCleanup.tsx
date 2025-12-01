@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Image, Trash2, Search, AlertCircle, CheckCircle2, HardDrive } from 'lucide-react';
+import { Image, Trash2, Search, AlertCircle, CheckCircle2, HardDrive, TrendingUp, TrendingDown } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { axiosInstance } from '@/lib/api';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface StorageStats {
   totalImages: number;
@@ -19,6 +22,14 @@ interface StorageStats {
 interface OrphanImage {
   path: string;
   url: string;
+}
+
+interface StorageHistory {
+  timestamp: string;
+  totalImages: number;
+  totalSizeMB: number;
+  referencedImages: number;
+  orphanImages: number;
 }
 
 interface CleanupResult {
@@ -37,8 +48,14 @@ interface CleanupResult {
 export default function StorageCleanup() {
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<StorageStats | null>(null);
+  const [history, setHistory] = useState<StorageHistory[]>([]);
   const [cleanupResult, setCleanupResult] = useState<CleanupResult | null>(null);
   const [showOrphanList, setShowOrphanList] = useState(false);
+
+  useEffect(() => {
+    loadStats();
+    loadHistory();
+  }, []);
 
   const loadStats = async () => {
     try {
@@ -51,6 +68,15 @@ export default function StorageCleanup() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadHistory = async () => {
+    try {
+      const response = await axiosInstance.get<{ success: boolean; history: StorageHistory[] }>('/cleanup/storage-history?days=30');
+      setHistory(response.data.history);
+    } catch (error: any) {
+      console.error('Erro ao carregar histórico:', error);
     }
   };
 
@@ -85,8 +111,9 @@ export default function StorageCleanup() {
       toast.success('Limpeza concluída', {
         description: `${response.data.deletedImagesCount} imagens deletadas`,
       });
-      // Recarregar estatísticas
+      // Recarregar estatísticas e histórico
       await loadStats();
+      await loadHistory();
     } catch (error: any) {
       toast.error('Erro ao executar limpeza', {
         description: error.response?.data?.message || error.message,
@@ -95,6 +122,23 @@ export default function StorageCleanup() {
       setLoading(false);
     }
   };
+
+  const getTrend = () => {
+    if (history.length < 2) return null;
+    
+    const latest = history[history.length - 1];
+    const previous = history[history.length - 2];
+    const diff = latest.totalSizeMB - previous.totalSizeMB;
+    
+    if (Math.abs(diff) < 0.1) return null;
+    
+    return {
+      direction: diff > 0 ? 'up' : 'down',
+      value: Math.abs(diff).toFixed(2),
+    };
+  };
+
+  const trend = getTrend();
 
   return (
     <Card>
@@ -111,35 +155,116 @@ export default function StorageCleanup() {
           </div>
           <Button onClick={loadStats} disabled={loading} variant="outline" size="sm">
             <HardDrive className="h-4 w-4 mr-2" />
-            Carregar Estatísticas
+            Atualizar
           </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Estatísticas de Storage */}
         {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Total de Imagens</p>
-              <p className="text-2xl font-bold">{stats.totalImages}</p>
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Total de Imagens</p>
+                <p className="text-2xl font-bold">{stats.totalImages}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Referenciadas</p>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {stats.referencedImages}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Órfãs</p>
+                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                  {stats.orphanImages}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Tamanho Total</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-2xl font-bold">{stats.totalSizeMB} MB</p>
+                  {trend && (
+                    <Badge 
+                      variant={trend.direction === 'up' ? 'destructive' : 'default'} 
+                      className={trend.direction === 'down' ? 'bg-green-50 dark:bg-green-950 text-green-600 dark:text-green-400' : ''}
+                    >
+                      {trend.direction === 'up' ? (
+                        <TrendingUp className="h-3 w-3 mr-1" />
+                      ) : (
+                        <TrendingDown className="h-3 w-3 mr-1" />
+                      )}
+                      {trend.value} MB
+                    </Badge>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Referenciadas</p>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {stats.referencedImages}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Órfãs</p>
-              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                {stats.orphanImages}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Tamanho Total</p>
-              <p className="text-2xl font-bold">{stats.totalSizeMB} MB</p>
-            </div>
-          </div>
+
+            {/* Gráfico de Evolução */}
+            {history.length > 1 && (
+              <>
+                <Separator />
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-semibold mb-1">Evolução do Storage (últimos 30 dias)</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Tamanho total em MB ao longo do tempo
+                    </p>
+                  </div>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <LineChart data={history}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis 
+                        dataKey="timestamp"
+                        tickFormatter={(value) => format(new Date(value), 'dd/MM', { locale: ptBR })}
+                        className="text-xs"
+                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      />
+                      <YAxis 
+                        className="text-xs"
+                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                        label={{ 
+                          value: 'MB', 
+                          angle: -90, 
+                          position: 'insideLeft',
+                          style: { fill: 'hsl(var(--muted-foreground))' }
+                        }}
+                      />
+                      <RechartsTooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--background))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px'
+                        }}
+                        labelFormatter={(value) => format(new Date(value), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                        labelStyle={{ color: 'hsl(var(--foreground))' }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="totalSizeMB" 
+                        stroke="hsl(var(--primary))" 
+                        strokeWidth={2}
+                        dot={{ fill: 'hsl(var(--primary))', r: 3 }}
+                        activeDot={{ r: 5 }}
+                        name="Tamanho (MB)"
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="totalImages" 
+                        stroke="hsl(var(--chart-2))" 
+                        strokeWidth={2}
+                        dot={{ fill: 'hsl(var(--chart-2))', r: 3 }}
+                        activeDot={{ r: 5 }}
+                        name="Total de Imagens"
+                        yAxisId="right"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </>
+            )}
+          </>
         )}
 
         <Separator />
