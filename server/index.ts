@@ -24,6 +24,7 @@ import healthRouter from './routes/health';
 import authRouter from './routes/auth';
 import uploadRouter from './routes/upload';
 import permissionsRouter from './routes/permissions';
+import cleanupRouter from './routes/cleanup';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -146,6 +147,7 @@ app.use('/api/contas-pagar', strictLimiter, authenticateToken, contasPagarRouter
 app.use('/api/contas-receber', strictLimiter, authenticateToken, contasReceberRouter);
 app.use('/api/categorias-financeiras', strictLimiter, authenticateToken, categoriasFinanceirasRouter);
 app.use('/api/permissions', strictLimiter, authenticateToken, permissionsRouter);
+app.use('/api/cleanup', strictLimiter, authenticateToken, cleanupRouter);
 
 // Rota 404
 app.use(/.*/, (req, res) => {
