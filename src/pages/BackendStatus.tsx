@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, CheckCircle2, XCircle, Clock, RefreshCw, Database, Server, AlertCircle, Activity, History, Trash2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, Clock, RefreshCw, Database, Server, AlertCircle, Activity, History, Trash2, Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import StorageCleanup from '@/components/StorageCleanup';
 import { StorageAnalyticsDashboard } from "@/components/StorageAnalyticsDashboard";
 import { ImageSEOAnalyzer } from "@/components/ImageSEOAnalyzer";
@@ -24,6 +25,7 @@ interface EndpointStatus {
   status: 'checking' | 'success' | 'error' | 'slow';
   responseTime?: number;
   errorMessage?: string;
+  errorDetails?: string;
 }
 
 interface HealthResponse {
@@ -37,10 +39,18 @@ interface HealthResponse {
   memory: any;
 }
 
+interface CollectionStatus {
+  collection: string;
+  status: 'success' | 'error';
+  responseTime: number;
+  error?: string;
+}
+
 export default function BackendStatus() {
   const navigate = useNavigate();
   const [checking, setChecking] = useState(false);
   const [healthData, setHealthData] = useState<HealthResponse | null>(null);
+  const [collectionsStatus, setCollectionsStatus] = useState<CollectionStatus[]>([]);
   const [latencyData, setLatencyData] = useState<LatencyDataPoint[]>([]);
   const [connectionLogs, setConnectionLogs] = useState<ConnectionEvent[]>([]);
   const [endpoints, setEndpoints] = useState<EndpointStatus[]>([
@@ -77,31 +87,47 @@ export default function BackendStatus() {
           responseTime,
         };
       } else {
+        // Tentar capturar o body da resposta
+        let errorDetails = '';
+        try {
+          const text = await response.text();
+          errorDetails = text;
+        } catch (e) {
+          errorDetails = 'Não foi possível obter detalhes do erro';
+        }
+
         return {
           ...endpoint,
           status: 'error',
           responseTime,
           errorMessage: `HTTP ${response.status}`,
+          errorDetails,
         };
       }
     } catch (error: any) {
       clearTimeout(timeoutId);
       let errorMessage = 'Erro desconhecido';
+      let errorDetails = '';
       
       if (error.name === 'AbortError') {
         errorMessage = 'Timeout (>10s)';
+        errorDetails = 'A requisição excedeu o tempo limite de 10 segundos';
       } else if (error.message?.includes('Failed to fetch')) {
         errorMessage = 'Falha na conexão';
+        errorDetails = 'Não foi possível estabelecer conexão com o servidor';
       } else if (error.message?.includes('Network')) {
         errorMessage = 'Erro de rede';
+        errorDetails = error.message;
       } else {
         errorMessage = error.message;
+        errorDetails = JSON.stringify(error);
       }
 
       return {
         ...endpoint,
         status: 'error',
         errorMessage,
+        errorDetails,
       };
     }
   };
@@ -117,12 +143,27 @@ export default function BackendStatus() {
     }
   };
 
+  const checkCollections = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/health/collections`);
+      const data = await response.json();
+      setCollectionsStatus(data.collections || []);
+    } catch (error) {
+      console.error('Erro ao verificar collections:', error);
+      setCollectionsStatus([]);
+    }
+  };
+
   const runChecks = async () => {
     setChecking(true);
     setHealthData(null);
+    setCollectionsStatus([]);
 
-    // Verificar health primeiro
-    await checkHealth();
+    // Verificar health e collections em paralelo
+    await Promise.all([
+      checkHealth(),
+      checkCollections()
+    ]);
 
     // Verificar todos os endpoints em paralelo
     const results = await Promise.all(
@@ -313,6 +354,43 @@ export default function BackendStatus() {
                 <p className="font-medium capitalize">{healthData.status}</p>
               </div>
             </div>
+
+            {/* Validação por Collection */}
+            {collectionsStatus.length > 0 && (
+              <>
+                <Separator />
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    <Database className="h-4 w-4" />
+                    Validação por Collection
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    <TooltipProvider>
+                      {collectionsStatus.map((collection, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
+                          <span className="text-xs font-medium capitalize">{collection.collection}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">{collection.responseTime}ms</span>
+                            {collection.status === 'success' ? (
+                              <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400" />
+                            ) : (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <XCircle className="h-3 w-3 text-red-600 dark:text-red-400 cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="text-xs">{collection.error}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </TooltipProvider>
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       )}
@@ -328,34 +406,48 @@ export default function BackendStatus() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {endpoints.map((endpoint, index) => (
-              <div key={index}>
-                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3 flex-1">
-                    {getStatusIcon(endpoint.status)}
-                    <div className="flex-1">
-                      <p className="font-medium">{endpoint.name}</p>
-                      <p className="text-xs text-muted-foreground">{endpoint.endpoint}</p>
+            <TooltipProvider>
+              {endpoints.map((endpoint, index) => (
+                <div key={index}>
+                  <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3 flex-1">
+                      {getStatusIcon(endpoint.status)}
+                      <div className="flex-1">
+                        <p className="font-medium">{endpoint.name}</p>
+                        <p className="text-xs text-muted-foreground">{endpoint.endpoint}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {endpoint.responseTime !== undefined && (
+                        <span className="text-sm text-muted-foreground">
+                          {endpoint.responseTime}ms
+                        </span>
+                      )}
+                      {endpoint.errorMessage && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1 cursor-help">
+                              <AlertCircle className="h-3 w-3" />
+                              {endpoint.errorMessage}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="left" className="max-w-md">
+                            <div className="space-y-2">
+                              <p className="font-semibold text-xs">Detalhes do Erro:</p>
+                              <p className="text-xs text-muted-foreground break-words">
+                                {endpoint.errorDetails || 'Nenhum detalhe adicional disponível'}
+                              </p>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                      {getStatusBadge(endpoint.status)}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    {endpoint.responseTime !== undefined && (
-                      <span className="text-sm text-muted-foreground">
-                        {endpoint.responseTime}ms
-                      </span>
-                    )}
-                    {endpoint.errorMessage && (
-                      <span className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
-                        {endpoint.errorMessage}
-                      </span>
-                    )}
-                    {getStatusBadge(endpoint.status)}
-                  </div>
+                  {index < endpoints.length - 1 && <Separator className="my-1" />}
                 </div>
-                {index < endpoints.length - 1 && <Separator className="my-1" />}
-              </div>
-            ))}
+              ))}
+            </TooltipProvider>
           </div>
         </CardContent>
       </Card>

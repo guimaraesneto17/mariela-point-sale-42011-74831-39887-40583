@@ -13,7 +13,6 @@ import {
   Shield,
   RefreshCw
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 
 interface EnvVariable {
   name: string;
@@ -34,28 +33,6 @@ interface VariableStatus {
 
 const CRITICAL_VARIABLES: EnvVariable[] = [
   {
-    name: 'VITE_SUPABASE_URL',
-    label: 'Supabase URL',
-    icon: Database,
-    required: true,
-    type: 'url',
-    checkFn: async () => {
-      const url = import.meta.env.VITE_SUPABASE_URL;
-      return url && url.includes('supabase.co');
-    }
-  },
-  {
-    name: 'VITE_SUPABASE_PUBLISHABLE_KEY',
-    label: 'Supabase Anon Key',
-    icon: Key,
-    required: true,
-    type: 'key',
-    checkFn: async () => {
-      const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      return key && key.startsWith('eyJ');
-    }
-  },
-  {
     name: 'VITE_API_URL',
     label: 'Backend API URL',
     icon: Server,
@@ -75,34 +52,16 @@ const CRITICAL_VARIABLES: EnvVariable[] = [
         return false;
       }
     }
-  },
-  {
-    name: 'VITE_SUPABASE_PROJECT_ID',
-    label: 'Supabase Project ID',
-    icon: Shield,
-    required: false,
-    type: 'config'
   }
 ];
 
 const EnvironmentVariablesAlert = () => {
   const [checking, setChecking] = useState(true);
   const [variables, setVariables] = useState<VariableStatus[]>([]);
-  const [supabaseConnected, setSupabaseConnected] = useState(false);
 
   useEffect(() => {
     checkVariables();
-    checkSupabaseConnection();
   }, []);
-
-  const checkSupabaseConnection = async () => {
-    try {
-      const { data, error } = await supabase.from('profiles').select('count').limit(1);
-      setSupabaseConnected(!error);
-    } catch {
-      setSupabaseConnected(false);
-    }
-  };
 
   const checkVariables = async () => {
     setChecking(true);
@@ -239,32 +198,6 @@ const EnvironmentVariablesAlert = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Status da Conexão Supabase */}
-          <div className="rounded-lg border p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Database className="h-5 w-5 text-muted-foreground" />
-                <span className="font-medium">Conexão Supabase</span>
-              </div>
-              {supabaseConnected ? (
-                <Badge className="bg-green-500/10 text-green-600 dark:text-green-400">
-                  <CheckCircle2 className="h-3 w-3 mr-1" />
-                  Conectado
-                </Badge>
-              ) : (
-                <Badge variant="destructive">
-                  <XCircle className="h-3 w-3 mr-1" />
-                  Desconectado
-                </Badge>
-              )}
-            </div>
-            {!supabaseConnected && (
-              <p className="text-sm text-muted-foreground mt-2">
-                Verifique as credenciais do Supabase (URL e chave)
-              </p>
-            )}
-          </div>
-
           {/* Lista de Variáveis */}
           <div className="space-y-3">
             {checking ? (
@@ -318,10 +251,8 @@ const EnvironmentVariablesAlert = () => {
           <div className="rounded-lg bg-muted p-4 space-y-2">
             <h4 className="font-medium text-sm">ℹ️ Como Configurar</h4>
             <ul className="text-xs text-muted-foreground space-y-1">
-              <li>• <strong>VITE_SUPABASE_URL</strong>: URL do seu projeto Supabase</li>
-              <li>• <strong>VITE_SUPABASE_PUBLISHABLE_KEY</strong>: Chave pública (anon) do Supabase</li>
-              <li>• <strong>VITE_API_URL</strong>: URL do backend (ex: https://api.exemplo.com)</li>
-              <li>• <strong>Backend</strong>: Configure também SUPABASE_SERVICE_ROLE_KEY no servidor</li>
+              <li>• <strong>VITE_API_URL</strong>: URL do backend MongoDB (ex: https://api.exemplo.com/api)</li>
+              <li>• <strong>Backend (Render)</strong>: Configure MONGODB_URI, JWT_SECRET, REFRESH_TOKEN_SECRET e BLOB_READ_WRITE_TOKEN</li>
             </ul>
           </div>
 
@@ -342,14 +273,15 @@ const EnvironmentVariablesAlert = () => {
                 className="flex-1"
                 onClick={() => {
                   const envExample = `# Frontend (Lovable)
-VITE_SUPABASE_URL=https://seu-projeto.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=eyJ...
 VITE_API_URL=https://seu-backend.onrender.com/api
 
-# Backend (Render/Node)
-SUPABASE_URL=https://seu-projeto.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
-SUPABASE_PUBLISHABLE_KEY=eyJ...`;
+# Backend (Render)
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database
+JWT_SECRET=(gerado automaticamente pelo Render)
+REFRESH_TOKEN_SECRET=(gerado automaticamente pelo Render)
+BLOB_READ_WRITE_TOKEN=vercel_blob_token
+NODE_ENV=production
+NPM_CONFIG_PRODUCTION=false`;
                   
                   navigator.clipboard.writeText(envExample);
                   alert('Template de .env copiado para área de transferência!');
