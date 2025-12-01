@@ -483,6 +483,190 @@ Com a compressão progressiva implementada:
 - Retenção de histórico: **30 dias** (ajustável na query de histórico)
 - Frequência de verificação: **5 minutos** (ajustável no `useEffect`)
 - Cache de imagens: **1 ano** (configurado no header `cacheControl`)
+- CDN cache: **s-maxage=31536000** (1 ano em edge locations)
+- Stale-while-revalidate: **1 dia** (serve conteúdo antigo enquanto atualiza)
+
+## 🌐 Sistema de CDN Caching
+
+### Cache Headers Otimizados
+
+O sistema implementa headers de cache inteligentes para diferentes tipos de conteúdo:
+
+**Imagens de Produtos:**
+```
+Cache-Control: public, max-age=31536000, s-maxage=31536000, stale-while-revalidate=86400, stale-if-error=604800, immutable
+```
+- **max-age**: 1 ano no navegador
+- **s-maxage**: 1 ano em CDN/edge
+- **stale-while-revalidate**: 1 dia (serve cache enquanto revalida)
+- **stale-if-error**: 7 dias (serve cache se backend falhar)
+- **immutable**: Conteúdo nunca muda (versionado por URL)
+
+**API Responses:**
+```
+Cache-Control: public, max-age=60, s-maxage=300, stale-while-revalidate=60
+```
+- **max-age**: 1 minuto no navegador
+- **s-maxage**: 5 minutos em CDN
+- **stale-while-revalidate**: 1 minuto
+
+### ETag para Validação
+
+Sistema automático de ETag (MD5 hash do conteúdo):
+- Cliente envia `If-None-Match` com ETag
+- Servidor responde `304 Not Modified` se conteúdo igual
+- Economia de 100% de banda em cache hits
+
+### Vary Headers
+
+```
+Vary: Accept-Encoding, Accept
+```
+- Garante versões separadas para diferentes encodings (gzip, br)
+- CDN armazena múltiplas versões conforme necessário
+
+### Como Usar
+
+```typescript
+// No backend (Express)
+import { cachePresets, fullCDNOptimization } from './middleware/cacheControl';
+
+// Aplicar em rotas específicas
+router.get('/images/:id', cachePresets.images, getImage);
+router.get('/api/data', cachePresets.api, getData);
+
+// Otimização completa (Vary + ETag)
+app.use(fullCDNOptimization);
+```
+
+## 🔍 Análise de SEO de Imagens
+
+### Ferramenta de Análise
+
+Acesse **Backend Status** → **Análise de SEO de Imagens** para:
+
+#### Verificações Automáticas
+
+**Acessibilidade:**
+- ✅ Presença de texto alternativo (alt)
+- ✅ Comprimento adequado do alt (5-125 caracteres)
+- ⚠️ Alt vazio ou inexistente (-30 pontos)
+
+**Performance:**
+- ✅ Tamanho do arquivo (< 200KB ideal)
+- ✅ Dimensões apropriadas (< 2000px)
+- ✅ Tempo de carregamento
+- ⚠️ Arquivos > 500KB (-25 pontos)
+
+**Otimização:**
+- ✅ Uso de lazy loading
+- ✅ Formatos modernos (WebP, AVIF)
+- ✅ Responsive images
+- ⚠️ Sem lazy loading (-5 pontos)
+
+#### Sistema de Pontuação
+
+- **80-100**: ✅ Excelente (verde)
+- **60-79**: ⚠️ Bom, mas pode melhorar (amarelo)
+- **0-59**: ❌ Necessita otimização (vermelho)
+
+#### Relatório Gerado
+
+**Resumo Executivo:**
+- Total de imagens analisadas
+- Pontuação média
+- Problemas críticos detectados
+- Tamanho total das imagens
+- Taxa de aprovação
+
+**Detalhes por Imagem:**
+- Preview visual
+- Dimensões e tamanho
+- Tempo de carregamento
+- Lista de problemas e sugestões
+- Score individual
+
+**Recomendações Inteligentes:**
+- Correções prioritárias
+- Sugestões de otimização
+- Best practices aplicáveis
+
+#### Download de Relatório
+
+Baixe relatório completo em JSON com:
+```json
+{
+  "timestamp": "2025-12-01T18:00:00Z",
+  "summary": {
+    "totalImages": 45,
+    "averageScore": 72.5,
+    "criticalIssues": 8,
+    "recommendations": [...]
+  },
+  "details": [
+    {
+      "url": "...",
+      "alt": "...",
+      "size": {...},
+      "loadTime": 45,
+      "issues": [...],
+      "score": 85
+    }
+  ]
+}
+```
+
+### Integração com CI/CD
+
+Use o relatório JSON para:
+- Validar qualidade de imagens em builds
+- Bloquear deploys com score < 70
+- Gerar alertas automáticos
+- Rastrear evolução ao longo do tempo
+
+### Best Practices de SEO
+
+**Alt Text:**
+```html
+<!-- ❌ Ruim -->
+<img src="image.jpg" alt="" />
+<img src="image.jpg" alt="image" />
+
+<!-- ✅ Bom -->
+<img src="product.jpg" alt="Vestido floral azul manga curta tamanho M" />
+```
+
+**Lazy Loading:**
+```html
+<!-- ✅ Sempre use -->
+<img src="image.jpg" alt="..." loading="lazy" />
+```
+
+**Formatos Modernos:**
+```html
+<picture>
+  <source srcset="image.avif" type="image/avif" />
+  <source srcset="image.webp" type="image/webp" />
+  <img src="image.jpg" alt="..." loading="lazy" />
+</picture>
+```
+
+**Responsive:**
+```html
+<img 
+  src="image-800w.jpg"
+  srcset="
+    image-400w.jpg 400w,
+    image-800w.jpg 800w,
+    image-1200w.jpg 1200w
+  "
+  sizes="(max-width: 600px) 400px, (max-width: 1200px) 800px, 1200px"
+  alt="..."
+  loading="lazy"
+/>
+```
+
+
 
 ---
 
