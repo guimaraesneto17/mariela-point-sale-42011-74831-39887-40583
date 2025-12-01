@@ -1,30 +1,28 @@
-# 🔄 Migração de Imagens para Vercel Blob Storage
+# 🔄 Migração de Imagens para Supabase Storage
 
 ## 📋 Visão Geral
 
-Script automático para migrar todas as imagens base64 armazenadas no MongoDB para o Vercel Blob Storage, melhorando drasticamente a performance do sistema.
+Script automático para migrar todas as imagens base64 armazenadas no MongoDB para o Supabase Storage, melhorando drasticamente a performance do sistema.
 
 ## ⚙️ Pré-requisitos
 
-### 1. Configurar Token do Vercel Blob
+### 1. Configurar Credenciais do Supabase
 
-Antes de executar a migração, você precisa configurar o token de acesso:
-
-**Na Vercel:**
-1. Acesse [Vercel Dashboard](https://vercel.com/dashboard)
-2. Vá em **Storage** → **Create Database** → **Blob**
-3. Copie o token `BLOB_READ_WRITE_TOKEN`
+Antes de executar a migração, você precisa configurar as credenciais de acesso ao Supabase:
 
 **Configure no Render:**
 1. Acesse seu serviço no [Render Dashboard](https://dashboard.render.com)
 2. Vá em **Environment**
-3. Adicione a variável:
-   - **Key:** `BLOB_READ_WRITE_TOKEN`
-   - **Value:** Cole o token copiado da Vercel
+3. Adicione as variáveis:
+   - **Key:** `SUPABASE_URL`
+   - **Value:** URL do seu projeto Supabase
+   - **Key:** `SUPABASE_SERVICE_ROLE_KEY`
+   - **Value:** Service Role Key do Supabase
 
 **Para desenvolvimento local:**
 ```env
-BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxxxxxxxxxxxx
+SUPABASE_URL=https://seu-projeto.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=sua-service-role-key
 ```
 
 ## 🚀 Como Executar
