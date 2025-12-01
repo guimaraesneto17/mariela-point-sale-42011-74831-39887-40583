@@ -7,9 +7,19 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 interface UploadResult {
-  url: string;
-  size: number;
-  contentType: string;
+  urls: {
+    thumbnail: string;
+    medium: string;
+    full: string;
+  };
+  sizes: {
+    thumbnail: number;
+    medium: number;
+    full: number;
+  };
+  totalSize: number;
+  originalSize: number;
+  compressionRatio: string;
 }
 
 interface CompressionOptions {
@@ -19,21 +29,15 @@ interface CompressionOptions {
 }
 
 /**
- * Comprime uma imagem usando Sharp
+ * Comprime uma imagem em múltiplas versões (thumbnail, medium, full)
  * @param buffer Buffer da imagem original
- * @param options Opções de compressão
- * @returns Buffer da imagem comprimida
+ * @param baseFilename Nome base do arquivo (sem extensão)
+ * @returns Array com buffers e formatos de cada versão
  */
-async function compressImage(
+async function compressImageMultipleVersions(
   buffer: Buffer,
-  options: CompressionOptions = {}
-): Promise<{ buffer: Buffer; format: string }> {
-  const {
-    maxWidth = 1920,
-    maxHeight = 1920,
-    quality = 85,
-  } = options;
-
+  baseFilename: string
+): Promise<Array<{ buffer: Buffer; format: string; size: 'thumbnail' | 'medium' | 'full' }>> {
   try {
     const image = sharp(buffer);
     const metadata = await image.metadata();
@@ -45,37 +49,81 @@ async function compressImage(
       size: buffer.length,
     });
 
-    // Redimensionar mantendo aspect ratio
-    const resized = image.resize(maxWidth, maxHeight, {
+    const versions: Array<{ buffer: Buffer; format: string; size: 'thumbnail' | 'medium' | 'full' }> = [];
+    
+    // Thumbnail: 200x200
+    const thumbnailImage = sharp(buffer).resize(200, 200, {
       fit: 'inside',
       withoutEnlargement: true,
     });
-
-    // Converter para JPEG ou WebP com compressão
-    let compressed;
-    let format = 'jpeg';
-
+    
+    let thumbnailCompressed;
+    let thumbnailFormat = 'jpeg';
+    
     if (metadata.format === 'png' && metadata.hasAlpha) {
-      // PNG com transparência -> WebP
-      compressed = resized.webp({ quality });
-      format = 'webp';
+      thumbnailCompressed = thumbnailImage.webp({ quality: 80 });
+      thumbnailFormat = 'webp';
     } else {
-      // Tudo mais -> JPEG
-      compressed = resized.jpeg({ quality, progressive: true });
-      format = 'jpeg';
+      thumbnailCompressed = thumbnailImage.jpeg({ quality: 80, progressive: true });
+      thumbnailFormat = 'jpeg';
     }
+    
+    const thumbnailBuffer = await thumbnailCompressed.toBuffer();
+    versions.push({ buffer: thumbnailBuffer, format: thumbnailFormat, size: 'thumbnail' });
+    
+    // Medium: 800x800
+    const mediumImage = sharp(buffer).resize(800, 800, {
+      fit: 'inside',
+      withoutEnlargement: true,
+    });
+    
+    let mediumCompressed;
+    let mediumFormat = 'jpeg';
+    
+    if (metadata.format === 'png' && metadata.hasAlpha) {
+      mediumCompressed = mediumImage.webp({ quality: 85 });
+      mediumFormat = 'webp';
+    } else {
+      mediumCompressed = mediumImage.jpeg({ quality: 85, progressive: true });
+      mediumFormat = 'jpeg';
+    }
+    
+    const mediumBuffer = await mediumCompressed.toBuffer();
+    versions.push({ buffer: mediumBuffer, format: mediumFormat, size: 'medium' });
+    
+    // Full: 1920x1920
+    const fullImage = sharp(buffer).resize(1920, 1920, {
+      fit: 'inside',
+      withoutEnlargement: true,
+    });
+    
+    let fullCompressed;
+    let fullFormat = 'jpeg';
+    
+    if (metadata.format === 'png' && metadata.hasAlpha) {
+      fullCompressed = fullImage.webp({ quality: 85 });
+      fullFormat = 'webp';
+    } else {
+      fullCompressed = fullImage.jpeg({ quality: 85, progressive: true });
+      fullFormat = 'jpeg';
+    }
+    
+    const fullBuffer = await fullCompressed.toBuffer();
+    versions.push({ buffer: fullBuffer, format: fullFormat, size: 'full' });
 
-    const compressedBuffer = await compressed.toBuffer();
-
-    const compressionRatio = ((1 - compressedBuffer.length / buffer.length) * 100).toFixed(2);
-    console.log('Imagem comprimida:', {
+    const totalCompressedSize = thumbnailBuffer.length + mediumBuffer.length + fullBuffer.length;
+    const compressionRatio = ((1 - totalCompressedSize / (buffer.length * 3)) * 100).toFixed(2);
+    
+    console.log('Imagens comprimidas:', {
       originalSize: buffer.length,
-      compressedSize: compressedBuffer.length,
+      thumbnail: { size: thumbnailBuffer.length, format: thumbnailFormat },
+      medium: { size: mediumBuffer.length, format: mediumFormat },
+      full: { size: fullBuffer.length, format: fullFormat },
+      totalSize: totalCompressedSize,
       compressionRatio: `${compressionRatio}%`,
-      format,
     });
 
-    return { buffer: compressedBuffer, format };
+    return versions;
   } catch (error) {
     console.error('Erro ao comprimir imagem:', error);
     throw new Error('Falha na compressão da imagem');
@@ -83,10 +131,10 @@ async function compressImage(
 }
 
 /**
- * Faz upload de uma imagem base64 para Supabase Storage com compressão automática
+ * Faz upload de uma imagem base64 para Supabase Storage com compressão progressiva
  * @param base64Image String base64 da imagem (com ou sem data URI prefix)
- * @param filename Nome do arquivo (opcional, será gerado automaticamente se não fornecido)
- * @returns URL pública da imagem no storage
+ * @param filename Nome base do arquivo (opcional, será gerado automaticamente se não fornecido)
+ * @returns URLs e tamanhos de todas as versões da imagem
  */
 export async function uploadImageToBlob(
   base64Image: string,
@@ -110,39 +158,64 @@ export async function uploadImageToBlob(
 
     // Converter base64 para Buffer
     const originalBuffer = Buffer.from(base64Data, 'base64');
+    const originalSize = originalBuffer.length;
     
-    // Comprimir imagem
-    const { buffer: compressedBuffer, format } = await compressImage(originalBuffer);
-
-    // Gerar nome de arquivo único
+    // Gerar nome base único
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substring(7);
-    const uniqueFilename = filename || `produto-${timestamp}-${randomStr}.${format}`;
-    const filePath = `products/${uniqueFilename}`;
+    const baseFilename = filename?.replace(/\.[^/.]+$/, '') || `produto-${timestamp}-${randomStr}`;
+    
+    // Comprimir em múltiplas versões
+    const versions = await compressImageMultipleVersions(originalBuffer, baseFilename);
 
-    // Upload para Supabase Storage
-    const { data, error } = await supabase.storage
-      .from('product-images')
-      .upload(filePath, compressedBuffer, {
-        contentType: `image/${format}`,
-        cacheControl: '31536000', // 1 ano
-        upsert: false,
-      });
+    // Upload de todas as versões
+    const uploadResults: { [key: string]: { url: string; size: number } } = {};
+    
+    for (const version of versions) {
+      const versionFilename = `${baseFilename}-${version.size}.${version.format}`;
+      const filePath = `products/${versionFilename}`;
 
-    if (error) {
-      console.error('Erro no upload para Supabase:', error);
-      throw new Error(`Falha no upload: ${error.message}`);
+      const { data, error } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, version.buffer, {
+          contentType: `image/${version.format}`,
+          cacheControl: '31536000', // 1 ano
+          upsert: false,
+        });
+
+      if (error) {
+        console.error(`Erro no upload da versão ${version.size}:`, error);
+        throw new Error(`Falha no upload: ${error.message}`);
+      }
+
+      // Obter URL pública
+      const { data: publicUrlData } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      uploadResults[version.size] = {
+        url: publicUrlData.publicUrl,
+        size: version.buffer.length,
+      };
     }
 
-    // Obter URL pública
-    const { data: publicUrlData } = supabase.storage
-      .from('product-images')
-      .getPublicUrl(filePath);
+    const totalSize = Object.values(uploadResults).reduce((sum, v) => sum + v.size, 0);
+    const compressionRatio = ((1 - totalSize / (originalSize * 3)) * 100).toFixed(2);
 
     return {
-      url: publicUrlData.publicUrl,
-      size: compressedBuffer.length,
-      contentType: `image/${format}`,
+      urls: {
+        thumbnail: uploadResults.thumbnail.url,
+        medium: uploadResults.medium.url,
+        full: uploadResults.full.url,
+      },
+      sizes: {
+        thumbnail: uploadResults.thumbnail.size,
+        medium: uploadResults.medium.size,
+        full: uploadResults.full.size,
+      },
+      totalSize,
+      originalSize,
+      compressionRatio: `${compressionRatio}%`,
     };
   } catch (error: unknown) {
     if (error instanceof Error) {
@@ -158,14 +231,13 @@ export async function uploadImageToBlob(
 /**
  * Faz upload de múltiplas imagens
  * @param base64Images Array de strings base64
- * @returns Array de URLs públicas
+ * @returns Array de resultados com URLs de todas as versões
  */
 export async function uploadMultipleImages(
   base64Images: string[]
-): Promise<string[]> {
+): Promise<UploadResult[]> {
   const uploadPromises = base64Images.map((img) => uploadImageToBlob(img));
-  const results = await Promise.all(uploadPromises);
-  return results.map((result) => result.url);
+  return await Promise.all(uploadPromises);
 }
 
 /**
@@ -251,19 +323,34 @@ export function isBase64Image(str: string): boolean {
 /**
  * Processa imagens: converte base64 para URL ou mantém URL existente
  * @param images Array de imagens (base64 ou URL)
- * @returns Array de URLs
+ * @returns Array de resultados com URLs de todas as versões
  */
-export async function processImages(images: string[]): Promise<string[]> {
-  const processedImages: string[] = [];
+export async function processImages(images: string[]): Promise<UploadResult[]> {
+  const processedImages: UploadResult[] = [];
 
   for (const img of images) {
     if (isBase64Image(img)) {
-      // É base64, fazer upload
+      // É base64, fazer upload com múltiplas versões
       const result = await uploadImageToBlob(img);
-      processedImages.push(result.url);
+      processedImages.push(result);
     } else if (img.startsWith('http://') || img.startsWith('https://')) {
-      // Já é URL, manter
-      processedImages.push(img);
+      // Já é URL, retornar formato de resultado compatível
+      // (assumindo que é a versão full)
+      processedImages.push({
+        urls: {
+          thumbnail: img,
+          medium: img,
+          full: img,
+        },
+        sizes: {
+          thumbnail: 0,
+          medium: 0,
+          full: 0,
+        },
+        totalSize: 0,
+        originalSize: 0,
+        compressionRatio: '0%',
+      });
     } else {
       console.warn('Formato de imagem não reconhecido:', img.substring(0, 50));
     }
