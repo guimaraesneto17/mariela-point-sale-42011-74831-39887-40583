@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import Vendedor from '../models/Vendedor';
 import User from '../models/User';
 import Validations from '../utils/validations';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 
 // Helper para formatar erros de validação do Mongoose
 const formatValidationError = (error: any) => {
