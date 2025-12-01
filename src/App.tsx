@@ -21,6 +21,7 @@ import Caixa from "./pages/Caixa";
 import Financeiro from "./pages/Financeiro";
 import BackendStatus from "./pages/BackendStatus";
 import Usuarios from "./pages/Usuarios";
+import Permissoes from "./pages/Permissoes";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -97,6 +98,7 @@ const App = () => (
               <Route path="/caixa" element={<ProtectedRoute><Caixa /></ProtectedRoute>} />
               <Route path="/financeiro" element={<ProtectedRoute><Financeiro /></ProtectedRoute>} />
               <Route path="/usuarios" element={<ProtectedRoute requiredRoles={['admin']}><Usuarios /></ProtectedRoute>} />
+              <Route path="/permissoes" element={<ProtectedRoute requiredRoles={['admin']}><Permissoes /></ProtectedRoute>} />
               <Route path="/backend-status" element={<ProtectedRoute><BackendStatus /></ProtectedRoute>} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
