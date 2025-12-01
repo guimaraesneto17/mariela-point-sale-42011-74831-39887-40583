@@ -19,6 +19,7 @@ import { produtosAPI, fornecedoresAPI, estoqueAPI } from "@/lib/api";
 import { AddToStockDialog } from "@/components/AddToStockDialog";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { PermissionGuard } from "@/components/PermissionGuard";
 
 type ProdutoFormData = z.infer<typeof produtoSchema>;
 
@@ -253,13 +254,14 @@ const Produtos = () => {
             </Badge>
           </div>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2" onClick={handleOpenDialog}>
-              <Plus className="h-4 w-4" />
-              Novo Produto
-            </Button>
-          </DialogTrigger>
+        <PermissionGuard module="produtos" action="create">
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2" onClick={handleOpenDialog}>
+                <Plus className="h-4 w-4" />
+                Novo Produto
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-background via-background to-primary/5">
             <DialogHeader className="pb-4 border-b border-border/50">
               <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
@@ -564,6 +566,7 @@ const Produtos = () => {
             </Form>
           </DialogContent>
         </Dialog>
+        </PermissionGuard>
       </div>
 
       <Card className="p-4 md:p-6 shadow-card">
@@ -627,22 +630,26 @@ const Produtos = () => {
                   {produto.nome}
                 </CardTitle>
                 <div className="flex gap-1">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleEdit(produto)}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleDelete(produto._id)}
-                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <PermissionGuard module="produtos" action="edit">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleEdit(produto)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </PermissionGuard>
+                  <PermissionGuard module="produtos" action="delete">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleDelete(produto._id)}
+                      className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </PermissionGuard>
                 </div>
               </div>
             </CardHeader>

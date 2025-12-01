@@ -12,6 +12,14 @@ const VendedorSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true,
+    match: [/^\S+@\S+\.\S+$/, 'Email inválido']
+  },
   telefone: {
     type: String,
     trim: true
