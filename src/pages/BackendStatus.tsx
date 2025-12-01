@@ -12,6 +12,7 @@ import { ImageSEOAnalyzer } from "@/components/ImageSEOAnalyzer";
 import WatermarkSettings from "@/components/WatermarkSettings";
 import CleanupScheduler from "@/components/CleanupScheduler";
 import EnvironmentVariablesAlert from "@/components/EnvironmentVariablesAlert";
+import { CachePerformanceMetrics } from "@/components/CachePerformanceMetrics";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { connectionLogger, ConnectionEvent, LatencyDataPoint } from '@/lib/connectionLogger';
 import { format } from 'date-fns';
@@ -451,6 +452,9 @@ export default function BackendStatus() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Cache Performance Metrics */}
+      <CachePerformanceMetrics />
 
       {/* Gráfico de Latência */}
       {latencyData.length > 0 && (

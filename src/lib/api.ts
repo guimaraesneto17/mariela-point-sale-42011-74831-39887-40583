@@ -148,7 +148,12 @@ export const clientesAPI = {
 
 // ============= PRODUTOS =============
 export const produtosAPI = {
-  getAll: () => fetchAPI('/produtos'),
+  getAll: (page?: number, limit?: number) => {
+    const params = new URLSearchParams();
+    if (page) params.append('page', page.toString());
+    if (limit) params.append('limit', limit.toString());
+    return fetchAPI(`/produtos?${params.toString()}`);
+  },
   getByCodigo: (codigo: string) => fetchAPI(`/produtos/${codigo}`),
   create: (data: any) => fetchAPI('/produtos', {
     method: 'POST',
@@ -178,7 +183,12 @@ export const vendasAPI = {
 
 // ============= ESTOQUE =============
 export const estoqueAPI = {
-  getAll: () => fetchAPI('/estoque'),
+  getAll: (page?: number, limit?: number) => {
+    const params = new URLSearchParams();
+    if (page) params.append('page', page.toString());
+    if (limit) params.append('limit', limit.toString());
+    return fetchAPI(`/estoque?${params.toString()}`);
+  },
   getByCodigo: (codigo: string) => fetchAPI(`/estoque/codigo/${codigo}`),
   create: (data: any) => fetchAPI('/estoque', {
     method: 'POST',

@@ -143,15 +143,17 @@ const EstoqueSchema = new mongoose.Schema({
   versionKey: false
 });
 
-// Índices para melhor performance
-EstoqueSchema.index({ codigoProduto: 1 });
-EstoqueSchema.index({ codigoEstoque: 1 });
-EstoqueSchema.index({ emPromocao: 1 });
-EstoqueSchema.index({ isNovidade: 1 });
-EstoqueSchema.index({ ativo: 1 });
-EstoqueSchema.index({ dataCadastro: -1 }); // Para ordenação
-EstoqueSchema.index({ codigoProduto: 1, ativo: 1 }); // Índice composto para queries frequentes
-EstoqueSchema.index({ emPromocao: 1, ativo: 1 }); // Para filtros de promoção
-EstoqueSchema.index({ isNovidade: 1, ativo: 1 }); // Para filtros de novidade
+// Índices compostos otimizados para consultas frequentes
+EstoqueSchema.index({ codigoProduto: 1 }); // Busca por produto (mais comum)
+EstoqueSchema.index({ codigoEstoque: 1 }); // Busca direta
+EstoqueSchema.index({ emPromocao: 1 }); // Filtro promoção
+EstoqueSchema.index({ isNovidade: 1 }); // Filtro novidade
+EstoqueSchema.index({ ativo: 1 }); // Filtro ativo/inativo
+EstoqueSchema.index({ dataCadastro: -1 }); // Ordenação por data
+EstoqueSchema.index({ codigoProduto: 1, ativo: 1 }); // Produto + ativo
+EstoqueSchema.index({ emPromocao: 1, ativo: 1, dataCadastro: -1 }); // Promoções ativas + data
+EstoqueSchema.index({ isNovidade: 1, ativo: 1, dataCadastro: -1 }); // Novidades ativas + data
+EstoqueSchema.index({ 'variantes.cor': 1, 'variantes.quantidade': -1 }); // Filtro cor + qtd
+EstoqueSchema.index({ quantidade: -1, dataCadastro: -1 }); // Ordenação quantidade + data
 
 export default mongoose.models.Estoque || mongoose.model('Estoque', EstoqueSchema);
