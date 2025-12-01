@@ -13,6 +13,7 @@ import WatermarkSettings from "@/components/WatermarkSettings";
 import CleanupScheduler from "@/components/CleanupScheduler";
 import EnvironmentVariablesAlert from "@/components/EnvironmentVariablesAlert";
 import { CachePerformanceMetrics } from "@/components/CachePerformanceMetrics";
+import { PerformanceDashboard } from "@/components/PerformanceDashboard";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { connectionLogger, ConnectionEvent, LatencyDataPoint } from '@/lib/connectionLogger';
 import { format } from 'date-fns';
@@ -452,6 +453,9 @@ export default function BackendStatus() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Performance Dashboard */}
+      <PerformanceDashboard />
 
       {/* Cache Performance Metrics */}
       <CachePerformanceMetrics />

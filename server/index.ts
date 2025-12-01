@@ -90,7 +90,7 @@ app.use(cors({
 
 // Compressão gzip para todas as respostas (reduz tráfego de rede em até 70%)
 app.use(compression({
-  filter: (req, res) => {
+  filter: (req: express.Request, res: express.Response) => {
     if (req.headers['x-no-compression']) {
       return false;
     }

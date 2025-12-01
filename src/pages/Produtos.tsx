@@ -21,6 +21,7 @@ import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
+import { useDebounce } from "@/hooks/useDebounce";
 
 type ProdutoFormData = z.infer<typeof produtoSchema>;
 
@@ -58,6 +59,9 @@ const Produtos = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  
+  // Debounce do termo de busca para reduzir requisições
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   useEffect(() => {
     loadProdutos(1, true);
@@ -128,10 +132,10 @@ const Produtos = () => {
   };
 
   const filteredProdutos = produtos.filter(produto => {
-    const matchesSearch = produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      produto.codigoProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (produto.fornecedor?.nome && produto.fornecedor.nome.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (produto.fornecedor?.codigoFornecedor && produto.fornecedor.codigoFornecedor.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesSearch = produto.nome.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      produto.codigoProduto.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      (produto.fornecedor?.nome && produto.fornecedor.nome.toLowerCase().includes(debouncedSearchTerm.toLowerCase())) ||
+      (produto.fornecedor?.codigoFornecedor && produto.fornecedor.codigoFornecedor.toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
     
     const categoria = typeof produto.categoria === 'string' ? produto.categoria : produto.categoria?.nome;
     const matchesCategoria = categoriaFiltro === "todas" || categoria === categoriaFiltro;

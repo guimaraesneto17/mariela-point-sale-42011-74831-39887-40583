@@ -28,6 +28,7 @@ import { getDefaultImageByCategory } from "@/lib/defaultImages";
 import { GlobalLoading } from "@/components/GlobalLoading";
 import { EstoqueAnalyticsCard } from "@/components/EstoqueAnalyticsCard";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
+import { useDebounce } from "@/hooks/useDebounce";
 
 const Estoque = () => {
   const location = useLocation();
@@ -63,6 +64,9 @@ const Estoque = () => {
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
   const [sortBy, setSortBy] = useState<string>("nome"); // nome, preco-asc, preco-desc, quantidade-asc, quantidade-desc, data-entrada
   const [showAnalytics, setShowAnalytics] = useState(false);
+  
+  // Debounce do termo de busca para reduzir requisições
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   // Novos filtros avançados
   const [filterPrecoMin, setFilterPrecoMin] = useState<string>("");
@@ -180,8 +184,8 @@ const Estoque = () => {
       const nomeProduto = item.nomeProduto || '';
       const codigoProduto = item.codigoProduto || '';
 
-      const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = nomeProduto.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        codigoProduto.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
       const matchesPromocao = filterPromocao === null || item.emPromocao === filterPromocao;
       const matchesNovidade = filterNovidade === null || item.isNovidade === filterNovidade;
       const matchesCategoria = categoria === "todas" || item.categoria === categoria;
@@ -197,8 +201,8 @@ const Estoque = () => {
       const codigoProduto = item.codigoProduto || '';
       const categoria = item.categoria || '';
 
-      const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = nomeProduto.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        codigoProduto.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
       const matchesPromocao = filterPromocao === null || item.emPromocao === filterPromocao;
       const matchesNovidade = filterNovidade === null || item.isNovidade === filterNovidade;
       const matchesCategoria = filterCategoria === "todas" || categoria === filterCategoria;
@@ -215,8 +219,8 @@ const Estoque = () => {
       const codigoProduto = item.codigoProduto || '';
       const categoria = item.categoria || '';
 
-      const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = nomeProduto.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        codigoProduto.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
       const matchesPromocao = filterPromocao === null || item.emPromocao === filterPromocao;
       const matchesNovidade = filterNovidade === null || item.isNovidade === filterNovidade;
       const matchesCategoria = filterCategoria === "todas" || categoria === filterCategoria;
@@ -244,8 +248,8 @@ const Estoque = () => {
       const codigoProduto = item.codigoProduto || '';
       const categoria = item.categoria || '';
 
-      const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = nomeProduto.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        codigoProduto.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
       const matchesNovidade = filterNovidade === null || item.isNovidade === filterNovidade;
       const matchesCategoria = filterCategoria === "todas" || categoria === filterCategoria;
       const matchesCor = filterCor === "todas" ||
@@ -272,8 +276,8 @@ const Estoque = () => {
       const codigoProduto = item.codigoProduto || '';
       const categoria = item.categoria || '';
 
-      const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = nomeProduto.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        codigoProduto.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
       const matchesPromocao = filterPromocao === null || item.emPromocao === filterPromocao;
       const matchesCategoria = filterCategoria === "todas" || categoria === filterCategoria;
       const matchesCor = filterCor === "todas" ||
@@ -299,8 +303,8 @@ const Estoque = () => {
     const categoria = item.categoria || '';
 
     // Filtro de texto
-    const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = nomeProduto.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      codigoProduto.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
 
     // Filtro de promoção
     const matchesPromocao = filterPromocao === null || item.emPromocao === filterPromocao;
@@ -543,8 +547,8 @@ const Estoque = () => {
       const codigoProduto = item.codigoProduto || '';
       const categoria = item.categoria || '';
 
-      const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = nomeProduto.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        codigoProduto.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
       const matchesPromocao = filterPromocao === null || item.emPromocao === filterPromocao;
       const matchesNovidade = filterNovidade === null || item.isNovidade === filterNovidade;
       const matchesCategoria = filterCategoria === "todas" || categoria === filterCategoria;
@@ -589,8 +593,8 @@ const Estoque = () => {
       const codigoProduto = item.codigoProduto || '';
       const categoria = item.categoria || '';
 
-      const matchesSearch = nomeProduto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        codigoProduto.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = nomeProduto.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        codigoProduto.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
       const matchesPromocao = filterPromocao === null || item.emPromocao === filterPromocao;
       const matchesNovidade = filterNovidade === null || item.isNovidade === filterNovidade;
       const matchesCategoria = filterCategoria === "todas" || categoria === filterCategoria;

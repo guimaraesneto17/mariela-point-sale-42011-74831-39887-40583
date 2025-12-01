@@ -20,11 +20,15 @@ class MemoryCache {
   private cache: Map<string, CacheEntry> = new Map();
   private hits: number = 0;
   private misses: number = 0;
+  private totalRequests: number = 0;
+  private compressedResponses: number = 0;
+  private bytesServedFromCache: number = 0;
 
   /**
    * Buscar item do cache
    */
   get(key: string): any | null {
+    this.totalRequests++;
     const entry = this.cache.get(key);
     
     if (!entry) {
@@ -41,6 +45,11 @@ class MemoryCache {
     }
 
     this.hits++;
+    
+    // Estimar bytes economizados (tamanho médio do JSON)
+    const estimatedSize = JSON.stringify(entry.data).length;
+    this.bytesServedFromCache += estimatedSize;
+    
     return entry.data;
   }
 
@@ -89,21 +98,49 @@ class MemoryCache {
     this.cache.clear();
     this.hits = 0;
     this.misses = 0;
+    this.totalRequests = 0;
+    this.compressedResponses = 0;
+    this.bytesServedFromCache = 0;
     console.log('🗑️ Cache: Todos os registros foram limpos');
+  }
+  
+  /**
+   * Registrar resposta comprimida
+   */
+  recordCompression(): void {
+    this.compressedResponses++;
   }
 
   /**
    * Obter estatísticas do cache
    */
-  getStats(): { size: number; hits: number; misses: number; hitRate: string } {
+  getStats(): { 
+    size: number; 
+    hits: number; 
+    misses: number; 
+    hitRate: string;
+    totalRequests: number;
+    compressedResponses: number;
+    compressionRate: string;
+    bytesServedFromCache: number;
+    requestsSavedByCache: number;
+  } {
     const total = this.hits + this.misses;
     const hitRate = total > 0 ? ((this.hits / total) * 100).toFixed(2) : '0.00';
+    const compressionRate = this.totalRequests > 0 
+      ? ((this.compressedResponses / this.totalRequests) * 100).toFixed(2) 
+      : '0.00';
     
     return {
       size: this.cache.size,
       hits: this.hits,
       misses: this.misses,
       hitRate: `${hitRate}%`,
+      totalRequests: this.totalRequests,
+      compressedResponses: this.compressedResponses,
+      compressionRate: `${compressionRate}%`,
+      bytesServedFromCache: this.bytesServedFromCache,
+      requestsSavedByCache: this.hits, // Cache hits = requests economizadas
     };
   }
 }
@@ -141,6 +178,12 @@ export function cacheMiddleware(ttl: number) {
     const cachedData = memoryCache.get(cacheKey);
     if (cachedData) {
       console.log(`✅ Cache HIT: ${cacheKey}`);
+      
+      // Registrar compressão se response tiver content-encoding
+      if (res.getHeader('content-encoding') === 'gzip') {
+        memoryCache.recordCompression();
+      }
+      
       return res.json(cachedData);
     }
 
@@ -152,6 +195,12 @@ export function cacheMiddleware(ttl: number) {
       // Armazenar no cache antes de enviar
       memoryCache.set(cacheKey, data, ttl);
       console.log(`💾 Cache STORED: ${cacheKey} (TTL: ${ttl / 1000}s)`);
+      
+      // Registrar compressão se response tiver content-encoding
+      if (res.getHeader('content-encoding') === 'gzip') {
+        memoryCache.recordCompression();
+      }
+      
       return originalJson(data);
     };
 
