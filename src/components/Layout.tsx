@@ -29,6 +29,7 @@ import { CaixaFechadoNotification } from "@/components/CaixaFechadoNotification"
 import { FinanceiroAlertasDialog } from "@/components/FinanceiroAlertasDialog";
 import { useContasPagar, useContasReceber } from "@/hooks/useQueryCache";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
+import { RoleIndicator } from "@/components/RoleIndicator";
 
 const Layout = () => {
   const navigate = useNavigate();
@@ -157,6 +158,9 @@ const Layout = () => {
             </div>
             <h1 className="text-white text-xl font-bold">Mariela PDV</h1>
             <p className="text-white/90 text-sm">Moda Feminina</p>
+            <div className="mt-3 flex justify-center">
+              <RoleIndicator />
+            </div>
           </div>
         )}
 
@@ -198,6 +202,11 @@ const Layout = () => {
 
         {/* Copyright e Logout */}
         <div className="p-4 border-t border-white/20 space-y-2">
+          {isMobile && (
+            <div className="mb-2 flex justify-center">
+              <RoleIndicator />
+            </div>
+          )}
           {!isMobile && (
             <div className="flex items-center justify-between mb-2">
               <p className="text-white/70 text-xs">© 2025 Mariela Moda Feminina</p>

@@ -31,6 +31,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Confiar em proxies (necessário para Render.com e outros serviços de hospedagem)
+app.set('trust proxy', true);
+
 // Middlewares
 // Lista de origens permitidas
 const allowedOrigins = [
