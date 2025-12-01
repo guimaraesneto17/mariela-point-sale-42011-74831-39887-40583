@@ -21,9 +21,19 @@ async function createAdminUser() {
     const existingUser = await User.findOne({ email: ADMIN_EMAIL });
     if (existingUser) {
       console.log('⚠️  Usuário admin já existe no banco de dados!');
+      
+      // Verificar se está desativado e ativar
+      if (!existingUser.ativo) {
+        console.log('🔄 Usuário estava desativado. Ativando...');
+        existingUser.ativo = true;
+        await existingUser.save();
+        console.log('✅ Usuário admin foi ativado!');
+      }
+      
       console.log(`📧 Email: ${existingUser.email}`);
       console.log(`👤 Nome: ${existingUser.nome}`);
       console.log(`🎭 Role: ${existingUser.role}`);
+      console.log(`✓ Ativo: ${existingUser.ativo}`);
       process.exit(0);
     }
 

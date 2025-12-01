@@ -1,5 +1,6 @@
 import express from 'express';
 import * as produtoController from '../controllers/produtoController';
+import { requirePermission } from '../middleware/permissions';
 
 const router = express.Router();
 
@@ -15,7 +16,7 @@ const router = express.Router();
  *       500:
  *         description: Erro ao buscar produtos
  */
-router.get('/', produtoController.getAllProdutos);
+router.get('/', requirePermission('produtos', 'view'), produtoController.getAllProdutos);
 
 /**
  * @swagger
@@ -55,7 +56,7 @@ router.get('/', produtoController.getAllProdutos);
  *       500:
  *         description: Erro ao buscar novidades
  */
-router.get('/novidades', produtoController.getNovidades);
+router.get('/novidades', requirePermission('produtos', 'view'), produtoController.getNovidades);
 
 /**
  * @swagger
@@ -77,7 +78,7 @@ router.get('/novidades', produtoController.getNovidades);
  *       404:
  *         description: Produto não encontrado
  */
-router.get('/:codigo', produtoController.getProdutoByCodigo);
+router.get('/:codigo', requirePermission('produtos', 'view'), produtoController.getProdutoByCodigo);
 
 /**
  * @swagger
@@ -169,7 +170,7 @@ router.get('/:codigo', produtoController.getProdutoByCodigo);
  *                         type: string
  *                         example: "P1"
  */
-router.post('/', produtoController.createProduto);
+router.post('/', requirePermission('produtos', 'create'), produtoController.createProduto);
 
 /**
  * @swagger
@@ -220,7 +221,7 @@ router.post('/', produtoController.createProduto);
  *                       value:
  *                         type: string
  */
-router.put('/:codigo', produtoController.updateProduto);
+router.put('/:codigo', requirePermission('produtos', 'edit'), produtoController.updateProduto);
 
 /**
  * @swagger
@@ -243,6 +244,6 @@ router.put('/:codigo', produtoController.updateProduto);
  *       500:
  *         description: Erro ao remover produto
  */
-router.delete('/:codigo', produtoController.deleteProduto);
+router.delete('/:codigo', requirePermission('produtos', 'delete'), produtoController.deleteProduto);
 
 export default router;

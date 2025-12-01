@@ -1,5 +1,6 @@
 import express from 'express';
 import * as vendaController from '../controllers/vendaController';
+import { requirePermission } from '../middleware/permissions';
 
 const router = express.Router();
 
@@ -15,7 +16,7 @@ const router = express.Router();
  *       500:
  *         description: Erro ao buscar vendas
  */
-router.get('/', vendaController.getAllVendas);
+router.get('/', requirePermission('vendas', 'view'), vendaController.getAllVendas);
 
 /**
  * @swagger
@@ -37,7 +38,7 @@ router.get('/', vendaController.getAllVendas);
  *       404:
  *         description: Venda não encontrada
  */
-router.get('/:codigo', vendaController.getVendaByCodigo);
+router.get('/:codigo', requirePermission('vendas', 'view'), vendaController.getVendaByCodigo);
 
 /**
  * @swagger
@@ -157,7 +158,7 @@ router.get('/:codigo', vendaController.getVendaByCodigo);
  *                         type: string
  *                         example: ""
  */
-router.post('/', vendaController.createVenda);
+router.post('/', requirePermission('vendas', 'create'), vendaController.createVenda);
 
 /**
  * @swagger
@@ -208,7 +209,7 @@ router.post('/', vendaController.createVenda);
  *                       value:
  *                         type: string
  */
-router.put('/:codigo', vendaController.updateVenda);
+router.put('/:codigo', requirePermission('vendas', 'edit'), vendaController.updateVenda);
 
 /**
  * @swagger
@@ -231,6 +232,6 @@ router.put('/:codigo', vendaController.updateVenda);
  *       500:
  *         description: Erro ao remover venda
  */
-router.delete('/:codigo', vendaController.deleteVenda);
+router.delete('/:codigo', requirePermission('vendas', 'delete'), vendaController.deleteVenda);
 
 export default router;
