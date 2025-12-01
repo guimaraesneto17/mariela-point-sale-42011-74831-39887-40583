@@ -124,10 +124,12 @@ const Produtos = () => {
 
   const loadEstoque = async () => {
     try {
-      const data = await estoqueAPI.getAll();
-      setEstoque(data);
+      const response = await estoqueAPI.getAll();
+      const estoqueData = response.data || response;
+      setEstoque(Array.isArray(estoqueData) ? estoqueData : []);
     } catch (error) {
       console.error("Erro ao carregar estoque", error);
+      setEstoque([]);
     }
   };
 
