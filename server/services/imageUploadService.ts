@@ -4,8 +4,12 @@ import { addWatermark } from '../lib/pdfWatermark';
 
 // Configuração do Supabase
 const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const supabaseKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_PUBLISHABLE_KEY ||
+  process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  '';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 interface UploadResult {
   urls: {
