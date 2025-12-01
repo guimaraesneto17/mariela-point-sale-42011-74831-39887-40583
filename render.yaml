@@ -13,11 +13,7 @@ services:
         value: "false"
       - key: MONGODB_URI
         sync: false
-      - key: SUPABASE_URL
-        value: https://wlibyugthnikmrurmwub.supabase.co
-      - key: SUPABASE_PUBLISHABLE_KEY
-        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndsaWJ5dWd0aG5pa21ydXJtd3ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE5ODA4NDMsImV4cCI6MjA3NzU1Njg0M30.Sm7K1tx73GkxokERY6bdvx5R6aNB2UEwfZbgh38NX5Q
-      - key: SUPABASE_SERVICE_ROLE_KEY
+      - key: BLOB_READ_WRITE_TOKEN
         sync: false
       - key: JWT_SECRET
         sync: false

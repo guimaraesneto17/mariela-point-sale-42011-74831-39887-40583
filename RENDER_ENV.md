@@ -1,142 +1,149 @@
-# 🔐 Variáveis de Ambiente para Render.com
+# 🔐 Configuração de Variáveis de Ambiente no Render.com
 
-Este documento lista **todas as variáveis de ambiente** que devem ser configuradas no painel do Render.com para deploy seguro do backend.
+## ⚠️ IMPORTANTE - Segurança
 
-## 📋 Como Configurar no Render.com
-
-1. Acesse seu serviço no dashboard do Render.com
-2. Vá em **Environment** → **Environment Variables**
-3. Adicione cada variável abaixo clicando em **Add Environment Variable**
+**NUNCA** commite credenciais ou secrets no código! Este arquivo documenta quais variáveis devem ser configuradas no Render.com.
 
 ---
 
-## 🚨 Variáveis Críticas (OBRIGATÓRIAS)
+## 📋 Variáveis Obrigatórias
 
-### MongoDB Database
-```
-MONGODB_URI
-```
-**Valor:** Sua connection string do MongoDB Atlas
-**Formato:** `mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority`
-**Onde obter:** MongoDB Atlas → Database → Connect → Connect your application
+Configure todas estas variáveis no **Render Dashboard** → Seu Serviço → **Environment**:
 
-⚠️ **IMPORTANTE:** 
-- Gere uma nova senha no MongoDB Atlas (não use a antiga que vazou)
-- Configure IP Allowlist para "0.0.0.0/0" (Allow from anywhere) no MongoDB Atlas
+### 1. MongoDB Database
+```
+MONGODB_URI=mongodb+srv://usuario:senha@cluster.mongodb.net/database
+```
+- **Obtenha em:** [MongoDB Atlas](https://cloud.mongodb.com)
+- **Como obter:**
+  1. Acesse seu cluster no MongoDB Atlas
+  2. Clique em "Connect" → "Connect your application"
+  3. Copie a string de conexão
+  4. Substitua `<password>` pela sua senha real
+  
+⚠️ **AÇÃO IMEDIATA**: Se você já commitou a MONGODB_URI com credenciais:
+1. Acesse MongoDB Atlas
+2. Mude a senha do usuário do banco
+3. Atualize a MONGODB_URI no Render com a nova senha
+4. **Nunca** commite a nova senha no código
 
 ---
 
-### JWT Secrets (Autenticação)
+### 2. JWT Authentication Secrets
+
+#### JWT_SECRET
 ```
-JWT_SECRET
+JWT_SECRET=gere-um-valor-aleatorio-forte-de-32-caracteres
 ```
-**Valor:** String aleatória criptograficamente forte (mínimo 32 caracteres)
-**Como gerar:** 
+
+#### REFRESH_TOKEN_SECRET
+```
+REFRESH_TOKEN_SECRET=gere-outro-valor-aleatorio-forte-de-32-caracteres
+```
+
+**Como gerar valores seguros:**
+
 ```bash
+# No terminal Linux/Mac/WSL:
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
-**Exemplo:** `a7f8d9e2b4c6a1f3e5d8c2b9a4f7e1d3c8b5a2f9e6d3c1b8a5f2e9d6c3b1a8`
 
+# Ou use um gerador online confiável:
+# https://www.grc.com/passwords.htm
 ```
-REFRESH_TOKEN_SECRET
-```
-**Valor:** String aleatória criptograficamente forte (mínimo 32 caracteres) **DIFERENTE** da JWT_SECRET
-**Como gerar:** (mesmo comando acima)
 
-⚠️ **IMPORTANTE:** Nunca use os valores de fallback que estavam no código!
+⚠️ **CRÍTICO:**
+- Use valores **diferentes** para JWT_SECRET e REFRESH_TOKEN_SECRET
+- **NUNCA** use os valores de fallback que estavam no código
+- Mínimo de 32 caracteres aleatórios
+- Se não configurados, o servidor **NÃO INICIARÁ** (fail-fast implementado)
 
 ---
 
-### Supabase (Storage de Imagens)
-```
-SUPABASE_URL
-```
-**Valor:** `https://wlibyugthnikmrurmwub.supabase.co`
-**Onde obter:** Já está configurado no Lovable Cloud
+### 3. Vercel Blob Storage (Obrigatório)
 
 ```
-SUPABASE_PUBLISHABLE_KEY
+BLOB_READ_WRITE_TOKEN=vercel_blob_rw_...
 ```
-**Valor:** `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndsaWJ5dWd0aG5pa21ydXJtd3ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE5ODA4NDMsImV4cCI6MjA3NzU1Njg0M30.Sm7K1tx73GkxokERY6bdvx5R6aNB2UEwfZbgh38NX5Q`
-**Onde obter:** Já está configurado no Lovable Cloud
 
-```
-SUPABASE_SERVICE_ROLE_KEY
-```
-**Valor:** Obtém da interface do Lovable Cloud
-**Onde obter:** 
-1. Abra seu projeto no Lovable
-2. Clique no botão **Cloud** (canto superior direito)
-3. Vá em **Settings** → **API**
-4. Copie o valor de **Service Role Key** (eyJ...)
-
-⚠️ **CRÍTICO:** Esta chave dá acesso administrativo completo ao storage. NUNCA exponha no frontend!
+- **Obtenha em:** [Vercel Dashboard](https://vercel.com/dashboard) → Storage → Blob
+- **Como obter:**
+  1. Acesse Vercel Dashboard
+  2. Vá em Storage → Blob
+  3. Crie um novo blob store ou use existente
+  4. Copie o token `Read-Write` (não o Read-Only)
+  
+⚠️ Este token já foi configurado no Render com o valor: `vercel_blob_rw_cWSCTJJITcsR5aiV_t5PXTLCVKrZIoDUpTvg4AMJ2yr6xFH`
 
 ---
 
-## 📦 Variáveis de Configuração
+### 4. Configuração do Servidor
 
 ```
-NODE_ENV
+NODE_ENV=production
+PORT=3001
 ```
-**Valor:** `production`
-**Descrição:** Define o ambiente de execução
 
-```
-PORT
-```
-**Valor:** `3001`
-**Descrição:** Porta do servidor (Render usa a variável PORT automaticamente)
-
-```
-NPM_CONFIG_PRODUCTION
-```
-**Valor:** `false`
-**Descrição:** Permite instalação de devDependencies necessárias para build
+Estas geralmente já estão configuradas automaticamente pelo Render.
 
 ---
 
-## ✅ Checklist de Configuração
+## 🔍 Verificação das Variáveis
 
-Antes de fazer deploy, verifique:
+Após configurar no Render, verifique se todas estão presentes:
 
-- [ ] MongoDB password foi **rotacionado** no Atlas
-- [ ] `MONGODB_URI` configurado no Render com nova senha
-- [ ] `JWT_SECRET` gerado com valor aleatório forte
-- [ ] `REFRESH_TOKEN_SECRET` gerado com valor aleatório forte (diferente do JWT_SECRET)
-- [ ] `SUPABASE_SERVICE_ROLE_KEY` obtido do Lovable Cloud e configurado
-- [ ] `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` configurados
-- [ ] `NODE_ENV` = `production`
-- [ ] MongoDB Atlas configurado para aceitar conexões de qualquer IP (0.0.0.0/0)
-- [ ] Arquivo `.env` **NÃO** contém credenciais sensíveis
-
----
-
-## 🔍 Como Verificar se Está Tudo Configurado
-
-Após configurar, acesse:
-```
-https://seu-app.onrender.com/api/health
-```
-
-Deve retornar:
-```json
-{
-  "status": "ok",
-  "mongodb": "connected",
-  "supabase": "connected"
-}
-```
-
-Se aparecer erro:
-- **MongoDB error:** Verifique MONGODB_URI e IP allowlist no Atlas
-- **Supabase error:** Verifique SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY
-- **Authentication error:** Verifique JWT_SECRET e REFRESH_TOKEN_SECRET
+1. Acesse o Render Dashboard
+2. Vá no seu serviço `mariela-pdv-backend`
+3. Clique em **Environment**
+4. Confirme que TODAS as variáveis listadas acima estão configuradas:
+   - ✅ MONGODB_URI
+   - ✅ JWT_SECRET
+   - ✅ REFRESH_TOKEN_SECRET
+   - ✅ BLOB_READ_WRITE_TOKEN
+   - ✅ NODE_ENV
+   - ✅ PORT (opcional, Render configura automaticamente)
 
 ---
 
-## 📚 Documentação Adicional
+## ✅ Checklist de Segurança
 
-- [MongoDB Atlas - IP Allowlist](https://docs.atlas.mongodb.com/security/ip-access-list/)
-- [Render - Environment Variables](https://render.com/docs/environment-variables)
-- [Lovable Cloud - API Keys](https://docs.lovable.dev/features/cloud)
+- [ ] MongoDB URI atualizada sem credenciais commitadas
+- [ ] JWT_SECRET configurado (mínimo 32 caracteres aleatórios)
+- [ ] REFRESH_TOKEN_SECRET configurado (diferente do JWT_SECRET)
+- [ ] BLOB_READ_WRITE_TOKEN configurado
+- [ ] Arquivo `.env` local **NÃO contém** credenciais reais
+- [ ] `.env` está no `.gitignore`
+- [ ] Todas as senhas foram rotacionadas se foram expostas
+
+---
+
+## 📝 Observações Importantes
+
+1. **Frontend (Lovable)**: As variáveis `VITE_*` são configuradas automaticamente pelo Lovable Cloud
+2. **Backend (Render)**: Configure apenas as variáveis listadas acima
+3. **Logs**: Verifique os logs do Render após deploy para confirmar que não há erros de variáveis faltantes
+4. **Fail-Fast**: O servidor agora falha imediatamente se JWT secrets ou BLOB_READ_WRITE_TOKEN não estiverem configurados
+
+---
+
+## 🆘 Troubleshooting
+
+### Erro: "JWT_SECRET não configurado"
+→ Configure JWT_SECRET no Render Environment
+
+### Erro: "BLOB_READ_WRITE_TOKEN não configurado"
+→ Configure BLOB_READ_WRITE_TOKEN no Render Environment com o token do Vercel Blob
+
+### Erro: "Falha ao conectar ao MongoDB"
+→ Verifique se MONGODB_URI está correta e se o IP do Render está na whitelist do MongoDB Atlas
+
+### Servidor não inicia após deploy
+→ Verifique os logs do Render para identificar qual variável está faltando
+
+---
+
+## 🔗 Links Úteis
+
+- [Render Environment Variables](https://render.com/docs/environment-variables)
+- [MongoDB Atlas IP Whitelist](https://www.mongodb.com/docs/atlas/security/ip-access-list/)
+- [Vercel Blob Documentation](https://vercel.com/docs/storage/vercel-blob)
+- [JWT Best Practices](https://tools.ietf.org/html/rfc8725)
