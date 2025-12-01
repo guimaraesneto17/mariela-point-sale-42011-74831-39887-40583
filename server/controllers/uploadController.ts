@@ -16,9 +16,7 @@ export const uploadSingleImage = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      url: result.url,
-      size: result.size,
-      contentType: result.contentType,
+      ...result,
     });
   } catch (error: any) {
     console.error('Erro ao fazer upload de imagem:', error);
@@ -40,12 +38,12 @@ export const uploadMultipleImagesEndpoint = async (req: Request, res: Response) 
       return res.status(400).json({ error: 'Nenhuma imagem fornecida' });
     }
 
-    const urls = await uploadMultipleImages(images);
+    const results = await uploadMultipleImages(images);
 
     res.json({
       success: true,
-      urls,
-      count: urls.length,
+      results,
+      count: results.length,
     });
   } catch (error: any) {
     console.error('Erro ao fazer upload de imagens:', error);

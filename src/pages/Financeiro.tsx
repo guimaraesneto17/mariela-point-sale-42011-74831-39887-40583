@@ -15,6 +15,7 @@ import { ptBR } from "date-fns/locale";
 import { ContaPagarDialog } from "@/components/ContaPagarDialog";
 import { ContaReceberDialog } from "@/components/ContaReceberDialog";
 import { FinanceNotifications } from "@/components/FinanceNotifications";
+import { StorageNotifications } from "@/components/StorageNotifications";
 import { RegistrarPagamentoDialog } from "@/components/RegistrarPagamentoDialog";
 import { DetalhesParcelamentoDialog } from "@/components/DetalhesParcelamentoDialog";
 import { DashboardParcelamentos } from "@/components/DashboardParcelamentos";
@@ -172,6 +173,9 @@ const Financeiro = () => {
 
       {/* Notificações de Vencimento */}
       <FinanceNotifications />
+      
+      {/* Notificações de Armazenamento (apenas para admins) */}
+      <StorageNotifications />
 
       {/* Cards de Resumo */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
