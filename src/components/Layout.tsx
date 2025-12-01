@@ -15,7 +15,8 @@ import {
   TrendingUp,
   Menu,
   X,
-  UserCog
+  UserCog,
+  Shield
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -104,7 +105,10 @@ const Layout = () => {
     { to: "/vendas", icon: ShoppingCart, label: "Vendas" },
     { to: "/caixa", icon: Wallet, label: "Caixa" },
     { to: "/financeiro", icon: TrendingUp, label: "Financeiro" },
-    ...(isAdmin ? [{ to: "/usuarios", icon: UserCog, label: "Usuários" }] : []),
+    ...(isAdmin ? [
+      { to: "/usuarios", icon: UserCog, label: "Usuários" },
+      { to: "/permissoes", icon: Shield, label: "Permissões" }
+    ] : []),
   ];
 
   return (
