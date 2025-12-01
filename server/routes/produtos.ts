@@ -9,12 +9,47 @@ const router = express.Router();
  * @swagger
  * /api/produtos:
  *   get:
- *     summary: Lista todos os produtos (cached por 5 minutos)
- *     description: Utiliza cache em memória para melhorar performance em consultas frequentes
+ *     summary: Lista todos os produtos com paginação (cached por 5 minutos)
+ *     description: |
+ *       Retorna lista paginada de produtos cadastrados.
+ *       Utiliza cache de 5 minutos para melhorar performance.
  *     tags: [Produtos]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Número da página (começa em 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *         description: Quantidade de itens por página
  *     responses:
  *       200:
  *         description: Lista de produtos retornada com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     pages:
+ *                       type: integer
  *       500:
  *         description: Erro ao buscar produtos
  */

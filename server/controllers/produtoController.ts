@@ -35,16 +35,34 @@ const formatValidationError = (error: any) => {
 
 export const getAllProdutos = async (req: Request, res: Response) => {
   try {
+    // Paginação
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 50;
+    const skip = (page - 1) * limit;
+
     // Otimização: usar lean() para retornar objetos JS puros (mais rápido que documentos Mongoose)
     // Projeção: excluir campos pesados desnecessários do histórico de preços
-    const produtos = await Produto
-      .find()
-      .select('-historicoPrecosn') // Excluir histórico completo (campo pesado)
-      .sort({ dataCadastro: -1 })
-      .lean()
-      .exec();
+    const [produtos, total] = await Promise.all([
+      Produto
+        .find()
+        .select('-historicoPrecosn') // Excluir histórico completo (campo pesado)
+        .sort({ dataCadastro: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec(),
+      Produto.countDocuments()
+    ]);
     
-    res.json(produtos);
+    res.json({
+      data: produtos,
+      pagination: {
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     console.error('Erro ao buscar produtos:', error);
     res.status(500).json({ error: 'Erro ao buscar produtos' });
