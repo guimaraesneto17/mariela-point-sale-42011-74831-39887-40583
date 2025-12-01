@@ -16,6 +16,6 @@ services:
       - key: BLOB_READ_WRITE_TOKEN
         sync: false
       - key: JWT_SECRET
-        sync: false
+        generateValue: true
       - key: REFRESH_TOKEN_SECRET
-        sync: false
+        generateValue: true
