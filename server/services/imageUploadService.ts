@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import sharp from 'sharp';
+import { addWatermark } from '../lib/pdfWatermark';
 
 // Configuração do Supabase
 const supabaseUrl = process.env.SUPABASE_URL || '';
@@ -160,13 +161,22 @@ export async function uploadImageToBlob(
     const originalBuffer = Buffer.from(base64Data, 'base64');
     const originalSize = originalBuffer.length;
     
+    // Aplicar watermark no buffer original
+    const watermarkedBuffer = await addWatermark(originalBuffer, {
+      enabled: true,
+      opacity: 0.3,
+      position: 'bottom-right',
+      scale: 0.15,
+      margin: 20
+    });
+    
     // Gerar nome base único
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substring(7);
     const baseFilename = filename?.replace(/\.[^/.]+$/, '') || `produto-${timestamp}-${randomStr}`;
     
-    // Comprimir em múltiplas versões
-    const versions = await compressImageMultipleVersions(originalBuffer, baseFilename);
+    // Comprimir em múltiplas versões (usando o buffer com watermark)
+    const versions = await compressImageMultipleVersions(watermarkedBuffer, baseFilename);
 
     // Upload de todas as versões
     const uploadResults: { [key: string]: { url: string; size: number } } = {};

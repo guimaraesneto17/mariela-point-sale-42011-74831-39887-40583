@@ -8,6 +8,7 @@ import { ArrowLeft, CheckCircle2, XCircle, Clock, RefreshCw, Database, Server, A
 import StorageCleanup from '@/components/StorageCleanup';
 import { StorageAnalyticsDashboard } from "@/components/StorageAnalyticsDashboard";
 import { ImageSEOAnalyzer } from "@/components/ImageSEOAnalyzer";
+import WatermarkSettings from "@/components/WatermarkSettings";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { connectionLogger, ConnectionEvent, LatencyDataPoint } from '@/lib/connectionLogger';
 import { format } from 'date-fns';
@@ -485,6 +486,9 @@ export default function BackendStatus() {
 
       {/* Análise de SEO de Imagens */}
       <ImageSEOAnalyzer />
+
+      {/* Configurações de Watermark */}
+      <WatermarkSettings />
 
       {/* Gerenciamento de Storage */}
       <StorageCleanup />
