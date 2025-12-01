@@ -86,12 +86,20 @@ async function fetchAPI(endpoint: string, options?: RequestInit, retryCount = 0)
   const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
 
   try {
+    // Adicionar token de autenticação se disponível
+    const token = localStorage.getItem('mariela_access_token');
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
+      headers,
       signal: controller.signal,
     });
 
