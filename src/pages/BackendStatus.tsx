@@ -9,6 +9,7 @@ import StorageCleanup from '@/components/StorageCleanup';
 import { StorageAnalyticsDashboard } from "@/components/StorageAnalyticsDashboard";
 import { ImageSEOAnalyzer } from "@/components/ImageSEOAnalyzer";
 import WatermarkSettings from "@/components/WatermarkSettings";
+import CleanupScheduler from "@/components/CleanupScheduler";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { connectionLogger, ConnectionEvent, LatencyDataPoint } from '@/lib/connectionLogger';
 import { format } from 'date-fns';
@@ -489,6 +490,9 @@ export default function BackendStatus() {
 
       {/* Configurações de Watermark */}
       <WatermarkSettings />
+
+      {/* Agendamento de Limpeza Automática */}
+      <CleanupScheduler />
 
       {/* Gerenciamento de Storage */}
       <StorageCleanup />
