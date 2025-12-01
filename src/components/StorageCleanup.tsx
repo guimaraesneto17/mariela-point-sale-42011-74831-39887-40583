@@ -222,12 +222,25 @@ export default function StorageCleanup() {
                         tick={{ fill: 'hsl(var(--muted-foreground))' }}
                       />
                       <YAxis 
+                        yAxisId="left"
                         className="text-xs"
                         tick={{ fill: 'hsl(var(--muted-foreground))' }}
                         label={{ 
                           value: 'MB', 
                           angle: -90, 
                           position: 'insideLeft',
+                          style: { fill: 'hsl(var(--muted-foreground))' }
+                        }}
+                      />
+                      <YAxis 
+                        yAxisId="right"
+                        orientation="right"
+                        className="text-xs"
+                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                        label={{ 
+                          value: 'Imagens', 
+                          angle: 90, 
+                          position: 'insideRight',
                           style: { fill: 'hsl(var(--muted-foreground))' }
                         }}
                       />
@@ -241,6 +254,7 @@ export default function StorageCleanup() {
                         labelStyle={{ color: 'hsl(var(--foreground))' }}
                       />
                       <Line 
+                        yAxisId="left"
                         type="monotone" 
                         dataKey="totalSizeMB" 
                         stroke="hsl(var(--primary))" 
