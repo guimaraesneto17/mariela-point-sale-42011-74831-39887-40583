@@ -14,6 +14,96 @@ export type Database = {
   }
   public: {
     Tables: {
+      cleanup_cron_config: {
+        Row: {
+          auto_delete: boolean
+          enabled: boolean
+          id: string
+          last_execution: string | null
+          next_execution: string | null
+          notification_email: string | null
+          notifications_enabled: boolean
+          schedule: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          auto_delete?: boolean
+          enabled?: boolean
+          id?: string
+          last_execution?: string | null
+          next_execution?: string | null
+          notification_email?: string | null
+          notifications_enabled?: boolean
+          schedule?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          auto_delete?: boolean
+          enabled?: boolean
+          id?: string
+          last_execution?: string | null
+          next_execution?: string | null
+          notification_email?: string | null
+          notifications_enabled?: boolean
+          schedule?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      image_cleanup_history: {
+        Row: {
+          created_at: string
+          deleted_images: Json | null
+          error_message: string | null
+          execution_date: string
+          execution_time_ms: number | null
+          failed_images: Json | null
+          id: string
+          images_deleted: number
+          images_failed: number
+          orphan_images_found: number
+          status: string
+          storage_freed_bytes: number | null
+          total_images_checked: number
+          triggered_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          deleted_images?: Json | null
+          error_message?: string | null
+          execution_date?: string
+          execution_time_ms?: number | null
+          failed_images?: Json | null
+          id?: string
+          images_deleted?: number
+          images_failed?: number
+          orphan_images_found?: number
+          status: string
+          storage_freed_bytes?: number | null
+          total_images_checked?: number
+          triggered_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          deleted_images?: Json | null
+          error_message?: string | null
+          execution_date?: string
+          execution_time_ms?: number | null
+          failed_images?: Json | null
+          id?: string
+          images_deleted?: number
+          images_failed?: number
+          orphan_images_found?: number
+          status?: string
+          storage_freed_bytes?: number | null
+          total_images_checked?: number
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           ativo: boolean
