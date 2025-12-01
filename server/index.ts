@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import swaggerUi from 'swagger-ui-express';
 import connectDatabase from './config/database';
+import { initializeRedis } from './config/redis';
 import swaggerSpec from './config/swagger';
 import { authenticateToken } from './middleware/auth';
 
@@ -27,7 +28,7 @@ import uploadRouter from './routes/upload';
 import permissionsRouter from './routes/permissions';
 import cleanupRouter from './routes/cleanup';
 import searchRouter from './routes/search';
-import { getCacheStats, clearCache } from './middleware/cache';
+import cacheRouter from './routes/cache';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -156,10 +157,7 @@ app.use('/api/categorias-financeiras', authenticateToken, categoriasFinanceirasR
 app.use('/api/permissions', authenticateToken, permissionsRouter);
 app.use('/api/cleanup', authenticateToken, cleanupRouter);
 app.use('/api/search', authenticateToken, searchRouter);
-
-// Rotas de monitoramento de cache (protegidas)
-app.get('/api/cache/stats', authenticateToken, getCacheStats);
-app.post('/api/cache/clear', authenticateToken, clearCache);
+app.use('/api/cache', authenticateToken, cacheRouter);
 
 // Rota 404
 app.use(/.*/, (req, res) => {
@@ -177,6 +175,9 @@ async function startServer() {
   try {
     // Conectar ao banco de dados
     await connectDatabase();
+    
+    // Inicializar Redis (opcional)
+    await initializeRedis();
     
     // Iniciar servidor
     app.listen(PORT, () => {
@@ -198,6 +199,7 @@ async function startServer() {
 ║  • /api/fornecedores                              ║
 ║  • /api/vendedores                                ║
 ║  • /api/vitrine                                   ║
+║  • /api/cache (gerenciamento)                     ║
 ║                                                   ║
 ║  Health Check: http://localhost:${PORT}/health     ║
 ║                                                   ║

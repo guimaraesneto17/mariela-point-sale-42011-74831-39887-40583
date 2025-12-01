@@ -14,6 +14,9 @@ import CleanupScheduler from "@/components/CleanupScheduler";
 import EnvironmentVariablesAlert from "@/components/EnvironmentVariablesAlert";
 import { CachePerformanceMetrics } from "@/components/CachePerformanceMetrics";
 import { PerformanceDashboard } from "@/components/PerformanceDashboard";
+import { CacheConfigPanel } from "@/components/CacheConfigPanel";
+import { CacheWarming } from "@/components/CacheWarming";
+import { CacheNotifications } from "@/components/CacheNotifications";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { connectionLogger, ConnectionEvent, LatencyDataPoint } from '@/lib/connectionLogger';
 import { format } from 'date-fns';
@@ -253,6 +256,9 @@ export default function BackendStatus() {
 
   return (
     <div className="container mx-auto p-6 max-w-5xl space-y-6">
+      {/* Cache real-time notifications */}
+      <CacheNotifications />
+      
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
@@ -457,7 +463,13 @@ export default function BackendStatus() {
       {/* Performance Dashboard */}
       <PerformanceDashboard />
 
-      {/* Cache Performance Metrics */}
+      {/* Cache Configuration Panel */}
+      <CacheConfigPanel />
+
+      {/* Cache Warming */}
+      <CacheWarming />
+
+      {/* Cache Performance Metrics (Legacy) */}
       <CachePerformanceMetrics />
 
       {/* Gráfico de Latência */}
