@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, CheckCircle2, XCircle, Clock, RefreshCw, Database, Server, AlertCircle, Activity, History, Trash2 } from 'lucide-react';
 import StorageCleanup from '@/components/StorageCleanup';
+import { StorageAnalyticsDashboard } from "@/components/StorageAnalyticsDashboard";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { connectionLogger, ConnectionEvent, LatencyDataPoint } from '@/lib/connectionLogger';
 import { format } from 'date-fns';
@@ -477,6 +478,9 @@ export default function BackendStatus() {
           </CardContent>
         </Card>
       )}
+
+      {/* Analytics de Storage */}
+      <StorageAnalyticsDashboard />
 
       {/* Gerenciamento de Storage */}
       <StorageCleanup />
