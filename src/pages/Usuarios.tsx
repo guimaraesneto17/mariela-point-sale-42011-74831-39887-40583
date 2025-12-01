@@ -69,7 +69,9 @@ const Usuarios = () => {
 
   // ========== FILTROS E BUSCA ==========
   const filteredUsers = useMemo(() => {
-    return users.filter(user => {
+    const list = Array.isArray(users) ? users : [];
+
+    return list.filter(user => {
       // Filtro de busca (nome ou email)
       const matchesSearch = searchTerm === '' || 
         user.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -268,9 +270,9 @@ const Usuarios = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><UserCog className="h-5 w-5" /> Usuários Cadastrados</CardTitle>
           <CardDescription>
-            {filteredUsers.length === users.length 
-              ? `Total de ${users.length} usuário(s) no sistema`
-              : `Mostrando ${filteredUsers.length} de ${users.length} usuário(s)`
+            {filteredUsers.length === (Array.isArray(users) ? users.length : filteredUsers.length)
+              ? `Total de ${filteredUsers.length} usuário(s) no sistema`
+              : `Mostrando ${filteredUsers.length} de ${(Array.isArray(users) ? users.length : filteredUsers.length)} usuário(s)`
             }
           </CardDescription>
         </CardHeader>
