@@ -19,7 +19,7 @@ import { PermissionsManager } from "@/components/PermissionsManager";
 type UserRole = 'admin' | 'gerente' | 'vendedor';
 
 interface User {
-  _id: string;
+  id: string;
   email: string;
   nome: string;
   role: UserRole;
@@ -62,8 +62,8 @@ const Usuarios = () => {
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ['users'],
     queryFn: async () => {
-      const response = await axiosInstance.get<User[]>('/auth/users');
-      return response.data;
+      const response = await axiosInstance.get<{ success: boolean; count: number; users: User[] }>('/auth/users');
+      return response.data.users;
     }
   });
 
@@ -301,13 +301,13 @@ const Usuarios = () => {
                   </TableRow>
                 ) : (
                   filteredUsers.map((user) => (
-                    <TableRow key={user._id}>
+                    <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.nome}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
-                        {editingRole === user._id ? (
+                        {editingRole === user.id ? (
                           <div className="flex gap-2">
-                            <Select defaultValue={user.role} onValueChange={(value: UserRole) => updateRoleMutation.mutate({ userId: user._id, role: value, codigoVendedor: user.codigoVendedor })}>
+                            <Select defaultValue={user.role} onValueChange={(value: UserRole) => updateRoleMutation.mutate({ userId: user.id, role: value, codigoVendedor: user.codigoVendedor })}>
                               <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="vendedor">Vendedor</SelectItem>
@@ -318,7 +318,7 @@ const Usuarios = () => {
                             <Button variant="ghost" size="sm" onClick={() => setEditingRole(null)}>Cancelar</Button>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-2">{getRoleBadge(user.role)} <Button variant="ghost" size="sm" onClick={() => setEditingRole(user._id)}>Editar</Button></div>
+                          <div className="flex items-center gap-2">{getRoleBadge(user.role)} <Button variant="ghost" size="sm" onClick={() => setEditingRole(user.id)}>Editar</Button></div>
                         )}
                       </TableCell>
                       <TableCell>{user.codigoVendedor || '-'}</TableCell>
@@ -328,7 +328,7 @@ const Usuarios = () => {
                         <Button 
                           variant={user.ativo ? "destructive" : "default"} 
                           size="sm" 
-                          onClick={() => toggleStatusMutation.mutate(user._id)} 
+                          onClick={() => toggleStatusMutation.mutate(user.id)} 
                           disabled={toggleStatusMutation.isPending}
                         >
                           {user.ativo ? 'Desativar' : 'Ativar'}
