@@ -2,6 +2,7 @@ import express, { Router } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
+import compression from 'compression';
 import swaggerUi from 'swagger-ui-express';
 import connectDatabase from './config/database';
 import swaggerSpec from './config/swagger';
@@ -25,6 +26,7 @@ import authRouter from './routes/auth';
 import uploadRouter from './routes/upload';
 import permissionsRouter from './routes/permissions';
 import cleanupRouter from './routes/cleanup';
+import searchRouter from './routes/search';
 import { getCacheStats, clearCache } from './middleware/cache';
 
 // Carregar variáveis de ambiente
@@ -85,6 +87,19 @@ app.use(cors({
   exposedHeaders: ['Content-Range', 'X-Content-Range'],
   maxAge: 86400 // 24 horas
 }));
+
+// Compressão gzip para todas as respostas (reduz tráfego de rede em até 70%)
+app.use(compression({
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  },
+  level: 6, // Nível de compressão (0-9, 6 é o padrão e oferece bom equilíbrio)
+  threshold: 1024, // Apenas comprimir respostas maiores que 1KB
+}));
+
 app.use(express.json({ limit: '50mb' })); // Aumentado para suportar imagens base64 temporariamente
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -140,6 +155,7 @@ app.use('/api/contas-receber', authenticateToken, contasReceberRouter);
 app.use('/api/categorias-financeiras', authenticateToken, categoriasFinanceirasRouter);
 app.use('/api/permissions', authenticateToken, permissionsRouter);
 app.use('/api/cleanup', authenticateToken, cleanupRouter);
+app.use('/api/search', authenticateToken, searchRouter);
 
 // Rotas de monitoramento de cache (protegidas)
 app.get('/api/cache/stats', authenticateToken, getCacheStats);

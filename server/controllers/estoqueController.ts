@@ -306,11 +306,11 @@ export const getAllEstoque = async (req: Request, res: Response) => {
       .lean()
       .exec();
     
-    // Criar mapa de produtos para acesso rápido
-    const produtosMap = new Map(produtos.map((p: any) => [p.codigoProduto, p]));
+    // Criar mapa de produtos para acesso rápido com tipo explícito
+    const produtosMap = new Map<string, any>(produtos.map((p: any) => [p.codigoProduto, p]));
     
     const estoqueComProdutos = aggregated.map((item: any) => {
-      const produto = produtosMap.get(item.codigoProduto);
+      const produto: any = produtosMap.get(item.codigoProduto);
       const quantidadeTotal = item.variantes.reduce((sum: number, v: any) => sum + (Number(v.quantidade) || 0), 0);
       
       if (quantidadeTotal === 0) return null;
