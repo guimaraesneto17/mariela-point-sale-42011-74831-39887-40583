@@ -75,11 +75,14 @@ const ProdutoSchema = new mongoose.Schema({
   versionKey: false
 });
 
-// Índices para melhor performance
+// Índices compostos otimizados para consultas frequentes
 ProdutoSchema.index({ codigoProduto: 1 }); // Já existe unique no schema
-ProdutoSchema.index({ nome: 'text', descricao: 'text' });
-ProdutoSchema.index({ categoria: 1 });
-ProdutoSchema.index({ dataCadastro: -1 }); // Para ordenação por data
-ProdutoSchema.index({ categoria: 1, dataCadastro: -1 }); // Índice composto para filtros + ordenação
+ProdutoSchema.index({ nome: 'text', descricao: 'text' }); // Busca textual
+ProdutoSchema.index({ categoria: 1 }); // Filtro por categoria
+ProdutoSchema.index({ dataCadastro: -1 }); // Ordenação por data
+ProdutoSchema.index({ categoria: 1, dataCadastro: -1 }); // Filtro categoria + ordenação data
+ProdutoSchema.index({ categoria: 1, precoVenda: 1 }); // Filtro categoria + ordenação preço
+ProdutoSchema.index({ 'fornecedor.codigoFornecedor': 1 }); // Consultas por fornecedor
+ProdutoSchema.index({ precoVenda: 1, dataCadastro: -1 }); // Ordenação preço + data
 
 export default mongoose.models.Produto || mongoose.model('Produto', ProdutoSchema);

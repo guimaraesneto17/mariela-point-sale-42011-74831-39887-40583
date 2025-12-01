@@ -89,7 +89,8 @@ const Estoque = () => {
   const loadEstoque = async () => {
     try {
       setLoading(true);
-      const data = await estoqueAPI.getAll();
+      const response = await estoqueAPI.getAll();
+      const data = response.data || response;
       console.log('📦 Dados recebidos do estoque:', data);
       if (data.length > 0) {
         console.log('📝 Primeiro item:', data[0]);

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, CheckCircle2, AlertCircle, Package, Edit, Trash2, X, PackagePlus, Building } from "lucide-react";
+import { Search, Plus, CheckCircle2, AlertCircle, Package, Edit, Trash2, X, PackagePlus, Building, RefreshCw } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ import { AddToStockDialog } from "@/components/AddToStockDialog";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { PermissionGuard } from "@/components/PermissionGuard";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 
 type ProdutoFormData = z.infer<typeof produtoSchema>;
 
@@ -54,24 +55,57 @@ const Produtos = () => {
   const [fornecedores, setFornecedores] = useState<any[]>([]);
   const [estoque, setEstoque] = useState<any[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   useEffect(() => {
-    loadProdutos();
+    loadProdutos(1, true);
     loadFornecedores();
     loadEstoque();
   }, []);
 
-  const loadProdutos = async () => {
+  const loadProdutos = async (pageNum: number = 1, reset: boolean = false) => {
     try {
-      setIsLoadingData(true);
-      const data = await produtosAPI.getAll();
-      setProdutos(data);
+      if (reset) {
+        setIsLoadingData(true);
+        setProdutos([]);
+        setPage(1);
+        setHasMore(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+      
+      const response = await produtosAPI.getAll(pageNum, 50);
+      const newProdutos = response.data || response;
+      const pagination = response.pagination;
+      
+      if (reset) {
+        setProdutos(newProdutos);
+      } else {
+        setProdutos(prev => [...prev, ...newProdutos]);
+      }
+      
+      if (pagination) {
+        setHasMore(pagination.page < pagination.pages);
+      } else {
+        setHasMore(newProdutos.length === 50);
+      }
     } catch (error) {
       toast.error("Erro ao carregar produtos", {
         description: "Verifique se o servidor está rodando",
       });
     } finally {
       setIsLoadingData(false);
+      setIsLoadingMore(false);
+    }
+  };
+
+  const loadMore = () => {
+    if (!isLoadingMore && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      loadProdutos(nextPage, false);
     }
   };
 
@@ -170,7 +204,7 @@ const Produtos = () => {
       setEditingProduct(null);
       form.reset();
       setManualCode(false);
-      loadProdutos();
+      loadProdutos(1, true); // Reset para primeira página
     } catch (error: any) {
       toast.error("❌ Erro ao salvar produto", {
         description: error.message || "Verifique sua conexão e tente novamente",
@@ -212,7 +246,7 @@ const Produtos = () => {
     try {
       await produtosAPI.delete(produto.codigoProduto);
       toast.success("Produto excluído com sucesso!");
-      loadProdutos();
+      loadProdutos(1, true); // Reset para primeira página
     } catch (error: any) {
       toast.error("Erro ao excluir produto", {
         description: error.message || "Tente novamente",
@@ -238,6 +272,12 @@ const Produtos = () => {
     setManualCode(false);
     setIsDialogOpen(true);
   };
+
+  const { sentinelRef } = useInfiniteScroll({
+    hasMore,
+    loading: isLoadingMore,
+    onLoadMore: loadMore
+  });
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -738,12 +778,30 @@ const Produtos = () => {
         ))}
       </div>
 
+      {/* Scroll infinito - Sentinel */}
+      {hasMore && (
+        <div ref={sentinelRef} className="flex justify-center py-4">
+          {isLoadingMore && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <RefreshCw className="h-4 w-4 animate-spin" />
+              <span>Carregando mais produtos...</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {!hasMore && filteredProdutos.length > 0 && (
+        <div className="text-center py-4 text-muted-foreground text-sm">
+          Todos os produtos foram carregados
+        </div>
+      )}
+
       {selectedProductForStock && (
         <AddToStockDialog
           open={showAddToStockDialog}
           onOpenChange={setShowAddToStockDialog}
           produto={selectedProductForStock}
-          onSuccess={loadProdutos}
+          onSuccess={() => loadProdutos(1, true)}
         />
       )}
 
