@@ -268,7 +268,12 @@ const validateEstoquePayload = (payload: any): FieldIssue[] => {
 
 export const getAllEstoque = async (req: Request, res: Response) => {
   try {
-    const docs = await Estoque.find().sort({ dataCadastro: -1 });
+    // Otimização: usar lean() e limitar logs de movimentação para reduzir payload
+    const docs = await Estoque
+      .find()
+      .sort({ dataCadastro: -1 })
+      .lean()
+      .exec();
 
     // Agrupar por código do produto e agregar variantes/quantidades
     const groups = docs.reduce((map, doc: any) => {
@@ -288,32 +293,43 @@ export const getAllEstoque = async (req: Request, res: Response) => {
 
     // Enriquecer com dados do produto e filtrar sem estoque
     const Produto = require('../models/Produto').default;
-    const estoqueComProdutos = await Promise.all(
-      aggregated.map(async (item: any) => {
-        const produto = await Produto.findOne({ codigoProduto: item.codigoProduto });
-        const quantidadeTotal = item.variantes.reduce((sum: number, v: any) => sum + (Number(v.quantidade) || 0), 0);
-        if (quantidadeTotal === 0) return null;
-        
-        console.log(`📝 Produto ${item.codigoProduto} tem ${item.logMovimentacao?.length || 0} movimentações`);
-        
-        return {
-          ...item,
-          quantidadeTotal,
-          nomeProduto: produto?.nome || 'Produto não encontrado',
-          categoria: produto?.categoria || '',
-          descricao: produto?.descricao || '',
-          precoCusto: produto?.precoCusto || 0,
-          precoVenda: produto?.precoVenda || 0,
-          margemDeLucro: produto?.margemDeLucro || 0,
-          precoPromocional: produto?.precoPromocional ?? item.precoPromocional,
-          // Garantir que logMovimentacao e logPromocao sejam incluídos
-          logMovimentacao: item.logMovimentacao || [],
-          logPromocao: item.logPromocao || []
-        };
-      })
-    );
+    
+    // Otimização: buscar todos os produtos de uma vez ao invés de um por um
+    const codigosProdutos = aggregated.map(item => item.codigoProduto);
+    const produtos = await Produto
+      .find({ codigoProduto: { $in: codigosProdutos } })
+      .select('codigoProduto nome categoria descricao precoCusto precoVenda margemDeLucro precoPromocional')
+      .lean()
+      .exec();
+    
+    // Criar mapa de produtos para acesso rápido
+    const produtosMap = new Map(produtos.map((p: any) => [p.codigoProduto, p]));
+    
+    const estoqueComProdutos = aggregated.map((item: any) => {
+      const produto = produtosMap.get(item.codigoProduto);
+      const quantidadeTotal = item.variantes.reduce((sum: number, v: any) => sum + (Number(v.quantidade) || 0), 0);
+      
+      if (quantidadeTotal === 0) return null;
+      
+      console.log(`📝 Produto ${item.codigoProduto} tem ${item.logMovimentacao?.length || 0} movimentações`);
+      
+      return {
+        ...item,
+        quantidadeTotal,
+        nomeProduto: produto?.nome || 'Produto não encontrado',
+        categoria: produto?.categoria || '',
+        descricao: produto?.descricao || '',
+        precoCusto: produto?.precoCusto || 0,
+        precoVenda: produto?.precoVenda || 0,
+        margemDeLucro: produto?.margemDeLucro || 0,
+        precoPromocional: produto?.precoPromocional ?? item.precoPromocional,
+        // Garantir que logMovimentacao e logPromocao sejam incluídos
+        logMovimentacao: item.logMovimentacao || [],
+        logPromocao: item.logPromocao || []
+      };
+    }).filter(Boolean);
 
-    res.json(estoqueComProdutos.filter(Boolean));
+    res.json(estoqueComProdutos);
   } catch (error) {
     console.error('Erro ao buscar estoque:', error);
     res.status(500).json({ error: 'Erro ao buscar estoque' });
@@ -335,7 +351,12 @@ export const getEstoqueById = async (req: Request, res: Response) => {
 
 export const getEstoqueByCodigo = async (req: Request, res: Response) => {
   try {
-    const docs = await Estoque.find({ codigoProduto: req.params.codigo });
+    // Otimização: usar lean() para queries de leitura
+    const docs = await Estoque
+      .find({ codigoProduto: req.params.codigo })
+      .lean()
+      .exec();
+      
     if (!docs || docs.length === 0) {
       return res.status(404).json({ error: 'Item não encontrado no estoque' });
     }
@@ -344,7 +365,11 @@ export const getEstoqueByCodigo = async (req: Request, res: Response) => {
 
     // Buscar dados do produto relacionado
     const Produto = require('../models/Produto').default;
-    const produto = await Produto.findOne({ codigoProduto: req.params.codigo });
+    const produto = await Produto
+      .findOne({ codigoProduto: req.params.codigo })
+      .select('nome categoria descricao precoCusto precoVenda margemDeLucro')
+      .lean()
+      .exec();
 
     res.json({
       ...item,

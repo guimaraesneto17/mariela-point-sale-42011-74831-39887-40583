@@ -5,9 +5,18 @@ import Produto from '../models/Produto';
 // Gerar view agregada da vitrine virtual (combina Estoque + Produto)
 const buildVitrineView = async () => {
   try {
-    // Buscar todos os produtos e estoques
-    const produtos = await Produto.find();
-    const estoques = await Estoque.find();
+    // Otimização: usar lean() para performance e excluir campos desnecessários
+    const produtos = await Produto
+      .find()
+      .select('codigoProduto nome descricao categoria precoVenda precoPromocional dataCadastro dataAtualizacao')
+      .lean()
+      .exec();
+      
+    const estoques = await Estoque
+      .find()
+      .select('codigoProduto variantes emPromocao isNovidade precoPromocional')
+      .lean()
+      .exec();
     
     const vitrineView: any[] = [];
     

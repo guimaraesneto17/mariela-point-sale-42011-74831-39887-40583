@@ -149,5 +149,9 @@ EstoqueSchema.index({ codigoEstoque: 1 });
 EstoqueSchema.index({ emPromocao: 1 });
 EstoqueSchema.index({ isNovidade: 1 });
 EstoqueSchema.index({ ativo: 1 });
+EstoqueSchema.index({ dataCadastro: -1 }); // Para ordenação
+EstoqueSchema.index({ codigoProduto: 1, ativo: 1 }); // Índice composto para queries frequentes
+EstoqueSchema.index({ emPromocao: 1, ativo: 1 }); // Para filtros de promoção
+EstoqueSchema.index({ isNovidade: 1, ativo: 1 }); // Para filtros de novidade
 
 export default mongoose.models.Estoque || mongoose.model('Estoque', EstoqueSchema);

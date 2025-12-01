@@ -1,6 +1,7 @@
 import express from 'express';
 import * as estoqueController from '../controllers/estoqueController';
 import { requirePermission } from '../middleware/permissions';
+import { cacheMiddleware, invalidateCacheMiddleware, CACHE_TTL } from '../middleware/cache';
 
 const router = express.Router();
 
@@ -8,7 +9,10 @@ const router = express.Router();
  * @swagger
  * /api/estoque:
  *   get:
- *     summary: Lista todo o estoque
+ *     summary: Lista todo o estoque (cached por 3 minutos)
+ *     description: |
+ *       Retorna lista completa do estoque agregado por produto.
+ *       Utiliza cache de 3 minutos para melhorar performance.
  *     tags: [Estoque]
  *     responses:
  *       200:
@@ -16,13 +20,13 @@ const router = express.Router();
  *       500:
  *         description: Erro ao buscar estoque
  */
-router.get('/', requirePermission('estoque', 'view'), estoqueController.getAllEstoque);
+router.get('/', requirePermission('estoque', 'view'), cacheMiddleware(CACHE_TTL.ESTOQUE), estoqueController.getAllEstoque);
 
 /**
  * @swagger
  * /api/estoque/codigo/{codigo}:
  *   get:
- *     summary: Busca um item de estoque por código de produto
+ *     summary: Busca um item de estoque por código de produto (cached)
  *     tags: [Estoque]
  *     parameters:
  *       - in: path
@@ -36,7 +40,7 @@ router.get('/', requirePermission('estoque', 'view'), estoqueController.getAllEs
  *       404:
  *         description: Item de estoque não encontrado
  */
-router.get('/codigo/:codigo', requirePermission('estoque', 'view'), estoqueController.getEstoqueByCodigo);
+router.get('/codigo/:codigo', requirePermission('estoque', 'view'), cacheMiddleware(CACHE_TTL.ESTOQUE), estoqueController.getEstoqueByCodigo);
 
 /**
  * @swagger
@@ -128,7 +132,7 @@ router.get('/:id', requirePermission('estoque', 'view'), estoqueController.getEs
  *       400:
  *         description: Erro ao criar item de estoque
  */
-router.post('/', requirePermission('estoque', 'create'), estoqueController.createEstoque);
+router.post('/', requirePermission('estoque', 'create'), invalidateCacheMiddleware(['/api/estoque', '/api/produtos', '/api/vitrine']), estoqueController.createEstoque);
 
 /**
  * @swagger
@@ -186,7 +190,7 @@ router.post('/', requirePermission('estoque', 'create'), estoqueController.creat
  *       400:
  *         description: Erro ao registrar entrada ou campos obrigatórios faltando
  */
-router.post('/entrada', requirePermission('estoque', 'create'), estoqueController.registrarEntrada);
+router.post('/entrada', requirePermission('estoque', 'create'), invalidateCacheMiddleware(['/api/estoque', '/api/vitrine']), estoqueController.registrarEntrada);
 
 /**
  * @swagger
@@ -239,7 +243,7 @@ router.post('/entrada', requirePermission('estoque', 'create'), estoqueControlle
  *       400:
  *         description: Erro ao registrar saída, campos faltando ou quantidade insuficiente
  */
-router.post('/saida', requirePermission('estoque', 'create'), estoqueController.registrarSaida);
+router.post('/saida', requirePermission('estoque', 'create'), invalidateCacheMiddleware(['/api/estoque', '/api/vitrine']), estoqueController.registrarSaida);
 
 /**
  * @swagger
@@ -304,7 +308,7 @@ router.post('/saida', requirePermission('estoque', 'create'), estoqueController.
  *       500:
  *         description: Erro interno do servidor
  */
-router.patch('/novidade/:codigo', requirePermission('estoque', 'edit'), estoqueController.toggleNovidade);
+router.patch('/novidade/:codigo', requirePermission('estoque', 'edit'), invalidateCacheMiddleware(['/api/estoque', '/api/produtos', '/api/vitrine']), estoqueController.toggleNovidade);
 
 /**
  * @swagger
@@ -346,7 +350,7 @@ router.patch('/novidade/:codigo', requirePermission('estoque', 'edit'), estoqueC
  *       400:
  *         description: Erro ao atualizar promoção ou valor promocional não informado
  */
-router.patch('/promocao/:codigo', requirePermission('estoque', 'edit'), estoqueController.togglePromocao);
+router.patch('/promocao/:codigo', requirePermission('estoque', 'edit'), invalidateCacheMiddleware(['/api/estoque', '/api/produtos', '/api/vitrine']), estoqueController.togglePromocao);
 
 /**
  * @swagger
@@ -395,7 +399,7 @@ router.patch('/promocao/:codigo', requirePermission('estoque', 'edit'), estoqueC
  *       400:
  *         description: Erro ao atualizar imagens ou campos obrigatórios faltando
  */
-router.patch('/variante/imagens/:codigo', requirePermission('estoque', 'edit'), estoqueController.updateVariantImages);
+router.patch('/variante/imagens/:codigo', requirePermission('estoque', 'edit'), invalidateCacheMiddleware(['/api/estoque', '/api/vitrine']), estoqueController.updateVariantImages);
 
 /**
  * @swagger
@@ -423,7 +427,7 @@ router.patch('/variante/imagens/:codigo', requirePermission('estoque', 'edit'), 
  *       400:
  *         description: Erro ao atualizar item de estoque
  */
-router.put('/:id', requirePermission('estoque', 'edit'), estoqueController.updateEstoque);
+router.put('/:id', requirePermission('estoque', 'edit'), invalidateCacheMiddleware(['/api/estoque', '/api/vitrine']), estoqueController.updateEstoque);
 
 /**
  * @swagger
@@ -445,6 +449,6 @@ router.put('/:id', requirePermission('estoque', 'edit'), estoqueController.updat
  *       500:
  *         description: Erro ao remover item de estoque
  */
-router.delete('/:id', requirePermission('estoque', 'delete'), estoqueController.deleteEstoque);
+router.delete('/:id', requirePermission('estoque', 'delete'), invalidateCacheMiddleware(['/api/estoque', '/api/vitrine']), estoqueController.deleteEstoque);
 
 export default router;
