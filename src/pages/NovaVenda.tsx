@@ -91,12 +91,16 @@ const NovaVenda = () => {
         codigo: v.codigoVendedor || v.codigo
       }));
       
+      // Extrair array de estoque da resposta paginada
+      const estoqueArray = estoqueData.data || estoqueData;
+      
       setClientes(clientesMapeados);
       setVendedores(vendedoresMapeados);
-      setEstoque(estoqueData);
+      setEstoque(Array.isArray(estoqueArray) ? estoqueArray : []);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       toast.error('Erro ao carregar dados');
+      setEstoque([]);
     }
   };
 
