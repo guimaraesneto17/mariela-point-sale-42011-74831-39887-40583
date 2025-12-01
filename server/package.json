@@ -22,7 +22,7 @@
   "author": "Mariela Moda",
   "license": "ISC",
   "dependencies": {
-    "@vercel/blob": "^0.30.0",
+    "@vercel/blob": "^1.1.1",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "date-fns": "^3.6.0",
