@@ -6,6 +6,7 @@ import {
   upsertCacheConfig,
   deleteCacheConfig,
   clearAllCache,
+  clearNamespaceCache,
   warmupCache,
 } from '../controllers/cacheController';
 import { getCacheStats, clearCache } from '../middleware/cache';
@@ -82,6 +83,20 @@ router.get('/stats', authenticateToken, getCacheStats);
  *         description: Cache limpo
  */
 router.post('/clear', authenticateToken, requireAdmin, clearAllCache);
+
+/**
+ * @swagger
+ * /api/cache/clear/:namespace:
+ *   post:
+ *     summary: Limpar cache por namespace (módulo)
+ *     tags: [Cache]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Cache do namespace limpo
+ */
+router.post('/clear/:namespace', authenticateToken, requireAdmin, clearNamespaceCache);
 
 /**
  * @swagger

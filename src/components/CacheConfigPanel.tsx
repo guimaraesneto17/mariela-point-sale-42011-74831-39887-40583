@@ -14,7 +14,8 @@ import {
   RefreshCw,
   Database,
   Zap,
-  Clock
+  Clock,
+  Layers
 } from "lucide-react";
 import { axiosInstance } from "@/lib/api";
 import { toast } from "sonner";
@@ -46,12 +47,32 @@ interface CacheConfig {
   lastModified: string;
 }
 
+interface CacheNamespace {
+  name: string;
+  label: string;
+  description: string;
+}
+
+const CACHE_NAMESPACES: CacheNamespace[] = [
+  { name: 'produtos', label: 'Produtos', description: 'Catálogo de produtos e variantes' },
+  { name: 'estoque', label: 'Estoque', description: 'Movimentações e níveis de estoque' },
+  { name: 'vendas', label: 'Vendas', description: 'Histórico e detalhes de vendas' },
+  { name: 'clientes', label: 'Clientes', description: 'Cadastro de clientes' },
+  { name: 'fornecedores', label: 'Fornecedores', description: 'Cadastro de fornecedores' },
+  { name: 'vendedores', label: 'Vendedores', description: 'Cadastro de vendedores' },
+  { name: 'caixa', label: 'Caixa', description: 'Operações de caixa' },
+  { name: 'financeiro', label: 'Financeiro', description: 'Contas a pagar e receber' },
+  { name: 'vitrine', label: 'Vitrine Virtual', description: 'Produtos na vitrine' },
+  { name: 'relatorios', label: 'Relatórios', description: 'Relatórios e análises' },
+];
+
 export function CacheConfigPanel() {
   const [configs, setConfigs] = useState<CacheConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [redisEnabled, setRedisEnabled] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingConfig, setEditingConfig] = useState<CacheConfig | null>(null);
+  const [clearingNamespace, setClearingNamespace] = useState<string | null>(null);
 
   // Form state
   const [formEndpoint, setFormEndpoint] = useState("");
@@ -135,6 +156,19 @@ export function CacheConfigPanel() {
     if (minutes < 60) return `${minutes}m`;
     const hours = minutes / 60;
     return `${hours.toFixed(1)}h`;
+  };
+
+  const handleClearNamespace = async (namespace: string) => {
+    try {
+      setClearingNamespace(namespace);
+      await axiosInstance.post(`/cache/clear/${namespace}`);
+      toast.success(`Cache do módulo "${namespace}" limpo com sucesso`);
+    } catch (error) {
+      console.error('Erro ao limpar cache do namespace:', error);
+      toast.error('Erro ao limpar cache do módulo');
+    } finally {
+      setClearingNamespace(null);
+    }
   };
 
   return (
@@ -263,7 +297,35 @@ export function CacheConfigPanel() {
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-6">
+        {/* Namespace-based Clearing */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Layers className="h-4 w-4 text-primary" />
+            <h4 className="font-semibold text-sm">Limpar Cache por Módulo</h4>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+            {CACHE_NAMESPACES.map((ns) => (
+              <Button
+                key={ns.name}
+                variant="outline"
+                size="sm"
+                onClick={() => handleClearNamespace(ns.name)}
+                disabled={clearingNamespace === ns.name}
+                className="justify-start"
+                title={ns.description}
+              >
+                <Trash2 className={`h-3 w-3 mr-2 ${clearingNamespace === ns.name ? 'animate-spin' : ''}`} />
+                {ns.label}
+              </Button>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Limpe o cache de módulos específicos sem afetar outros dados em cache
+          </p>
+        </div>
+
+        {/* Configurations Table */}
         {loading ? (
           <div className="space-y-2">
             {[1, 2, 3].map((i) => (
