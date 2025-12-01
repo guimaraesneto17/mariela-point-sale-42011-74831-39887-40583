@@ -17,6 +17,7 @@ import { PerformanceDashboard } from "@/components/PerformanceDashboard";
 import { CacheConfigPanel } from "@/components/CacheConfigPanel";
 import { CacheWarming } from "@/components/CacheWarming";
 import { CacheNotifications } from "@/components/CacheNotifications";
+import { RedisMonitoring } from "@/components/RedisMonitoring";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { connectionLogger, ConnectionEvent, LatencyDataPoint } from '@/lib/connectionLogger';
 import { format } from 'date-fns';
@@ -462,6 +463,9 @@ export default function BackendStatus() {
 
       {/* Performance Dashboard */}
       <PerformanceDashboard />
+
+      {/* Redis Monitoring */}
+      <RedisMonitoring />
 
       {/* Cache Configuration Panel */}
       <CacheConfigPanel />
