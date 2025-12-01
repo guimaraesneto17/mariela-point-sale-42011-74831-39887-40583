@@ -58,6 +58,12 @@ export const vendedorSchema = z.object({
   nome: z.string()
     .min(3, "Nome deve ter no mínimo 3 caracteres")
     .max(120, "Nome deve ter no máximo 120 caracteres"),
+  email: z.string()
+    .email("Email inválido")
+    .min(1, "Email é obrigatório"),
+  senha: z.string()
+    .min(6, "Senha deve ter no mínimo 6 caracteres")
+    .optional(),
   telefone: optionalString(z.string().regex(regex.telefone, "Telefone deve estar no formato (99) 99999-9999")),
   dataNascimento: optionalString(z.string().regex(regex.data, "Data deve estar no formato YYYY-MM-DD")),
   ativo: z.boolean().default(true),

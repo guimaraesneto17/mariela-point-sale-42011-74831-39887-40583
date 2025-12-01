@@ -17,6 +17,7 @@ import { clientesAPI, recalculoAPI } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import { AniversariantesDialog } from "@/components/AniversariantesDialog";
+import { PermissionGuard } from "@/components/PermissionGuard";
 
 type ClienteFormData = z.infer<typeof clienteSchema>;
 
@@ -219,22 +220,25 @@ const Clientes = () => {
             <Cake className="h-4 w-4" />
             Mensagens de Aniversário
           </Button>
-          <Button 
-            variant="outline" 
-            className="gap-2" 
-            onClick={handleRecalcularTotais}
-            disabled={isLoadingData}
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoadingData ? 'animate-spin' : ''}`} />
-            Recalcular Totais
-          </Button>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2" onClick={handleOpenDialog}>
-                <Plus className="h-4 w-4" />
-                Novo Cliente
-              </Button>
-            </DialogTrigger>
+          <PermissionGuard module="clientes" action="edit">
+            <Button 
+              variant="outline" 
+              className="gap-2" 
+              onClick={handleRecalcularTotais}
+              disabled={isLoadingData}
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoadingData ? 'animate-spin' : ''}`} />
+              Recalcular Totais
+            </Button>
+          </PermissionGuard>
+          <PermissionGuard module="clientes" action="create">
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2" onClick={handleOpenDialog}>
+                  <Plus className="h-4 w-4" />
+                  Novo Cliente
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-background via-background to-primary/5">
             <DialogHeader className="pb-4 border-b border-border/50">
               <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
@@ -494,6 +498,7 @@ const Clientes = () => {
             </Form>
           </DialogContent>
         </Dialog>
+        </PermissionGuard>
         </div>
       </div>
 
@@ -523,22 +528,26 @@ const Clientes = () => {
                 </div>
               </div>
               <div className="flex gap-1">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleEdit(cliente)}
-                  className="h-8 w-8 p-0"
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleDelete(cliente._id)}
-                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <PermissionGuard module="clientes" action="edit">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleEdit(cliente)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </PermissionGuard>
+                <PermissionGuard module="clientes" action="delete">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleDelete(cliente._id)}
+                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </PermissionGuard>
               </div>
             </div>
             <div className="space-y-2">

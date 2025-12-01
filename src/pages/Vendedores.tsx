@@ -17,6 +17,7 @@ import { z } from "zod";
 import { vendedoresAPI, recalculoAPI } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
+import { PermissionGuard } from "@/components/PermissionGuard";
 
 type VendedorFormData = z.infer<typeof vendedorSchema>;
 
@@ -34,6 +35,8 @@ const Vendedores = () => {
     defaultValues: {
       codigoVendedor: "",
       nome: "",
+      email: "",
+      senha: "",
       telefone: "",
       dataNascimento: "",
       ativo: true,
@@ -124,6 +127,8 @@ const Vendedores = () => {
     form.reset({
       codigoVendedor: vendedor.codigoVendedor,
       nome: vendedor.nome,
+      email: vendedor.email || "",
+      senha: "", // Senha não é carregada por segurança
       telefone: vendedor.telefone,
       dataNascimento: vendedor.dataNascimento,
       ativo: vendedor.ativo ?? true,
@@ -166,6 +171,8 @@ const Vendedores = () => {
     form.reset({
       codigoVendedor: generateNextCode(),
       nome: "",
+      email: "",
+      senha: "",
       telefone: "",
       dataNascimento: "",
       ativo: true,
@@ -214,22 +221,25 @@ const Vendedores = () => {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            className="gap-2" 
-            onClick={handleRecalcularTotais}
-            disabled={isLoadingData}
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoadingData ? 'animate-spin' : ''}`} />
-            Recalcular Totais
-          </Button>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2" onClick={handleOpenDialog}>
-                <Plus className="h-4 w-4" />
-                Novo Vendedor
-              </Button>
-            </DialogTrigger>
+          <PermissionGuard module="vendedores" action="edit">
+            <Button 
+              variant="outline" 
+              className="gap-2" 
+              onClick={handleRecalcularTotais}
+              disabled={isLoadingData}
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoadingData ? 'animate-spin' : ''}`} />
+              Recalcular Totais
+            </Button>
+          </PermissionGuard>
+          <PermissionGuard module="vendedores" action="create">
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2" onClick={handleOpenDialog}>
+                  <Plus className="h-4 w-4" />
+                  Novo Vendedor
+                </Button>
+              </DialogTrigger>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-background via-background to-primary/5">
             <DialogHeader className="pb-4 border-b border-border/50">
               <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
@@ -301,6 +311,56 @@ const Vendedores = () => {
                             </FormControl>
                             <FormMessage className="text-xs flex items-center gap-1">
                               {form.formState.errors.nome && (
+                                <AlertCircle className="h-3 w-3" />
+                              )}
+                            </FormMessage>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-semibold text-foreground">Email *</FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field}
+                                type="email"
+                                placeholder="email@exemplo.com"
+                                className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                              />
+                            </FormControl>
+                            <FormMessage className="text-xs flex items-center gap-1">
+                              {form.formState.errors.email && (
+                                <AlertCircle className="h-3 w-3" />
+                              )}
+                            </FormMessage>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <FormField
+                        control={form.control}
+                        name="senha"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-semibold text-foreground">
+                              Senha {editingVendedor ? "(deixe em branco para não alterar)" : "*"}
+                            </FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field}
+                                type="password"
+                                placeholder="Mínimo 6 caracteres"
+                                className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                              />
+                            </FormControl>
+                            <FormMessage className="text-xs flex items-center gap-1">
+                              {form.formState.errors.senha && (
                                 <AlertCircle className="h-3 w-3" />
                               )}
                             </FormMessage>
@@ -510,6 +570,7 @@ const Vendedores = () => {
             </Form>
           </DialogContent>
         </Dialog>
+        </PermissionGuard>
         </div>
       </div>
       
@@ -545,22 +606,26 @@ const Vendedores = () => {
                 </div>
               </div>
               <div className="flex gap-1">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleEdit(vendedor)}
-                  className="h-8 w-8 p-0"
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleDelete(vendedor._id)}
-                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <PermissionGuard module="vendedores" action="edit">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleEdit(vendedor)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </PermissionGuard>
+                <PermissionGuard module="vendedores" action="delete">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleDelete(vendedor._id)}
+                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </PermissionGuard>
               </div>
             </div>
             <div className="space-y-2">
