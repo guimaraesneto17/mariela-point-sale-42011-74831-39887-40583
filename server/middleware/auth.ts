@@ -14,8 +14,16 @@ declare global {
   }
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'mariela-pdv-secret-key-change-in-production';
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'mariela-pdv-refresh-secret-change-in-production';
+// Fail-fast se secrets não estiverem configurados (segurança)
+if (!process.env.JWT_SECRET) {
+  throw new Error('CRITICAL: JWT_SECRET environment variable is not set. Application cannot start without it.');
+}
+if (!process.env.REFRESH_TOKEN_SECRET) {
+  throw new Error('CRITICAL: REFRESH_TOKEN_SECRET environment variable is not set. Application cannot start without it.');
+}
+
+const JWT_SECRET = process.env.JWT_SECRET;
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET;
 const ACCESS_TOKEN_EXPIRY = '1h'; // Token de acesso: 1 hora
 const REFRESH_TOKEN_EXPIRY = '7d'; // Refresh token: 7 dias
 
