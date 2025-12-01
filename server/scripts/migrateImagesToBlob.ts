@@ -4,11 +4,11 @@ import VitrineVirtual from '../models/VitrineVirtual';
 import { uploadImageToBlob, isBase64Image } from '../services/imageUploadService';
 
 /**
- * Script de migração de imagens base64 para Supabase Storage
+ * Script de migração de imagens base64 para Vercel Blob Storage
  * 
  * Este script:
  * 1. Busca todas as imagens base64 armazenadas no MongoDB
- * 2. Faz upload para o Supabase Storage
+ * 2. Faz upload para o Vercel Blob Storage
  * 3. Substitui o base64 pela URL da imagem
  * 4. Salva as alterações no MongoDB
  * 
@@ -156,8 +156,8 @@ async function migrateVitrineImages(): Promise<MigrationStats> {
 }
 
 async function runMigration() {
-  console.log('🚀 Iniciando migração de imagens para Supabase Storage...\n');
-  console.log('⚠️  IMPORTANTE: Certifique-se de que as variáveis SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY estão configuradas!\n');
+  console.log('🚀 Iniciando migração de imagens para Vercel Blob Storage...\n');
+  console.log('⚠️  IMPORTANTE: Certifique-se de que a variável BLOB_READ_WRITE_TOKEN está configurada!\n');
   
   try {
     // Conectar ao banco de dados

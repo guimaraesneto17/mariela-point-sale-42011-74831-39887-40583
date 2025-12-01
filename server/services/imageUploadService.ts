@@ -1,15 +1,13 @@
-import { createClient } from '@supabase/supabase-js';
+import { put, del, list } from '@vercel/blob';
 import sharp from 'sharp';
 import { addWatermark } from '../lib/pdfWatermark';
 
-// Configuração do Supabase
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.SUPABASE_PUBLISHABLE_KEY ||
-  process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  '';
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Configuração do Vercel Blob
+const BLOB_READ_WRITE_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
+
+if (!BLOB_READ_WRITE_TOKEN) {
+  throw new Error('BLOB_READ_WRITE_TOKEN não configurado. Configure no Render.com');
+}
 
 interface UploadResult {
   urls: {
@@ -136,7 +134,7 @@ async function compressImageMultipleVersions(
 }
 
 /**
- * Faz upload de uma imagem base64 para Supabase Storage com compressão progressiva
+ * Faz upload de uma imagem base64 para Vercel Blob com compressão progressiva
  * @param base64Image String base64 da imagem (com ou sem data URI prefix)
  * @param filename Nome base do arquivo (opcional, será gerado automaticamente se não fornecido)
  * @returns URLs e tamanhos de todas as versões da imagem
@@ -182,35 +180,24 @@ export async function uploadImageToBlob(
     // Comprimir em múltiplas versões (usando o buffer com watermark)
     const versions = await compressImageMultipleVersions(watermarkedBuffer, baseFilename);
 
-    // Upload de todas as versões
+    // Upload de todas as versões para Vercel Blob
     const uploadResults: { [key: string]: { url: string; size: number } } = {};
     
     for (const version of versions) {
-      const versionFilename = `${baseFilename}-${version.size}.${version.format}`;
-      const filePath = `products/${versionFilename}`;
+      const versionFilename = `products/${baseFilename}-${version.size}.${version.format}`;
 
-      const { data, error } = await supabase.storage
-        .from('product-images')
-        .upload(filePath, version.buffer, {
-          contentType: `image/${version.format}`,
-          cacheControl: '31536000', // 1 ano
-          upsert: false,
-        });
-
-      if (error) {
-        console.error(`Erro no upload da versão ${version.size}:`, error);
-        throw new Error(`Falha no upload: ${error.message}`);
-      }
-
-      // Obter URL pública
-      const { data: publicUrlData } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(filePath);
+      const blob = await put(versionFilename, version.buffer, {
+        access: 'public',
+        token: BLOB_READ_WRITE_TOKEN,
+        contentType: `image/${version.format}`,
+      });
 
       uploadResults[version.size] = {
-        url: publicUrlData.publicUrl,
+        url: blob.url,
         size: version.buffer.length,
       };
+      
+      console.log(`Upload concluído: ${versionFilename} -> ${blob.url}`);
     }
 
     const totalSize = Object.values(uploadResults).reduce((sum, v) => sum + v.size, 0);
@@ -255,31 +242,15 @@ export async function uploadMultipleImages(
 }
 
 /**
- * Deleta uma imagem do Supabase Storage
+ * Deleta uma imagem do Vercel Blob
  * @param imageUrl URL da imagem a ser deletada
  */
 export async function deleteImageFromBlob(imageUrl: string): Promise<void> {
   try {
-    // Extrair caminho do arquivo da URL
-    const url = new URL(imageUrl);
-    const pathParts = url.pathname.split('/product-images/');
-    if (pathParts.length < 2) {
-      console.warn('URL de imagem inválida:', imageUrl);
-      return;
-    }
-    const filePath = pathParts[1];
-
-    const { error } = await supabase.storage
-      .from('product-images')
-      .remove([filePath]);
-
-    if (error) {
-      console.error('Erro ao deletar imagem:', error);
-    } else {
-      console.log('Imagem deletada com sucesso:', filePath);
-    }
+    await del(imageUrl, { token: BLOB_READ_WRITE_TOKEN });
+    console.log('Imagem deletada com sucesso:', imageUrl);
   } catch (error) {
-    console.error('Erro ao processar deleção de imagem:', error);
+    console.error('Erro ao deletar imagem:', error);
   }
 }
 
@@ -294,25 +265,18 @@ export async function deleteMultipleImages(imageUrls: string[]): Promise<void> {
 
 /**
  * Lista todas as imagens no storage
- * @returns Array de caminhos de arquivos
+ * @returns Array de URLs de arquivos
  */
 export async function listAllImages(): Promise<string[]> {
   try {
-    const { data, error } = await supabase.storage
-      .from('product-images')
-      .list('products', {
-        limit: 10000,
-        sortBy: { column: 'created_at', order: 'desc' },
-      });
+    const { blobs } = await list({
+      token: BLOB_READ_WRITE_TOKEN,
+      prefix: 'products/',
+    });
 
-    if (error) {
-      console.error('Erro ao listar imagens:', error);
-      return [];
-    }
-
-    return data.map((file) => `products/${file.name}`);
+    return blobs.map((blob) => blob.url);
   } catch (error) {
-    console.error('Erro ao processar listagem de imagens:', error);
+    console.error('Erro ao listar imagens:', error);
     return [];
   }
 }

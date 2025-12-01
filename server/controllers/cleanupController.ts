@@ -1,13 +1,15 @@
 import { Request, Response } from 'express';
-import { createClient } from '@supabase/supabase-js';
+import { list, del } from '@vercel/blob';
 import VitrineVirtual from '../models/VitrineVirtual';
+import Estoque from '../models/Estoque';
 import StorageStats from '../models/StorageStats';
-import { listAllImages, deleteImageFromBlob } from '../services/imageUploadService';
 
-// Configuração do Supabase
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// Configuração do Vercel Blob
+const BLOB_READ_WRITE_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
+
+if (!BLOB_READ_WRITE_TOKEN) {
+  console.error('BLOB_READ_WRITE_TOKEN não configurado');
+}
 
 /**
  * Busca todas as URLs de imagens referenciadas no banco de dados
@@ -22,7 +24,20 @@ async function getAllReferencedImageUrls(): Promise<Set<string>> {
     vitrineProducts.forEach((product) => {
       product.variantes?.forEach((variante: any) => {
         variante.imagens?.forEach((url: string) => {
-          if (url && url.includes('product-images')) {
+          if (url && url.startsWith('https://')) {
+            referencedUrls.add(url);
+          }
+        });
+      });
+    });
+
+    // Buscar imagens do estoque
+    const estoqueProducts = await Estoque.find({}, { variantes: 1 });
+    
+    estoqueProducts.forEach((product) => {
+      product.variantes?.forEach((variante: any) => {
+        variante.imagens?.forEach((url: string) => {
+          if (url && url.startsWith('https://')) {
             referencedUrls.add(url);
           }
         });
@@ -38,46 +53,41 @@ async function getAllReferencedImageUrls(): Promise<Set<string>> {
 }
 
 /**
- * Extrai o caminho do arquivo de uma URL do Supabase Storage
- */
-function extractFilePathFromUrl(url: string): string | null {
-  try {
-    const urlObj = new URL(url);
-    const pathParts = urlObj.pathname.split('/product-images/');
-    return pathParts.length >= 2 ? pathParts[1] : null;
-  } catch {
-    return null;
-  }
-}
-
-/**
  * Identifica e remove imagens órfãs do storage
  */
 export const cleanupOrphanImages = async (req: Request, res: Response) => {
   try {
     console.log('Iniciando cleanup de imagens órfãs...');
 
-    // Buscar todas as imagens no storage
-    const storageImages = await listAllImages();
-    console.log(`Total de imagens no storage: ${storageImages.length}`);
+    if (!BLOB_READ_WRITE_TOKEN) {
+      return res.status(500).json({
+        error: 'BLOB_READ_WRITE_TOKEN não configurado',
+        message: 'Configure a variável de ambiente BLOB_READ_WRITE_TOKEN no Render.com'
+      });
+    }
+
+    // Buscar todas as imagens no Vercel Blob
+    const { blobs } = await list({
+      token: BLOB_READ_WRITE_TOKEN,
+      prefix: 'products/',
+    });
+    
+    console.log(`Total de imagens no storage: ${blobs.length}`);
 
     // Buscar todas as URLs referenciadas no banco
     const referencedUrls = await getAllReferencedImageUrls();
 
     // Identificar imagens órfãs
-    const orphanImages: string[] = [];
+    const orphanImages: Array<{ url: string; pathname: string; size: number }> = [];
     
-    for (const filePath of storageImages) {
-      // Construir URL completa
-      const { data } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(filePath);
-      
-      const publicUrl = data.publicUrl;
-
+    for (const blob of blobs) {
       // Verificar se a URL está referenciada no banco
-      if (!referencedUrls.has(publicUrl)) {
-        orphanImages.push(filePath);
+      if (!referencedUrls.has(blob.url)) {
+        orphanImages.push({
+          url: blob.url,
+          pathname: blob.pathname,
+          size: blob.size,
+        });
       }
     }
 
@@ -88,47 +98,31 @@ export const cleanupOrphanImages = async (req: Request, res: Response) => {
       return res.json({
         success: true,
         dryRun: true,
-        totalStorageImages: storageImages.length,
+        totalStorageImages: blobs.length,
         totalReferencedImages: referencedUrls.size,
         orphanImagesCount: orphanImages.length,
-        orphanImages: orphanImages.map((path) => {
-          const { data } = supabase.storage
-            .from('product-images')
-            .getPublicUrl(path);
-          return {
-            path,
-            url: data.publicUrl,
-          };
-        }),
+        orphanImages,
       });
     }
 
     // Deletar imagens órfãs
     const deletedImages: string[] = [];
-    const failedDeletions: { path: string; error: string }[] = [];
+    const failedDeletions: { url: string; error: string }[] = [];
 
-    for (const filePath of orphanImages) {
+    for (const orphan of orphanImages) {
       try {
-        const { error } = await supabase.storage
-          .from('product-images')
-          .remove([filePath]);
-
-        if (error) {
-          console.error(`Erro ao deletar ${filePath}:`, error);
-          failedDeletions.push({ path: filePath, error: error.message });
-        } else {
-          deletedImages.push(filePath);
-          console.log(`Imagem órfã deletada: ${filePath}`);
-        }
+        await del(orphan.url, { token: BLOB_READ_WRITE_TOKEN });
+        deletedImages.push(orphan.url);
+        console.log(`Imagem órfã deletada: ${orphan.pathname}`);
       } catch (error: any) {
-        console.error(`Erro ao processar deleção de ${filePath}:`, error);
-        failedDeletions.push({ path: filePath, error: error.message });
+        console.error(`Erro ao deletar ${orphan.pathname}:`, error);
+        failedDeletions.push({ url: orphan.url, error: error.message });
       }
     }
 
     res.json({
       success: true,
-      totalStorageImages: storageImages.length,
+      totalStorageImages: blobs.length,
       totalReferencedImages: referencedUrls.size,
       orphanImagesCount: orphanImages.length,
       deletedImagesCount: deletedImages.length,
@@ -150,20 +144,27 @@ export const cleanupOrphanImages = async (req: Request, res: Response) => {
  */
 export const getStorageStats = async (req: Request, res: Response) => {
   try {
-    const storageImages = await listAllImages();
+    if (!BLOB_READ_WRITE_TOKEN) {
+      return res.status(500).json({
+        error: 'BLOB_READ_WRITE_TOKEN não configurado',
+      });
+    }
+
+    // Buscar todas as imagens no Vercel Blob
+    const { blobs } = await list({
+      token: BLOB_READ_WRITE_TOKEN,
+      prefix: 'products/',
+    });
+    
     const referencedUrls = await getAllReferencedImageUrls();
 
     // Calcular tamanho total
-    const { data: files } = await supabase.storage
-      .from('product-images')
-      .list('products', { limit: 10000 });
-
-    const totalSize = files?.reduce((sum, file) => sum + (file.metadata?.size || 0), 0) || 0;
+    const totalSize = blobs.reduce((sum, blob) => sum + blob.size, 0);
 
     const stats = {
-      totalImages: storageImages.length,
+      totalImages: blobs.length,
       referencedImages: referencedUrls.size,
-      orphanImages: storageImages.length - referencedUrls.size,
+      orphanImages: blobs.length - referencedUrls.size,
       totalSizeBytes: totalSize,
       totalSizeMB: (totalSize / (1024 * 1024)).toFixed(2),
     };
