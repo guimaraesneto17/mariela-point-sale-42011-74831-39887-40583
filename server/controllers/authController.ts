@@ -73,7 +73,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         email: user.email,
         nome: user.nome,
         role: user.role,
-        codigoVendedor: user.codigoVendedor
+        codigoVendedor: user.codigoVendedor,
+        ativo: user.ativo
       }
     });
   } catch (error: any) {
@@ -159,7 +160,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         email: user.email,
         nome: user.nome,
         role: user.role,
-        codigoVendedor: user.codigoVendedor
+        codigoVendedor: user.codigoVendedor,
+        ativo: user.ativo
       }
     });
   } catch (error) {
