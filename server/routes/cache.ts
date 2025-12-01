@@ -9,6 +9,7 @@ import {
   warmupCache,
 } from '../controllers/cacheController';
 import { getCacheStats, clearCache } from '../middleware/cache';
+import { getRedisStats } from '../controllers/redisStatsController';
 
 const router = express.Router();
 
@@ -95,5 +96,19 @@ router.post('/clear', authenticateToken, requireAdmin, clearAllCache);
  *         description: Warming concluído
  */
 router.post('/warmup', authenticateToken, requireAdmin, warmupCache);
+
+/**
+ * @swagger
+ * /api/cache/redis-stats:
+ *   get:
+ *     summary: Obter estatísticas do Redis
+ *     tags: [Cache]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Estatísticas do Redis
+ */
+router.get('/redis-stats', authenticateToken, getRedisStats);
 
 export default router;
