@@ -5,6 +5,7 @@ Este documento descreve o sistema completo de gerenciamento de imagens do projet
 ## 📋 Índice
 
 - [Compressão Progressiva de Imagens](#compressão-progressiva-de-imagens)
+- [Sistema de Watermark Automático](#sistema-de-watermark-automático)
 - [Sistema de Notificações de Storage](#sistema-de-notificações-de-storage)
 - [Interface de Limpeza](#interface-de-limpeza)
 - [Migração de Imagens](#migração-de-imagens)
@@ -53,6 +54,75 @@ O sistema agora cria **três versões otimizadas** de cada imagem enviada:
 
 - **PNG com transparência** → WebP (melhor compressão + transparência)
 - **Outros formatos** → JPEG progressivo (melhor performance)
+
+## 🛡️ Sistema de Watermark Automático
+
+### Visão Geral
+
+Todas as imagens de produtos recebem **automaticamente** uma marca d'água (watermark) com o logo da empresa durante o processo de upload. Isso protege as imagens contra uso não autorizado e mantém a identidade visual da marca.
+
+### Funcionalidades
+
+- ✅ **Aplicação Automática**: Watermark adicionado em todas as imagens
+- ✅ **Processamento no Servidor**: Seguro e impossível de contornar
+- ✅ **Múltiplas Versões**: Aplicado nas 3 versões (thumbnail, medium, full)
+- ✅ **Configurável**: Opacidade, posição, escala e margem ajustáveis
+- ✅ **Performance**: Não impacta significativamente o tempo de upload
+
+### Configuração Padrão
+
+| Parâmetro | Valor | Descrição |
+|-----------|-------|-----------|
+| **Habilitado** | Sim | Aplicado em todos os uploads |
+| **Opacidade** | 30% | Visível mas discreto |
+| **Posição** | Inferior Direito | Localização do watermark |
+| **Escala** | 15% | Proporção em relação à largura |
+| **Margem** | 20px | Distância das bordas |
+
+### Posições Disponíveis
+
+- `center` - Centro da imagem
+- `top-left` - Superior esquerdo
+- `top-right` - Superior direito
+- `bottom-left` - Inferior esquerdo
+- `bottom-right` - Inferior direito (padrão)
+
+### Fluxo de Processamento
+
+```
+Upload Base64 → Aplicar Watermark → Comprimir (3 versões) → Storage
+              ↓
+          Logo + Opacidade
+              ↓
+      Thumbnail (200px) ✓
+      Medium (800px) ✓
+      Full (1920px) ✓
+```
+
+### Interface de Configuração
+
+Acesse **Backend Status** > **Configurações de Watermark** para ajustar:
+
+- **Ativar/Desativar**: Toggle para habilitar/desabilitar
+- **Opacidade**: Slider de 10% a 100%
+- **Escala**: Slider de 5% a 50% da largura
+- **Posição**: Select com 5 opções
+- **Margem**: Input numérico (0-100px)
+- **Preview Visual**: Visualização em tempo real
+
+### Tratamento de Erros
+
+- Logo não encontrado → Upload sem watermark + warning
+- Erro no processamento → Imagem original sem watermark
+- Buffer inválido → Exceção tratada
+
+### Logo Utilizado
+
+- **Localização**: `/public/logo.png`
+- **Formato**: PNG com transparência
+- **Recomendação**: 500x500px mínimo para qualidade
+
+
 
 ## 🖼️ Componentes de Imagem Progressiva
 
@@ -664,6 +734,71 @@ Use o relatório JSON para:
   alt="..."
   loading="lazy"
 />
+```
+
+## 🚀 Sistema de CDN Caching
+
+### Visão Geral
+
+Sistema de cache headers otimizado para melhorar o delivery de imagens e reduzir latência através de cache em edge locations.
+
+### Headers Configurados
+
+#### Imagens (1 ano de cache)
+```http
+Cache-Control: public, max-age=31536000, immutable
+ETag: "hash-do-arquivo"
+Vary: Accept-Encoding
+```
+
+#### Assets Estáticos (1 ano de cache)
+```http
+Cache-Control: public, max-age=31536000, immutable
+```
+
+#### APIs (Cache com revalidação)
+```http
+Cache-Control: public, max-age=300, stale-while-revalidate=60
+```
+
+### Presets Disponíveis
+
+| Preset | Max-Age | SWR | Uso |
+|--------|---------|-----|-----|
+| `images` | 1 ano | - | Imagens de produtos |
+| `assets` | 1 ano | - | CSS, JS, fonts |
+| `api` | 5 min | 60s | Endpoints de API |
+| `no-cache` | 0 | - | Dados dinâmicos |
+
+### Benefícios
+
+- ✅ **Redução de latência**: Cache em edge locations
+- ✅ **Economia de largura de banda**: Menos requisições ao servidor
+- ✅ **Performance**: Carregamento instantâneo de assets
+- ✅ **Escalabilidade**: Reduz carga no servidor
+
+### Implementação
+
+```typescript
+import { cacheControl } from './middleware/cacheControl';
+
+// Aplicar em rotas
+router.get('/produtos', cacheControl('api'), handler);
+router.get('/images/:id', cacheControl('images'), handler);
+```
+
+### ETag e Validação
+
+- **ETag gerado automaticamente** para cada arquivo
+- **Validação condicional** com If-None-Match
+- **304 Not Modified** quando cache válido
+
+### Stale While Revalidate
+
+```
+Cliente solicita → Cache retorna versão antiga → Atualiza em background
+     ↓                    ↓                              ↓
+  Cache miss          Resposta instantânea         Cache atualizado
 ```
 
 
