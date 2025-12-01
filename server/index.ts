@@ -87,25 +87,16 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' })); // Aumentado para suportar imagens base64 temporariamente
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Rate Limiting - Proteção contra ataques DDoS
+// Rate Limiting - Proteção contra ataques DDoS (configuração mais permissiva para evitar 429 em uso normal)
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 1000, // limite de 1000 requisições por IP
-  message: 'Muitas requisições deste IP, tente novamente após 15 minutos',
+  max: 5000, // limite de 5000 requisições por IP (leituras frequentes do frontend)
+  message: 'Muitas requisições deste IP, tente novamente após alguns minutos',
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// Rate limiting mais rigoroso para endpoints críticos
-const strictLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // limite de 100 requisições por IP
-  message: 'Limite de requisições excedido para esta operação',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// Aplicar rate limiting geral
+// Aplicar rate limiting geral apenas uma vez para todos os endpoints da API
 app.use('/api/', apiLimiter);
 
 // Logging middleware
@@ -133,21 +124,21 @@ app.use('/api/health', healthRouter);
 app.use('/api/vitrine', vitrineVirtualRouter);
 app.use('/api/auth', authRouter);
 
-// Rotas protegidas (com autenticação JWT e rate limiting rigoroso)
-app.use('/api/upload', strictLimiter, authenticateToken, uploadRouter);
-app.use('/api/produtos', strictLimiter, authenticateToken, produtosRouter);
-app.use('/api/clientes', strictLimiter, authenticateToken, clientesRouter);
-app.use('/api/vendas', strictLimiter, authenticateToken, vendasRouter);
-app.use('/api/estoque', strictLimiter, authenticateToken, estoqueRouter);
-app.use('/api/fornecedores', strictLimiter, authenticateToken, fornecedoresRouter);
-app.use('/api/vendedores', strictLimiter, authenticateToken, vendedoresRouter);
-app.use('/api/recalculo', strictLimiter, authenticateToken, recalculoRouter);
-app.use('/api/caixa', strictLimiter, authenticateToken, caixaRouter);
-app.use('/api/contas-pagar', strictLimiter, authenticateToken, contasPagarRouter);
-app.use('/api/contas-receber', strictLimiter, authenticateToken, contasReceberRouter);
-app.use('/api/categorias-financeiras', strictLimiter, authenticateToken, categoriasFinanceirasRouter);
-app.use('/api/permissions', strictLimiter, authenticateToken, permissionsRouter);
-app.use('/api/cleanup', strictLimiter, authenticateToken, cleanupRouter);
+// Rotas protegidas (com autenticação JWT)
+app.use('/api/upload', authenticateToken, uploadRouter);
+app.use('/api/produtos', authenticateToken, produtosRouter);
+app.use('/api/clientes', authenticateToken, clientesRouter);
+app.use('/api/vendas', authenticateToken, vendasRouter);
+app.use('/api/estoque', authenticateToken, estoqueRouter);
+app.use('/api/fornecedores', authenticateToken, fornecedoresRouter);
+app.use('/api/vendedores', authenticateToken, vendedoresRouter);
+app.use('/api/recalculo', authenticateToken, recalculoRouter);
+app.use('/api/caixa', authenticateToken, caixaRouter);
+app.use('/api/contas-pagar', authenticateToken, contasPagarRouter);
+app.use('/api/contas-receber', authenticateToken, contasReceberRouter);
+app.use('/api/categorias-financeiras', authenticateToken, categoriasFinanceirasRouter);
+app.use('/api/permissions', authenticateToken, permissionsRouter);
+app.use('/api/cleanup', authenticateToken, cleanupRouter);
 
 // Rota 404
 app.use(/.*/, (req, res) => {
