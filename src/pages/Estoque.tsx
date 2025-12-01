@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History, Image as ImageIcon, ChevronDown, Star, X, ArrowUpDown, Package2, Grid3X3, Bell, DollarSign } from "lucide-react";
+import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History, Image as ImageIcon, ChevronDown, Star, X, ArrowUpDown, Package2, Grid3X3, Bell, DollarSign, RefreshCw } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ import { formatDateTime } from "@/lib/utils";
 import { getDefaultImageByCategory } from "@/lib/defaultImages";
 import { GlobalLoading } from "@/components/GlobalLoading";
 import { EstoqueAnalyticsCard } from "@/components/EstoqueAnalyticsCard";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 
 const Estoque = () => {
   const location = useLocation();
@@ -50,6 +51,9 @@ const Estoque = () => {
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [inventory, setInventory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [filterPromocao, setFilterPromocao] = useState<boolean | null>(null);
   const [filterNovidade, setFilterNovidade] = useState<boolean | null>(null);
   const [filterCor, setFilterCor] = useState<string>("todas");
@@ -76,7 +80,7 @@ const Estoque = () => {
   const [mostrarTodosTamanhos, setMostrarTodosTamanhos] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
-    loadEstoque();
+    loadEstoque(1, true);
 
     // Verificar se tem filtro de produto na URL
     const params = new URLSearchParams(location.search);
@@ -86,51 +90,89 @@ const Estoque = () => {
     }
   }, [location.search]);
 
-  const loadEstoque = async () => {
+  const loadEstoque = async (pageNum: number = 1, reset: boolean = false) => {
     try {
-      setLoading(true);
-      const response = await estoqueAPI.getAll();
+      if (reset) {
+        setLoading(true);
+        setInventory([]);
+        setPage(1);
+        setHasMore(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+      
+      const response = await estoqueAPI.getAll(pageNum, 50);
       const data = response.data || response;
+      const pagination = response.pagination;
+      
       console.log('📦 Dados recebidos do estoque:', data);
       if (data.length > 0) {
         console.log('📝 Primeiro item:', data[0]);
         console.log('📝 logMovimentacao do primeiro item:', data[0].logMovimentacao);
       }
-      setInventory(data);
+      
+      if (reset) {
+        setInventory(data);
+      } else {
+        setInventory(prev => [...prev, ...data]);
+      }
 
-      // Inicializar seleção de cor e tamanho para cada item
-      const initialColors: { [key: string]: string } = {};
-      const initialSizes: { [key: string]: string } = {};
+      if (pagination) {
+        setHasMore(pagination.page < pagination.pages);
+      } else {
+        setHasMore(data.length === 50);
+      }
 
-      data.forEach((item: any) => {
-        if (item.variantes && item.variantes.length > 0) {
-          initialColors[item.codigoProduto] = item.variantes[0].cor;
-          const tamanhosVariante0 = item.variantes[0].tamanhos;
-          let primeiroTamanho = '';
-          if (Array.isArray(tamanhosVariante0) && tamanhosVariante0.length > 0) {
-            // Nova estrutura: array de objetos {tamanho, quantidade}
-            if (typeof tamanhosVariante0[0] === 'object' && tamanhosVariante0[0].tamanho) {
-              primeiroTamanho = tamanhosVariante0[0].tamanho;
-            } else {
-              // Estrutura antiga: array de strings
-              primeiroTamanho = tamanhosVariante0[0];
+      // Inicializar seleção de cor e tamanho para cada item (apenas no reset)
+      if (reset) {
+        const initialColors: { [key: string]: string } = {};
+        const initialSizes: { [key: string]: string } = {};
+
+        data.forEach((item: any) => {
+          if (item.variantes && item.variantes.length > 0) {
+            initialColors[item.codigoProduto] = item.variantes[0].cor;
+            const tamanhosVariante0 = item.variantes[0].tamanhos;
+            let primeiroTamanho = '';
+            if (Array.isArray(tamanhosVariante0) && tamanhosVariante0.length > 0) {
+              // Nova estrutura: array de objetos {tamanho, quantidade}
+              if (typeof tamanhosVariante0[0] === 'object' && tamanhosVariante0[0].tamanho) {
+                primeiroTamanho = tamanhosVariante0[0].tamanho;
+              } else {
+                // Estrutura antiga: array de strings
+                primeiroTamanho = tamanhosVariante0[0];
+              }
+            } else if (item.variantes[0].tamanho) {
+              primeiroTamanho = item.variantes[0].tamanho;
             }
-          } else if (item.variantes[0].tamanho) {
-            primeiroTamanho = item.variantes[0].tamanho;
+            initialSizes[item.codigoProduto] = primeiroTamanho;
           }
-          initialSizes[item.codigoProduto] = primeiroTamanho;
-        }
-      });
+        });
 
-      setSelectedColorByItem(initialColors);
-      setSelectedSizeByItem(initialSizes);
+        setSelectedColorByItem(initialColors);
+        setSelectedSizeByItem(initialSizes);
+      }
     } catch (error) {
       console.error('Erro ao carregar estoque:', error);
       toast.error('Erro ao carregar estoque');
     } finally {
       setLoading(false);
+      setIsLoadingMore(false);
     }
   };
+
+  const loadMore = () => {
+    if (!isLoadingMore && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      loadEstoque(nextPage, false);
+    }
+  };
+
+  const { sentinelRef } = useInfiniteScroll({
+    hasMore,
+    loading: isLoadingMore,
+    onLoadMore: loadMore
+  });
 
   // Função para contar itens por categoria (com filtros aplicados)
   const getCountByCategoria = (categoria: string) => {
@@ -643,7 +685,7 @@ const Estoque = () => {
 
 
   const handleImagesSuccess = () => {
-    loadEstoque();
+    loadEstoque(1, true);
   };
 
   if (loading) {
@@ -1792,7 +1834,7 @@ const Estoque = () => {
             precoOriginal={selectedItem.precoVenda}
             emPromocao={selectedItem.emPromocao}
             precoPromocionalAtual={selectedItem.precoPromocional}
-            onSuccess={loadEstoque}
+            onSuccess={() => loadEstoque(1, true)}
           />
 
           <NovidadeDialog
@@ -1801,7 +1843,7 @@ const Estoque = () => {
             codigoProduto={selectedItem.codigoProduto}
             nomeProduto={selectedItem.nomeProduto}
             isNovidade={selectedItem.isNovidade}
-            onSuccess={loadEstoque}
+            onSuccess={() => loadEstoque(1, true)}
           />
 
           <MovimentacaoDialog
@@ -1847,7 +1889,7 @@ const Estoque = () => {
         open={showMultipleVariantsDialog}
         onOpenChange={setShowMultipleVariantsDialog}
         produto={selectedItem}
-        onSuccess={loadEstoque}
+        onSuccess={() => loadEstoque(1, true)}
       />
 
       <HistoricoPrecosDialog
@@ -1861,6 +1903,24 @@ const Estoque = () => {
         open={showAlertasDialog}
         onOpenChange={setShowAlertasDialog}
       />
+
+      {/* Scroll infinito - Sentinel */}
+      {hasMore && (
+        <div ref={sentinelRef} className="flex justify-center py-4">
+          {isLoadingMore && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <RefreshCw className="h-4 w-4 animate-spin" />
+              <span>Carregando mais itens...</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {!hasMore && sortedInventory.length > 0 && (
+        <div className="text-center py-4 text-muted-foreground text-sm">
+          Todos os itens foram carregados
+        </div>
+      )}
     </div>
   );
 };
