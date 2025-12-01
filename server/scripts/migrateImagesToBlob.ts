@@ -54,7 +54,7 @@ async function migrateEstoqueImages(): Promise<MigrationStats> {
                 try {
                   console.log(`  ↑ Uploading image for ${estoque.codigoProduto} - ${variante.cor}...`);
                   const result = await uploadImageToBlob(imagem);
-                  newImagens.push(result.url);
+                  newImagens.push(result.urls.full); // Usar a versão full da imagem
                   stats.migratedImages++;
                   hasChanges = true;
                 } catch (error: any) {
@@ -120,7 +120,7 @@ async function migrateVitrineImages(): Promise<MigrationStats> {
                 try {
                   console.log(`  ↑ Uploading image for ${produto.codigoProduto} - ${variante.cor}...`);
                   const result = await uploadImageToBlob(imagem);
-                  newImagens.push(result.url);
+                  newImagens.push(result.urls.full); // Usar a versão full da imagem
                   stats.migratedImages++;
                   hasChanges = true;
                 } catch (error: any) {

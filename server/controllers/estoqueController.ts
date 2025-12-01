@@ -397,7 +397,10 @@ export const createEstoque = async (req: Request, res: Response) => {
     
     // Processar imagens - converter base64 para URLs
     const imagensRaw = primeiraVariante.imagens ?? req.body.imagens ?? [];
-    const imagens = await processImages(imagensRaw);
+    // Processar imagens (converter base64 para URLs ou manter URLs existentes)
+    const imagensProcessadas = await processImages(imagensRaw);
+    // Extrair apenas as URLs full para armazenar no banco
+    const imagens = imagensProcessadas.map(result => result.urls.full);
     
     const { codigoProduto } = req.body;
 
@@ -436,7 +439,7 @@ export const createEstoque = async (req: Request, res: Response) => {
         if (!Array.isArray(varianteExistente.imagens)) {
           varianteExistente.imagens = [];
         }
-        (imagens as string[]).forEach((img) => {
+        imagens.forEach((img) => {
           if (img && !varianteExistente.imagens!.includes(img)) {
             varianteExistente.imagens!.push(img);
           }

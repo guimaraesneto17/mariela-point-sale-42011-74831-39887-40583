@@ -1,7 +1,8 @@
 import express from 'express';
 import { cleanupOrphanImages, getStorageStats, getStorageHistory } from '../controllers/cleanupController';
 import { authenticateToken } from '../middleware/auth';
-import { checkPermission } from '../middleware/permissions';
+import { requirePermission } from '../middleware/permissions';
+import { cachePresets } from '../middleware/cacheControl';
 
 const router = express.Router();
 
@@ -37,7 +38,7 @@ const router = express.Router();
 router.post(
   '/orphan-images',
   authenticateToken,
-  checkPermission('produtos', 'delete'),
+  requirePermission('produtos', 'delete'),
   cleanupOrphanImages
 );
 
@@ -60,7 +61,8 @@ router.post(
 router.get(
   '/storage-stats',
   authenticateToken,
-  checkPermission('produtos', 'view'),
+  requirePermission('produtos', 'view'),
+  cachePresets.api, // Cache de 1 minuto com revalidação
   getStorageStats
 );
 
@@ -89,7 +91,8 @@ router.get(
 router.get(
   '/storage-history',
   authenticateToken,
-  checkPermission('produtos', 'view'),
+  requirePermission('produtos', 'view'),
+  cachePresets.api, // Cache de 1 minuto com revalidação
   getStorageHistory
 );
 

@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, CheckCircle2, XCircle, Clock, RefreshCw, Database, Server, AlertCircle, Activity, History, Trash2 } from 'lucide-react';
 import StorageCleanup from '@/components/StorageCleanup';
 import { StorageAnalyticsDashboard } from "@/components/StorageAnalyticsDashboard";
+import { ImageSEOAnalyzer } from "@/components/ImageSEOAnalyzer";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { connectionLogger, ConnectionEvent, LatencyDataPoint } from '@/lib/connectionLogger';
 import { format } from 'date-fns';
@@ -481,6 +482,9 @@ export default function BackendStatus() {
 
       {/* Analytics de Storage */}
       <StorageAnalyticsDashboard />
+
+      {/* Análise de SEO de Imagens */}
+      <ImageSEOAnalyzer />
 
       {/* Gerenciamento de Storage */}
       <StorageCleanup />
