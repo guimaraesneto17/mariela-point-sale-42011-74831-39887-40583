@@ -274,7 +274,7 @@ export async function listAllImages(): Promise<string[]> {
       prefix: 'products/',
     });
 
-    return blobs.map((blob) => blob.url);
+    return blobs.map((blob: any) => blob.url);
   } catch (error) {
     console.error('Erro ao listar imagens:', error);
     return [];
