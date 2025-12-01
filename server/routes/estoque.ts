@@ -1,5 +1,6 @@
 import express from 'express';
 import * as estoqueController from '../controllers/estoqueController';
+import { requirePermission } from '../middleware/permissions';
 
 const router = express.Router();
 
@@ -15,7 +16,7 @@ const router = express.Router();
  *       500:
  *         description: Erro ao buscar estoque
  */
-router.get('/', estoqueController.getAllEstoque);
+router.get('/', requirePermission('estoque', 'view'), estoqueController.getAllEstoque);
 
 /**
  * @swagger
@@ -35,7 +36,7 @@ router.get('/', estoqueController.getAllEstoque);
  *       404:
  *         description: Item de estoque não encontrado
  */
-router.get('/codigo/:codigo', estoqueController.getEstoqueByCodigo);
+router.get('/codigo/:codigo', requirePermission('estoque', 'view'), estoqueController.getEstoqueByCodigo);
 
 /**
  * @swagger
@@ -55,7 +56,7 @@ router.get('/codigo/:codigo', estoqueController.getEstoqueByCodigo);
  *       404:
  *         description: Item de estoque não encontrado
  */
-router.get('/:id', estoqueController.getEstoqueById);
+router.get('/:id', requirePermission('estoque', 'view'), estoqueController.getEstoqueById);
 
 /**
  * @swagger
@@ -127,7 +128,7 @@ router.get('/:id', estoqueController.getEstoqueById);
  *       400:
  *         description: Erro ao criar item de estoque
  */
-router.post('/', estoqueController.createEstoque);
+router.post('/', requirePermission('estoque', 'create'), estoqueController.createEstoque);
 
 /**
  * @swagger
@@ -185,7 +186,7 @@ router.post('/', estoqueController.createEstoque);
  *       400:
  *         description: Erro ao registrar entrada ou campos obrigatórios faltando
  */
-router.post('/entrada', estoqueController.registrarEntrada);
+router.post('/entrada', requirePermission('estoque', 'create'), estoqueController.registrarEntrada);
 
 /**
  * @swagger
@@ -238,7 +239,7 @@ router.post('/entrada', estoqueController.registrarEntrada);
  *       400:
  *         description: Erro ao registrar saída, campos faltando ou quantidade insuficiente
  */
-router.post('/saida', estoqueController.registrarSaida);
+router.post('/saida', requirePermission('estoque', 'create'), estoqueController.registrarSaida);
 
 /**
  * @swagger
@@ -303,7 +304,7 @@ router.post('/saida', estoqueController.registrarSaida);
  *       500:
  *         description: Erro interno do servidor
  */
-router.patch('/novidade/:codigo', estoqueController.toggleNovidade);
+router.patch('/novidade/:codigo', requirePermission('estoque', 'edit'), estoqueController.toggleNovidade);
 
 /**
  * @swagger
@@ -345,7 +346,7 @@ router.patch('/novidade/:codigo', estoqueController.toggleNovidade);
  *       400:
  *         description: Erro ao atualizar promoção ou valor promocional não informado
  */
-router.patch('/promocao/:codigo', estoqueController.togglePromocao);
+router.patch('/promocao/:codigo', requirePermission('estoque', 'edit'), estoqueController.togglePromocao);
 
 /**
  * @swagger
@@ -394,7 +395,7 @@ router.patch('/promocao/:codigo', estoqueController.togglePromocao);
  *       400:
  *         description: Erro ao atualizar imagens ou campos obrigatórios faltando
  */
-router.patch('/variante/imagens/:codigo', estoqueController.updateVariantImages);
+router.patch('/variante/imagens/:codigo', requirePermission('estoque', 'edit'), estoqueController.updateVariantImages);
 
 /**
  * @swagger
@@ -422,7 +423,7 @@ router.patch('/variante/imagens/:codigo', estoqueController.updateVariantImages)
  *       400:
  *         description: Erro ao atualizar item de estoque
  */
-router.put('/:id', estoqueController.updateEstoque);
+router.put('/:id', requirePermission('estoque', 'edit'), estoqueController.updateEstoque);
 
 /**
  * @swagger
@@ -444,6 +445,6 @@ router.put('/:id', estoqueController.updateEstoque);
  *       500:
  *         description: Erro ao remover item de estoque
  */
-router.delete('/:id', estoqueController.deleteEstoque);
+router.delete('/:id', requirePermission('estoque', 'delete'), estoqueController.deleteEstoque);
 
 export default router;

@@ -14,9 +14,16 @@ export interface User {
   ativo: boolean;
 }
 
+interface Permission {
+  role: 'admin' | 'gerente' | 'vendedor';
+  module: string;
+  actions: string[];
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  permissions: Permission[] | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, nome: string, role?: UserRole, codigoVendedor?: string) => Promise<void>;
   logout: () => void;
@@ -24,6 +31,7 @@ interface AuthContextType {
   hasRole: (...roles: UserRole[]) => boolean;
   isAdmin: boolean;
   isVendedor: boolean;
+  refreshPermissions: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,24 +39,62 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
+  const [permissions, setPermissions] = useState<Permission[] | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Carregar permissões do usuário
+  const loadPermissions = async (userRole: UserRole) => {
+    try {
+      // Admin não precisa carregar permissões, tem acesso total
+      if (userRole === 'admin') {
+        setPermissions([]);
+        localStorage.setItem('mariela_permissions', JSON.stringify([]));
+        return;
+      }
+
+      const response = await axiosInstance.get<Permission[]>(`/permissions/role/${userRole}`);
+      setPermissions(response.data);
+      localStorage.setItem('mariela_permissions', JSON.stringify(response.data));
+    } catch (error) {
+      console.error('Erro ao carregar permissões:', error);
+      // Em caso de erro, inicializar com array vazio
+      setPermissions([]);
+      localStorage.setItem('mariela_permissions', JSON.stringify([]));
+    }
+  };
+
+  // Função para recarregar permissões
+  const refreshPermissions = async () => {
+    if (user) {
+      await loadPermissions(user.role);
+    }
+  };
 
   // Carregar usuário do localStorage ao iniciar
   useEffect(() => {
-    const loadUser = () => {
+    const loadUser = async () => {
       try {
         const storedUser = localStorage.getItem('mariela_user');
+        const storedPermissions = localStorage.getItem('mariela_permissions');
         const token = localStorage.getItem('mariela_access_token');
         
         if (storedUser && token) {
           const parsedUser = JSON.parse(storedUser);
           setUser(parsedUser);
+          
+          // Carregar permissões se existirem no localStorage, senão buscar da API
+          if (storedPermissions) {
+            setPermissions(JSON.parse(storedPermissions));
+          } else {
+            await loadPermissions(parsedUser.role);
+          }
         }
       } catch (error) {
         console.error('Erro ao carregar usuário:', error);
         localStorage.removeItem('mariela_user');
         localStorage.removeItem('mariela_access_token');
         localStorage.removeItem('mariela_refresh_token');
+        localStorage.removeItem('mariela_permissions');
       } finally {
         setLoading(false);
       }
@@ -81,6 +127,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('mariela_user', JSON.stringify(userData));
 
       setUser(userData);
+      
+      // Carregar permissões do usuário
+      await loadPermissions(userData.role);
+      
       toast.success('Login realizado com sucesso!');
       navigate('/');
     } catch (error: any) {
@@ -141,7 +191,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('mariela_access_token');
       localStorage.removeItem('mariela_refresh_token');
       localStorage.removeItem('mariela_user');
+      localStorage.removeItem('mariela_permissions');
       setUser(null);
+      setPermissions(null);
       toast.success('Logout realizado com sucesso!');
       navigate('/auth');
     }
@@ -161,6 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         loading,
+        permissions,
         login,
         register,
         logout,
@@ -168,6 +221,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         hasRole,
         isAdmin,
         isVendedor,
+        refreshPermissions,
       }}
     >
       {children}
