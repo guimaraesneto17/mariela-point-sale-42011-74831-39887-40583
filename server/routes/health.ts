@@ -125,4 +125,78 @@ router.get('/', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/health/collections:
+ *   get:
+ *     summary: Verifica o status de cada collection do MongoDB
+ *     description: Testa a conectividade e tempo de resposta de cada collection individualmente
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: Status das collections
+ */
+router.get('/collections', async (req, res) => {
+  try {
+    const collections = [
+      'produtos',
+      'clientes', 
+      'vendas',
+      'estoque',
+      'fornecedores',
+      'vendedores',
+      'caixas',
+      'contaspagar',
+      'contasreceber',
+      'vitrinevirtual'
+    ];
+
+    const results = await Promise.all(
+      collections.map(async (collectionName) => {
+        const startTime = Date.now();
+        try {
+          // Timeout de 5 segundos por collection
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout')), 5000)
+          );
+          
+          const queryPromise = mongoose.connection.db
+            .collection(collectionName)
+            .findOne({}, { projection: { _id: 1 }, maxTimeMS: 5000 });
+
+          await Promise.race([queryPromise, timeoutPromise]);
+          
+          const responseTime = Date.now() - startTime;
+          
+          return {
+            collection: collectionName,
+            status: 'success',
+            responseTime,
+          };
+        } catch (error: any) {
+          const responseTime = Date.now() - startTime;
+          return {
+            collection: collectionName,
+            status: 'error',
+            responseTime,
+            error: error.message || 'Erro desconhecido',
+          };
+        }
+      })
+    );
+
+    res.json({
+      timestamp: new Date().toISOString(),
+      collections: results,
+    });
+  } catch (error) {
+    console.error('❌ Erro ao verificar collections:', error);
+    res.status(500).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Erro desconhecido',
+    });
+  }
+});
+
 export default router;
