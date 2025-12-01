@@ -9,14 +9,47 @@ const router = express.Router();
  * @swagger
  * /api/estoque:
  *   get:
- *     summary: Lista todo o estoque (cached por 3 minutos)
+ *     summary: Lista todo o estoque com paginação (cached por 3 minutos)
  *     description: |
- *       Retorna lista completa do estoque agregado por produto.
+ *       Retorna lista paginada do estoque agregado por produto.
  *       Utiliza cache de 3 minutos para melhorar performance.
  *     tags: [Estoque]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Número da página (começa em 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *         description: Quantidade de itens por página
  *     responses:
  *       200:
  *         description: Lista de estoque retornada com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     pages:
+ *                       type: integer
  *       500:
  *         description: Erro ao buscar estoque
  */

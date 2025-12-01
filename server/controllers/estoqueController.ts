@@ -268,6 +268,10 @@ const validateEstoquePayload = (payload: any): FieldIssue[] => {
 
 export const getAllEstoque = async (req: Request, res: Response) => {
   try {
+    // Paginação
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 50;
+    
     // Otimização: usar lean() e limitar logs de movimentação para reduzir payload
     const docs = await Estoque
       .find()
@@ -329,7 +333,20 @@ export const getAllEstoque = async (req: Request, res: Response) => {
       };
     }).filter(Boolean);
 
-    res.json(estoqueComProdutos);
+    // Aplicar paginação após agregação
+    const total = estoqueComProdutos.length;
+    const skip = (page - 1) * limit;
+    const paginatedEstoque = estoqueComProdutos.slice(skip, skip + limit);
+
+    res.json({
+      data: paginatedEstoque,
+      pagination: {
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     console.error('Erro ao buscar estoque:', error);
     res.status(500).json({ error: 'Erro ao buscar estoque' });
