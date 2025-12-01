@@ -138,6 +138,16 @@ router.get('/', async (req, res) => {
  */
 router.get('/collections', async (req, res) => {
   try {
+    // Verificar se o banco está conectado
+    if (!mongoose.connection.db) {
+      return res.status(503).json({
+        status: 'error',
+        timestamp: new Date().toISOString(),
+        error: 'Banco de dados não conectado',
+        collections: [],
+      });
+    }
+
     const collections = [
       'produtos',
       'clientes', 
@@ -160,7 +170,7 @@ router.get('/collections', async (req, res) => {
             setTimeout(() => reject(new Error('Timeout')), 5000)
           );
           
-          const queryPromise = mongoose.connection.db
+          const queryPromise = mongoose.connection.db!
             .collection(collectionName)
             .findOne({}, { projection: { _id: 1 }, maxTimeMS: 5000 });
 
