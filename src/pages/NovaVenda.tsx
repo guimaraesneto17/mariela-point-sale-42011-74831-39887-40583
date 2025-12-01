@@ -18,6 +18,7 @@ import { clientesAPI, vendedoresAPI, estoqueAPI, vendasAPI } from "@/lib/api";
 import { formatInTimeZone } from "date-fns-tz";
 import { startOfDay, endOfDay } from "date-fns";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { NovaVendaSkeleton } from "@/components/NovaVendaSkeleton";
 
 interface ItemVenda {
   codigoProduto: string;
@@ -63,6 +64,7 @@ const NovaVenda = () => {
   const [clientes, setClientes] = useState<any[]>([]);
   const [vendedores, setVendedores] = useState<any[]>([]);
   const [estoque, setEstoque] = useState<any[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
   
   // Estado para rastrear estoque retido (key: codigoProduto-cor-tamanho, value: quantidade retida)
   const [estoqueRetido, setEstoqueRetido] = useState<Record<string, number>>({});
@@ -73,6 +75,7 @@ const NovaVenda = () => {
 
   const loadData = async () => {
     try {
+      setIsLoadingData(true);
       const [clientesData, vendedoresData, estoqueData] = await Promise.all([
         clientesAPI.getAll(),
         vendedoresAPI.getAll(),
@@ -101,6 +104,8 @@ const NovaVenda = () => {
       console.error('Erro ao carregar dados:', error);
       toast.error('Erro ao carregar dados');
       setEstoque([]);
+    } finally {
+      setIsLoadingData(false);
     }
   };
 
@@ -507,11 +512,15 @@ const NovaVenda = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-foreground mb-2">Nova Venda</h1>
-        <p className="text-muted-foreground">Registrar uma nova venda</p>
-      </div>
+    <>
+      {isLoadingData ? (
+        <NovaVendaSkeleton />
+      ) : (
+        <div className="space-y-6 animate-fade-in">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-foreground mb-2">Nova Venda</h1>
+            <p className="text-muted-foreground">Registrar uma nova venda</p>
+          </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Coluna Esquerda - Cliente e Vendedor */}
@@ -1072,7 +1081,9 @@ const NovaVenda = () => {
         valorRecebidoLojista={valorRecebidoLojista}
         parcelas={parcelas}
       />
-    </div>
+        </div>
+      )}
+    </>
   );
 };
 

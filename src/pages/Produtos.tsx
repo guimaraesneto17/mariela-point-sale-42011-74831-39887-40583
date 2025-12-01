@@ -739,7 +739,7 @@ const Produtos = () => {
                 </div>
               )}
 
-              <div className="flex gap-2 mt-4">
+              <div className="flex flex-col sm:flex-row gap-2 mt-4">
                 <Button
                   size="sm"
                   variant="outline"
@@ -750,7 +750,7 @@ const Produtos = () => {
                   }}
                 >
                   <PackagePlus className="h-4 w-4" />
-                  Adicionar ao Estoque
+                  <span className="truncate">Adicionar ao Estoque</span>
                 </Button>
                 {/* Botão para ver no estoque - só aparece se tem estoque */}
                 {(() => {
@@ -772,7 +772,7 @@ const Produtos = () => {
                         onClick={() => navigate(`/estoque?produto=${produto.codigoProduto}`)}
                       >
                         <Package className="h-4 w-4" />
-                        Ver no Estoque
+                        <span className="truncate">Ver no Estoque</span>
                       </Button>
                     );
                   }
