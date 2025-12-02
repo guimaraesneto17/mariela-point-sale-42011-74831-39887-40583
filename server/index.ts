@@ -107,7 +107,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Rate Limiting - Proteção contra ataques DDoS (configuração mais permissiva para evitar 429 em uso normal)
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 5000, // limite de 5000 requisições por IP (leituras frequentes do frontend)
+  max: 10000, // limite de 5000 requisições por IP (leituras frequentes do frontend)
   message: 'Muitas requisições deste IP, tente novamente após alguns minutos',
   standardHeaders: true,
   legacyHeaders: false,
