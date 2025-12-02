@@ -1,18 +1,20 @@
-import { Link, LinkProps } from 'react-router-dom';
+import { Link, LinkProps, useLocation } from 'react-router-dom';
 import { usePrefetchNavigation } from '@/hooks/usePrefetchNavigation';
 import { ReactNode } from 'react';
 
-interface PrefetchNavLinkProps extends Omit<LinkProps, 'className'> {
+interface PrefetchNavLinkProps extends Omit<LinkProps, 'className' | 'children'> {
   prefetchRoute?: 'dashboard' | 'nova-venda' | 'produtos' | 'estoque' | 'clientes' | 'vendedores' | 'fornecedores' | 'vendas';
-  children: ReactNode;
+  children: ReactNode | ((props: { isActive: boolean }) => ReactNode);
   className?: string | ((props: { isActive: boolean }) => string);
 }
 
 /**
  * Link component que prefetcha dados ao passar o mouse
  * Melhora a percepção de performance ao carregar dados antes do clique
+ * Suporta children como função para passar isActive
  */
 export function PrefetchNavLink({ prefetchRoute, children, className, ...props }: PrefetchNavLinkProps) {
+  const location = useLocation();
   const {
     prefetchDashboard,
     prefetchNovaVenda,
@@ -55,12 +57,17 @@ export function PrefetchNavLink({ prefetchRoute, children, className, ...props }
     }
   };
 
+  const isActive = location.pathname === props.to;
+  const computedClassName = typeof className === 'function' ? className({ isActive }) : className;
+  const computedChildren = typeof children === 'function' ? children({ isActive }) : children;
+
   return (
     <Link 
       {...props}
+      className={computedClassName}
       onMouseEnter={handleMouseEnter}
     >
-      {children}
+      {computedChildren}
     </Link>
   );
 }
