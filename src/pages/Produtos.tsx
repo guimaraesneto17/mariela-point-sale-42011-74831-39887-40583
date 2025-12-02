@@ -23,6 +23,8 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useProdutos, useCreateProduto, useUpdateProduto, useDeleteProduto } from "@/hooks/useQueryCache";
+import { RetryProgressIndicator } from "@/components/RetryProgressIndicator";
 
 type ProdutoFormData = z.infer<typeof produtoSchema>;
 

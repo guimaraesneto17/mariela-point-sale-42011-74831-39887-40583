@@ -19,6 +19,8 @@ import { formatDate } from "@/lib/utils";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import { AniversariantesDialog } from "@/components/AniversariantesDialog";
 import { PermissionGuard } from "@/components/PermissionGuard";
+import { useClientes, useCreateCliente, useUpdateCliente, useDeleteCliente } from "@/hooks/useQueryCache";
+import { RetryProgressIndicator } from "@/components/RetryProgressIndicator";
 
 type ClienteFormData = z.infer<typeof clienteSchema>;
 
@@ -46,26 +48,11 @@ const Clientes = () => {
     },
   });
 
-  const [clientes, setClientes] = useState<any[]>([]);
-  const [isLoadingData, setIsLoadingData] = useState(true);
-
-  useEffect(() => {
-    loadClientes();
-  }, []);
-
-  const loadClientes = async () => {
-    try {
-      setIsLoadingData(true);
-      const data = await clientesAPI.getAll();
-      setClientes(data);
-    } catch (error) {
-      toast.error("Erro ao carregar clientes", {
-        description: "Verifique se o servidor está rodando",
-      });
-    } finally {
-      setIsLoadingData(false);
-    }
-  };
+  // React Query hooks com optimistic updates
+  const { data: clientes = [], isLoading: isLoadingData, error, refetch } = useClientes();
+  const createClienteMutation = useCreateCliente();
+  const updateClienteMutation = useUpdateCliente();
+  const deleteClienteMutation = useDeleteCliente();
 
   const filteredClientes = clientes.filter(cliente =>
     cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -95,12 +82,15 @@ const Clientes = () => {
       };
 
       if (editingCliente) {
-        await clientesAPI.update(editingCliente.codigoCliente, cleanData);
+        await updateClienteMutation.mutateAsync({
+          id: editingCliente.codigoCliente,
+          data: cleanData,
+        });
         toast.success("✅ Cliente atualizado com sucesso!", {
           description: `${data.nome} foi atualizado no sistema`,
         });
       } else {
-        await clientesAPI.create(cleanData);
+        await createClienteMutation.mutateAsync(cleanData);
         toast.success("✅ Cliente cadastrado com sucesso!", {
           description: `${data.nome} foi adicionado ao sistema`,
         });
@@ -110,7 +100,6 @@ const Clientes = () => {
       setEditingCliente(null);
       form.reset();
       setManualCode(false);
-      loadClientes();
     } catch (error: any) {
       toast.error("❌ Erro ao salvar cliente", {
         description: error.message || "Verifique sua conexão e tente novamente",
@@ -144,13 +133,12 @@ const Clientes = () => {
   const confirmDelete = async () => {
     if (!clienteToDelete) return;
     
-    const cliente = clientes.find(c => c._id === clienteToDelete);
+    const cliente = clientes.find((c: any) => c._id === clienteToDelete);
     if (!cliente) return;
     
     try {
-      await clientesAPI.delete(cliente.codigoCliente);
+      await deleteClienteMutation.mutateAsync(cliente.codigoCliente);
       toast.success("Cliente excluído com sucesso!");
-      loadClientes();
     } catch (error: any) {
       toast.error("Erro ao excluir cliente", {
         description: error.message || "Tente novamente",
@@ -179,21 +167,18 @@ const Clientes = () => {
 
   const handleRecalcularTotais = async () => {
     try {
-      setIsLoadingData(true);
       toast.loading("Recalculando totais...");
       const result = await recalculoAPI.recalcularTotais();
       toast.dismiss();
       toast.success("Totais recalculados com sucesso!", {
         description: `${result.clientesAtualizados} clientes atualizados`,
       });
-      loadClientes();
+      refetch();
     } catch (error: any) {
       toast.dismiss();
       toast.error("Erro ao recalcular totais", {
         description: error.message || "Tente novamente",
       });
-    } finally {
-      setIsLoadingData(false);
     }
   };
 
@@ -202,7 +187,15 @@ const Clientes = () => {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <>
+      <RetryProgressIndicator
+        isRetrying={createClienteMutation.isPending || updateClienteMutation.isPending || deleteClienteMutation.isPending}
+        retryAttempt={1}
+        maxRetries={3}
+        error={error?.message}
+        onRetry={() => refetch()}
+      />
+      <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold text-foreground mb-2">Clientes</h1>
@@ -616,7 +609,8 @@ const Clientes = () => {
         onOpenChange={setAniversariantesDialogOpen}
         clientes={clientes}
       />
-    </div>
+      </div>
+    </>
   );
 };
 

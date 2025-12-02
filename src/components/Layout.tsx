@@ -166,7 +166,7 @@ const Layout = () => {
         )}
 
         {/* Navegação */}
-        <nav className={`flex-1 p-4 space-y-1 overflow-y-auto ${isMobile ? 'mt-4' : ''}`}>
+        <nav className={`flex-1 px-3 py-4 space-y-2 overflow-y-auto ${isMobile ? 'mt-4' : ''}`}>
           {navItems.map((item) => (
             <PrefetchNavLink
               key={item.to}
@@ -174,14 +174,14 @@ const Layout = () => {
               prefetchRoute={item.prefetch}
               onClick={handleNavClick}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${isActive
-                  ? "bg-[#c4b5fd] text-[#7c3aed] shadow-md font-semibold"
-                  : "text-white hover:bg-white/10"
+                `flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 ${isActive
+                  ? "bg-white/90 text-[#7c3aed] shadow-lg font-medium"
+                  : "text-white/90 hover:bg-white/10 hover:text-white"
                 }`
               }
             >
               <item.icon className="h-5 w-5" />
-              <span>{item.label}</span>
+              <span className="text-[15px]">{item.label}</span>
             </PrefetchNavLink>
           ))}
 
