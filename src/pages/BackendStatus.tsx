@@ -78,8 +78,16 @@ export default function BackendStatus() {
     const timeoutId = setTimeout(() => controller.abort(), 10000);
 
     try {
+      // Incluir token de autenticação se disponível
+      const token = localStorage.getItem('mariela_access_token');
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${API_BASE_URL}${endpoint.endpoint}`, {
         method: 'HEAD',
+        headers,
         signal: controller.signal,
       });
 

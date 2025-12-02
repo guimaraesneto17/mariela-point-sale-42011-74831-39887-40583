@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History, Image as ImageIcon, ChevronDown, Star, X, ArrowUpDown, Package2, Grid3X3, Bell, DollarSign, RefreshCw } from "lucide-react";
+import { EstoqueSkeleton } from "@/components/EstoqueSkeleton";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -693,7 +694,7 @@ const Estoque = () => {
   };
 
   if (loading) {
-    return <GlobalLoading message="Carregando estoque..." />;
+    return <EstoqueSkeleton />;
   }
 
   return (

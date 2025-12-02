@@ -6,6 +6,7 @@ import { TrendingDown, TrendingUp, Zap, HardDrive, Image as ImageIcon, Gauge } f
 import axiosInstance from "@/lib/api";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ChartErrorBoundary } from "@/components/ChartErrorBoundary";
 
 interface StorageStats {
   totalImages: number;
@@ -211,23 +212,25 @@ export const StorageAnalyticsDashboard = () => {
             <CardDescription>Tempo de carregamento antes e depois da otimização</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={performanceData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="metric" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" label={{ value: 'Segundos', angle: -90, position: 'insideLeft' }} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--background))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Legend />
-                <Bar dataKey="antes" fill="#ef4444" name="Antes" radius={[8, 8, 0, 0]} />
-                <Bar dataKey="depois" fill="#22c55e" name="Depois" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <ChartErrorBoundary>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={performanceData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="metric" stroke="hsl(var(--muted-foreground))" />
+                  <YAxis stroke="hsl(var(--muted-foreground))" label={{ value: 'Segundos', angle: -90, position: 'insideLeft' }} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="antes" fill="#ef4444" name="Antes" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="depois" fill="#22c55e" name="Depois" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartErrorBoundary>
             <div className="mt-4 p-3 bg-green-500/10 rounded-lg border border-green-500/30">
               <p className="text-sm font-medium text-green-700 dark:text-green-400 flex items-center gap-2">
                 <TrendingDown className="h-4 w-4" />
@@ -247,26 +250,28 @@ export const StorageAnalyticsDashboard = () => {
             <CardDescription>Comparação de tamanho médio das diferentes versões</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={versionComparisonData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis type="number" stroke="hsl(var(--muted-foreground))" label={{ value: 'KB', position: 'insideRight' }} />
-                <YAxis type="category" dataKey="version" stroke="hsl(var(--muted-foreground))" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--background))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
-                  }}
-                  formatter={(value) => `${value} KB`}
-                />
-                <Bar dataKey="size" name="Tamanho" radius={[0, 8, 8, 0]}>
-                  {versionComparisonData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <ChartErrorBoundary>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={versionComparisonData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis type="number" stroke="hsl(var(--muted-foreground))" label={{ value: 'KB', position: 'insideRight' }} />
+                  <YAxis type="category" dataKey="version" stroke="hsl(var(--muted-foreground))" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                    formatter={(value) => `${value} KB`}
+                  />
+                  <Bar dataKey="size" name="Tamanho" radius={[0, 8, 8, 0]}>
+                    {versionComparisonData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartErrorBoundary>
             <div className="mt-4 p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
               <p className="text-sm font-medium text-blue-700 dark:text-blue-400 flex items-center gap-2">
                 <Zap className="h-4 w-4" />
@@ -286,31 +291,33 @@ export const StorageAnalyticsDashboard = () => {
             <CardDescription>Imagens referenciadas vs órfãs</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={distributionData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {distributionData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--background))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            <ChartErrorBoundary>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={distributionData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {distributionData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </ChartErrorBoundary>
             {stats && stats.orphanImages > 0 && (
               <div className="mt-4 p-3 bg-orange-500/10 rounded-lg border border-orange-500/30">
                 <p className="text-sm font-medium text-orange-700 dark:text-orange-400 flex items-center gap-2">
@@ -332,49 +339,51 @@ export const StorageAnalyticsDashboard = () => {
             <CardDescription>Crescimento nos últimos 30 dias</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
-                <YAxis 
-                  yAxisId="left"
-                  stroke="hsl(var(--muted-foreground))"
-                  label={{ value: 'Imagens', angle: -90, position: 'insideLeft' }}
-                />
-                <YAxis 
-                  yAxisId="right"
-                  orientation="right"
-                  stroke="hsl(var(--muted-foreground))"
-                  label={{ value: 'MB', angle: 90, position: 'insideRight' }}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--background))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Legend />
-                <Line 
-                  yAxisId="left"
-                  type="monotone" 
-                  dataKey="imagens" 
-                  stroke="#8b5cf6" 
-                  strokeWidth={2}
-                  name="Total de Imagens"
-                  dot={{ fill: '#8b5cf6', r: 4 }}
-                />
-                <Line 
-                  yAxisId="right"
-                  type="monotone" 
-                  dataKey="tamanho" 
-                  stroke="#3b82f6" 
-                  strokeWidth={2}
-                  name="Tamanho (MB)"
-                  dot={{ fill: '#3b82f6', r: 4 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <ChartErrorBoundary>
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
+                  <YAxis 
+                    yAxisId="left"
+                    stroke="hsl(var(--muted-foreground))"
+                    label={{ value: 'Imagens', angle: -90, position: 'insideLeft' }}
+                  />
+                  <YAxis 
+                    yAxisId="right"
+                    orientation="right"
+                    stroke="hsl(var(--muted-foreground))"
+                    label={{ value: 'MB', angle: 90, position: 'insideRight' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Legend />
+                  <Line 
+                    yAxisId="left"
+                    type="monotone" 
+                    dataKey="imagens" 
+                    stroke="#8b5cf6" 
+                    strokeWidth={2}
+                    name="Total de Imagens"
+                    dot={{ fill: '#8b5cf6', r: 4 }}
+                  />
+                  <Line 
+                    yAxisId="right"
+                    type="monotone" 
+                    dataKey="tamanho" 
+                    stroke="#3b82f6" 
+                    strokeWidth={2}
+                    name="Tamanho (MB)"
+                    dot={{ fill: '#3b82f6', r: 4 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartErrorBoundary>
             {chartData.length > 1 && (
               <div className="mt-4 p-3 bg-purple-500/10 rounded-lg border border-purple-500/30">
                 <p className="text-sm font-medium text-purple-700 dark:text-purple-400 flex items-center gap-2">
