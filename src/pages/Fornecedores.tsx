@@ -16,6 +16,9 @@ import { maskPhone, maskCNPJ, maskCEP, maskInstagram } from "@/lib/masks";
 import { z } from "zod";
 import { fornecedoresAPI } from "@/lib/api";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
+import { PermissionGuard } from "@/components/PermissionGuard";
+import { useFornecedores, useCreateFornecedor, useUpdateFornecedor, useDeleteFornecedor } from "@/hooks/useQueryCache";
+import { RetryProgressIndicator } from "@/components/RetryProgressIndicator";
 
 type FornecedorFormData = z.infer<typeof fornecedorSchema>;
 
@@ -48,26 +51,11 @@ const Fornecedores = () => {
     },
   });
 
-  const [fornecedores, setFornecedores] = useState<any[]>([]);
-  const [isLoadingData, setIsLoadingData] = useState(true);
-
-  useEffect(() => {
-    loadFornecedores();
-  }, []);
-
-  const loadFornecedores = async () => {
-    try {
-      setIsLoadingData(true);
-      const data = await fornecedoresAPI.getAll();
-      setFornecedores(data);
-    } catch (error) {
-      toast.error("Erro ao carregar fornecedores", {
-        description: "Verifique se o servidor está rodando",
-      });
-    } finally {
-      setIsLoadingData(false);
-    }
-  };
+  // React Query hooks com optimistic updates
+  const { data: fornecedores = [], isLoading: isLoadingData, error, refetch } = useFornecedores();
+  const createFornecedorMutation = useCreateFornecedor();
+  const updateFornecedorMutation = useUpdateFornecedor();
+  const deleteFornecedorMutation = useDeleteFornecedor();
 
   const filteredFornecedores = fornecedores.filter(fornecedor =>
     fornecedor.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -103,12 +91,15 @@ const Fornecedores = () => {
       };
 
       if (editingFornecedor) {
-        await fornecedoresAPI.update(editingFornecedor.codigoFornecedor, cleanData);
+        await updateFornecedorMutation.mutateAsync({
+          id: editingFornecedor.codigoFornecedor,
+          data: cleanData,
+        });
         toast.success("✅ Fornecedor atualizado com sucesso!", {
           description: `${data.nome} foi atualizado no sistema`,
         });
       } else {
-        await fornecedoresAPI.create(cleanData);
+        await createFornecedorMutation.mutateAsync(cleanData);
         toast.success("✅ Fornecedor cadastrado com sucesso!", {
           description: `${data.nome} foi adicionado ao sistema`,
         });
@@ -118,7 +109,6 @@ const Fornecedores = () => {
       setEditingFornecedor(null);
       form.reset();
       setManualCode(false);
-      loadFornecedores();
     } catch (error: any) {
       toast.error("❌ Erro ao salvar fornecedor", {
         description: error.message || "Verifique sua conexão e tente novamente",
@@ -158,13 +148,12 @@ const Fornecedores = () => {
   const confirmDelete = async () => {
     if (!fornecedorToDelete) return;
     
-    const fornecedor = fornecedores.find(f => f._id === fornecedorToDelete);
+    const fornecedor = fornecedores.find((f: any) => f._id === fornecedorToDelete);
     if (!fornecedor) return;
     
     try {
-      await fornecedoresAPI.delete(fornecedor.codigoFornecedor);
+      await deleteFornecedorMutation.mutateAsync(fornecedor.codigoFornecedor);
       toast.success("Fornecedor excluído com sucesso!");
-      loadFornecedores();
     } catch (error: any) {
       toast.error("Erro ao excluir fornecedor", {
         description: error.message || "Tente novamente",
@@ -202,7 +191,15 @@ const Fornecedores = () => {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <>
+      <RetryProgressIndicator
+        isRetrying={createFornecedorMutation.isPending || updateFornecedorMutation.isPending || deleteFornecedorMutation.isPending}
+        retryAttempt={1}
+        maxRetries={3}
+        error={error?.message}
+        onRetry={() => refetch()}
+      />
+      <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold text-foreground mb-2">Fornecedores</h1>
@@ -641,7 +638,8 @@ const Fornecedores = () => {
         title="Confirmar exclusão de fornecedor"
         description="Tem certeza que deseja excluir este fornecedor? Esta ação não pode ser desfeita."
       />
-    </div>
+      </div>
+    </>
   );
 };
 

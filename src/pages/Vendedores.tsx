@@ -19,6 +19,8 @@ import { vendedoresAPI, recalculoAPI } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import { PermissionGuard } from "@/components/PermissionGuard";
+import { useVendedores, useCreateVendedor, useUpdateVendedor, useDeleteVendedor } from "@/hooks/useQueryCache";
+import { RetryProgressIndicator } from "@/components/RetryProgressIndicator";
 
 type VendedorFormData = z.infer<typeof vendedorSchema>;
 
@@ -48,26 +50,11 @@ const Vendedores = () => {
     },
   });
 
-  const [vendedores, setVendedores] = useState<any[]>([]);
-  const [isLoadingData, setIsLoadingData] = useState(true);
-
-  useEffect(() => {
-    loadVendedores();
-  }, []);
-
-  const loadVendedores = async () => {
-    try {
-      setIsLoadingData(true);
-      const data = await vendedoresAPI.getAll();
-      setVendedores(data);
-    } catch (error) {
-      toast.error("Erro ao carregar vendedores", {
-        description: "Verifique se o servidor está rodando",
-      });
-    } finally {
-      setIsLoadingData(false);
-    }
-  };
+  // React Query hooks com optimistic updates
+  const { data: vendedores = [], isLoading: isLoadingData, error, refetch } = useVendedores();
+  const createVendedorMutation = useCreateVendedor();
+  const updateVendedorMutation = useUpdateVendedor();
+  const deleteVendedorMutation = useDeleteVendedor();
 
   const filteredVendedores = vendedores.filter(vendedor =>
     vendedor.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -98,12 +85,15 @@ const Vendedores = () => {
       };
 
       if (editingVendedor) {
-        await vendedoresAPI.update(editingVendedor.codigoVendedor, cleanData);
+        await updateVendedorMutation.mutateAsync({
+          id: editingVendedor.codigoVendedor,
+          data: cleanData,
+        });
         toast.success("✅ Vendedor atualizado com sucesso!", {
           description: `${data.nome} foi atualizado no sistema`,
         });
       } else {
-        await vendedoresAPI.create(cleanData);
+        await createVendedorMutation.mutateAsync(cleanData);
         toast.success("✅ Vendedor cadastrado com sucesso!", {
           description: `${data.nome} foi adicionado ao sistema`,
         });
@@ -113,7 +103,6 @@ const Vendedores = () => {
       setEditingVendedor(null);
       form.reset();
       setManualCode(false);
-      loadVendedores();
     } catch (error: any) {
       toast.error("❌ Erro ao salvar vendedor", {
         description: error.message || "Verifique sua conexão e tente novamente",
@@ -150,13 +139,12 @@ const Vendedores = () => {
   const confirmDelete = async () => {
     if (!vendedorToDelete) return;
     
-    const vendedor = vendedores.find(v => v._id === vendedorToDelete);
+    const vendedor = vendedores.find((v: any) => v._id === vendedorToDelete);
     if (!vendedor) return;
     
     try {
-      await vendedoresAPI.delete(vendedor.codigoVendedor);
+      await deleteVendedorMutation.mutateAsync(vendedor.codigoVendedor);
       toast.success("Vendedor excluído com sucesso!");
-      loadVendedores();
     } catch (error: any) {
       toast.error("Erro ao excluir vendedor", {
         description: error.message || "Tente novamente",
@@ -188,21 +176,18 @@ const Vendedores = () => {
 
   const handleRecalcularTotais = async () => {
     try {
-      setIsLoadingData(true);
       toast.loading("Recalculando totais...");
       const result = await recalculoAPI.recalcularTotais();
       toast.dismiss();
       toast.success("Totais recalculados com sucesso!", {
         description: `${result.vendedoresAtualizados} vendedores atualizados`,
       });
-      loadVendedores();
+      refetch();
     } catch (error: any) {
       toast.dismiss();
       toast.error("Erro ao recalcular totais", {
         description: error.message || "Tente novamente",
       });
-    } finally {
-      setIsLoadingData(false);
     }
   };
 
@@ -211,7 +196,15 @@ const Vendedores = () => {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <>
+      <RetryProgressIndicator
+        isRetrying={createVendedorMutation.isPending || updateVendedorMutation.isPending || deleteVendedorMutation.isPending}
+        retryAttempt={1}
+        maxRetries={3}
+        error={error?.message}
+        onRetry={() => refetch()}
+      />
+      <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold text-foreground mb-2">Vendedores</h1>
@@ -683,9 +676,10 @@ const Vendedores = () => {
         onOpenChange={setDeleteDialogOpen}
         onConfirm={confirmDelete}
         title="Confirmar exclusão de vendedor"
-        description="Tem certeza que deseja excluir este vendedor? Esta ação não pode ser desfeita."
+        description="Tem certeza que deseja excluir este vendedor? Esta ação não pode ser desfeita. O usuário associado também será excluído."
       />
-    </div>
+      </div>
+    </>
   );
 };
 

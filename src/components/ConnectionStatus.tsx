@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { connectionLogger } from '@/lib/connectionLogger';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://mariela-pdv-backend.onrender.com/api';
-const CHECK_INTERVAL = 30000; // Verificar a cada 30 segundos
+const CHECK_INTERVAL = 120000; // Verificar a cada 2 minutos (reduzido para evitar 429)
 
 type ConnectionStatus = 'online' | 'offline' | 'slow';
 
