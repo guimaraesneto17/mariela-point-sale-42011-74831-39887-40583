@@ -143,30 +143,31 @@ const Layout = () => {
         />
       )}
       
-      {/* Sidebar */}
+      {/* Sidebar com design moderno */}
       <aside className={`
-        fixed top-0 h-full bg-[#7c3aed] shadow-xl flex flex-col z-40 transition-transform duration-300
-        ${isMobile ? 'w-64' : 'w-64 left-0'}
+        fixed top-0 h-full bg-gradient-to-b from-[#7c3aed] via-[#6d28d9] to-[#5b21b6] shadow-2xl flex flex-col z-40 transition-all duration-300
+        ${isMobile ? 'w-72' : 'w-72 left-0'}
         ${isMobile && !sidebarOpen ? '-translate-x-full' : 'translate-x-0'}
         ${isMobile ? 'left-0' : 'left-0'}
+        before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/5 before:to-transparent before:pointer-events-none
       `}>
 
         {/* Header com logo - apenas desktop */}
         {!isMobile && (
-          <div className="p-6 text-center border-b border-white/20">
-            <div className="w-24 h-24 mx-auto mb-3 rounded-full overflow-hidden shadow-lg shadow-[#6d28d9]/30">
+          <div className="p-6 text-center border-b border-white/10 backdrop-blur-sm">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-2xl overflow-hidden shadow-2xl ring-2 ring-white/20 transform transition-transform hover:scale-105">
               <img src={logo} alt="Mariela PDV" className="w-full h-full object-cover" />
             </div>
-            <h1 className="text-white text-xl font-bold">Mariela PDV</h1>
-            <p className="text-white/90 text-sm">Moda Feminina</p>
-            <div className="mt-3 flex justify-center">
+            <h1 className="text-white text-2xl font-bold tracking-tight mb-1">Mariela PDV</h1>
+            <p className="text-white/80 text-sm font-medium">Moda Feminina</p>
+            <div className="mt-4 flex justify-center">
               <RoleIndicator />
             </div>
           </div>
         )}
 
-        {/* Navegação */}
-        <nav className={`flex-1 px-3 py-4 space-y-2 overflow-y-auto ${isMobile ? 'mt-4' : ''}`}>
+        {/* Navegação moderna */}
+        <nav className={`flex-1 px-4 py-6 space-y-1.5 overflow-y-auto custom-scrollbar ${isMobile ? 'mt-4' : ''}`}>
           {navItems.map((item) => (
             <PrefetchNavLink
               key={item.to}
@@ -174,62 +175,69 @@ const Layout = () => {
               prefetchRoute={item.prefetch}
               onClick={handleNavClick}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 ${isActive
-                  ? "bg-white/90 text-[#7c3aed] shadow-lg font-medium"
-                  : "text-white/90 hover:bg-white/10 hover:text-white"
+                `group flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden ${
+                  isActive
+                    ? "bg-white text-[#7c3aed] shadow-xl shadow-white/20 font-semibold scale-[1.02]"
+                    : "text-white/85 hover:bg-white/15 hover:text-white hover:translate-x-1"
                 }`
               }
             >
-              <item.icon className="h-5 w-5" />
-              <span className="text-[15px]">{item.label}</span>
+              <item.icon 
+                className="h-5 w-5 transition-all duration-300 group-hover:scale-110"
+                strokeWidth={2}
+              />
+              <span className="text-[15px] font-medium tracking-wide">{item.label}</span>
             </PrefetchNavLink>
           ))}
 
-          {/* Botão Nova Venda com Prefetch */}
-          <PrefetchNavLink
-            to="/vendas/nova"
-            prefetchRoute="nova-venda"
-            className="block mt-4"
-          >
-            <Button
-              className="w-full bg-[#22c55e] hover:bg-[#16a34a] text-white font-semibold"
-              onClick={handleNavClick}
+          {/* Botão Nova Venda moderno com Prefetch */}
+          <div className="pt-4 mt-4 border-t border-white/10">
+            <PrefetchNavLink
+              to="/vendas/nova"
+              prefetchRoute="nova-venda"
+              className="block"
             >
-              <Plus className="h-5 w-5 mr-2" />
-              Nova Venda
-            </Button>
-          </PrefetchNavLink>
+              <Button
+                className="w-full bg-gradient-to-r from-[#22c55e] to-[#16a34a] hover:from-[#16a34a] hover:to-[#15803d] text-white font-bold shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 py-6 rounded-xl group relative overflow-hidden"
+                onClick={handleNavClick}
+              >
+                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Plus className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
+                <span className="text-base tracking-wide">Nova Venda</span>
+              </Button>
+            </PrefetchNavLink>
+          </div>
         </nav>
 
-        {/* Copyright e Logout */}
-        <div className="p-4 border-t border-white/20 space-y-2">
+        {/* Footer moderno */}
+        <div className="p-4 border-t border-white/10 backdrop-blur-sm space-y-3">
           {isMobile && (
-            <div className="mb-2 flex justify-center">
+            <div className="mb-3 flex justify-center">
               <RoleIndicator />
             </div>
           )}
           {!isMobile && (
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-white/70 text-xs">© 2025 Mariela Moda Feminina</p>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-white/60 text-xs font-medium">© 2025 Mariela Moda</p>
               <CacheIndicator />
             </div>
           )}
           <Button
             variant="ghost"
-            className="w-full text-white hover:bg-white/10 justify-start"
+            className="w-full text-white/90 hover:bg-white/15 hover:text-white justify-start group rounded-xl transition-all duration-300 py-5"
             onClick={handleLogout}
           >
-            <LogOut className="h-4 w-4 mr-2" />
-            Sair
+            <LogOut className="h-4 w-4 mr-3 group-hover:rotate-12 transition-transform" />
+            <span className="font-medium">Sair</span>
           </Button>
           {isMobile && (
-            <p className="text-white/70 text-xs text-center">© 2025 Mariela Moda Feminina</p>
+            <p className="text-white/60 text-xs text-center font-medium">© 2025 Mariela Moda</p>
           )}
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className={`${isMobile ? 'pt-16' : 'ml-64'} min-h-screen`}>
+      <main className={`${isMobile ? 'pt-16' : 'ml-72'} min-h-screen`}>
         <CaixaFechadoNotification />
         <div className="p-4 md:p-8">
           <Outlet />
