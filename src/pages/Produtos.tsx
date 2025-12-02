@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, CheckCircle2, AlertCircle, Package, Edit, Trash2, X, PackagePlus, Building, RefreshCw } from "lucide-react";
+import { ProdutosSkeleton } from "@/components/ProdutosSkeleton";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
@@ -284,6 +285,10 @@ const Produtos = () => {
     loading: isLoadingMore,
     onLoadMore: loadMore
   });
+
+  if (isLoadingData) {
+    return <ProdutosSkeleton />;
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -739,7 +744,7 @@ const Produtos = () => {
                 </div>
               )}
 
-              <div className="flex gap-2 mt-4">
+              <div className="flex flex-col sm:flex-row gap-2 mt-4">
                 <Button
                   size="sm"
                   variant="outline"
@@ -750,7 +755,7 @@ const Produtos = () => {
                   }}
                 >
                   <PackagePlus className="h-4 w-4" />
-                  Adicionar ao Estoque
+                  <span className="truncate">Adicionar ao Estoque</span>
                 </Button>
                 {/* Botão para ver no estoque - só aparece se tem estoque */}
                 {(() => {
@@ -772,7 +777,7 @@ const Produtos = () => {
                         onClick={() => navigate(`/estoque?produto=${produto.codigoProduto}`)}
                       >
                         <Package className="h-4 w-4" />
-                        Ver no Estoque
+                        <span className="truncate">Ver no Estoque</span>
                       </Button>
                     );
                   }

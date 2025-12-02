@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { TrendingUp } from "lucide-react";
+import { ChartErrorBoundary } from "@/components/ChartErrorBoundary";
 
 interface VendasPorCategoriaCardProps {
   vendas: any[];
@@ -42,45 +43,47 @@ export const VendasPorCategoriaCard = ({ vendas, produtos }: VendasPorCategoriaC
         <div className="text-2xl font-bold text-primary">
           R$ {Number(totalVendas || 0).toFixed(2)}
         </div>
-        <ChartContainer
-          config={{
-            total: {
-              label: "Total de Vendas",
-              color: "hsl(var(--primary))",
-            },
-          }}
-          className="h-[200px]"
-        >
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={dados}>
-              <XAxis 
-                dataKey="categoria" 
-                tick={{ fontSize: 11 }}
-                angle={-45}
-                textAnchor="end"
-                height={80}
-              />
-              <YAxis tick={{ fontSize: 11 }} />
-              <ChartTooltip 
-                content={({ active, payload }) => {
-                  if (!active || !payload?.[0]) return null;
-                  return (
-                    <div className="bg-background border rounded-lg p-2 shadow-lg">
-                      <p className="font-medium">{payload[0].payload.categoria}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Total: R$ {Number(payload[0].value || 0).toFixed(2)}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Quantidade: {payload[0].payload.quantidade}
-                      </p>
-                    </div>
-                  );
-                }}
-              />
-              <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartContainer>
+        <ChartErrorBoundary>
+          <ChartContainer
+            config={{
+              total: {
+                label: "Total de Vendas",
+                color: "hsl(var(--primary))",
+              },
+            }}
+            className="h-[200px]"
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={dados}>
+                <XAxis 
+                  dataKey="categoria" 
+                  tick={{ fontSize: 11 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
+                <YAxis tick={{ fontSize: 11 }} />
+                <ChartTooltip 
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.[0]) return null;
+                    return (
+                      <div className="bg-background border rounded-lg p-2 shadow-lg">
+                        <p className="font-medium">{payload[0].payload.categoria}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Total: R$ {Number(payload[0].value || 0).toFixed(2)}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Quantidade: {payload[0].payload.quantidade}
+                        </p>
+                      </div>
+                    );
+                  }}
+                />
+                <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartContainer>
+        </ChartErrorBoundary>
       </CardContent>
     </Card>
   );

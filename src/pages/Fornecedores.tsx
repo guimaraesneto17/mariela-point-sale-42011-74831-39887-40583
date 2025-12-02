@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Search, Plus, Building, CheckCircle2, AlertCircle, Edit, Trash2, X } from "lucide-react";
+import { FornecedoresSkeleton } from "@/components/FornecedoresSkeleton";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
@@ -195,6 +196,10 @@ const Fornecedores = () => {
     setManualCode(false);
     setIsDialogOpen(true);
   };
+
+  if (isLoadingData) {
+    return <FornecedoresSkeleton />;
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
