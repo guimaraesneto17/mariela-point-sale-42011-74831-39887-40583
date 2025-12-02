@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { VendasSkeleton } from "@/components/VendasSkeleton";
+import { GlobalLoading } from "@/components/GlobalLoading";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useVendas } from "@/hooks/useQueryCache";
 import { caixaAPI } from "@/lib/api";
@@ -64,7 +64,7 @@ const Vendas = () => {
   });
 
   if (isLoading) {
-    return <VendasSkeleton />;
+    return <GlobalLoading message="Carregando vendas..." />;
   }
 
   return (

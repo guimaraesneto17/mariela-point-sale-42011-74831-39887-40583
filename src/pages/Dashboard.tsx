@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from "react";
-import { useClientes, useVendas, useProdutos, useEstoque, useVendedores, useContasPagar, useContasReceber } from "@/hooks/useQueryCache";
 import {
   DollarSign,
   ShoppingCart,
@@ -106,43 +105,37 @@ const Dashboard = () => {
   const [caixaAberto, setCaixaAberto] = useState<any>(null);
   const [vendasPorMes, setVendasPorMes] = useState<any[]>([]);
   const [vendasParaGrafico, setVendasParaGrafico] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
   const [estoque, setEstoque] = useState<any[]>([]);
 
-  // Fetch data with React Query
-  const { data: clientesData = [], isLoading: isLoadingClientes } = useClientes();
-  const { data: vendasData = [], isLoading: isLoadingVendas } = useVendas();
-  const { data: produtosData = [], isLoading: isLoadingProdutos } = useProdutos();
-  const { data: estoqueData = [], isLoading: isLoadingEstoque } = useEstoque();
-  const { data: vendedoresData = [], isLoading: isLoadingVendedores } = useVendedores();
-  const { data: contasPagarData = [], isLoading: isLoadingContasPagar } = useContasPagar();
-  const { data: contasReceberData = [], isLoading: isLoadingContasReceber } = useContasReceber();
-
-  const loading = isLoadingClientes || isLoadingVendas || isLoadingProdutos || isLoadingEstoque || isLoadingVendedores || isLoadingContasPagar || isLoadingContasReceber;
-
   useEffect(() => {
-    if (!loading) {
-      processarDados();
-    }
-  }, [dataInicio, dataFim, loading, clientesData, vendasData, produtosData, estoqueData, vendedoresData, contasPagarData, contasReceberData]);
+    loadDashboardData();
+  }, [dataInicio, dataFim]);
 
-  const processarDados = async () => {
+  const loadDashboardData = async () => {
     try {
-      // Process data from React Query
-      const clientes = Array.isArray(clientesData) ? clientesData : (clientesData.clientes || []);
-      const produtos = Array.isArray(produtosData) ? produtosData : (produtosData.produtos || []);
-      const estoqueItems = Array.isArray(estoqueData) ? estoqueData : (estoqueData.itens || estoqueData.estoque || []);
-      const vendedores = Array.isArray(vendedoresData) ? vendedoresData : (vendedoresData.vendedores || []);
-      const vendasAll = Array.isArray(vendasData) ? vendasData : [];
-      const contasPagar = Array.isArray(contasPagarData) ? contasPagarData : [];
-      const contasReceber = Array.isArray(contasReceberData) ? contasReceberData : [];
+      setLoading(true);
+      const [vendasAll, clientes, produtos, estoque, vendedoresData, contasPagar, contasReceber] = await Promise.all([
+        vendasAPI.getAll(),
+        clientesAPI.getAll(),
+        produtosAPI.getAll(),
+        estoqueAPI.getAll(),
+        vendedoresAPI.getAll(),
+        contasPagarAPI.getAll(),
+        contasReceberAPI.getAll(),
+      ]);
 
-      // Store data for child components
-      setData({ clientes, produtos });
-      setEstoque(estoqueItems);
-      setVendedores(vendedores);
+      // Armazenar dados para uso no componente de análise de clientes
+      setData({
+        clientes: Array.isArray(clientes) ? clientes : (clientes.clientes || []),
+        produtos: Array.isArray(produtos) ? produtos : (produtos.produtos || []),
+      });
+      
+      setEstoque(Array.isArray(estoque) ? estoque : (estoque.itens || estoque.estoque || []));
+      setVendedores(Array.isArray(vendedoresData) ? vendedoresData : (vendedoresData.vendedores || []));
 
-      // Filter sales by date range
+      // Filtrar vendas por período se datas foram selecionadas
       let vendas = vendasAll;
       if (dataInicio || dataFim) {
         vendas = vendasAll.filter((v: any) => {
@@ -182,7 +175,7 @@ const Dashboard = () => {
 
       // Coletar todas as movimentações de todos os itens do estoque
       const todasMovimentacoes: any[] = [];
-      estoqueItems.forEach((item: any) => {
+      estoque.forEach((item: any) => {
         if (item.logMovimentacao && Array.isArray(item.logMovimentacao)) {
           item.logMovimentacao.forEach((mov: any) => {
             todasMovimentacoes.push({
@@ -240,13 +233,13 @@ const Dashboard = () => {
       const faturamentoDiario = vendasHoje.reduce((acc: number, v: any) => acc + (v.total || 0), 0);
       const totalClientes = clientes.length;
       // Quantidade de produtos cadastrados em estoque (mesma lógica do badge de estoque)
-      const produtosEstoque = estoqueItems.length;
+      const produtosEstoque = estoque.length;
       
       // Calcular produtos em promoção
-      const produtosPromocao = estoqueItems.filter((item: any) => item.emPromocao === true).length;
+      const produtosPromocao = estoque.filter((item: any) => item.emPromocao === true).length;
       
       // Calcular Total Geral (todas as variantes)
-      const totalGeralProdutos = estoqueItems.reduce((acc: number, item: any) => {
+      const totalGeralProdutos = estoque.reduce((acc: number, item: any) => {
         if (item.variantes && Array.isArray(item.variantes)) {
           return acc + item.variantes.reduce((sum: number, v: any) => sum + (v.quantidade || 0), 0);
         }
@@ -257,7 +250,7 @@ const Dashboard = () => {
       let valorEstoqueCusto = 0;
       let valorEstoqueVenda = 0;
       
-      estoqueItems.forEach((item: any) => {
+      estoque.forEach((item: any) => {
         const quantidade = item.quantidadeTotal || 0;
         const precoCusto = item.precoCusto || 0;
         // Usar preço promocional se disponível e menor que o preço de venda
@@ -430,7 +423,7 @@ const Dashboard = () => {
       setTopVendedores(topVendedoresArray);
 
       // Produtos em baixo estoque (quantidade <= 5)
-      const produtosBaixo = estoqueItems
+      const produtosBaixo = estoque
         .filter((item: any) => (item.quantidadeTotal || 0) <= 5)
         .map((item: any) => ({
           codigo: item.codigoProduto || item.codigo,
@@ -449,9 +442,12 @@ const Dashboard = () => {
         valor: v.total || 0,
         data: formatDateTime(v.data || v.dataVenda),
       })));
+
     } catch (error) {
       console.error('Erro ao carregar dados do dashboard:', error);
       toast.error('Erro ao carregar dados do dashboard');
+    } finally {
+      setLoading(false);
     }
   };
 

@@ -2,7 +2,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { TrendingUp, TrendingDown, Package, Filter as FilterIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { ChartErrorBoundary } from "@/components/ChartErrorBoundary";
 
 interface MovimentacaoEstoqueChartProps {
   estoque: any[];
@@ -197,75 +196,71 @@ export const MovimentacaoEstoqueChart = ({
 
         {/* Gráfico de Barras - Entradas vs Saídas */}
         <div className="w-full h-[300px]">
-          <ChartErrorBoundary>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dados}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis 
-                  dataKey="data" 
-                  className="text-xs"
-                  tick={{ fill: 'currentColor' }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                />
-                <YAxis 
-                  className="text-xs"
-                  tick={{ fill: 'currentColor' }}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Legend />
-                <Bar dataKey="entradas" fill="hsl(142, 76%, 36%)" name="Entradas" />
-                <Bar dataKey="saidas" fill="hsl(0, 84%, 60%)" name="Saídas" />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartErrorBoundary>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={dados}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis 
+                dataKey="data" 
+                className="text-xs"
+                tick={{ fill: 'currentColor' }}
+                angle={-45}
+                textAnchor="end"
+                height={80}
+              />
+              <YAxis 
+                className="text-xs"
+                tick={{ fill: 'currentColor' }}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px'
+                }}
+              />
+              <Legend />
+              <Bar dataKey="entradas" fill="hsl(142, 76%, 36%)" name="Entradas" />
+              <Bar dataKey="saidas" fill="hsl(0, 84%, 60%)" name="Saídas" />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
         {/* Gráfico de Linha - Evolução do Saldo */}
         <div className="w-full h-[300px]">
-          <ChartErrorBoundary>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={dados}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis 
-                  dataKey="data" 
-                  className="text-xs"
-                  tick={{ fill: 'currentColor' }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                />
-                <YAxis 
-                  className="text-xs"
-                  tick={{ fill: 'currentColor' }}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="saldo" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={3}
-                  name="Saldo"
-                  dot={{ fill: 'hsl(var(--primary))', r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </ChartErrorBoundary>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={dados}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis 
+                dataKey="data" 
+                className="text-xs"
+                tick={{ fill: 'currentColor' }}
+                angle={-45}
+                textAnchor="end"
+                height={80}
+              />
+              <YAxis 
+                className="text-xs"
+                tick={{ fill: 'currentColor' }}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px'
+                }}
+              />
+              <Legend />
+              <Line 
+                type="monotone" 
+                dataKey="saldo" 
+                stroke="hsl(var(--primary))" 
+                strokeWidth={3}
+                name="Saldo"
+                dot={{ fill: 'hsl(var(--primary))', r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </CardContent>
     </Card>
