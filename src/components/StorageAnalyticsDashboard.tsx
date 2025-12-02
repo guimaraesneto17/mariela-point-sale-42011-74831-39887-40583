@@ -336,17 +336,7 @@ export const StorageAnalyticsDashboard = () => {
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
-                <YAxis 
-                  yAxisId="left"
-                  stroke="hsl(var(--muted-foreground))"
-                  label={{ value: 'Imagens', angle: -90, position: 'insideLeft' }}
-                />
-                <YAxis 
-                  yAxisId="right"
-                  orientation="right"
-                  stroke="hsl(var(--muted-foreground))"
-                  label={{ value: 'MB', angle: 90, position: 'insideRight' }}
-                />
+                <YAxis stroke="hsl(var(--muted-foreground))" />
                 <Tooltip 
                   contentStyle={{ 
                     backgroundColor: 'hsl(var(--background))', 
@@ -356,7 +346,6 @@ export const StorageAnalyticsDashboard = () => {
                 />
                 <Legend />
                 <Line 
-                  yAxisId="left"
                   type="monotone" 
                   dataKey="imagens" 
                   stroke="#8b5cf6" 
@@ -365,7 +354,6 @@ export const StorageAnalyticsDashboard = () => {
                   dot={{ fill: '#8b5cf6', r: 4 }}
                 />
                 <Line 
-                  yAxisId="right"
                   type="monotone" 
                   dataKey="tamanho" 
                   stroke="#3b82f6" 

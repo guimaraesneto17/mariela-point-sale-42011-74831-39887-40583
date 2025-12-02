@@ -213,74 +213,53 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect, est
 
             <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
               {filteredProdutos.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Package className="h-16 w-16 mx-auto mb-4 opacity-30" />
-                  <p className="text-lg font-medium mb-1">Nenhum produto encontrado</p>
-                  <p className="text-sm">Tente ajustar sua busca</p>
+                <div className="text-center py-8 text-muted-foreground">
+                  <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>Nenhum produto encontrado no estoque</p>
                 </div>
               ) : (
                 filteredProdutos.map((produto) => (
                   <Button
                     key={produto.codigoProduto}
                     variant="outline"
-                    className="w-full justify-start h-auto p-4 hover:bg-accent/50 hover:border-primary/50 transition-all duration-200"
+                    className="w-full justify-between h-auto p-4 hover:bg-accent/10 transition-colors"
                     onClick={() => handleSelecionarProduto(produto)}
                     disabled={produto.quantidadeTotal <= 0}
                   >
-                    <div className="flex items-start gap-4 flex-1 text-left">
-                      <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Package className="h-6 w-6 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <p className="font-semibold text-foreground text-base">{produto.nomeProduto}</p>
+                    <div className="flex items-start gap-3 flex-1">
+                      <Package className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+                      <div className="text-left flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-medium text-foreground">{produto.nomeProduto}</p>
                           {produto.emPromocao && (
-                            <Badge variant="secondary" className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700">
-                              🔥 Promoção
+                            <Badge variant="secondary" className="text-xs bg-accent text-accent-foreground">
+                              Promoção
                             </Badge>
                           )}
                           {produto.isNovidade && (
-                            <Badge variant="secondary" className="text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700">
-                              ✨ Novidade
+                            <Badge variant="secondary" className="text-xs bg-green-600 text-white">
+                              Novidade
                             </Badge>
                           )}
                         </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs text-muted-foreground">
-                          <span className="font-mono">{produto.codigoProduto}</span>
-                          {produto.categoria && (
-                            <>
-                              <span className="hidden sm:inline">•</span>
-                              <span>{produto.categoria}</span>
-                            </>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Badge 
-                            variant={produto.quantidadeTotal > 10 ? "default" : produto.quantidadeTotal > 5 ? "secondary" : "destructive"}
-                            className="text-xs"
-                          >
-                            {produto.quantidadeTotal || 0} unidades
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {produto.variantes?.length || 0} variante(s)
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Código: {produto.codigoProduto}
+                          {produto.categoria && ` • ${produto.categoria}`}
+                        </p>
+                        <p className="text-xs">
+                          <span className={produto.quantidadeTotal <= 5 ? 'text-orange-600 font-bold' : 'text-green-600'}>
+                            {produto.variantes?.length || 0} variante(s) • Total: <strong>{produto.quantidadeTotal || 0} un.</strong>
                           </span>
-                        </div>
+                        </p>
                       </div>
-                      <div className="flex flex-col items-end gap-1 ml-auto">
-                        <span className="font-bold text-xl text-foreground whitespace-nowrap">
-                          R$ {produto.precoVenda?.toFixed(2) || '0.00'}
-                        </span>
-                        {produto.emPromocao && produto.precoPromocional && (
-                          <span className="text-xs line-through text-muted-foreground">
-                            R$ {produto.precoVenda?.toFixed(2)}
-                          </span>
-                        )}
-                        {produto.quantidadeTotal <= 0 && (
-                          <Badge variant="destructive" className="text-xs mt-1">
-                            Esgotado
-                          </Badge>
-                        )}
-                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 ml-3">
+                      <span className="font-bold text-lg text-foreground">R$ {produto.precoVenda?.toFixed(2) || '0.00'}</span>
+                      {produto.quantidadeTotal <= 0 && (
+                        <Badge variant="destructive" className="text-xs">
+                          Esgotado
+                        </Badge>
+                      )}
                     </div>
                   </Button>
                 ))
