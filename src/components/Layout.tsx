@@ -2,6 +2,7 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { PrefetchNavLink } from "@/components/PrefetchNavLink";
 import { PageTransition } from "@/components/PageTransition";
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
   LayoutDashboard,
   Package,
@@ -177,20 +178,26 @@ const Layout = () => {
               onClick={handleNavClick}
             >
               {({ isActive }) => (
-                <Button
-                  variant={isActive ? "default" : "ghost"}
-                  className={`w-full justify-start gap-3 h-12 rounded-xl transition-all duration-300 ${
-                    isActive
-                      ? "bg-white text-[#7c3aed] shadow-xl shadow-white/20 font-semibold hover:bg-white"
-                      : "text-white/90 hover:bg-white/15 hover:text-white font-medium"
-                  }`}
+                <motion.div
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 20 }}
                 >
-                  <item.icon 
-                    className="h-5 w-5 transition-all duration-300"
-                    strokeWidth={2.5}
-                  />
-                  <span className="text-[15px] tracking-wide">{item.label}</span>
-                </Button>
+                  <Button
+                    variant={isActive ? "default" : "ghost"}
+                    className={`w-full justify-start gap-3 h-12 rounded-xl transition-all duration-300 ${
+                      isActive
+                        ? "bg-white text-[#7c3aed] shadow-xl shadow-white/20 font-semibold hover:bg-white"
+                        : "text-white/90 hover:bg-white/15 hover:text-white font-medium"
+                    }`}
+                  >
+                    <item.icon 
+                      className="h-5 w-5 transition-all duration-300"
+                      strokeWidth={2.5}
+                    />
+                    <span className="text-[15px] tracking-wide">{item.label}</span>
+                  </Button>
+                </motion.div>
               )}
             </PrefetchNavLink>
           ))}
@@ -202,14 +209,20 @@ const Layout = () => {
               prefetchRoute="nova-venda"
             >
               {() => (
-                <Button
-                  className="w-full bg-gradient-to-r from-[#22c55e] to-[#16a34a] hover:from-[#16a34a] hover:to-[#15803d] text-white font-bold shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 h-14 rounded-xl group relative overflow-hidden"
-                  onClick={handleNavClick}
+                <motion.div
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.96 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 18 }}
                 >
-                  <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <Plus className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
-                  <span className="text-base tracking-wide">Nova Venda</span>
-                </Button>
+                  <Button
+                    className="w-full bg-gradient-to-r from-[#22c55e] to-[#16a34a] hover:from-[#16a34a] hover:to-[#15803d] text-white font-bold shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 h-14 rounded-xl group relative overflow-hidden"
+                    onClick={handleNavClick}
+                  >
+                    <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Plus className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
+                    <span className="text-base tracking-wide">Nova Venda</span>
+                  </Button>
+                </motion.div>
               )}
             </PrefetchNavLink>
           </div>
