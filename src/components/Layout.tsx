@@ -1,5 +1,4 @@
-import { Outlet, useNavigate } from "react-router-dom";
-import { PrefetchNavLink } from "@/components/PrefetchNavLink";
+import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
@@ -95,17 +94,17 @@ const Layout = () => {
   };
 
   const navItems = [
-    { to: "/", icon: LayoutDashboard, label: "Dashboard", prefetch: "dashboard" as const },
-    { to: "/relatorios", icon: FileText, label: "Relatórios", prefetch: undefined },
-    { to: "/produtos", icon: Package, label: "Produtos", prefetch: "produtos" as const },
-    { to: "/clientes", icon: Users, label: "Clientes", prefetch: "clientes" as const },
-    { to: "/fornecedores", icon: Truck, label: "Fornecedores", prefetch: "fornecedores" as const },
-    { to: "/vendedores", icon: UserCheck, label: "Vendedores", prefetch: "vendedores" as const },
-    { to: "/estoque", icon: Warehouse, label: "Estoque", prefetch: "estoque" as const },
-    { to: "/vendas", icon: ShoppingCart, label: "Vendas", prefetch: "vendas" as const },
-    { to: "/caixa", icon: Wallet, label: "Caixa", prefetch: undefined },
-    { to: "/financeiro", icon: TrendingUp, label: "Financeiro", prefetch: undefined },
-    ...(isAdmin ? [{ to: "/usuarios", icon: UserCog, label: "Usuários", prefetch: undefined }] : []),
+    { to: "/", icon: LayoutDashboard, label: "Dashboard" },
+    { to: "/relatorios", icon: FileText, label: "Relatórios" },
+    { to: "/produtos", icon: Package, label: "Produtos" },
+    { to: "/clientes", icon: Users, label: "Clientes" },
+    { to: "/fornecedores", icon: Truck, label: "Fornecedores" },
+    { to: "/vendedores", icon: UserCheck, label: "Vendedores" },
+    { to: "/estoque", icon: Warehouse, label: "Estoque" },
+    { to: "/vendas", icon: ShoppingCart, label: "Vendas" },
+    { to: "/caixa", icon: Wallet, label: "Caixa" },
+    { to: "/financeiro", icon: TrendingUp, label: "Financeiro" },
+    ...(isAdmin ? [{ to: "/usuarios", icon: UserCog, label: "Usuários" }] : []),
   ];
 
   return (
@@ -167,11 +166,13 @@ const Layout = () => {
 
         {/* Navegação */}
         <nav className={`flex-1 p-4 space-y-1 overflow-y-auto ${isMobile ? 'mt-4' : ''}`}>
-          {navItems.map((item) => (
-            <PrefetchNavLink
+          {navItems.map((item) => {
+            // Simplificado sem PrefetchLink para evitar complexidade
+            return (
+              <NavLink
               key={item.to}
               to={item.to}
-              prefetchRoute={item.prefetch}
+              end={item.to === "/"}
               onClick={handleNavClick}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${isActive
@@ -182,23 +183,21 @@ const Layout = () => {
             >
               <item.icon className="h-5 w-5" />
               <span>{item.label}</span>
-            </PrefetchNavLink>
-          ))}
+            </NavLink>
+            );
+          })}
 
-          {/* Botão Nova Venda com Prefetch */}
-          <PrefetchNavLink
-            to="/vendas/nova"
-            prefetchRoute="nova-venda"
-            className="block mt-4"
+          {/* Botão Nova Venda */}
+          <Button
+            className="w-full mt-4 bg-[#22c55e] hover:bg-[#16a34a] text-white font-semibold"
+            onClick={() => {
+              navigate("/vendas/nova");
+              handleNavClick();
+            }}
           >
-            <Button
-              className="w-full bg-[#22c55e] hover:bg-[#16a34a] text-white font-semibold"
-              onClick={handleNavClick}
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              Nova Venda
-            </Button>
-          </PrefetchNavLink>
+            <Plus className="h-5 w-5 mr-2" />
+            Nova Venda
+          </Button>
         </nav>
 
         {/* Copyright e Logout */}

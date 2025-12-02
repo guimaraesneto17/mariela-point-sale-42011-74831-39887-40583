@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Search, Plus, UserCheck, CheckCircle2, AlertCircle, Edit, Trash2, X, TrendingUp, DollarSign, RefreshCw } from "lucide-react";
-import { VendedoresSkeleton } from "@/components/VendedoresSkeleton";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
@@ -205,10 +204,6 @@ const Vendedores = () => {
       setIsLoadingData(false);
     }
   };
-
-  if (isLoadingData) {
-    return <VendedoresSkeleton />;
-  }
 
   return (
     <div className="space-y-6 animate-fade-in">

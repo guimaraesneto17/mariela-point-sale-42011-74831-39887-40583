@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, CheckCircle2, AlertCircle, Package, Edit, Trash2, X, PackagePlus, Building, RefreshCw } from "lucide-react";
-import { ProdutosSkeleton } from "@/components/ProdutosSkeleton";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
@@ -285,10 +284,6 @@ const Produtos = () => {
     loading: isLoadingMore,
     onLoadMore: loadMore
   });
-
-  if (isLoadingData) {
-    return <ProdutosSkeleton />;
-  }
 
   return (
     <div className="space-y-6 animate-fade-in">
