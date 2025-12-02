@@ -526,7 +526,7 @@ export function useDeleteFornecedor() {
   });
 }
 
-// Caixa - com opções otimizadas para reduzir polling quando há caixa aberto
+// Caixa - sem polling automático para evitar excesso de chamadas
 export function useCaixaAberto() {
   return useQuery({
     queryKey: QUERY_KEYS.CAIXA_ABERTO,
@@ -537,10 +537,11 @@ export function useCaixaAberto() {
         return null;
       }
     },
-    ...defaultQueryOptions,
-    // Se há caixa aberto, não fazer refetch automático (reduz chamadas à API)
-    refetchInterval: (data) => data ? false : 120000, // 2 minutos se não há caixa, não refetch se há
-    refetchOnWindowFocus: false, // Não refetch ao focar janela
+    // Desabilita refetch automático para evitar 429 (Too Many Requests)
+    // A verificação é feita apenas quando necessário via invalidações manuais
+    retry: 0,
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
     staleTime: 300000, // Cache válido por 5 minutos
   });
 }
