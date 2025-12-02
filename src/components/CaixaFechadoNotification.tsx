@@ -2,44 +2,27 @@ import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AlertCircle, Wallet, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { caixaAPI } from "@/lib/api";
+import { useCaixaAberto } from "@/hooks/useQueryCache";
 
 export function CaixaFechadoNotification() {
-  const [caixaAberto, setCaixaAberto] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [dismissed, setDismissed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  
+  // Usar React Query para gerenciar estado do caixa
+  // O hook já tem configuração otimizada e não faz polling excessivo
+  const { data: caixaAberto, isLoading } = useCaixaAberto();
 
   // Páginas onde a notificação deve aparecer
   const paginasComNotificacao = ["/vendas", "/vendas/nova", "/caixa", "/financeiro"];
   const mostrarNotificacao = paginasComNotificacao.includes(location.pathname);
-
-  useEffect(() => {
-    verificarCaixaAberto();
-    // Verificar a cada 30 segundos
-    const interval = setInterval(verificarCaixaAberto, 30000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Reset dismissed quando mudar de página
   useEffect(() => {
     setDismissed(false);
   }, [location.pathname]);
 
-  const verificarCaixaAberto = async () => {
-    try {
-      setLoading(true);
-      const response = await caixaAPI.getCaixaAberto();
-      setCaixaAberto(response);
-    } catch (error) {
-      setCaixaAberto(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading || caixaAberto || !mostrarNotificacao || dismissed) {
+  if (isLoading || caixaAberto || !mostrarNotificacao || dismissed) {
     return null;
   }
 

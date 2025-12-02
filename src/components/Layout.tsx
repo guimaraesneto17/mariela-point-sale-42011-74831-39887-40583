@@ -1,5 +1,6 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import { PrefetchNavLink } from "@/components/PrefetchNavLink";
+import { PageTransition } from "@/components/PageTransition";
 import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
@@ -166,45 +167,50 @@ const Layout = () => {
           </div>
         )}
 
-        {/* Navegação moderna */}
-        <nav className={`flex-1 px-4 py-6 space-y-1.5 overflow-y-auto custom-scrollbar ${isMobile ? 'mt-4' : ''}`}>
+        {/* Navegação moderna em formato de botão */}
+        <nav className={`flex-1 px-4 py-6 space-y-2 overflow-y-auto custom-scrollbar ${isMobile ? 'mt-4' : ''}`}>
           {navItems.map((item) => (
             <PrefetchNavLink
               key={item.to}
               to={item.to}
               prefetchRoute={item.prefetch}
               onClick={handleNavClick}
-              className={({ isActive }) =>
-                `group flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden ${
-                  isActive
-                    ? "bg-white text-[#7c3aed] shadow-xl shadow-white/20 font-semibold scale-[1.02]"
-                    : "text-white/85 hover:bg-white/15 hover:text-white hover:translate-x-1"
-                }`
-              }
             >
-              <item.icon 
-                className="h-5 w-5 transition-all duration-300 group-hover:scale-110"
-                strokeWidth={2}
-              />
-              <span className="text-[15px] font-medium tracking-wide">{item.label}</span>
+              {({ isActive }) => (
+                <Button
+                  variant={isActive ? "default" : "ghost"}
+                  className={`w-full justify-start gap-3 h-12 rounded-xl transition-all duration-300 ${
+                    isActive
+                      ? "bg-white text-[#7c3aed] shadow-xl shadow-white/20 font-semibold hover:bg-white"
+                      : "text-white/90 hover:bg-white/15 hover:text-white font-medium"
+                  }`}
+                >
+                  <item.icon 
+                    className="h-5 w-5 transition-all duration-300"
+                    strokeWidth={2.5}
+                  />
+                  <span className="text-[15px] tracking-wide">{item.label}</span>
+                </Button>
+              )}
             </PrefetchNavLink>
           ))}
 
-          {/* Botão Nova Venda moderno com Prefetch */}
+          {/* Botão Nova Venda destacado */}
           <div className="pt-4 mt-4 border-t border-white/10">
             <PrefetchNavLink
               to="/vendas/nova"
               prefetchRoute="nova-venda"
-              className="block"
             >
-              <Button
-                className="w-full bg-gradient-to-r from-[#22c55e] to-[#16a34a] hover:from-[#16a34a] hover:to-[#15803d] text-white font-bold shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 py-6 rounded-xl group relative overflow-hidden"
-                onClick={handleNavClick}
-              >
-                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                <Plus className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
-                <span className="text-base tracking-wide">Nova Venda</span>
-              </Button>
+              {() => (
+                <Button
+                  className="w-full bg-gradient-to-r from-[#22c55e] to-[#16a34a] hover:from-[#16a34a] hover:to-[#15803d] text-white font-bold shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 h-14 rounded-xl group relative overflow-hidden"
+                  onClick={handleNavClick}
+                >
+                  <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <Plus className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
+                  <span className="text-base tracking-wide">Nova Venda</span>
+                </Button>
+              )}
             </PrefetchNavLink>
           </div>
         </nav>
@@ -240,7 +246,9 @@ const Layout = () => {
       <main className={`${isMobile ? 'pt-16' : 'ml-72'} min-h-screen`}>
         <CaixaFechadoNotification />
         <div className="p-4 md:p-8">
-          <Outlet />
+          <PageTransition>
+            <Outlet />
+          </PageTransition>
         </div>
       </main>
       <CaixaFechadoNotification />
