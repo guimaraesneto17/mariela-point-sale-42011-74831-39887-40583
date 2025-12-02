@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FinanceiroSkeleton } from "@/components/FinanceiroSkeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -74,6 +75,10 @@ const Financeiro = () => {
       setLoading(false);
     }
   };
+
+  if (loading) {
+    return <FinanceiroSkeleton />;
+  }
 
   const getStatusBadge = (status: string) => {
     const variants: any = {
