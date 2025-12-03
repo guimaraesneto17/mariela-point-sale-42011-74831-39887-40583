@@ -12,6 +12,7 @@ import {
   categoriasFinanceirasAPI
 } from '@/lib/api';
 import { toast } from 'sonner';
+import { useAuthReady } from './useAuthReady';
 
 // Query Keys
 export const QUERY_KEYS = {
@@ -29,21 +30,26 @@ export const QUERY_KEYS = {
   CATEGORIAS_FINANCEIRAS: ['categorias-financeiras'] as const,
 };
 
-// Default query options with retry and error handling
+// Default query options with stale-while-revalidate pattern
 const defaultQueryOptions = {
-  retry: 3,
-  retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  staleTime: 5 * 60 * 1000, // 5 minutes
+  retry: 2,
+  retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 10000),
+  staleTime: 1000 * 60 * 2, // 2 minutes - dados considerados "frescos"
+  gcTime: 1000 * 60 * 30, // 30 minutes - manter no cache
+  refetchOnMount: 'always' as const, // Sempre revalidar ao montar
+  refetchOnWindowFocus: false,
 };
 
 // Clientes
 export function useClientes() {
+  const isAuthReady = useAuthReady();
   return useQuery({
     queryKey: QUERY_KEYS.CLIENTES,
     queryFn: async () => {
       const response = await clientesAPI.getAll();
       return Array.isArray(response) ? response : (response?.data || response?.clientes || []);
     },
+    enabled: isAuthReady,
     ...defaultQueryOptions,
   });
 }
@@ -149,26 +155,28 @@ export function useDeleteCliente() {
 
 // Vendas
 export function useVendas() {
+  const isAuthReady = useAuthReady();
   return useQuery({
     queryKey: QUERY_KEYS.VENDAS,
     queryFn: async () => {
       const response = await vendasAPI.getAll();
-      // Normalize paginated response to array
       return Array.isArray(response) ? response : (response?.data || response?.vendas || []);
     },
+    enabled: isAuthReady,
     ...defaultQueryOptions,
   });
 }
 
 // Produtos
 export function useProdutos() {
+  const isAuthReady = useAuthReady();
   return useQuery({
     queryKey: QUERY_KEYS.PRODUTOS,
     queryFn: async () => {
       const response = await produtosAPI.getAll();
-      // Normalize paginated response to array
       return Array.isArray(response) ? response : (response?.data || response?.produtos || []);
     },
+    enabled: isAuthReady,
     ...defaultQueryOptions,
   });
 }
@@ -288,13 +296,14 @@ export function useDeleteProduto() {
 
 // Estoque
 export function useEstoque() {
+  const isAuthReady = useAuthReady();
   return useQuery({
     queryKey: QUERY_KEYS.ESTOQUE,
     queryFn: async () => {
       const response = await estoqueAPI.getAll();
-      // Normalize paginated response to array
       return Array.isArray(response) ? response : (response?.data || response?.estoque || response?.itens || []);
     },
+    enabled: isAuthReady,
     ...defaultQueryOptions,
   });
 }
@@ -335,13 +344,14 @@ export function useUpdateEstoque() {
 
 // Vendedores
 export function useVendedores() {
+  const isAuthReady = useAuthReady();
   return useQuery({
     queryKey: QUERY_KEYS.VENDEDORES,
     queryFn: async () => {
       const response = await vendedoresAPI.getAll();
-      // Normalize paginated response to array
       return Array.isArray(response) ? response : (response?.data || response?.vendedores || []);
     },
+    enabled: isAuthReady,
     ...defaultQueryOptions,
   });
 }
@@ -443,12 +453,14 @@ export function useDeleteVendedor() {
 
 // Fornecedores
 export function useFornecedores() {
+  const isAuthReady = useAuthReady();
   return useQuery({
     queryKey: QUERY_KEYS.FORNECEDORES,
     queryFn: async () => {
       const response = await fornecedoresAPI.getAll();
       return Array.isArray(response) ? response : (response?.data || response?.fornecedores || []);
     },
+    enabled: isAuthReady,
     ...defaultQueryOptions,
   });
 }
@@ -550,6 +562,7 @@ export function useDeleteFornecedor() {
 
 // Caixa - sem polling automático para evitar excesso de chamadas
 export function useCaixaAberto() {
+  const isAuthReady = useAuthReady();
   return useQuery({
     queryKey: QUERY_KEYS.CAIXA_ABERTO,
     queryFn: async () => {
@@ -559,31 +572,35 @@ export function useCaixaAberto() {
         return null;
       }
     },
-    // Desabilita refetch automático para evitar 429 (Too Many Requests)
-    // A verificação é feita apenas quando necessário via invalidações manuais
+    enabled: isAuthReady,
     retry: 0,
     refetchInterval: false,
     refetchOnWindowFocus: false,
-    staleTime: 300000, // Cache válido por 5 minutos
+    refetchOnMount: 'always',
+    staleTime: 300000,
   });
 }
 
 // Contas a Pagar
 export function useContasPagar() {
+  const isAuthReady = useAuthReady();
   return useQuery({
     queryKey: QUERY_KEYS.CONTAS_PAGAR,
     queryFn: async () => {
       const response = await contasPagarAPI.getAll();
       return Array.isArray(response) ? response : (response?.data || response?.contasPagar || []);
     },
+    enabled: isAuthReady,
     ...defaultQueryOptions,
   });
 }
 
 export function useResumoPagar() {
+  const isAuthReady = useAuthReady();
   return useQuery({
     queryKey: QUERY_KEYS.RESUMO_PAGAR,
     queryFn: () => contasPagarAPI.getResumo(),
+    enabled: isAuthReady,
     ...defaultQueryOptions,
   });
 }
@@ -637,20 +654,24 @@ export function useDeleteContaPagar() {
 
 // Contas a Receber
 export function useContasReceber() {
+  const isAuthReady = useAuthReady();
   return useQuery({
     queryKey: QUERY_KEYS.CONTAS_RECEBER,
     queryFn: async () => {
       const response = await contasReceberAPI.getAll();
       return Array.isArray(response) ? response : (response?.data || response?.contasReceber || []);
     },
+    enabled: isAuthReady,
     ...defaultQueryOptions,
   });
 }
 
 export function useResumoReceber() {
+  const isAuthReady = useAuthReady();
   return useQuery({
     queryKey: QUERY_KEYS.RESUMO_RECEBER,
     queryFn: () => contasReceberAPI.getResumo(),
+    enabled: isAuthReady,
     ...defaultQueryOptions,
   });
 }
@@ -704,9 +725,11 @@ export function useDeleteContaReceber() {
 
 // Categorias Financeiras
 export function useCategoriasFinanceiras() {
+  const isAuthReady = useAuthReady();
   return useQuery({
     queryKey: QUERY_KEYS.CATEGORIAS_FINANCEIRAS,
     queryFn: () => categoriasFinanceirasAPI.getAll(),
+    enabled: isAuthReady,
     ...defaultQueryOptions,
   });
 }
