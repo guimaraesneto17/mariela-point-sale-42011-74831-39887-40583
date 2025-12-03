@@ -146,7 +146,11 @@ const Layout = () => {
       )}
       
       {/* Sidebar com design moderno */}
-      <aside className={`
+      <motion.aside 
+        initial={{ x: -100, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 100, damping: 20 }}
+        className={`
         fixed top-0 h-full bg-gradient-to-b from-[#7c3aed] via-[#6d28d9] to-[#5b21b6] shadow-2xl flex flex-col z-40 transition-all duration-300
         ${isMobile ? 'w-72' : 'w-72 left-0'}
         ${isMobile && !sidebarOpen ? '-translate-x-full' : 'translate-x-0'}
@@ -156,80 +160,142 @@ const Layout = () => {
 
         {/* Header com logo - apenas desktop */}
         {!isMobile && (
-          <div className="p-6 text-center border-b border-white/10 backdrop-blur-sm">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-2xl overflow-hidden shadow-2xl ring-2 ring-white/20 transform transition-transform hover:scale-105">
+          <motion.div 
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
+            className="p-6 text-center border-b border-white/10 backdrop-blur-sm"
+          >
+            <motion.div 
+              className="w-20 h-20 mx-auto mb-4 rounded-2xl overflow-hidden shadow-2xl ring-2 ring-white/20"
+              whileHover={{ scale: 1.05, rotate: 2 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
               <img src={logo} alt="Mariela PDV" className="w-full h-full object-cover" />
-            </div>
+            </motion.div>
             <h1 className="text-white text-2xl font-bold tracking-tight mb-1">Mariela PDV</h1>
             <p className="text-white/80 text-sm font-medium">Moda Feminina</p>
             <div className="mt-4 flex justify-center">
               <RoleIndicator />
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* Navegação moderna em formato de botão */}
         <nav className={`flex-1 px-4 py-6 space-y-2 overflow-y-auto custom-scrollbar ${isMobile ? 'mt-4' : ''}`}>
-          {navItems.map((item) => (
-            <PrefetchNavLink
+          {navItems.map((item, index) => (
+            <motion.div
               key={item.to}
-              to={item.to}
-              prefetchRoute={item.prefetch}
-              onClick={handleNavClick}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ 
+                delay: index * 0.05, 
+                duration: 0.3,
+                type: "spring",
+                stiffness: 200
+              }}
             >
-              {({ isActive }) => (
-                <motion.div
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                >
-                  <Button
-                    variant={isActive ? "default" : "ghost"}
-                    className={`w-full justify-start gap-3 h-12 rounded-xl transition-all duration-300 ${
-                      isActive
-                        ? "bg-white text-[#7c3aed] shadow-xl shadow-white/20 font-semibold hover:bg-white"
-                        : "text-white/90 hover:bg-white/15 hover:text-white font-medium"
-                    }`}
+              <PrefetchNavLink
+                to={item.to}
+                prefetchRoute={item.prefetch}
+                onClick={handleNavClick}
+              >
+                {({ isActive }) => (
+                  <motion.div
+                    whileHover={{ scale: 1.03, x: 4 }}
+                    whileTap={{ scale: 0.97 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
                   >
-                    <item.icon 
-                      className="h-5 w-5 transition-all duration-300"
-                      strokeWidth={2.5}
-                    />
-                    <span className="text-[15px] tracking-wide">{item.label}</span>
-                  </Button>
-                </motion.div>
-              )}
-            </PrefetchNavLink>
+                    <Button
+                      variant={isActive ? "default" : "ghost"}
+                      className={`w-full justify-start gap-3 h-12 rounded-xl transition-all duration-300 relative overflow-hidden ${
+                        isActive
+                          ? "bg-white text-[#7c3aed] shadow-xl shadow-white/30 font-semibold hover:bg-white"
+                          : "text-white/90 hover:bg-white/15 hover:text-white font-medium"
+                      }`}
+                    >
+                      {isActive && (
+                        <motion.div
+                          layoutId="activeIndicator"
+                          className="absolute left-0 top-0 bottom-0 w-1 bg-[#7c3aed] rounded-r-full"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.2 }}
+                        />
+                      )}
+                      <motion.div
+                        animate={isActive ? { rotate: [0, -10, 10, 0] } : {}}
+                        transition={{ duration: 0.4 }}
+                      >
+                        <item.icon 
+                          className={`h-5 w-5 transition-all duration-300 ${isActive ? 'text-[#7c3aed]' : ''}`}
+                          strokeWidth={isActive ? 2.5 : 2}
+                        />
+                      </motion.div>
+                      <span className="text-[15px] tracking-wide">{item.label}</span>
+                      {isActive && (
+                        <motion.div 
+                          className="absolute right-3 w-2 h-2 bg-[#7c3aed] rounded-full"
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: "spring", stiffness: 500 }}
+                        />
+                      )}
+                    </Button>
+                  </motion.div>
+                )}
+              </PrefetchNavLink>
+            </motion.div>
           ))}
 
           {/* Botão Nova Venda destacado */}
-          <div className="pt-4 mt-4 border-t border-white/10">
+          <motion.div 
+            className="pt-4 mt-4 border-t border-white/10"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: navItems.length * 0.05 + 0.1, duration: 0.4 }}
+          >
             <PrefetchNavLink
               to="/vendas/nova"
               prefetchRoute="nova-venda"
             >
               {() => (
                 <motion.div
-                  whileHover={{ scale: 1.04 }}
+                  whileHover={{ scale: 1.04, y: -2 }}
                   whileTap={{ scale: 0.96 }}
-                  transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
                 >
                   <Button
                     className="w-full bg-gradient-to-r from-[#22c55e] to-[#16a34a] hover:from-[#16a34a] hover:to-[#15803d] text-white font-bold shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 h-14 rounded-xl group relative overflow-hidden"
                     onClick={handleNavClick}
                   >
-                    <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <Plus className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
+                    <motion.div 
+                      className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0"
+                      initial={{ x: "-100%" }}
+                      whileHover={{ x: "100%" }}
+                      transition={{ duration: 0.6 }}
+                    />
+                    <motion.div
+                      whileHover={{ rotate: 90 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Plus className="h-5 w-5 mr-2" />
+                    </motion.div>
                     <span className="text-base tracking-wide">Nova Venda</span>
                   </Button>
                 </motion.div>
               )}
             </PrefetchNavLink>
-          </div>
+          </motion.div>
         </nav>
 
         {/* Footer moderno */}
-        <div className="p-4 border-t border-white/10 backdrop-blur-sm space-y-3">
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.5, duration: 0.4 }}
+          className="p-4 border-t border-white/10 backdrop-blur-sm space-y-3"
+        >
           {isMobile && (
             <div className="mb-3 flex justify-center">
               <RoleIndicator />
@@ -241,19 +307,24 @@ const Layout = () => {
               <CacheIndicator />
             </div>
           )}
-          <Button
-            variant="ghost"
-            className="w-full text-white/90 hover:bg-white/15 hover:text-white justify-start group rounded-xl transition-all duration-300 py-5"
-            onClick={handleLogout}
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
-            <LogOut className="h-4 w-4 mr-3 group-hover:rotate-12 transition-transform" />
-            <span className="font-medium">Sair</span>
-          </Button>
+            <Button
+              variant="ghost"
+              className="w-full text-white/90 hover:bg-white/15 hover:text-white justify-start group rounded-xl transition-all duration-300 py-5"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-4 w-4 mr-3 group-hover:rotate-12 transition-transform" />
+              <span className="font-medium">Sair</span>
+            </Button>
+          </motion.div>
           {isMobile && (
             <p className="text-white/60 text-xs text-center font-medium">© 2025 Mariela Moda</p>
           )}
-        </div>
-      </aside>
+        </motion.div>
+      </motion.aside>
 
       {/* Main Content */}
       <main className={`${isMobile ? 'pt-16' : 'ml-72'} min-h-screen`}>

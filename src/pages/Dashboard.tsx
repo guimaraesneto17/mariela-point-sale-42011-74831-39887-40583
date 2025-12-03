@@ -128,11 +128,11 @@ const Dashboard = () => {
 
   const processarDados = async () => {
     try {
-      // Process data from React Query
-      const clientes = Array.isArray(clientesData) ? clientesData : (clientesData.clientes || []);
-      const produtos = Array.isArray(produtosData) ? produtosData : (produtosData.produtos || []);
-      const estoqueItems = Array.isArray(estoqueData) ? estoqueData : (estoqueData.itens || estoqueData.estoque || []);
-      const vendedores = Array.isArray(vendedoresData) ? vendedoresData : (vendedoresData.vendedores || []);
+      // Process data from React Query - data is already normalized to arrays
+      const clientes = Array.isArray(clientesData) ? clientesData : [];
+      const produtos = Array.isArray(produtosData) ? produtosData : [];
+      const estoqueItems = Array.isArray(estoqueData) ? estoqueData : [];
+      const vendedoresList = Array.isArray(vendedoresData) ? vendedoresData : [];
       const vendasAll = Array.isArray(vendasData) ? vendasData : [];
       const contasPagar = Array.isArray(contasPagarData) ? contasPagarData : [];
       const contasReceber = Array.isArray(contasReceberData) ? contasReceberData : [];
@@ -140,7 +140,7 @@ const Dashboard = () => {
       // Store data for child components
       setData({ clientes, produtos });
       setEstoque(estoqueItems);
-      setVendedores(vendedores);
+      setVendedores(vendedoresList);
 
       // Filter sales by date range
       let vendas = vendasAll;

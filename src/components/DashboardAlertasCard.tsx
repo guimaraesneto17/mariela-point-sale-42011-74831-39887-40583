@@ -24,10 +24,14 @@ export function DashboardAlertasCard() {
   const loadResumoAlertas = async () => {
     try {
       setLoading(true);
-      const [estoque, vendas] = await Promise.all([
+      const [estoqueResponse, vendasResponse] = await Promise.all([
         estoqueAPI.getAll(),
         vendasAPI.getAll()
       ]);
+
+      // Handle paginated response format
+      const estoque = Array.isArray(estoqueResponse) ? estoqueResponse : (estoqueResponse?.data || []);
+      const vendas = Array.isArray(vendasResponse) ? vendasResponse : (vendasResponse?.data || []);
 
       const hoje = new Date();
       const limite30Dias = new Date();
