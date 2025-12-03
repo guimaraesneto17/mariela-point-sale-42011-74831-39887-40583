@@ -32,7 +32,17 @@ export const QUERY_KEYS = {
 
 // Default query options with stale-while-revalidate pattern
 const defaultQueryOptions = {
-  retry: 2,
+  retry: (failureCount: number, error: any) => {
+    // Não fazer retry em erros de autenticação
+    if (error?.response?.status === 401 || error?.response?.status === 403) {
+      return false;
+    }
+    // Não fazer retry em rate limiting
+    if (error?.response?.status === 429) {
+      return false;
+    }
+    return failureCount < 2;
+  },
   retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 10000),
   staleTime: 1000 * 60 * 2, // 2 minutes - dados considerados "frescos"
   gcTime: 1000 * 60 * 30, // 30 minutes - manter no cache
