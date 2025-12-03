@@ -408,7 +408,11 @@ const NovaVenda = () => {
 
     // Validação de estoque em tempo real antes de finalizar
     try {
-      const estoqueAtualizado = await estoqueAPI.getAll();
+      const estoqueResponse = await estoqueAPI.getAll();
+      // Normalizar resposta - pode ser paginada ou array direto
+      const estoqueAtualizado = Array.isArray(estoqueResponse) 
+        ? estoqueResponse 
+        : (estoqueResponse?.data || []);
       
       for (const item of itensVenda) {
         const produtoEstoque = estoqueAtualizado.find(

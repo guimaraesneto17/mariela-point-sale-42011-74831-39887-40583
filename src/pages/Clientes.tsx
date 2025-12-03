@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Plus, User, CheckCircle2, AlertCircle, Edit, Trash2, X, ShoppingCart, DollarSign, Calendar, RefreshCw, Cake } from "lucide-react";
+import { Search, Plus, User, CheckCircle2, AlertCircle, Edit, Trash2, X, ShoppingCart, DollarSign, Calendar, RefreshCw, Cake, MessageCircle } from "lucide-react";
 import { ClientesSkeleton } from "@/components/ClientesSkeleton";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,6 +18,7 @@ import { clientesAPI, recalculoAPI } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import { AniversariantesDialog } from "@/components/AniversariantesDialog";
+import { MensagemPersonalizadaDialog } from "@/components/MensagemPersonalizadaDialog";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { useClientes, useCreateCliente, useUpdateCliente, useDeleteCliente } from "@/hooks/useQueryCache";
 import { RetryProgressIndicator } from "@/components/RetryProgressIndicator";
@@ -33,6 +34,8 @@ const Clientes = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [clienteToDelete, setClienteToDelete] = useState<string | null>(null);
   const [aniversariantesDialogOpen, setAniversariantesDialogOpen] = useState(false);
+  const [mensagemDialogOpen, setMensagemDialogOpen] = useState(false);
+  const [clienteParaMensagem, setClienteParaMensagem] = useState<any>(null);
   
   const form = useForm<ClienteFormData>({
     resolver: zodResolver(clienteSchema),
@@ -526,6 +529,18 @@ const Clientes = () => {
                 </div>
               </div>
               <div className="flex gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setClienteParaMensagem(cliente);
+                    setMensagemDialogOpen(true);
+                  }}
+                  className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                  title="Enviar mensagem"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                </Button>
                 <PermissionGuard module="clientes" action="edit">
                   <Button
                     size="sm"
@@ -608,6 +623,12 @@ const Clientes = () => {
         open={aniversariantesDialogOpen}
         onOpenChange={setAniversariantesDialogOpen}
         clientes={clientes}
+      />
+      
+      <MensagemPersonalizadaDialog
+        open={mensagemDialogOpen}
+        onOpenChange={setMensagemDialogOpen}
+        cliente={clienteParaMensagem}
       />
       </div>
     </>

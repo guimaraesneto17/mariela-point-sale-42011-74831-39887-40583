@@ -21,6 +21,8 @@ import {
   AlertCircle,
   Plus,
   Tag,
+  RefreshCw,
+  Cake,
 } from "lucide-react";
 import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
@@ -44,6 +46,8 @@ import { DashboardVendedoresAnalise } from "@/components/DashboardVendedoresAnal
 import { CategoriasDistribuicaoCard } from "@/components/CategoriasDistribuicaoCard";
 import { MargemLucroCategoriasCard } from "@/components/MargemLucroCategoriasCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DashboardSkeleton } from "@/components/DashboardSkeleton";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Dashboard = () => {
   const [dataInicio, setDataInicio] = useState<Date | undefined>(undefined);
@@ -110,15 +114,57 @@ const Dashboard = () => {
   const [estoque, setEstoque] = useState<any[]>([]);
 
   // Fetch data with React Query
-  const { data: clientesData = [], isLoading: isLoadingClientes } = useClientes();
-  const { data: vendasData = [], isLoading: isLoadingVendas } = useVendas();
-  const { data: produtosData = [], isLoading: isLoadingProdutos } = useProdutos();
-  const { data: estoqueData = [], isLoading: isLoadingEstoque } = useEstoque();
-  const { data: vendedoresData = [], isLoading: isLoadingVendedores } = useVendedores();
-  const { data: contasPagarData = [], isLoading: isLoadingContasPagar } = useContasPagar();
-  const { data: contasReceberData = [], isLoading: isLoadingContasReceber } = useContasReceber();
+  const queryClient = useQueryClient();
+  const { data: clientesData = [], isLoading: isLoadingClientes, refetch: refetchClientes } = useClientes();
+  const { data: vendasData = [], isLoading: isLoadingVendas, refetch: refetchVendas } = useVendas();
+  const { data: produtosData = [], isLoading: isLoadingProdutos, refetch: refetchProdutos } = useProdutos();
+  const { data: estoqueData = [], isLoading: isLoadingEstoque, refetch: refetchEstoque } = useEstoque();
+  const { data: vendedoresData = [], isLoading: isLoadingVendedores, refetch: refetchVendedores } = useVendedores();
+  const { data: contasPagarData = [], isLoading: isLoadingContasPagar, refetch: refetchContasPagar } = useContasPagar();
+  const { data: contasReceberData = [], isLoading: isLoadingContasReceber, refetch: refetchContasReceber } = useContasReceber();
 
   const loading = isLoadingClientes || isLoadingVendas || isLoadingProdutos || isLoadingEstoque || isLoadingVendedores || isLoadingContasPagar || isLoadingContasReceber;
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Calcular aniversariantes do mês
+  const aniversariantesMes = useMemo(() => {
+    const mesAtual = new Date().getMonth();
+    return clientesData.filter((cliente: any) => {
+      if (!cliente.dataNascimento) return false;
+      const dataNasc = new Date(cliente.dataNascimento);
+      return dataNasc.getMonth() === mesAtual;
+    });
+  }, [clientesData]);
+
+  // Função para recarregar todos os dados
+  const handleRefreshAll = async () => {
+    setIsRefreshing(true);
+    toast.loading("Recarregando dados...");
+    
+    try {
+      await Promise.all([
+        refetchClientes(),
+        refetchVendas(),
+        refetchProdutos(),
+        refetchEstoque(),
+        refetchVendedores(),
+        refetchContasPagar(),
+        refetchContasReceber(),
+      ]);
+      
+      // Reprocessar dados após recarregar
+      await processarDados();
+      
+      toast.dismiss();
+      toast.success("Dados atualizados com sucesso!");
+    } catch (error) {
+      toast.dismiss();
+      toast.error("Erro ao atualizar dados");
+      console.error(error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     if (!loading) {
@@ -638,9 +684,14 @@ const Dashboard = () => {
     return widgets[widget.id] || null;
   };
 
+  // Mostrar skeleton enquanto carrega os dados iniciais
+  if (loading && !stats.totalClientes) {
+    return <DashboardSkeleton />;
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-4xl font-bold text-foreground mb-2">
             Dashboard
@@ -649,7 +700,38 @@ const Dashboard = () => {
             Visão geral do seu negócio em tempo real
           </p>
         </div>
+        <Button
+          onClick={handleRefreshAll}
+          disabled={isRefreshing}
+          variant="outline"
+          className="gap-2"
+        >
+          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          {isRefreshing ? 'Atualizando...' : 'Atualizar Dados'}
+        </Button>
       </div>
+
+      {/* Card de Aniversariantes do Mês */}
+      {aniversariantesMes.length > 0 && (
+        <Card className="p-4 shadow-card bg-gradient-to-br from-pink-50/50 via-background to-purple-50/50 dark:from-pink-950/20 dark:via-background dark:to-purple-950/20 border-2 border-pink-200/50 dark:border-pink-800/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-pink-500/10 rounded-xl">
+                <Cake className="h-6 w-6 text-pink-600 dark:text-pink-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-foreground">🎂 Aniversariantes do Mês</h3>
+                <p className="text-sm text-muted-foreground">
+                  {aniversariantesMes.length} cliente{aniversariantesMes.length > 1 ? 's fazem' : ' faz'} aniversário este mês
+                </p>
+              </div>
+            </div>
+            <Badge className="bg-pink-500 hover:bg-pink-600 text-white text-lg px-4 py-2">
+              {aniversariantesMes.length}
+            </Badge>
+          </div>
+        </Card>
+      )}
 
       {/* Filtros de Data */}
       <Card className="p-4 shadow-card">
