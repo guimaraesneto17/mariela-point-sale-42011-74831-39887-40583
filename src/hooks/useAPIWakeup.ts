@@ -1,35 +1,49 @@
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useEffect, useState, useRef } from "react";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://mariela-pdv-backend.onrender.com/api';
 
 export const useAPIWakeup = () => {
-  const [isWakingUp, setIsWakingUp] = useState(true);
+  const [isWakingUp, setIsWakingUp] = useState(false);
+  const hasWokenUp = useRef(false);
 
   useEffect(() => {
+    // Evitar múltiplas chamadas de wake-up
+    if (hasWokenUp.current) {
+      return;
+    }
+
     const wakeUpAPI = async () => {
+      // Verificar se há token antes de fazer wake-up
+      const token = localStorage.getItem('mariela_access_token');
+      if (!token) {
+        // Sem token, não precisa acordar a API ainda
+        return;
+      }
+
       try {
-        console.log("🚀 Iniciando wake-up da API...");
+        hasWokenUp.current = true;
         setIsWakingUp(true);
         
-        // Faz uma chamada simples para acordar a API
+        // Usa endpoint de health que não requer autenticação
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
         
-        await fetch(`${API_BASE_URL}/produtos`, {
+        await fetch(`${API_BASE_URL.replace('/api', '')}/health`, {
           signal: controller.signal,
+          method: 'HEAD',
         });
         
         clearTimeout(timeoutId);
-        console.log("✅ API acordada com sucesso!");
       } catch (error) {
-        console.log("⚠️ API pode estar em standby, mas continuando...");
+        // Silenciosamente ignora erros de wake-up
       } finally {
         setIsWakingUp(false);
       }
     };
 
-    wakeUpAPI();
+    // Pequeno delay para evitar chamadas durante renderização inicial
+    const timer = setTimeout(wakeUpAPI, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   return { isWakingUp };

@@ -135,8 +135,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       navigate('/');
     } catch (error: any) {
       console.error('Erro ao fazer login:', error);
-      const errorMessage = error.response?.data?.error || error.message || 'Erro ao fazer login';
-      toast.error(errorMessage);
+      
+      // Tratamento especial para rate limiting (429)
+      if (error.response?.status === 429) {
+        toast.error('Muitas tentativas de login. Aguarde alguns minutos antes de tentar novamente.');
+      } else {
+        const errorMessage = error.response?.data?.error || error.message || 'Erro ao fazer login';
+        toast.error(errorMessage);
+      }
       throw error;
     }
   };

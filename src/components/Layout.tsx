@@ -24,8 +24,6 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import logo from "@/logo.png";
-import { useAPIWakeup } from "@/hooks/useAPIWakeup";
-import { GlobalLoading } from "@/components/GlobalLoading";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CacheIndicator } from "@/components/CacheIndicator";
 import { CaixaFechadoNotification } from "@/components/CaixaFechadoNotification";
@@ -39,7 +37,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 const Layout = () => {
   const navigate = useNavigate();
   const { logout, isAdmin } = useAuth();
-  const { isWakingUp } = useAPIWakeup();
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showFinanceiroAlertas, setShowFinanceiroAlertas] = useState(false);
@@ -124,8 +121,6 @@ const Layout = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {isWakingUp && <GlobalLoading message="Iniciando sistema..." />}
-      
       {/* Mobile Header */}
       {isMobile && (
         <header className="fixed top-0 left-0 right-0 z-50 bg-[#7c3aed] shadow-lg">
