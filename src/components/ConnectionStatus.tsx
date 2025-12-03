@@ -18,21 +18,22 @@ export function ConnectionStatus() {
   const previousStatus = useRef<ConnectionStatus>('online');
 
   const checkConnection = async () => {
+    // Verificar se há token antes de fazer a chamada
+    const token = localStorage.getItem('mariela_access_token');
+    if (!token) {
+      setStatus('offline');
+      setErrorDetails('Não autenticado');
+      return;
+    }
+
     const startTime = Date.now();
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos para check
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
     try {
-      // Incluir token de autenticação se disponível
-      const token = localStorage.getItem('mariela_access_token');
-      const headers: HeadersInit = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`${API_BASE_URL}/produtos`, {
-        method: 'HEAD',
-        headers,
+      // Usar endpoint de health que é mais leve
+      const response = await fetch(`${API_BASE_URL.replace('/api', '')}/health`, {
+        method: 'GET',
         signal: controller.signal,
       });
 
@@ -44,12 +45,10 @@ export function ConnectionStatus() {
       // Registrar latência
       connectionLogger.addLatencyPoint(responseTime);
 
-      // Se demorar mais de 5 segundos, considerar como lento
       if (responseTime > 5000) {
         setStatus('slow');
         setErrorDetails('Conexão lenta detectada');
         
-        // Log evento de conexão lenta
         if (previousStatus.current !== 'slow') {
           connectionLogger.logEvent({
             type: 'slow',
@@ -59,7 +58,6 @@ export function ConnectionStatus() {
           });
         }
       } else {
-        // Log recuperação para online
         if (previousStatus.current !== 'online') {
           connectionLogger.logEvent({
             type: 'online',
@@ -77,7 +75,6 @@ export function ConnectionStatus() {
       setStatus('offline');
       setLastCheckTime(0);
       
-      // Capturar detalhes do erro
       let errorMessage = '';
       let errorType: 'timeout' | 'error' = 'error';
       
@@ -96,7 +93,6 @@ export function ConnectionStatus() {
         setErrorDetails(errorMessage);
       }
 
-      // Log evento de falha
       if (previousStatus.current !== 'offline') {
         connectionLogger.logEvent({
           type: errorType,
@@ -110,8 +106,22 @@ export function ConnectionStatus() {
   };
 
   useEffect(() => {
+    // Só verificar conexão se houver token de autenticação
+    const token = localStorage.getItem('mariela_access_token');
+    if (!token) {
+      setStatus('offline');
+      setErrorDetails('Não autenticado');
+      return;
+    }
+
     checkConnection();
-    const interval = setInterval(checkConnection, CHECK_INTERVAL);
+    const interval = setInterval(() => {
+      // Verificar token antes de cada check
+      const currentToken = localStorage.getItem('mariela_access_token');
+      if (currentToken) {
+        checkConnection();
+      }
+    }, CHECK_INTERVAL);
     return () => clearInterval(interval);
   }, []);
 

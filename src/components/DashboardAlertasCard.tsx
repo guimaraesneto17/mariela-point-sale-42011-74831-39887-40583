@@ -3,11 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, TrendingDown, Package } from "lucide-react";
-import { estoqueAPI, vendasAPI } from "@/lib/api";
 import { EstoqueAlertasDialog } from "./EstoqueAlertasDialog";
+import { useEstoque, useVendas } from "@/hooks/useQueryCache";
 
 export function DashboardAlertasCard() {
-  const [loading, setLoading] = useState(true);
   const [alertas, setAlertas] = useState({
     total: 0,
     criticos: 0,
@@ -17,94 +16,82 @@ export function DashboardAlertasCard() {
   });
   const [showDialog, setShowDialog] = useState(false);
 
+  const { data: estoqueData = [], isLoading: loadingEstoque } = useEstoque();
+  const { data: vendasData = [], isLoading: loadingVendas } = useVendas();
+
+  const loading = loadingEstoque || loadingVendas;
+
   useEffect(() => {
-    loadResumoAlertas();
-  }, []);
+    // Só calcular alertas se os dados estiverem carregados
+    if (loadingEstoque || loadingVendas) return;
 
-  const loadResumoAlertas = async () => {
-    try {
-      setLoading(true);
-      const [estoqueResponse, vendasResponse] = await Promise.all([
-        estoqueAPI.getAll(),
-        vendasAPI.getAll()
-      ]);
+    const estoque = Array.isArray(estoqueData) ? estoqueData : [];
+    const vendas = Array.isArray(vendasData) ? vendasData : [];
 
-      // Handle paginated response format
-      const estoque = Array.isArray(estoqueResponse) ? estoqueResponse : (estoqueResponse?.data || []);
-      const vendas = Array.isArray(vendasResponse) ? vendasResponse : (vendasResponse?.data || []);
+    const hoje = new Date();
+    const limite30Dias = new Date();
+    const limite60Dias = new Date();
+    const limite90Dias = new Date();
 
-      const hoje = new Date();
-      const limite30Dias = new Date();
-      const limite60Dias = new Date();
-      const limite90Dias = new Date();
+    limite30Dias.setDate(hoje.getDate() - 30);
+    limite60Dias.setDate(hoje.getDate() - 60);
+    limite90Dias.setDate(hoje.getDate() - 90);
 
-      limite30Dias.setDate(hoje.getDate() - 30);
-      limite60Dias.setDate(hoje.getDate() - 60);
-      limite90Dias.setDate(hoje.getDate() - 90);
+    let total = 0;
+    let criticos = 0;
+    let alto = 0;
+    let medio = 0;
+    let valorTotal = 0;
 
-      let total = 0;
-      let criticos = 0;   // >= 90 dias
-      let alto = 0;       // 60-89 dias
-      let medio = 0;      // 30-59 dias
-      let valorTotal = 0;
+    estoque.forEach((item: any) => {
+      if (!item.quantidadeTotal || item.quantidadeTotal === 0) return;
 
-      estoque.forEach((item: any) => {
-        if (!item.quantidadeTotal || item.quantidadeTotal === 0) return;
-
-        // Encontrar última venda do produto
-        let ultimaVenda: Date | null = null;
-        
-        vendas.forEach((venda: any) => {
-          venda.itens?.forEach((itemVenda: any) => {
-            if (itemVenda.codigoProduto === item.codigoProduto) {
-              const dataVenda = new Date(venda.data || venda.dataVenda);
-              if (!ultimaVenda || dataVenda > ultimaVenda) {
-                ultimaVenda = dataVenda;
-              }
+      let ultimaVenda: Date | null = null;
+      
+      vendas.forEach((venda: any) => {
+        venda.itens?.forEach((itemVenda: any) => {
+          if (itemVenda.codigoProduto === item.codigoProduto) {
+            const dataVenda = new Date(venda.data || venda.dataVenda);
+            if (!ultimaVenda || dataVenda > ultimaVenda) {
+              ultimaVenda = dataVenda;
             }
-          });
-        });
-
-        const dataReferencia = ultimaVenda || (item.dataCadastro ? new Date(item.dataCadastro) : null);
-
-        if (!dataReferencia) {
-          // Sem referência de movimentação, considerar como crítico (90+ dias)
-          total++;
-          criticos++;
-          valorTotal += item.quantidadeTotal * (item.precoVenda || item.precoPromocional || 0);
-          return;
-        }
-
-        const diasParado = Math.floor((hoje.getTime() - dataReferencia.getTime()) / (1000 * 60 * 60 * 24));
-
-        // Considerar apenas produtos parados há pelo menos 30 dias
-        if (diasParado >= 30) {
-          total++;
-          valorTotal += item.quantidadeTotal * (item.precoVenda || item.precoPromocional || 0);
-
-          if (diasParado >= 90) {
-            criticos++;
-          } else if (diasParado >= 60) {
-            alto++;
-          } else {
-            medio++;
           }
-        }
+        });
       });
 
-      setAlertas({
-        total,
-        criticos,
-        alto,
-        medio,
-        valorTotal
-      });
-    } catch (error) {
-      console.error('Erro ao carregar resumo de alertas:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      const dataReferencia = ultimaVenda || (item.dataCadastro ? new Date(item.dataCadastro) : null);
+
+      if (!dataReferencia) {
+        total++;
+        criticos++;
+        valorTotal += item.quantidadeTotal * (item.precoVenda || item.precoPromocional || 0);
+        return;
+      }
+
+      const diasParado = Math.floor((hoje.getTime() - dataReferencia.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (diasParado >= 30) {
+        total++;
+        valorTotal += item.quantidadeTotal * (item.precoVenda || item.precoPromocional || 0);
+
+        if (diasParado >= 90) {
+          criticos++;
+        } else if (diasParado >= 60) {
+          alto++;
+        } else {
+          medio++;
+        }
+      }
+    });
+
+    setAlertas({
+      total,
+      criticos,
+      alto,
+      medio,
+      valorTotal
+    });
+  }, [estoqueData, vendasData, loadingEstoque, loadingVendas]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
