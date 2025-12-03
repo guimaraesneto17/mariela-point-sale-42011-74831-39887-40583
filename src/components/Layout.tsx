@@ -2,7 +2,7 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { PrefetchNavLink } from "@/components/PrefetchNavLink";
 import { PageTransition } from "@/components/PageTransition";
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   Package,
@@ -30,9 +30,11 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { CacheIndicator } from "@/components/CacheIndicator";
 import { CaixaFechadoNotification } from "@/components/CaixaFechadoNotification";
 import { FinanceiroAlertasDialog } from "@/components/FinanceiroAlertasDialog";
-import { useContasPagar, useContasReceber } from "@/hooks/useQueryCache";
+import { useContasPagar, useContasReceber, useCaixaAberto } from "@/hooks/useQueryCache";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { RoleIndicator } from "@/components/RoleIndicator";
+import { SidebarSkeleton } from "@/components/SidebarSkeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Layout = () => {
   const navigate = useNavigate();
@@ -41,9 +43,19 @@ const Layout = () => {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showFinanceiroAlertas, setShowFinanceiroAlertas] = useState(false);
+  const [isSidebarLoading, setIsSidebarLoading] = useState(true);
   
-  const { data: contasPagarData = [] } = useContasPagar();
-  const { data: contasReceberData = [] } = useContasReceber();
+  const { data: contasPagarData = [], isLoading: isLoadingContasPagar } = useContasPagar();
+  const { data: contasReceberData = [], isLoading: isLoadingContasReceber } = useContasReceber();
+  const { data: caixaAberto, refetch: refetchCaixa } = useCaixaAberto();
+
+  // Controlar o estado de loading do sidebar
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsSidebarLoading(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Verificar contas urgentes ao abrir o sistema
   useEffect(() => {
@@ -183,70 +195,90 @@ const Layout = () => {
 
         {/* Navegação moderna em formato de botão */}
         <nav className={`flex-1 px-4 py-6 space-y-2 overflow-y-auto custom-scrollbar ${isMobile ? 'mt-4' : ''}`}>
-          {navItems.map((item, index) => (
-            <motion.div
-              key={item.to}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ 
-                delay: index * 0.05, 
-                duration: 0.3,
-                type: "spring",
-                stiffness: 200
-              }}
-            >
-              <PrefetchNavLink
-                to={item.to}
-                prefetchRoute={item.prefetch}
-                onClick={handleNavClick}
+          <AnimatePresence mode="wait">
+            {isSidebarLoading ? (
+              <motion.div
+                key="skeleton"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
               >
-                {({ isActive }) => (
+                <SidebarSkeleton />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="nav"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-2"
+              >
+                {navItems.map((item, index) => (
                   <motion.div
-                    whileHover={{ scale: 1.03, x: 4 }}
-                    whileTap={{ scale: 0.97 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    key={item.to}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ 
+                      delay: index * 0.05, 
+                      duration: 0.3,
+                      type: "spring",
+                      stiffness: 200
+                    }}
                   >
-                    <Button
-                      variant={isActive ? "default" : "ghost"}
-                      className={`w-full justify-start gap-3 h-12 rounded-xl transition-all duration-300 relative overflow-hidden ${
-                        isActive
-                          ? "bg-white text-[#7c3aed] shadow-xl shadow-white/30 font-semibold hover:bg-white"
-                          : "text-white/90 hover:bg-white/15 hover:text-white font-medium"
-                      }`}
+                    <PrefetchNavLink
+                      to={item.to}
+                      prefetchRoute={item.prefetch}
+                      onClick={handleNavClick}
                     >
-                      {isActive && (
+                      {({ isActive }) => (
                         <motion.div
-                          layoutId="activeIndicator"
-                          className="absolute left-0 top-0 bottom-0 w-1 bg-[#7c3aed] rounded-r-full"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ duration: 0.2 }}
-                        />
+                          whileHover={{ scale: 1.03, x: 4 }}
+                          whileTap={{ scale: 0.97 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                        >
+                          <Button
+                            variant={isActive ? "default" : "ghost"}
+                            className={`w-full justify-start gap-3 h-12 rounded-xl transition-all duration-300 relative overflow-hidden ${
+                              isActive
+                                ? "bg-white text-[#7c3aed] shadow-xl shadow-white/30 font-semibold hover:bg-white"
+                                : "text-white/90 hover:bg-white/15 hover:text-white font-medium"
+                            }`}
+                          >
+                            {isActive && (
+                              <motion.div
+                                layoutId="activeIndicator"
+                                className="absolute left-0 top-0 bottom-0 w-1 bg-[#7c3aed] rounded-r-full"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.2 }}
+                              />
+                            )}
+                            <motion.div
+                              animate={isActive ? { rotate: [0, -10, 10, 0] } : {}}
+                              transition={{ duration: 0.4 }}
+                            >
+                              <item.icon 
+                                className={`h-5 w-5 transition-all duration-300 ${isActive ? 'text-[#7c3aed]' : ''}`}
+                                strokeWidth={isActive ? 2.5 : 2}
+                              />
+                            </motion.div>
+                            <span className="text-[15px] tracking-wide">{item.label}</span>
+                            {isActive && (
+                              <motion.div 
+                                className="absolute right-3 w-2 h-2 bg-[#7c3aed] rounded-full"
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ type: "spring", stiffness: 500 }}
+                              />
+                            )}
+                          </Button>
+                        </motion.div>
                       )}
-                      <motion.div
-                        animate={isActive ? { rotate: [0, -10, 10, 0] } : {}}
-                        transition={{ duration: 0.4 }}
-                      >
-                        <item.icon 
-                          className={`h-5 w-5 transition-all duration-300 ${isActive ? 'text-[#7c3aed]' : ''}`}
-                          strokeWidth={isActive ? 2.5 : 2}
-                        />
-                      </motion.div>
-                      <span className="text-[15px] tracking-wide">{item.label}</span>
-                      {isActive && (
-                        <motion.div 
-                          className="absolute right-3 w-2 h-2 bg-[#7c3aed] rounded-full"
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ type: "spring", stiffness: 500 }}
-                        />
-                      )}
-                    </Button>
+                    </PrefetchNavLink>
                   </motion.div>
-                )}
-              </PrefetchNavLink>
-            </motion.div>
-          ))}
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Botão Nova Venda destacado */}
           <motion.div 

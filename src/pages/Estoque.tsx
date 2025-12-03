@@ -1346,21 +1346,21 @@ const Estoque = () => {
                         </Button>
                         <Button
                           size="sm"
-                          variant="outline"
+                          variant={item.emPromocao ? "default" : "outline"}
                           onClick={() => openPromotionDialog(item)}
-                          className="h-7 text-xs gap-1"
+                          className={`h-7 text-xs gap-1 ${item.emPromocao ? 'bg-accent hover:bg-accent/90 text-accent-foreground' : ''}`}
                         >
                           <Tag className="h-3 w-3" />
-                          Promoção
+                          {item.emPromocao ? 'Em Promoção' : 'Promoção'}
                         </Button>
                         <Button
                           size="sm"
-                          variant="outline"
+                          variant={item.isNovidade ? "default" : "outline"}
                           onClick={() => openNovidadeDialog(item)}
-                          className="h-7 text-xs gap-1"
+                          className={`h-7 text-xs gap-1 ${item.isNovidade ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
                         >
                           <Sparkles className="h-3 w-3" />
-                          Novidade
+                          {item.isNovidade ? 'É Novidade' : 'Novidade'}
                         </Button>
                         <Button
                           size="sm"

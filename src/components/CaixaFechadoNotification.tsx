@@ -10,19 +10,26 @@ export function CaixaFechadoNotification() {
   const navigate = useNavigate();
   
   // Usar React Query para gerenciar estado do caixa
-  // O hook já tem configuração otimizada e não faz polling excessivo
-  const { data: caixaAberto, isLoading } = useCaixaAberto();
+  const { data: caixaAberto, isLoading, isFetched } = useCaixaAberto();
 
   // Páginas onde a notificação deve aparecer
   const paginasComNotificacao = ["/vendas", "/vendas/nova", "/caixa", "/financeiro"];
   const mostrarNotificacao = paginasComNotificacao.includes(location.pathname);
 
-  // Reset dismissed quando mudar de página
+  // Reset dismissed quando mudar de página ou quando caixa abrir/fechar
   useEffect(() => {
     setDismissed(false);
   }, [location.pathname]);
 
-  if (isLoading || caixaAberto || !mostrarNotificacao || dismissed) {
+  // Se ainda está carregando ou não foi feita a primeira busca, não mostrar
+  if (isLoading || !isFetched) {
+    return null;
+  }
+
+  // Se tem um caixa aberto (objeto com dados), não mostrar notificação
+  const temCaixaAberto = caixaAberto && typeof caixaAberto === 'object' && caixaAberto._id;
+  
+  if (temCaixaAberto || !mostrarNotificacao || dismissed) {
     return null;
   }
 
