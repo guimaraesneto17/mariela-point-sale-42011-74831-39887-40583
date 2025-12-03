@@ -1,6 +1,6 @@
 import { Link, LinkProps, useLocation } from 'react-router-dom';
 import { usePrefetchNavigation } from '@/hooks/usePrefetchNavigation';
-import { ReactNode, forwardRef } from 'react';
+import { ReactNode, forwardRef, useCallback } from 'react';
 
 interface PrefetchNavLinkProps extends Omit<LinkProps, 'className' | 'children'> {
   prefetchRoute?: 'dashboard' | 'nova-venda' | 'produtos' | 'estoque' | 'clientes' | 'vendedores' | 'fornecedores' | 'vendas';
@@ -13,8 +13,8 @@ interface PrefetchNavLinkProps extends Omit<LinkProps, 'className' | 'children'>
  * Melhora a percepção de performance ao carregar dados antes do clique
  * Suporta children como função para passar isActive
  */
-export const PrefetchNavLink = forwardRef<HTMLAnchorElement, PrefetchNavLinkProps>(
-  function PrefetchNavLink({ prefetchRoute, children, className, ...props }, ref) {
+const PrefetchNavLink = forwardRef<HTMLAnchorElement, PrefetchNavLinkProps>(
+  ({ prefetchRoute, children, className, ...props }, ref) => {
     const location = useLocation();
     const {
       prefetchDashboard,
@@ -27,7 +27,7 @@ export const PrefetchNavLink = forwardRef<HTMLAnchorElement, PrefetchNavLinkProp
       prefetchVendas,
     } = usePrefetchNavigation();
 
-    const handleMouseEnter = () => {
+    const handleMouseEnter = useCallback(() => {
       if (!prefetchRoute) return;
 
       switch (prefetchRoute) {
@@ -56,7 +56,7 @@ export const PrefetchNavLink = forwardRef<HTMLAnchorElement, PrefetchNavLinkProp
           prefetchVendas();
           break;
       }
-    };
+    }, [prefetchRoute, prefetchDashboard, prefetchNovaVenda, prefetchProdutos, prefetchEstoque, prefetchClientes, prefetchVendedores, prefetchFornecedores, prefetchVendas]);
 
     const isActive = location.pathname === props.to;
     const computedClassName = typeof className === 'function' ? className({ isActive }) : className;
@@ -74,3 +74,7 @@ export const PrefetchNavLink = forwardRef<HTMLAnchorElement, PrefetchNavLinkProp
     );
   }
 );
+
+PrefetchNavLink.displayName = 'PrefetchNavLink';
+
+export { PrefetchNavLink };
