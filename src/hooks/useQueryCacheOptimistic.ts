@@ -40,7 +40,10 @@ const defaultQueryOptions = {
 export function useClientes() {
   return useQuery({
     queryKey: QUERY_KEYS.CLIENTES,
-    queryFn: () => clientesAPI.getAll(),
+    queryFn: async () => {
+      const response = await clientesAPI.getAll();
+      return Array.isArray(response) ? response : (response?.data || response?.clientes || []);
+    },
     ...defaultQueryOptions,
   });
 }
@@ -148,7 +151,11 @@ export function useDeleteCliente() {
 export function useVendas() {
   return useQuery({
     queryKey: QUERY_KEYS.VENDAS,
-    queryFn: () => vendasAPI.getAll(),
+    queryFn: async () => {
+      const response = await vendasAPI.getAll();
+      // Normalize paginated response to array
+      return Array.isArray(response) ? response : (response?.data || response?.vendas || []);
+    },
     ...defaultQueryOptions,
   });
 }
@@ -157,7 +164,11 @@ export function useVendas() {
 export function useProdutos() {
   return useQuery({
     queryKey: QUERY_KEYS.PRODUTOS,
-    queryFn: () => produtosAPI.getAll(),
+    queryFn: async () => {
+      const response = await produtosAPI.getAll();
+      // Normalize paginated response to array
+      return Array.isArray(response) ? response : (response?.data || response?.produtos || []);
+    },
     ...defaultQueryOptions,
   });
 }
@@ -279,7 +290,11 @@ export function useDeleteProduto() {
 export function useEstoque() {
   return useQuery({
     queryKey: QUERY_KEYS.ESTOQUE,
-    queryFn: () => estoqueAPI.getAll(),
+    queryFn: async () => {
+      const response = await estoqueAPI.getAll();
+      // Normalize paginated response to array
+      return Array.isArray(response) ? response : (response?.data || response?.estoque || response?.itens || []);
+    },
     ...defaultQueryOptions,
   });
 }
@@ -322,7 +337,11 @@ export function useUpdateEstoque() {
 export function useVendedores() {
   return useQuery({
     queryKey: QUERY_KEYS.VENDEDORES,
-    queryFn: () => vendedoresAPI.getAll(),
+    queryFn: async () => {
+      const response = await vendedoresAPI.getAll();
+      // Normalize paginated response to array
+      return Array.isArray(response) ? response : (response?.data || response?.vendedores || []);
+    },
     ...defaultQueryOptions,
   });
 }
@@ -426,7 +445,10 @@ export function useDeleteVendedor() {
 export function useFornecedores() {
   return useQuery({
     queryKey: QUERY_KEYS.FORNECEDORES,
-    queryFn: () => fornecedoresAPI.getAll(),
+    queryFn: async () => {
+      const response = await fornecedoresAPI.getAll();
+      return Array.isArray(response) ? response : (response?.data || response?.fornecedores || []);
+    },
     ...defaultQueryOptions,
   });
 }
@@ -550,7 +572,10 @@ export function useCaixaAberto() {
 export function useContasPagar() {
   return useQuery({
     queryKey: QUERY_KEYS.CONTAS_PAGAR,
-    queryFn: () => contasPagarAPI.getAll(),
+    queryFn: async () => {
+      const response = await contasPagarAPI.getAll();
+      return Array.isArray(response) ? response : (response?.data || response?.contasPagar || []);
+    },
     ...defaultQueryOptions,
   });
 }
@@ -614,7 +639,10 @@ export function useDeleteContaPagar() {
 export function useContasReceber() {
   return useQuery({
     queryKey: QUERY_KEYS.CONTAS_RECEBER,
-    queryFn: () => contasReceberAPI.getAll(),
+    queryFn: async () => {
+      const response = await contasReceberAPI.getAll();
+      return Array.isArray(response) ? response : (response?.data || response?.contasReceber || []);
+    },
     ...defaultQueryOptions,
   });
 }
