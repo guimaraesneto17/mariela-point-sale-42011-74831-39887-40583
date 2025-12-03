@@ -27,25 +27,37 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 30, // 30 minutes for persistence
+      staleTime: 1000 * 60 * 2, // 2 minutes - dados frescos
+      gcTime: 1000 * 60 * 30, // 30 minutes no cache
       refetchOnWindowFocus: false,
-      retry: 1,
+      refetchOnMount: 'always', // Sempre revalidar ao montar
+      retry: 2,
     },
   },
 });
+
+// Limpar cache se não houver token (evita dados stale após logout/login)
+const hasValidToken = () => !!localStorage.getItem('mariela_access_token');
 
 // Configurar persistência customizada no localStorage
 const persister = {
   persistClient: async (client: any) => {
     try {
-      localStorage.setItem('MARIELA_CACHE', JSON.stringify(client));
+      // Só persiste se houver token válido
+      if (hasValidToken()) {
+        localStorage.setItem('MARIELA_CACHE', JSON.stringify(client));
+      }
     } catch (error) {
       console.error('Erro ao persistir cache:', error);
     }
   },
   restoreClient: async () => {
     try {
+      // Só restaura cache se houver token válido
+      if (!hasValidToken()) {
+        localStorage.removeItem('MARIELA_CACHE');
+        return undefined;
+      }
       const cached = localStorage.getItem('MARIELA_CACHE');
       return cached ? JSON.parse(cached) : undefined;
     } catch (error) {

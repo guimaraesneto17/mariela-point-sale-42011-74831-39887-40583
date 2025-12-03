@@ -188,10 +188,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
     } finally {
+      // Limpar todos os dados do localStorage
       localStorage.removeItem('mariela_access_token');
       localStorage.removeItem('mariela_refresh_token');
       localStorage.removeItem('mariela_user');
       localStorage.removeItem('mariela_permissions');
+      localStorage.removeItem('MARIELA_CACHE'); // Limpar cache do React Query
       setUser(null);
       setPermissions(null);
       toast.success('Logout realizado com sucesso!');
