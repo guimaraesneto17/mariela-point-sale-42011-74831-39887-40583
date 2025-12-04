@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useClientes, useVendas, useProdutos, useEstoque, useVendedores, useContasPagar, useContasReceber } from "@/hooks/useQueryCache";
+import { useClientes, useVendas, useProdutos, useEstoque, useVendedores, useContasPagar, useContasReceber, useCaixaAberto } from "@/hooks/useQueryCache";
 import {
   DollarSign,
   ShoppingCart,
@@ -107,7 +107,7 @@ const Dashboard = () => {
   const [recentSales, setRecentSales] = useState<any[]>([]);
   const [produtosBaixoEstoque, setProdutosBaixoEstoque] = useState<any[]>([]);
   const [movimentacoesEstoque, setMovimentacoesEstoque] = useState<any[]>([]);
-  const [caixaAberto, setCaixaAberto] = useState<any>(null);
+  const [caixaAbertoManual, setCaixaAbertoManual] = useState<any>(null);
   const [vendasPorMes, setVendasPorMes] = useState<any[]>([]);
   const [vendasParaGrafico, setVendasParaGrafico] = useState<any[]>([]);
   const [data, setData] = useState<any>(null);
@@ -122,8 +122,12 @@ const Dashboard = () => {
   const { data: vendedoresData = [], isLoading: isLoadingVendedores, refetch: refetchVendedores } = useVendedores();
   const { data: contasPagarData = [], isLoading: isLoadingContasPagar, refetch: refetchContasPagar } = useContasPagar();
   const { data: contasReceberData = [], isLoading: isLoadingContasReceber, refetch: refetchContasReceber } = useContasReceber();
+  const { data: caixaAbertoData, isLoading: isLoadingCaixa, refetch: refetchCaixaAberto } = useCaixaAberto();
 
-  const loading = isLoadingClientes || isLoadingVendas || isLoadingProdutos || isLoadingEstoque || isLoadingVendedores || isLoadingContasPagar || isLoadingContasReceber;
+  // Usar dados do React Query para o caixa
+  const caixaAberto = caixaAbertoData || caixaAbertoManual;
+
+  const loading = isLoadingClientes || isLoadingVendas || isLoadingProdutos || isLoadingEstoque || isLoadingVendedores || isLoadingContasPagar || isLoadingContasReceber || isLoadingCaixa;
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Calcular aniversariantes do mês
@@ -150,6 +154,7 @@ const Dashboard = () => {
         refetchVendedores(),
         refetchContasPagar(),
         refetchContasReceber(),
+        refetchCaixaAberto(),
       ]);
       
       // Reprocessar dados após recarregar
@@ -217,14 +222,7 @@ const Dashboard = () => {
       setProdutos(produtos);
       setVendasParaGrafico(vendas); // Armazenar vendas para o gráfico
 
-      // Tentar carregar caixa aberto
-      try {
-        const caixa = await caixaAPI.getCaixaAberto();
-        setCaixaAberto(caixa);
-      } catch (error) {
-        console.log('Nenhum caixa aberto encontrado');
-        setCaixaAberto(null);
-      }
+      // Caixa aberto agora é gerenciado pelo React Query (useCaixaAberto)
 
       // Coletar todas as movimentações de todos os itens do estoque
       const todasMovimentacoes: any[] = [];
@@ -239,7 +237,6 @@ const Dashboard = () => {
           });
         }
       });
-      console.log('📦 Total de movimentações coletadas:', todasMovimentacoes.length);
       setMovimentacoesEstoque(todasMovimentacoes);
 
       // Calcular estatísticas do período atual
