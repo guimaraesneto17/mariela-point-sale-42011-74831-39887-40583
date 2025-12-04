@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { connectionLogger } from '@/lib/connectionLogger';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://mariela-pdv-backend.onrender.com/api';
-const CHECK_INTERVAL = 120000; // Verificar a cada 2 minutos (reduzido para evitar 429)
+const CHECK_INTERVAL = 120000; // Verificar a cada 2 minutos
 
 type ConnectionStatus = 'online' | 'offline' | 'slow';
 
@@ -31,10 +31,13 @@ export function ConnectionStatus() {
     const timeoutId = setTimeout(() => controller.abort(), 10000);
 
     try {
-      // Usar endpoint de health que é mais leve
-      const response = await fetch(`${API_BASE_URL.replace('/api', '')}/health`, {
+      // Usar endpoint de health que é mais leve (dentro de /api)
+      const response = await fetch(`${API_BASE_URL}/health`, {
         method: 'GET',
         signal: controller.signal,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
 
       clearTimeout(timeoutId);

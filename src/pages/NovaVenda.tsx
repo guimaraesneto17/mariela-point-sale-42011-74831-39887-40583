@@ -508,7 +508,9 @@ const NovaVenda = () => {
 
       await vendasAPI.create(vendaData);
       toast.success("Venda registrada com sucesso!");
-      navigate("/vendas");
+      
+      // Navegar para o caixa se estiver aberto
+      navigate("/caixa");
     } catch (error) {
       console.error('Erro ao registrar venda:', error);
       toast.error('Erro ao registrar venda');
@@ -918,10 +920,13 @@ const NovaVenda = () => {
                         }`}
                       >
                         <div className="flex-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <p className="font-medium">{item.nomeProduto}</p>
                             {item.emPromocao && (
                               <Badge className="bg-accent text-accent-foreground">Promoção</Badge>
+                            )}
+                            {item.novidade && (
+                              <Badge className="bg-blue-500 text-white">Novidade</Badge>
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground">
