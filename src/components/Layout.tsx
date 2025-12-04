@@ -36,7 +36,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const Layout = () => {
   const navigate = useNavigate();
-  const { logout, isAdmin } = useAuth();
+  const { logout, isAdmin, isVendedor } = useAuth();
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showFinanceiroAlertas, setShowFinanceiroAlertas] = useState(false);
@@ -105,19 +105,28 @@ const Layout = () => {
     }
   };
 
-  const navItems = [
-    { to: "/", icon: LayoutDashboard, label: "Dashboard", prefetch: "dashboard" as const },
-    { to: "/relatorios", icon: FileText, label: "Relatórios", prefetch: undefined },
-    { to: "/produtos", icon: Package, label: "Produtos", prefetch: "produtos" as const },
-    { to: "/clientes", icon: Users, label: "Clientes", prefetch: "clientes" as const },
-    { to: "/fornecedores", icon: Truck, label: "Fornecedores", prefetch: "fornecedores" as const },
-    { to: "/vendedores", icon: UserCheck, label: "Vendedores", prefetch: "vendedores" as const },
-    { to: "/estoque", icon: Warehouse, label: "Estoque", prefetch: "estoque" as const },
-    { to: "/vendas", icon: ShoppingCart, label: "Vendas", prefetch: "vendas" as const },
-    { to: "/caixa", icon: Wallet, label: "Caixa", prefetch: undefined },
-    { to: "/financeiro", icon: TrendingUp, label: "Financeiro", prefetch: undefined },
-    ...(isAdmin ? [{ to: "/usuarios", icon: UserCog, label: "Usuários", prefetch: undefined }] : []),
-  ];
+  // Nav items baseado na role do usuário
+  const navItems = isVendedor
+    ? [
+        { to: "/vendedor-dashboard", icon: LayoutDashboard, label: "Meu Painel", prefetch: undefined },
+        { to: "/vendas/nova", icon: Plus, label: "Nova Venda", prefetch: "nova-venda" as const },
+        { to: "/vendas", icon: ShoppingCart, label: "Vendas", prefetch: "vendas" as const },
+        { to: "/estoque", icon: Warehouse, label: "Estoque", prefetch: "estoque" as const },
+        { to: "/clientes", icon: Users, label: "Clientes", prefetch: "clientes" as const },
+      ]
+    : [
+        { to: "/", icon: LayoutDashboard, label: "Dashboard", prefetch: "dashboard" as const },
+        { to: "/relatorios", icon: FileText, label: "Relatórios", prefetch: undefined },
+        { to: "/produtos", icon: Package, label: "Produtos", prefetch: "produtos" as const },
+        { to: "/clientes", icon: Users, label: "Clientes", prefetch: "clientes" as const },
+        { to: "/fornecedores", icon: Truck, label: "Fornecedores", prefetch: "fornecedores" as const },
+        { to: "/vendedores", icon: UserCheck, label: "Vendedores", prefetch: "vendedores" as const },
+        { to: "/estoque", icon: Warehouse, label: "Estoque", prefetch: "estoque" as const },
+        { to: "/vendas", icon: ShoppingCart, label: "Vendas", prefetch: "vendas" as const },
+        { to: "/caixa", icon: Wallet, label: "Caixa", prefetch: undefined },
+        { to: "/financeiro", icon: TrendingUp, label: "Financeiro", prefetch: undefined },
+        ...(isAdmin ? [{ to: "/usuarios", icon: UserCog, label: "Usuários", prefetch: undefined }] : []),
+      ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -275,45 +284,47 @@ const Layout = () => {
             )}
           </AnimatePresence>
 
-          {/* Botão Nova Venda destacado */}
-          <motion.div 
-            className="pt-4 mt-4 border-t border-white/10"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: navItems.length * 0.05 + 0.1, duration: 0.4 }}
-          >
-            <PrefetchNavLink
-              to="/vendas/nova"
-              prefetchRoute="nova-venda"
+          {/* Botão Nova Venda destacado - apenas para não vendedores */}
+          {!isVendedor && (
+            <motion.div 
+              className="pt-4 mt-4 border-t border-white/10"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: navItems.length * 0.05 + 0.1, duration: 0.4 }}
             >
-              {() => (
-                <motion.div
-                  whileHover={{ scale: 1.04, y: -2 }}
-                  whileTap={{ scale: 0.96 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                >
-                  <Button
-                    className="w-full bg-gradient-to-r from-[#22c55e] to-[#16a34a] hover:from-[#16a34a] hover:to-[#15803d] text-white font-bold shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 h-14 rounded-xl group relative overflow-hidden"
-                    onClick={handleNavClick}
+              <PrefetchNavLink
+                to="/vendas/nova"
+                prefetchRoute="nova-venda"
+              >
+                {() => (
+                  <motion.div
+                    whileHover={{ scale: 1.04, y: -2 }}
+                    whileTap={{ scale: 0.96 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
                   >
-                    <motion.div 
-                      className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0"
-                      initial={{ x: "-100%" }}
-                      whileHover={{ x: "100%" }}
-                      transition={{ duration: 0.6 }}
-                    />
-                    <motion.div
-                      whileHover={{ rotate: 90 }}
-                      transition={{ duration: 0.3 }}
+                    <Button
+                      className="w-full bg-gradient-to-r from-[#22c55e] to-[#16a34a] hover:from-[#16a34a] hover:to-[#15803d] text-white font-bold shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 h-14 rounded-xl group relative overflow-hidden"
+                      onClick={handleNavClick}
                     >
-                      <Plus className="h-5 w-5 mr-2" />
-                    </motion.div>
-                    <span className="text-base tracking-wide">Nova Venda</span>
-                  </Button>
-                </motion.div>
-              )}
-            </PrefetchNavLink>
-          </motion.div>
+                      <motion.div 
+                        className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0"
+                        initial={{ x: "-100%" }}
+                        whileHover={{ x: "100%" }}
+                        transition={{ duration: 0.6 }}
+                      />
+                      <motion.div
+                        whileHover={{ rotate: 90 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <Plus className="h-5 w-5 mr-2" />
+                      </motion.div>
+                      <span className="text-base tracking-wide">Nova Venda</span>
+                    </Button>
+                  </motion.div>
+                )}
+              </PrefetchNavLink>
+            </motion.div>
+          )}
         </nav>
 
         {/* Footer moderno */}

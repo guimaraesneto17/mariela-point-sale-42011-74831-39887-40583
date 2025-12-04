@@ -44,7 +44,8 @@ router.get('/', requireAdmin, permissionController.getPermissions);
  *       200:
  *         description: Permissões da role
  */
-router.get('/role/:role', requireAdmin, permissionController.getPermissionsByRole);
+// Permite que usuários busquem suas próprias permissões (não requer admin)
+router.get('/role/:role', permissionController.getPermissionsByRole);
 
 /**
  * @swagger

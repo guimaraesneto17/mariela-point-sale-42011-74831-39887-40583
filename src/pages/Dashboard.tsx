@@ -78,6 +78,7 @@ const Dashboard = () => {
     { id: "vendas-hoje", label: "Vendas Hoje", category: "Vendas", visible: true },
     { id: "faturamento-diario", label: "Faturamento Diário", category: "Vendas", visible: true },
     { id: "total-clientes", label: "Total de Clientes", category: "Clientes", visible: true },
+    { id: "aniversariantes-mes", label: "Aniversariantes do Mês", category: "Clientes", visible: true },
     { id: "ticket-medio", label: "Ticket Médio", category: "Vendas", visible: true },
     { id: "produtos-estoque", label: "Produtos em Estoque", category: "Estoque", visible: true },
     { id: "produtos-promocao", label: "Produtos em Promoção", category: "Estoque", visible: true },
@@ -570,6 +571,17 @@ const Dashboard = () => {
           iconBgColor="bg-blue-500/10"
         />
       ),
+      "aniversariantes-mes": (
+        <DashboardWidgetCard
+          id={widget.id}
+          title="Aniversariantes do Mês"
+          value={aniversariantesMes.length}
+          subtitle="Clientes aniversariantes"
+          icon={<Cake className="h-5 w-5 text-pink-600" />}
+          iconBgColor="bg-pink-500/10"
+          valueColor="text-pink-600"
+        />
+      ),
       "ticket-medio": (
         <DashboardWidgetCard
           id={widget.id}
@@ -707,28 +719,6 @@ const Dashboard = () => {
           {isRefreshing ? 'Atualizando...' : 'Atualizar Dados'}
         </Button>
       </div>
-
-      {/* Card de Aniversariantes do Mês */}
-      {aniversariantesMes.length > 0 && (
-        <Card className="p-4 shadow-card bg-gradient-to-br from-pink-50/50 via-background to-purple-50/50 dark:from-pink-950/20 dark:via-background dark:to-purple-950/20 border-2 border-pink-200/50 dark:border-pink-800/30">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-pink-500/10 rounded-xl">
-                <Cake className="h-6 w-6 text-pink-600 dark:text-pink-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-foreground">🎂 Aniversariantes do Mês</h3>
-                <p className="text-sm text-muted-foreground">
-                  {aniversariantesMes.length} cliente{aniversariantesMes.length > 1 ? 's fazem' : ' faz'} aniversário este mês
-                </p>
-              </div>
-            </div>
-            <Badge className="bg-pink-500 hover:bg-pink-600 text-white text-lg px-4 py-2">
-              {aniversariantesMes.length}
-            </Badge>
-          </div>
-        </Card>
-      )}
 
       {/* Filtros de Data */}
       <Card className="p-4 shadow-card">
