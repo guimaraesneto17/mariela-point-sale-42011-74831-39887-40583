@@ -132,7 +132,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await loadPermissions(userData.role);
       
       toast.success('Login realizado com sucesso!');
-      navigate('/');
+      
+      // Redirecionar baseado na role
+      if (userData.role === 'vendedor') {
+        navigate('/vendedor-dashboard');
+      } else {
+        navigate('/');
+      }
     } catch (error: any) {
       console.error('Erro ao fazer login:', error);
       
