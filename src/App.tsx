@@ -97,21 +97,21 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route element={<Layout />}>
-               <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-               <Route path="/vendedor-dashboard" element={<ProtectedRoute requiredRoles={['vendedor', 'admin', 'gerente']}><VendedorDashboard /></ProtectedRoute>} />
-              <Route path="/produtos" element={<ProtectedRoute><Produtos /></ProtectedRoute>} />
-              <Route path="/vendas" element={<ProtectedRoute><Vendas /></ProtectedRoute>} />
-              <Route path="/vendas/nova" element={<ProtectedRoute><NovaVenda /></ProtectedRoute>} />
-              <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
-              <Route path="/estoque" element={<ProtectedRoute><Estoque /></ProtectedRoute>} />
-              <Route path="/fornecedores" element={<ProtectedRoute><Fornecedores /></ProtectedRoute>} />
-              <Route path="/vendedores" element={<ProtectedRoute><Vendedores /></ProtectedRoute>} />
-              <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
-              <Route path="/vitrine-virtual" element={<ProtectedRoute><VitrineVirtual /></ProtectedRoute>} />
-              <Route path="/caixa" element={<ProtectedRoute><Caixa /></ProtectedRoute>} />
-              <Route path="/financeiro" element={<ProtectedRoute><Financeiro /></ProtectedRoute>} />
+               <Route path="/" element={<ProtectedRoute requiredRoles={['admin', 'gerente']}><Dashboard /></ProtectedRoute>} />
+               <Route path="/vendedor-dashboard" element={<ProtectedRoute><VendedorDashboard /></ProtectedRoute>} />
+              <Route path="/produtos" element={<ProtectedRoute requiredModule="produtos"><Produtos /></ProtectedRoute>} />
+              <Route path="/vendas" element={<ProtectedRoute requiredModule="vendas"><Vendas /></ProtectedRoute>} />
+              <Route path="/vendas/nova" element={<ProtectedRoute requiredModule="vendas"><NovaVenda /></ProtectedRoute>} />
+              <Route path="/clientes" element={<ProtectedRoute requiredModule="clientes"><Clientes /></ProtectedRoute>} />
+              <Route path="/estoque" element={<ProtectedRoute requiredModule="estoque"><Estoque /></ProtectedRoute>} />
+              <Route path="/fornecedores" element={<ProtectedRoute requiredModule="fornecedores"><Fornecedores /></ProtectedRoute>} />
+              <Route path="/vendedores" element={<ProtectedRoute requiredModule="vendedores"><Vendedores /></ProtectedRoute>} />
+              <Route path="/relatorios" element={<ProtectedRoute requiredModule="relatorios"><Relatorios /></ProtectedRoute>} />
+              <Route path="/vitrine-virtual" element={<ProtectedRoute requiredModule="vitrine"><VitrineVirtual /></ProtectedRoute>} />
+              <Route path="/caixa" element={<ProtectedRoute requiredModule="caixa"><Caixa /></ProtectedRoute>} />
+              <Route path="/financeiro" element={<ProtectedRoute requiredModule="financeiro"><Financeiro /></ProtectedRoute>} />
               <Route path="/usuarios" element={<ProtectedRoute requiredRoles={['admin']}><Usuarios /></ProtectedRoute>} />
-              <Route path="/backend-status" element={<ProtectedRoute><BackendStatus /></ProtectedRoute>} />
+              <Route path="/backend-status" element={<ProtectedRoute requiredRoles={['admin']}><BackendStatus /></ProtectedRoute>} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

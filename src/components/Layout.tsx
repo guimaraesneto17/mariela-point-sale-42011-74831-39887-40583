@@ -1,7 +1,7 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import { PrefetchNavLink } from "@/components/PrefetchNavLink";
 import { PageTransition } from "@/components/PageTransition";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePermission } from "@/hooks/usePermission";
 import logo from "@/logo.png";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CacheIndicator } from "@/components/CacheIndicator";
@@ -37,6 +38,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 const Layout = () => {
   const navigate = useNavigate();
   const { logout, isAdmin, isVendedor } = useAuth();
+  const { canView } = usePermission();
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showFinanceiroAlertas, setShowFinanceiroAlertas] = useState(false);
@@ -105,28 +107,56 @@ const Layout = () => {
     }
   };
 
-  // Nav items baseado na role do usuário
-  const navItems = isVendedor
-    ? [
-        { to: "/vendedor-dashboard", icon: LayoutDashboard, label: "Meu Painel", prefetch: undefined },
-        { to: "/vendas/nova", icon: Plus, label: "Nova Venda", prefetch: "nova-venda" as const },
-        { to: "/vendas", icon: ShoppingCart, label: "Vendas", prefetch: "vendas" as const },
-        { to: "/estoque", icon: Warehouse, label: "Estoque", prefetch: "estoque" as const },
-        { to: "/clientes", icon: Users, label: "Clientes", prefetch: "clientes" as const },
-      ]
-    : [
-        { to: "/", icon: LayoutDashboard, label: "Dashboard", prefetch: "dashboard" as const },
-        { to: "/relatorios", icon: FileText, label: "Relatórios", prefetch: undefined },
-        { to: "/produtos", icon: Package, label: "Produtos", prefetch: "produtos" as const },
-        { to: "/clientes", icon: Users, label: "Clientes", prefetch: "clientes" as const },
-        { to: "/fornecedores", icon: Truck, label: "Fornecedores", prefetch: "fornecedores" as const },
-        { to: "/vendedores", icon: UserCheck, label: "Vendedores", prefetch: "vendedores" as const },
-        { to: "/estoque", icon: Warehouse, label: "Estoque", prefetch: "estoque" as const },
-        { to: "/vendas", icon: ShoppingCart, label: "Vendas", prefetch: "vendas" as const },
-        { to: "/caixa", icon: Wallet, label: "Caixa", prefetch: undefined },
-        { to: "/financeiro", icon: TrendingUp, label: "Financeiro", prefetch: undefined },
-        ...(isAdmin ? [{ to: "/usuarios", icon: UserCog, label: "Usuários", prefetch: undefined }] : []),
+  // Nav items baseado na role e permissões do usuário
+  const navItems = useMemo(() => {
+    if (isVendedor) {
+      // Vendedor: apenas os itens que ele tem permissão
+      const vendedorItems = [
+        { to: "/vendedor-dashboard", icon: LayoutDashboard, label: "Meu Painel", prefetch: undefined, module: null },
       ];
+      
+      if (canView('vendas')) {
+        vendedorItems.push({ to: "/vendas/nova", icon: Plus, label: "Nova Venda", prefetch: "nova-venda" as const, module: 'vendas' });
+        vendedorItems.push({ to: "/vendas", icon: ShoppingCart, label: "Vendas", prefetch: "vendas" as const, module: 'vendas' });
+      }
+      
+      if (canView('estoque')) {
+        vendedorItems.push({ to: "/estoque", icon: Warehouse, label: "Estoque", prefetch: "estoque" as const, module: 'estoque' });
+      }
+      
+      if (canView('clientes')) {
+        vendedorItems.push({ to: "/clientes", icon: Users, label: "Clientes", prefetch: "clientes" as const, module: 'clientes' });
+      }
+      
+      return vendedorItems;
+    }
+    
+    // Admin/Gerente: todos os itens (admin) ou baseado em permissões (gerente)
+    const allItems = [
+      { to: "/", icon: LayoutDashboard, label: "Dashboard", prefetch: "dashboard" as const, module: 'dashboard' },
+      { to: "/relatorios", icon: FileText, label: "Relatórios", prefetch: undefined, module: 'relatorios' },
+      { to: "/produtos", icon: Package, label: "Produtos", prefetch: "produtos" as const, module: 'produtos' },
+      { to: "/clientes", icon: Users, label: "Clientes", prefetch: "clientes" as const, module: 'clientes' },
+      { to: "/fornecedores", icon: Truck, label: "Fornecedores", prefetch: "fornecedores" as const, module: 'fornecedores' },
+      { to: "/vendedores", icon: UserCheck, label: "Vendedores", prefetch: "vendedores" as const, module: 'vendedores' },
+      { to: "/estoque", icon: Warehouse, label: "Estoque", prefetch: "estoque" as const, module: 'estoque' },
+      { to: "/vendas", icon: ShoppingCart, label: "Vendas", prefetch: "vendas" as const, module: 'vendas' },
+      { to: "/caixa", icon: Wallet, label: "Caixa", prefetch: undefined, module: 'caixa' },
+      { to: "/financeiro", icon: TrendingUp, label: "Financeiro", prefetch: undefined, module: 'financeiro' },
+    ];
+    
+    // Filtrar baseado em permissões (admin tem acesso a tudo)
+    const filteredItems = isAdmin 
+      ? allItems 
+      : allItems.filter(item => !item.module || canView(item.module as any));
+    
+    // Adicionar usuários apenas para admin
+    if (isAdmin) {
+      filteredItems.push({ to: "/usuarios", icon: UserCog, label: "Usuários", prefetch: undefined, module: 'usuarios' });
+    }
+    
+    return filteredItems;
+  }, [isVendedor, isAdmin, canView]);
 
   return (
     <div className="min-h-screen bg-background">

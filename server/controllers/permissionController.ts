@@ -185,7 +185,50 @@ export const initializeDefaultPermissions = async (req: Request, res: Response) 
 };
 
 /**
- * Verificar se usuário tem permissão para uma ação específica
+ * Verificar se usuário tem permissão para uma ação específica (somente própria role)
+ */
+export const checkOwnPermission = async (req: Request, res: Response) => {
+  try {
+    const { module, action } = req.query;
+    const userRole = req.userRole; // Obtido do middleware de autenticação
+
+    if (!module || !action) {
+      return res.status(400).json({ 
+        error: 'Module e action são obrigatórios' 
+      });
+    }
+
+    if (!userRole) {
+      return res.status(401).json({ 
+        error: 'Usuário não autenticado' 
+      });
+    }
+
+    // Admin tem todas as permissões
+    if (userRole === 'admin') {
+      return res.json({ hasPermission: true });
+    }
+
+    const permission = await Permission.findOne({ 
+      role: userRole, 
+      module: module as string 
+    });
+
+    if (!permission) {
+      return res.json({ hasPermission: false });
+    }
+
+    const hasPermission = permission.actions.includes(action as Action);
+    res.json({ hasPermission });
+  } catch (error) {
+    console.error('Erro ao verificar permissão:', error);
+    res.status(500).json({ error: 'Erro ao verificar permissão' });
+  }
+};
+
+/**
+ * Verificar se uma role tem permissão (apenas para admin)
+ * @deprecated Use checkOwnPermission para verificar próprias permissões
  */
 export const checkPermission = async (req: Request, res: Response) => {
   try {
