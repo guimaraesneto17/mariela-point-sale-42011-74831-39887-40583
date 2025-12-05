@@ -51,16 +51,11 @@ router.get('/role/:role', permissionController.getPermissionsByRole);
  * @swagger
  * /api/permissions/check:
  *   get:
- *     summary: Verificar se uma role tem permissão para uma ação
+ *     summary: Verificar se o usuário tem permissão para uma ação (somente própria role)
  *     tags: [Permissions]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: query
- *         name: role
- *         required: true
- *         schema:
- *           type: string
  *       - in: query
  *         name: module
  *         required: true
@@ -75,7 +70,7 @@ router.get('/role/:role', permissionController.getPermissionsByRole);
  *       200:
  *         description: Resultado da verificação
  */
-router.get('/check', permissionController.checkPermission);
+router.get('/check', permissionController.checkOwnPermission);
 
 /**
  * @swagger

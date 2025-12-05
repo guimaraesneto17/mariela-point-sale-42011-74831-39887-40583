@@ -1,16 +1,37 @@
 import bcrypt from 'bcrypt';
 import User from '../models/User';
 import connectDatabase from '../config/database';
+import dotenv from 'dotenv';
+
+// Carregar variáveis de ambiente
+dotenv.config();
 
 /**
  * Script para criar usuário admin inicial
  * Executar com: npx tsx server/scripts/createAdminUser.ts
+ * 
+ * VARIÁVEIS DE AMBIENTE NECESSÁRIAS:
+ * - ADMIN_EMAIL: email do admin
+ * - ADMIN_PASSWORD: senha do admin
+ * - ADMIN_NOME (opcional): nome do admin
  */
 
-const ADMIN_EMAIL = 'marielamodaf@gmail.com';
-const ADMIN_PASSWORD = 'mariela214365';
-const ADMIN_NOME = 'Administrador Mariela';
+// Validação de variáveis de ambiente obrigatórias
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const ADMIN_NOME = process.env.ADMIN_NOME || 'Administrador Mariela';
 const SALT_ROUNDS = 10;
+
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  console.error('❌ ERRO: Variáveis de ambiente obrigatórias não configuradas!');
+  console.error('   Configure as seguintes variáveis:');
+  console.error('   - ADMIN_EMAIL: email do administrador');
+  console.error('   - ADMIN_PASSWORD: senha do administrador');
+  console.error('   - ADMIN_NOME (opcional): nome do administrador');
+  console.error('\n   Exemplo:');
+  console.error('   ADMIN_EMAIL=admin@exemplo.com ADMIN_PASSWORD=senhaSegura123 npx tsx server/scripts/createAdminUser.ts');
+  process.exit(1);
+}
 
 async function createAdminUser() {
   try {
