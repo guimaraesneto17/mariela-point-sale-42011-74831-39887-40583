@@ -34,6 +34,33 @@ export const getPermissionsByRole = async (req: Request, res: Response) => {
 };
 
 /**
+ * Obter permissões apenas da própria role do usuário (seguro)
+ */
+export const getOwnRolePermissions = async (req: Request, res: Response) => {
+  try {
+    const { role } = req.params;
+    const userRole = (req as any).userRole;
+
+    if (!['admin', 'gerente', 'vendedor'].includes(role)) {
+      return res.status(400).json({ error: 'Role inválida' });
+    }
+
+    // Admins podem ver qualquer role, outros usuários só podem ver suas próprias permissões
+    if (userRole !== 'admin' && role !== userRole) {
+      return res.status(403).json({ 
+        error: 'Acesso negado. Você só pode visualizar suas próprias permissões.' 
+      });
+    }
+
+    const permissions = await Permission.find({ role }).sort({ module: 1 });
+    res.json(permissions);
+  } catch (error) {
+    console.error('Erro ao buscar permissões:', error);
+    res.status(500).json({ error: 'Erro ao buscar permissões' });
+  }
+};
+
+/**
  * Criar ou atualizar permissão
  */
 export const upsertPermission = async (req: Request, res: Response) => {
