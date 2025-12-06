@@ -60,7 +60,7 @@ async function createAdminUser() {
 
     // Hash da senha
     console.log('🔐 Gerando hash da senha...');
-    const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, SALT_ROUNDS);
+    const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD!, SALT_ROUNDS);
 
     // Criar usuário admin
     console.log('✨ Criando usuário admin...');
