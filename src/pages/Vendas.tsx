@@ -147,7 +147,8 @@ const Vendas = () => {
               {Array.isArray(venda.itens) && venda.itens.map((item: any, idx: number) => {
                 // Determinar se tem promoção ou desconto
                 const precoFinal = item.precoFinalUnitario || item.preco || item.precoUnitario || 0;
-                const precoOriginal = item.precoUnitario || item.preco || 0;
+                // Usar precoOriginal se existir (novo campo), senão fallback para precoUnitario
+                const precoOriginal = item.precoOriginal || item.precoUnitario || item.preco || 0;
                 const temPromocao = item.emPromocao || false;
                 const tipoDesconto = item.tipoDesconto || "porcentagem";
                 const descontoAplicado = item.descontoAplicado || 0;
@@ -157,9 +158,10 @@ const Vendas = () => {
                 const temDesconto = (descontoAplicado > 0 || descontoValor > 0) && !temPromocao;
                 const mostrarPrecoOriginal = temPromocao || temDesconto;
                 
-                // Calcular economia em promoção
-                const economia = temPromocao ? precoOriginal - precoFinal : 0;
-                const percentualEconomia = temPromocao && precoOriginal > 0 ? ((economia / precoOriginal) * 100) : 0;
+                // Calcular economia em promoção - só calcular se tiver precoOriginal diferente do precoFinal
+                const precoParaComparar = temPromocao && item.precoOriginal ? item.precoOriginal : precoOriginal;
+                const economia = temPromocao && precoParaComparar > precoFinal ? precoParaComparar - precoFinal : 0;
+                const percentualEconomia = temPromocao && precoParaComparar > 0 && economia > 0 ? ((economia / precoParaComparar) * 100) : 0;
                 
                 return (
                   <div 
@@ -227,9 +229,11 @@ const Vendas = () => {
                               Preço Promocional
                             </span>
                             <div className="flex items-baseline gap-2">
-                              <span className="text-xs text-muted-foreground line-through">
-                                {formatCurrency(precoOriginal)}
-                              </span>
+                              {precoParaComparar > precoFinal && (
+                                <span className="text-xs text-muted-foreground line-through">
+                                  {formatCurrency(precoParaComparar)}
+                                </span>
+                              )}
                               <span className="font-bold text-lg text-red-600 dark:text-red-400">
                                 {formatCurrency(precoFinal)}
                               </span>

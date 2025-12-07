@@ -27,6 +27,7 @@ interface ItemVenda {
   tamanho: string;
   quantidade: number;
   precoUnitario: number;
+  precoOriginal?: number;
   descontoAplicado: number;
   descontoValor?: number;
   tipoDesconto: "porcentagem" | "valor";
@@ -241,10 +242,13 @@ const NovaVenda = () => {
       return;
     }
 
+    // Preço original (antes de qualquer promoção)
+    const precoOriginal = Number(produtoSelecionado.precoVenda ?? 0);
+    
     // Usar preço promocional se o produto estiver em promoção, senão usar preço normal
     const precoBase = produtoSelecionado.emPromocao && produtoSelecionado.precoPromocional 
       ? Number(produtoSelecionado.precoPromocional) 
-      : Number(produtoSelecionado.precoVenda ?? 0);
+      : precoOriginal;
     
     // Calcular desconto baseado no tipo (porcentagem ou valor)
     let precoComDesconto = precoBase;
@@ -264,6 +268,7 @@ const NovaVenda = () => {
       tamanho: produtoSelecionado.tamanho,
       quantidade: quantidadeProduto,
       precoUnitario: precoBase,
+      precoOriginal: produtoSelecionado.emPromocao ? precoOriginal : undefined,
       descontoAplicado: tipoDescontoProduto === "porcentagem" ? descontoProduto : 0,
       descontoValor: tipoDescontoProduto === "valor" ? descontoValorNumerico : undefined,
       tipoDesconto: tipoDescontoProduto,
@@ -490,6 +495,7 @@ const NovaVenda = () => {
             tamanho: item.tamanho,
             quantidade: item.quantidade,
             precoUnitario: item.precoUnitario,
+            precoOriginal: item.precoOriginal,
             precoFinalUnitario: precoFinal,
             descontoAplicado: item.descontoAplicado,
             descontoValor: item.descontoValor,

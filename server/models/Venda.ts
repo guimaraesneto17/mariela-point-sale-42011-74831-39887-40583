@@ -66,6 +66,10 @@ const VendaSchema = new mongoose.Schema({
       required: true,
       min: 0
     },
+    precoOriginal: {
+      type: Number,
+      min: 0
+    },
     precoFinalUnitario: {
       type: Number,
       required: true,
