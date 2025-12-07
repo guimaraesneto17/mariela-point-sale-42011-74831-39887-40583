@@ -26,6 +26,7 @@ export function SelectClientDialog({ open, onOpenChange, clientes, onSelect, onC
   const [newClientNome, setNewClientNome] = useState("");
   const [newClientTelefone, setNewClientTelefone] = useState("");
   const [newClientDataNascimento, setNewClientDataNascimento] = useState("");
+  const [newClientObservacao, setNewClientObservacao] = useState("");
   const [saving, setSaving] = useState(false);
 
   const filteredClientes = clientes.filter(c => 
@@ -53,6 +54,7 @@ export function SelectClientDialog({ open, onOpenChange, clientes, onSelect, onC
         nome: newClientNome.trim(),
         telefone: newClientTelefone.trim() || undefined,
         dataNascimento: newClientDataNascimento || undefined,
+        observacao: newClientObservacao.trim() || undefined,
       };
 
       await clientesAPI.create(newClient);
@@ -69,6 +71,7 @@ export function SelectClientDialog({ open, onOpenChange, clientes, onSelect, onC
       setNewClientNome("");
       setNewClientTelefone("");
       setNewClientDataNascimento("");
+      setNewClientObservacao("");
       setShowNewClientForm(false);
       setSearchTerm("");
       onOpenChange(false);
@@ -89,6 +92,7 @@ export function SelectClientDialog({ open, onOpenChange, clientes, onSelect, onC
         setNewClientNome("");
         setNewClientTelefone("");
         setNewClientDataNascimento("");
+        setNewClientObservacao("");
         setSearchTerm("");
       }
     }}>
@@ -134,6 +138,18 @@ export function SelectClientDialog({ open, onOpenChange, clientes, onSelect, onC
               />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="observacao">Observações (Opcional)</Label>
+              <textarea
+                id="observacao"
+                placeholder="Observações sobre o cliente..."
+                value={newClientObservacao}
+                onChange={(e) => setNewClientObservacao(e.target.value)}
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                maxLength={500}
+              />
+            </div>
+
             <div className="flex gap-2 pt-2">
               <Button
                 variant="outline"
@@ -143,6 +159,7 @@ export function SelectClientDialog({ open, onOpenChange, clientes, onSelect, onC
                   setNewClientNome("");
                   setNewClientTelefone("");
                   setNewClientDataNascimento("");
+                  setNewClientObservacao("");
                 }}
               >
                 Cancelar

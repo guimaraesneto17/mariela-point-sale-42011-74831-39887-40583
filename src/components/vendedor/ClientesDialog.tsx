@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Search, Users, Plus, Edit, Phone, Calendar, ShoppingBag } from "lucide-react";
+import { Search, Users, Plus, Edit, Phone, Calendar, ShoppingBag, FileText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -43,6 +43,7 @@ export function ClientesDialog({
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
   const [dataNascimento, setDataNascimento] = useState("");
+  const [observacao, setObservacao] = useState("");
 
   const clientesFiltrados = useMemo(() => {
     if (!searchTerm) return clientes;
@@ -70,6 +71,7 @@ export function ClientesDialog({
     setNome("");
     setTelefone("");
     setDataNascimento("");
+    setObservacao("");
     setShowForm(false);
     setIsEditing(false);
     setEditingCliente(null);
@@ -80,6 +82,7 @@ export function ClientesDialog({
     setNome(cliente.nome || "");
     setTelefone(cliente.telefone || "");
     setDataNascimento(cliente.dataNascimento ? format(new Date(cliente.dataNascimento), "dd/MM/yyyy") : "");
+    setObservacao(cliente.observacao || "");
     setIsEditing(true);
     setShowForm(true);
   };
@@ -106,6 +109,7 @@ export function ClientesDialog({
           nome: nome.trim(),
           telefone: telefone || null,
           dataNascimento: dataNascimentoISO,
+          observacao: observacao.trim() || null,
         });
         toast.success("Cliente atualizado com sucesso!");
       } else {
@@ -114,6 +118,7 @@ export function ClientesDialog({
           nome: nome.trim(),
           telefone: telefone || null,
           dataNascimento: dataNascimentoISO,
+          observacao: observacao.trim() || null,
           ativo: true,
         };
         await clientesAPI.create(novoCliente);
@@ -244,6 +249,15 @@ export function ClientesDialog({
                   value={dataNascimento}
                   onChange={(e) => setDataNascimento(maskDate(e.target.value))}
                   placeholder="DD/MM/AAAA"
+                />
+              </div>
+              <div>
+                <Label>Observações</Label>
+                <textarea
+                  value={observacao}
+                  onChange={(e) => setObservacao(e.target.value)}
+                  placeholder="Observações sobre o cliente..."
+                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
             </div>

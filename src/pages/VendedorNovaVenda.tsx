@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Plus, Trash2, ShoppingCart, Edit2, User, UserCheck, Package, Users, LogOut, RefreshCw, TrendingUp, Target } from "lucide-react";
+import { X, Plus, Trash2, ShoppingCart, Edit2, User, UserCheck, Package, Users, LogOut, RefreshCw, TrendingUp, Target, ChevronDown, ChevronUp, DollarSign, Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +52,9 @@ const VendedorNovaVenda = () => {
   const [showEstoqueDialog, setShowEstoqueDialog] = useState(false);
   const [showVendasDialog, setShowVendasDialog] = useState(false);
   const [showClientesDialog, setShowClientesDialog] = useState(false);
+  
+  // Estatísticas expandidas
+  const [showEstatisticas, setShowEstatisticas] = useState(false);
   
   // Estados
   const [clienteSelecionado, setClienteSelecionado] = useState<{ codigo: string; nome: string } | null>(null);
@@ -625,8 +628,8 @@ const VendedorNovaVenda = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header fixo */}
+    <div className="min-h-screen bg-background pb-32">
+      {/* Header simples */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[#7c3aed] via-[#6d28d9] to-[#5b21b6] shadow-lg">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
@@ -656,81 +659,42 @@ const VendedorNovaVenda = () => {
             </Button>
           </div>
         </div>
-
-        {/* Estatísticas resumidas */}
-        <div className="grid grid-cols-2 gap-3 px-4 pb-3">
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <TrendingUp className="h-4 w-4 text-white/80" />
-              <span className="text-white/80 text-xs">Vendas Hoje</span>
-            </div>
-            <p className="text-white font-bold text-lg">
-              R$ {estatisticas.totalHoje.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </p>
-            <p className="text-white/70 text-xs">{estatisticas.qtdHoje} venda{estatisticas.qtdHoje !== 1 ? 's' : ''}</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Target className="h-4 w-4 text-white/80" />
-              <span className="text-white/80 text-xs">Meta Mensal</span>
-            </div>
-            <p className="text-white font-bold text-lg">
-              {estatisticas.metaMensal > 0 ? `${estatisticas.progressoMeta.toFixed(0)}%` : 'Sem meta'}
-            </p>
-            {estatisticas.metaMensal > 0 && (
-              <>
-                <div className="w-full bg-white/20 rounded-full h-1.5 mt-1">
-                  <div 
-                    className="bg-green-400 h-1.5 rounded-full transition-all duration-500" 
-                    style={{ width: `${Math.min(100, estatisticas.progressoMeta)}%` }}
-                  />
-                </div>
-                <p className="text-white/70 text-xs mt-1">
-                  R$ {estatisticas.totalMes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} / R$ {estatisticas.metaMensal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </p>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Botões de ação rápida */}
-        <div className="flex gap-2 px-4 pb-4">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setShowEstoqueDialog(true)}
-            className="flex-1 gap-2"
-          >
-            <Package className="h-4 w-4" />
-            Estoque
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setShowVendasDialog(true)}
-            className="flex-1 gap-2"
-          >
-            <ShoppingCart className="h-4 w-4" />
-            Minhas Vendas
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setShowClientesDialog(true)}
-            className="flex-1 gap-2"
-          >
-            <Users className="h-4 w-4" />
-            Clientes
-          </Button>
-        </div>
       </header>
 
       {/* Conteúdo principal */}
-      <main className="pt-56 pb-8 px-4">
+      <main className="pt-20 pb-8 px-4">
         {isLoadingData ? (
           <NovaVendaSkeleton />
         ) : (
           <div className="space-y-6 animate-fade-in max-w-7xl mx-auto">
+            {/* Botões de ação rápida incorporados na página */}
+            <div className="grid grid-cols-3 gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowEstoqueDialog(true)}
+                className="flex flex-col items-center gap-2 h-auto py-4"
+              >
+                <Package className="h-6 w-6 text-primary" />
+                <span className="text-sm">Estoque</span>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowVendasDialog(true)}
+                className="flex flex-col items-center gap-2 h-auto py-4"
+              >
+                <ShoppingCart className="h-6 w-6 text-primary" />
+                <span className="text-sm">Minhas Vendas</span>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowClientesDialog(true)}
+                className="flex flex-col items-center gap-2 h-auto py-4"
+              >
+                <Users className="h-6 w-6 text-primary" />
+                <span className="text-sm">Clientes</span>
+              </Button>
+            </div>
+
             <div className="text-center">
               <h1 className="text-3xl font-bold text-foreground mb-2">Nova Venda</h1>
             </div>
@@ -1233,6 +1197,116 @@ const VendedorNovaVenda = () => {
         clientes={clientes}
         onClienteUpdated={loadData}
       />
+
+      {/* Footer com estatísticas expansíveis */}
+      <footer className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t shadow-lg">
+        <Button
+          variant="ghost"
+          className="w-full flex items-center justify-between p-4 h-auto"
+          onClick={() => setShowEstatisticas(!showEstatisticas)}
+        >
+          <div className="flex items-center gap-3">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            <span className="font-medium">Minhas Estatísticas</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">
+              Hoje: R$ {estatisticas.totalHoje.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </span>
+            {showEstatisticas ? (
+              <ChevronDown className="h-5 w-5" />
+            ) : (
+              <ChevronUp className="h-5 w-5" />
+            )}
+          </div>
+        </Button>
+
+        {showEstatisticas && (
+          <div className="p-4 pt-0 space-y-4 animate-fade-in">
+            <div className="grid grid-cols-2 gap-3">
+              {/* Vendas Hoje */}
+              <Card className="bg-primary/5 border-primary/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <TrendingUp className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-sm text-muted-foreground">Vendas Hoje</span>
+                  </div>
+                  <p className="text-2xl font-bold text-primary">
+                    R$ {estatisticas.totalHoje.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {estatisticas.qtdHoje} venda{estatisticas.qtdHoje !== 1 ? 's' : ''} realizada{estatisticas.qtdHoje !== 1 ? 's' : ''}
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Vendas do Mês */}
+              <Card className="bg-green-500/5 border-green-500/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-2 bg-green-500/10 rounded-lg">
+                      <Calendar className="h-4 w-4 text-green-600" />
+                    </div>
+                    <span className="text-sm text-muted-foreground">Vendas do Mês</span>
+                  </div>
+                  <p className="text-2xl font-bold text-green-600">
+                    R$ {estatisticas.totalMes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Meta Mensal */}
+            <Card className="bg-amber-500/5 border-amber-500/20">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-amber-500/10 rounded-lg">
+                      <Target className="h-4 w-4 text-amber-600" />
+                    </div>
+                    <span className="text-sm font-medium">Meta Mensal</span>
+                  </div>
+                  <span className="text-lg font-bold text-amber-600">
+                    {estatisticas.metaMensal > 0 ? `${estatisticas.progressoMeta.toFixed(1)}%` : 'Sem meta definida'}
+                  </span>
+                </div>
+                
+                {estatisticas.metaMensal > 0 && (
+                  <>
+                    <div className="w-full bg-muted rounded-full h-3">
+                      <div 
+                        className={`h-3 rounded-full transition-all duration-500 ${
+                          estatisticas.progressoMeta >= 100 
+                            ? 'bg-green-500' 
+                            : estatisticas.progressoMeta >= 70 
+                              ? 'bg-amber-500' 
+                              : 'bg-red-500'
+                        }`}
+                        style={{ width: `${Math.min(100, estatisticas.progressoMeta)}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between mt-2 text-sm">
+                      <span className="text-muted-foreground">
+                        Atingido: R$ {estatisticas.totalMes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </span>
+                      <span className="text-muted-foreground">
+                        Meta: R$ {estatisticas.metaMensal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    {estatisticas.progressoMeta >= 100 && (
+                      <div className="mt-2 p-2 bg-green-500/10 rounded-lg text-center">
+                        <span className="text-green-600 font-medium text-sm">🎉 Parabéns! Meta atingida!</span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </footer>
     </div>
   );
 };
