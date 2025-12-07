@@ -40,6 +40,17 @@ const PORT = process.env.PORT || 3001;
 // Confiar em proxies (necessário para Render.com e outros serviços de hospedagem)
 app.set('trust proxy', true);
 
+// HTTPS Redirect - Forçar HTTPS em produção
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    // Verificar header x-forwarded-proto (usado por proxies como Render, Heroku, etc.)
+    if (req.headers['x-forwarded-proto'] !== 'https') {
+      // Redirecionar para HTTPS com status 301 (permanente)
+      return res.redirect(301, `https://${req.headers.host}${req.url}`);
+    }
+    next();
+  });
+}
 // Helmet.js - Headers HTTP de segurança
 app.use(helmet({
   contentSecurityPolicy: {
