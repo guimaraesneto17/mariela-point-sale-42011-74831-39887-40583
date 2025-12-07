@@ -823,7 +823,7 @@ const Estoque = () => {
                   {getAllCores().map((cor) => (
                     <SelectItem key={cor} value={cor} className="hover:bg-primary/10">
                       <span className="flex items-center gap-2">
-                        <span className="h-3 w-3 rounded-full bg-gradient-to-r from-primary to-accent"></span>
+                        <ColorBadge color={cor} showLabel={false} className="border-0 bg-transparent p-0" />
                         {cor}
                         <span className="ml-auto text-muted-foreground text-xs">({getCountByCor(cor)})</span>
                       </span>
