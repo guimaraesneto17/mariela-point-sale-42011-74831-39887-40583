@@ -494,7 +494,9 @@ const NovaVenda = () => {
             descontoAplicado: item.descontoAplicado,
             descontoValor: item.descontoValor,
             tipoDesconto: item.tipoDesconto,
-            subtotal: item.subtotal
+            subtotal: item.subtotal,
+            emPromocao: item.emPromocao || false,
+            novidade: item.novidade || false
           };
         }),
         total: totalFinal,
