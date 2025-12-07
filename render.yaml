@@ -21,3 +21,7 @@ services:
         generateValue: true
       - key: REDIS_URL
         sync: false
+      - key: SWAGGER_USER
+        value: mariela
+      - key: SWAGGER_PASSWORD
+        value: mariela214365

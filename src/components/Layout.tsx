@@ -18,7 +18,8 @@ import {
   TrendingUp,
   Menu,
   X,
-  UserCog
+  UserCog,
+  FileCode
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -150,9 +151,10 @@ const Layout = () => {
       ? allItems 
       : allItems.filter(item => !item.module || canView(item.module as any));
     
-    // Adicionar usuários apenas para admin
+    // Adicionar usuários e API docs apenas para admin
     if (isAdmin) {
       filteredItems.push({ to: "/usuarios", icon: UserCog, label: "Usuários", prefetch: undefined, module: 'usuarios' });
+      filteredItems.push({ to: "/api-docs", icon: FileCode, label: "API Docs", prefetch: undefined, module: null });
     }
     
     return filteredItems;

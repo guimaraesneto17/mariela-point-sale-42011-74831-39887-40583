@@ -23,6 +23,7 @@ import Caixa from "./pages/Caixa";
 import Financeiro from "./pages/Financeiro";
 import BackendStatus from "./pages/BackendStatus";
 import Usuarios from "./pages/Usuarios";
+import ApiDocumentation from "./pages/ApiDocumentation";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -115,6 +116,7 @@ const App = () => (
               <Route path="/financeiro" element={<ProtectedRoute requiredModule="financeiro"><Financeiro /></ProtectedRoute>} />
               <Route path="/usuarios" element={<ProtectedRoute requiredRoles={['admin']}><Usuarios /></ProtectedRoute>} />
               <Route path="/backend-status" element={<ProtectedRoute requiredRoles={['admin']}><BackendStatus /></ProtectedRoute>} />
+              <Route path="/api-docs" element={<ProtectedRoute requiredRoles={['admin']}><ApiDocumentation /></ProtectedRoute>} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
