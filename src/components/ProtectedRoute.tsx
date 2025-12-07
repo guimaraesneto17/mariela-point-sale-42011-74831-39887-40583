@@ -25,9 +25,9 @@ export function ProtectedRoute({ children, requiredRoles, requiredModule }: Prot
     return <Navigate to="/auth" replace />;
   }
 
-  // Redirecionar vendedor da página principal para o dashboard de vendedor
+  // Redirecionar vendedor da página principal para a página única de vendedor
   if (location.pathname === '/' && user?.role === 'vendedor') {
-    return <Navigate to="/vendedor-dashboard" replace />;
+    return <Navigate to="/vendedor" replace />;
   }
 
   // Verificar roles se especificadas
