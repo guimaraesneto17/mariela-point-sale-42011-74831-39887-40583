@@ -200,10 +200,6 @@ export function ClientesDialog({
                                   {format(new Date(cliente.dataNascimento), "dd/MM/yyyy")}
                                 </span>
                               )}
-                              <span className="flex items-center gap-1">
-                                <ShoppingBag className="h-3 w-3" />
-                                {cliente.quantidadeCompras || 0} compras
-                              </span>
                               <span className="text-green-600 font-medium">
                                 {formatCurrency(cliente.valorTotalComprado || 0)}
                               </span>
