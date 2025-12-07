@@ -879,7 +879,7 @@ const VendedorNovaVenda = () => {
                               <div className="flex items-center gap-3 text-sm">
                                 <span className="text-muted-foreground font-mono">{produtoSelecionado.codigoProduto}</span>
                                 <span className="text-muted-foreground">•</span>
-                                <ColorBadge color={produtoSelecionado.cor} showLabel />
+                                <ColorBadge color={produtoSelecionado.cor} showLabel size="lg" />
                                 <span className="text-muted-foreground">•</span>
                                 <Badge variant="outline" className="text-xs">{produtoSelecionado.tamanho}</Badge>
                               </div>
@@ -1045,7 +1045,7 @@ const VendedorNovaVenda = () => {
                             <div className="flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <p className="font-medium">{item.nomeProduto}</p>
-                                <ColorBadge color={item.cor} />
+                                <ColorBadge color={item.cor} size="sm" />
                                 <Badge variant="outline" className="text-xs">{item.tamanho}</Badge>
                                 {item.emPromocao && (
                                   <Badge className="bg-accent text-accent-foreground">Promoção</Badge>
