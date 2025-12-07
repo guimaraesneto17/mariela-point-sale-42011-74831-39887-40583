@@ -753,9 +753,9 @@ const NovaVenda = () => {
                             <Input
                               value={`R$ ${Number(produtoSelecionado.precoPromocional).toFixed(2)}`}
                               disabled
-                              className="bg-muted font-bold text-accent"
+                              className="bg-muted font-bold text-primary"
                             />
-                            <Badge className="bg-accent text-accent-foreground">Promoção</Badge>
+                            <Badge className="bg-primary text-primary-foreground">Promoção</Badge>
                           </div>
                           <p className="text-xs text-muted-foreground line-through">
                             Preço normal: R$ {Number(produtoSelecionado.precoVenda ?? 0).toFixed(2)}
@@ -765,7 +765,7 @@ const NovaVenda = () => {
                         <Input
                           value={`R$ ${Number(produtoSelecionado.precoVenda ?? 0).toFixed(2)}`}
                           disabled
-                          className="bg-muted"
+                          className="bg-muted font-bold text-foreground"
                         />
                       )}
                     </div>
