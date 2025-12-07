@@ -200,9 +200,6 @@ export function ClientesDialog({
                                   {format(new Date(cliente.dataNascimento), "dd/MM/yyyy")}
                                 </span>
                               )}
-                              <span className="text-green-600 font-medium">
-                                {formatCurrency(cliente.valorTotalComprado || 0)}
-                              </span>
                             </div>
                           </div>
                           <Button
