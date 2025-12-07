@@ -1203,14 +1203,15 @@ const Estoque = () => {
                           <button
                             key={cor}
                             onClick={() => handleColorChange(item.codigoProduto, cor, item)}
-                            className={`relative px-4 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 min-w-[70px] ${selectedCor === cor
+                            className={`relative px-3 py-2 text-xs font-bold rounded-lg transition-all duration-300 ${selectedCor === cor
                                 ? 'bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] animate-pulse-glow text-primary-foreground shadow-xl scale-105 border-2 border-primary'
                                 : 'bg-gradient-to-br from-muted to-muted/50 text-foreground hover:from-primary/20 hover:to-accent/20 hover:text-primary hover:scale-105 border-2 border-border hover:border-primary/50 hover:shadow-lg'
                               }`}
                           >
-                            <span className="flex flex-col items-center gap-0.5">
+                            <span className="flex items-center gap-1.5">
+                              <ColorBadge color={cor} showLabel={false} className="border-0 bg-transparent p-0" />
                               <span className="font-bold">{cor}</span>
-                              {quantidadeCor > 0 && <span className="text-[9px] opacity-80 font-normal">({quantidadeCor} un)</span>}
+                              {quantidadeCor > 0 && <span className="text-[9px] opacity-80 font-normal">({quantidadeCor})</span>}
                             </span>
                             {selectedCor === cor && (
                               <span className="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 bg-green-500 rounded-full animate-bounce shadow-lg flex items-center justify-center">
@@ -1223,7 +1224,7 @@ const Estoque = () => {
                       {coresDisponiveis.length > 4 && (
                         <button
                           onClick={() => setMostrarTodasCores(prev => ({ ...prev, [item.codigoProduto]: !prev[item.codigoProduto] }))}
-                          className="px-4 py-2.5 text-xs font-bold rounded-lg bg-gradient-to-br from-secondary to-secondary/70 text-secondary-foreground border-2 border-border hover:border-secondary hover:scale-105 transition-all"
+                          className="px-3 py-2 text-xs font-bold rounded-lg bg-gradient-to-br from-secondary to-secondary/70 text-secondary-foreground border-2 border-border hover:border-secondary hover:scale-105 transition-all"
                           title={mostrarTodasCores[item.codigoProduto] ? "Mostrar menos" : "Mostrar todas as cores"}
                         >
                           {mostrarTodasCores[item.codigoProduto] ? "Ver menos" : `+${coresDisponiveis.length - 4}`}
@@ -1512,7 +1513,7 @@ const Estoque = () => {
                               key={cor}
                               onClick={() => handleColorChange(item.codigoProduto, cor, item)}
                               className={`
-                                relative px-5 py-2.5 rounded-lg font-semibold text-sm
+                                relative px-4 py-2 rounded-lg font-semibold text-sm
                                 transition-all duration-300 ease-out
                                 border-2 shadow-sm
                                 hover:scale-105 hover:shadow-lg
@@ -1523,7 +1524,8 @@ const Estoque = () => {
                                 }
                               `}
                             >
-                              <span className="relative z-10 flex items-center gap-1.5">
+                              <span className="relative z-10 flex items-center gap-2">
+                                <ColorBadge color={cor} showLabel={false} className="border-0 bg-transparent p-0" />
                                 <span className="font-bold">{cor}</span>
                                 <span className={`text-xs ${selectedCor === cor ? 'opacity-100 font-semibold' : 'opacity-70'}`}>
                                   ({quantidadeCor})
