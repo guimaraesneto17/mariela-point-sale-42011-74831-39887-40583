@@ -434,7 +434,7 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect, est
                         <RadioGroupItem value={cor} id={`cor-${cor}`} />
                         <Label htmlFor={`cor-${cor}`} className="flex-1 cursor-pointer">
                           <div className="flex justify-between items-center">
-                            <ColorBadge color={cor} />
+                            <ColorBadge color={cor} size="sm" />
                             <span className="text-xs text-muted-foreground">{qtdDisponivel} un.</span>
                           </div>
                         </Label>

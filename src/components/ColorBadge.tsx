@@ -107,14 +107,14 @@ interface ColorBadgeListProps {
   maxColors?: number;
 }
 
-export function ColorBadgeList({ colors, className = "", maxColors = 4 }: ColorBadgeListProps) {
+export function ColorBadgeList({ colors, className = "", maxColors = 4, size = "sm" as "sm" | "md" | "lg" }: ColorBadgeListProps & { size?: "sm" | "md" | "lg" }) {
   const displayColors = colors.slice(0, maxColors);
   const remainingCount = colors.length - maxColors;
 
   return (
     <div className={`flex flex-wrap items-center gap-1 ${className}`}>
       {displayColors.map((color, idx) => (
-        <ColorBadge key={`${color}-${idx}`} color={color} />
+        <ColorBadge key={`${color}-${idx}`} color={color} size={size} />
       ))}
       {remainingCount > 0 && (
         <Badge variant="outline" className="text-xs bg-muted">

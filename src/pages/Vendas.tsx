@@ -184,7 +184,7 @@ const Vendas = () => {
                         {(item.cor || item.tamanho) && (
                           <div className="flex items-center gap-1">
                             {item.cor && (
-                              <ColorBadge color={item.cor} />
+                              <ColorBadge color={item.cor} size="sm" />
                             )}
                             {item.tamanho && (
                               <Badge variant="outline" className="text-xs">
