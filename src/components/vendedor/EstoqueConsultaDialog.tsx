@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Search, Package, Tag, ChevronLeft, ChevronRight, X, Image as ImageIcon } from "lucide-react";
+import { Search, Package, Tag, ChevronLeft, ChevronRight, X, Image as ImageIcon, ZoomIn, ZoomOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,8 @@ export function EstoqueConsultaDialog({
     currentIndex: 0,
     productName: ""
   });
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
 
   const estoqueFiltrado = useMemo(() => {
     if (!searchTerm) return estoque;
@@ -123,9 +125,11 @@ export function EstoqueConsultaDialog({
 
   const closeGallery = () => {
     setGallery(prev => ({ ...prev, isOpen: false }));
+    setIsZoomed(false);
   };
 
   const nextImage = () => {
+    setIsZoomed(false);
     setGallery(prev => ({
       ...prev,
       currentIndex: (prev.currentIndex + 1) % prev.images.length
@@ -133,11 +137,13 @@ export function EstoqueConsultaDialog({
   };
 
   const prevImage = () => {
+    setIsZoomed(false);
     setGallery(prev => ({
       ...prev,
       currentIndex: prev.currentIndex === 0 ? prev.images.length - 1 : prev.currentIndex - 1
     }));
   };
+
 
   const currentImage = gallery.images[gallery.currentIndex];
 
@@ -303,15 +309,59 @@ export function EstoqueConsultaDialog({
             </div>
 
             {/* Image */}
-            <div className="flex items-center justify-center bg-black min-h-[60vh]">
+            <div 
+              className={`flex items-center justify-center bg-black min-h-[60vh] overflow-hidden ${isZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'}`}
+              onClick={() => !isZoomed && setIsZoomed(true)}
+            >
               {currentImage && (
-                <img
-                  src={currentImage.url}
-                  alt={`${gallery.productName} - ${currentImage.cor}`}
-                  className="max-w-full max-h-[70vh] object-contain"
-                />
+                <div 
+                  className="relative w-full h-full flex items-center justify-center"
+                  onMouseMove={(e) => {
+                    if (isZoomed) {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const x = ((e.clientX - rect.left) / rect.width) * 100;
+                      const y = ((e.clientY - rect.top) / rect.height) * 100;
+                      setZoomPosition({ x, y });
+                    }
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isZoomed) {
+                      setIsZoomed(false);
+                    } else {
+                      setIsZoomed(true);
+                    }
+                  }}
+                >
+                  <img
+                    src={currentImage.url}
+                    alt={`${gallery.productName} - ${currentImage.cor}`}
+                    className={`transition-transform duration-300 ${
+                      isZoomed 
+                        ? 'scale-[2.5] cursor-zoom-out' 
+                        : 'max-w-full max-h-[70vh] object-contain cursor-zoom-in'
+                    }`}
+                    style={isZoomed ? {
+                      transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`
+                    } : undefined}
+                  />
+                </div>
               )}
             </div>
+
+            {/* Zoom indicator */}
+            {!isZoomed && (
+              <div className="absolute bottom-24 right-4 bg-black/60 text-white px-3 py-1.5 rounded-full text-xs flex items-center gap-1.5">
+                <ZoomIn className="h-3.5 w-3.5" />
+                Clique para zoom
+              </div>
+            )}
+            {isZoomed && (
+              <div className="absolute bottom-24 right-4 bg-black/60 text-white px-3 py-1.5 rounded-full text-xs flex items-center gap-1.5">
+                <ZoomOut className="h-3.5 w-3.5" />
+                Clique para sair do zoom
+              </div>
+            )}
 
             {/* Navigation buttons */}
             {gallery.images.length > 1 && (
