@@ -9,11 +9,14 @@ const router = express.Router();
  * @swagger
  * /api/auth/register:
  *   post:
- *     summary: Registra um novo usuário
+ *     summary: Registra um novo usuário (apenas admin)
  *     description: |
  *       Cria um novo usuário no sistema com hash de senha bcrypt.
  *       Role padrão é "vendedor" se não especificado.
+ *       **Requer autenticação e permissão de admin.**
  *     tags: [Autenticação]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -52,10 +55,14 @@ const router = express.Router();
  *         description: Usuário criado com sucesso
  *       400:
  *         description: Dados inválidos
+ *       401:
+ *         description: Não autenticado
+ *       403:
+ *         description: Acesso negado (requer admin)
  *       409:
  *         description: Email já cadastrado
  */
-router.post('/register', authController.register);
+router.post('/register', authenticateToken, requireAdmin, authController.register);
 
 /**
  * @swagger
