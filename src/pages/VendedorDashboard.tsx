@@ -52,7 +52,8 @@ const VendedorDashboard = () => {
   // Fetch data
   const { data: clientesData = [], isLoading: isLoadingClientes, refetch: refetchClientes } = useClientes();
   const { data: vendasData = [], isLoading: isLoadingVendas, refetch: refetchVendas } = useVendas();
-  const { data: estoqueData = [], isLoading: isLoadingEstoque, refetch: refetchEstoque } = useEstoque();
+  const { data: estoqueResponse = [], isLoading: isLoadingEstoque, refetch: refetchEstoque } = useEstoque();
+  const estoqueData = Array.isArray(estoqueResponse) ? estoqueResponse : (estoqueResponse?.data || []);
   const { data: vendedoresData = [], isLoading: isLoadingVendedores, refetch: refetchVendedores } = useVendedores();
 
   const loading = isLoadingClientes || isLoadingVendas || isLoadingEstoque || isLoadingVendedores;
