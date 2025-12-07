@@ -709,145 +709,167 @@ const NovaVenda = () => {
                 {itemEmEdicao !== null ? "Editar Produto" : "Adicionar Produtos"}
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Seleção de Produto */}
-                <div>
-                  <Label>Produto *</Label>
-                  {produtoSelecionado ? (
-                    <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg mt-2">
-                      <div>
-                        <p className="font-medium">{produtoSelecionado.nomeProduto}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {produtoSelecionado.codigoProduto} • {produtoSelecionado.cor} • {produtoSelecionado.tamanho}
-                        </p>
+            <CardContent className="space-y-5">
+              {/* Seleção de Produto */}
+              <div>
+                <Label className="text-sm font-medium">Produto *</Label>
+                {produtoSelecionado ? (
+                  <div className="mt-2 p-4 bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-xl">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-semibold text-base">{produtoSelecionado.nomeProduto}</h4>
+                          {produtoSelecionado.emPromocao && (
+                            <Badge className="bg-red-500 text-white text-xs">Promoção</Badge>
+                          )}
+                          {produtoSelecionado.novidade && (
+                            <Badge variant="secondary" className="text-xs">Novidade</Badge>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-3 text-sm">
+                          <span className="text-muted-foreground font-mono">{produtoSelecionado.codigoProduto}</span>
+                          <span className="text-muted-foreground">•</span>
+                          <ColorBadge color={produtoSelecionado.cor} showLabel />
+                          <span className="text-muted-foreground">•</span>
+                          <Badge variant="outline" className="text-xs">{produtoSelecionado.tamanho}</Badge>
+                        </div>
+                        
                         <p className="text-xs text-muted-foreground">
-                          Disponível: {produtoSelecionado.quantidade} un.
+                          Disponível: <span className="font-medium text-foreground">{produtoSelecionado.quantidade}</span> un.
                         </p>
                       </div>
                       <Button
-                        size="sm"
+                        size="icon"
                         variant="ghost"
+                        className="h-8 w-8 shrink-0"
                         onClick={() => setProdutoSelecionado(null)}
                       >
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
-                  ) : (
-                    <Button 
-                      variant="outline" 
-                      className="w-full mt-2" 
-                      onClick={() => setShowProductDialog(true)}
-                    >
-                      Selecionar Produto
-                    </Button>
-                  )}
-                </div>
-
-                {produtoSelecionado && (
-                  <>
-                    <div>
-                      <Label>Valor Atual do Produto</Label>
+                    
+                    {/* Valor do Produto - Melhorado */}
+                    <div className="mt-4 pt-4 border-t border-primary/20">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wide">Valor Unitário</Label>
                       {produtoSelecionado.emPromocao && produtoSelecionado.precoPromocional ? (
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Input
-                              value={`R$ ${Number(produtoSelecionado.precoPromocional).toFixed(2)}`}
-                              disabled
-                              className="bg-muted font-bold text-primary"
-                            />
-                            <Badge className="bg-primary text-primary-foreground">Promoção</Badge>
-                          </div>
-                          <p className="text-xs text-muted-foreground line-through">
-                            Preço normal: R$ {Number(produtoSelecionado.precoVenda ?? 0).toFixed(2)}
-                          </p>
+                        <div className="mt-2 flex items-baseline gap-3">
+                          <span className="text-2xl font-bold text-red-600 dark:text-red-400">
+                            R$ {Number(produtoSelecionado.precoPromocional).toFixed(2)}
+                          </span>
+                          <span className="text-sm text-muted-foreground line-through">
+                            R$ {Number(produtoSelecionado.precoVenda ?? 0).toFixed(2)}
+                          </span>
+                          <Badge variant="destructive" className="text-xs">
+                            -{Math.round(((Number(produtoSelecionado.precoVenda ?? 0) - Number(produtoSelecionado.precoPromocional)) / Number(produtoSelecionado.precoVenda ?? 1)) * 100)}%
+                          </Badge>
                         </div>
                       ) : (
-                        <Input
-                          value={`R$ ${Number(produtoSelecionado.precoVenda ?? 0).toFixed(2)}`}
-                          disabled
-                          className="bg-muted font-bold text-foreground"
-                        />
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <Label>Quantidade</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={quantidadeProduto}
-                          onChange={(e) => setQuantidadeProduto(parseInt(e.target.value) || 1)}
-                        />
-                      </div>
-                      <div>
-                        <Label>Tipo de Desconto</Label>
-                        <RadioGroup 
-                          value={tipoDescontoProduto} 
-                          onValueChange={(value: "porcentagem" | "valor") => setTipoDescontoProduto(value)}
-                          className="flex gap-4 mt-2"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="porcentagem" id="tipo-porcentagem" />
-                            <Label htmlFor="tipo-porcentagem" className="cursor-pointer">Porcentagem</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="valor" id="tipo-valor" />
-                            <Label htmlFor="tipo-valor" className="cursor-pointer">Valor (R$)</Label>
-                          </div>
-                        </RadioGroup>
-                      </div>
-                    </div>
-
-                    <div>
-                      {tipoDescontoProduto === "porcentagem" ? (
-                        <div>
-                          <Label>Desconto (%)</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            value={descontoProduto}
-                            onChange={(e) => setDescontoProduto(parseFloat(e.target.value) || 0)}
-                          />
-                        </div>
-                      ) : (
-                        <div>
-                          <Label>Desconto (R$)</Label>
-                          <CurrencyInput
-                            value={descontoValorProduto}
-                            onValueChange={(value: string) => setDescontoValorProduto(value)}
-                            placeholder="0.00"
-                          />
+                        <div className="mt-2">
+                          <span className="text-2xl font-bold text-foreground">
+                            R$ {Number(produtoSelecionado.precoVenda ?? 0).toFixed(2)}
+                          </span>
                         </div>
                       )}
                     </div>
-
-                    <div className="flex gap-2">
-                      {itemEmEdicao !== null && (
-                        <Button variant="outline" onClick={cancelarEdicao} className="flex-1">
-                          Cancelar
-                        </Button>
-                      )}
-                      <Button onClick={adicionarOuEditarProduto} className="flex-1 gap-2">
-                        {itemEmEdicao !== null ? (
-                          <>
-                            <Edit2 className="h-4 w-4" />
-                            Salvar Alterações
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="h-4 w-4" />
-                            Adicionar Produto
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </>
+                  </div>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    className="w-full mt-2 h-12 border-dashed" 
+                    onClick={() => setShowProductDialog(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Selecionar Produto
+                  </Button>
                 )}
               </div>
+
+              {produtoSelecionado && (
+                <>
+                  {/* Quantidade e Tipo de Desconto */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium">Quantidade</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max={produtoSelecionado.quantidade}
+                        value={quantidadeProduto}
+                        onChange={(e) => setQuantidadeProduto(parseInt(e.target.value) || 1)}
+                        className="mt-1.5"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Tipo de Desconto</Label>
+                      <RadioGroup 
+                        value={tipoDescontoProduto} 
+                        onValueChange={(value: "porcentagem" | "valor") => setTipoDescontoProduto(value)}
+                        className="flex gap-4 mt-2.5"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="porcentagem" id="tipo-porcentagem-nv" />
+                          <Label htmlFor="tipo-porcentagem-nv" className="cursor-pointer text-sm">Porcentagem</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="valor" id="tipo-valor-nv" />
+                          <Label htmlFor="tipo-valor-nv" className="cursor-pointer text-sm">Valor (R$)</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                  </div>
+
+                  {/* Campo de Desconto */}
+                  <div>
+                    {tipoDescontoProduto === "porcentagem" ? (
+                      <div>
+                        <Label className="text-sm font-medium">Desconto (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          value={descontoProduto}
+                          onChange={(e) => setDescontoProduto(parseFloat(e.target.value) || 0)}
+                          className="mt-1.5"
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <Label className="text-sm font-medium">Desconto (R$)</Label>
+                        <CurrencyInput
+                          value={descontoValorProduto}
+                          onValueChange={(value: string) => setDescontoValorProduto(value)}
+                          placeholder="0.00"
+                          className="mt-1.5"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Botões de Ação */}
+                  <div className="flex gap-2 pt-2">
+                    {itemEmEdicao !== null && (
+                      <Button variant="outline" onClick={cancelarEdicao} className="flex-1">
+                        Cancelar
+                      </Button>
+                    )}
+                    <Button onClick={adicionarOuEditarProduto} className="flex-1 gap-2">
+                      {itemEmEdicao !== null ? (
+                        <>
+                          <Edit2 className="h-4 w-4" />
+                          Salvar Alterações
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4" />
+                          Adicionar Produto
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
