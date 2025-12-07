@@ -22,6 +22,7 @@ import { startOfMonth, endOfMonth, startOfDay, endOfDay, isWithinInterval } from
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { NovaVendaSkeleton } from "@/components/NovaVendaSkeleton";
 import { useAuth } from "@/contexts/AuthContext";
+import { ColorBadge } from "@/components/ColorBadge";
 import logo from "@/logo.png";
 
 interface ItemVenda {
@@ -1021,6 +1022,8 @@ const VendedorNovaVenda = () => {
                             <div className="flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <p className="font-medium">{item.nomeProduto}</p>
+                                <ColorBadge color={item.cor} />
+                                <Badge variant="outline" className="text-xs">{item.tamanho}</Badge>
                                 {item.emPromocao && (
                                   <Badge className="bg-accent text-accent-foreground">Promoção</Badge>
                                 )}
@@ -1029,7 +1032,7 @@ const VendedorNovaVenda = () => {
                                 )}
                               </div>
                               <p className="text-sm text-muted-foreground">
-                                {item.codigoProduto} • {item.cor} • Tam: {item.tamanho} • R$ {item.precoUnitario.toFixed(2)}
+                                {item.codigoProduto} • R$ {item.precoUnitario.toFixed(2)}
                                 {item.tipoDesconto === "porcentagem" && item.descontoAplicado > 0 && (
                                   <Badge className="ml-2 bg-secondary">-{item.descontoAplicado}%</Badge>
                                 )}

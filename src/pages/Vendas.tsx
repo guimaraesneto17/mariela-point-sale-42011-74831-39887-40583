@@ -9,6 +9,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { useVendas } from "@/hooks/useQueryCache";
 import { caixaAPI } from "@/lib/api";
 import { toast } from "sonner";
+import { ColorBadge } from "@/components/ColorBadge";
 
 const Vendas = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -183,9 +184,7 @@ const Vendas = () => {
                         {(item.cor || item.tamanho) && (
                           <div className="flex items-center gap-1">
                             {item.cor && (
-                              <Badge variant="outline" className="text-xs">
-                                {item.cor}
-                              </Badge>
+                              <ColorBadge color={item.cor} />
                             )}
                             {item.tamanho && (
                               <Badge variant="outline" className="text-xs">
