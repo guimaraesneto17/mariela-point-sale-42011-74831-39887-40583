@@ -68,16 +68,71 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect, est
     return Math.max(0, quantidadeOriginal - retido);
   };
 
-  const filteredProdutos = estoque.filter(produto =>
-    produto.nomeProduto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    produto.codigoProduto?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Calcular quantidade total disponível de um produto considerando retidos
+  const getQuantidadeTotalDisponivel = (produto: ProdutoEstoque) => {
+    let total = 0;
+    produto.variantes.forEach(variante => {
+      if (Array.isArray(variante.tamanhos)) {
+        variante.tamanhos.forEach(t => {
+          const disponivel = getEstoqueDisponivel(
+            produto.codigoProduto,
+            variante.cor,
+            String(t.tamanho),
+            t.quantidade
+          );
+          total += disponivel;
+        });
+      } else if (variante.tamanho) {
+        const disponivel = getEstoqueDisponivel(
+          produto.codigoProduto,
+          variante.cor,
+          String(variante.tamanho),
+          variante.quantidade
+        );
+        total += disponivel;
+      }
+    });
+    return total;
+  };
 
-  // Cores disponíveis do produto selecionado (apenas cores com quantidade > 0)
+  // Filtrar produtos que ainda têm estoque disponível
+  const filteredProdutos = estoque.filter(produto => {
+    const matchesSearch = produto.nomeProduto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      produto.codigoProduto?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Calcular quantidade disponível considerando retidos
+    const quantidadeDisponivel = getQuantidadeTotalDisponivel(produto);
+    
+    return matchesSearch && quantidadeDisponivel > 0;
+  });
+
+  // Cores disponíveis do produto selecionado (apenas cores com quantidade disponível > 0)
   const coresDisponiveis = produtoSelecionado 
     ? [...new Set(
         produtoSelecionado.variantes
-          .filter(v => v.quantidade > 0)
+          .filter(v => {
+            // Verificar se a cor tem algum tamanho com estoque disponível
+            if (Array.isArray(v.tamanhos)) {
+              return v.tamanhos.some(t => {
+                const disponivel = getEstoqueDisponivel(
+                  produtoSelecionado.codigoProduto,
+                  v.cor,
+                  String(t.tamanho),
+                  t.quantidade
+                );
+                return disponivel > 0;
+              });
+            } else if (v.tamanho) {
+              const disponivel = getEstoqueDisponivel(
+                produtoSelecionado.codigoProduto,
+                v.cor,
+                String(v.tamanho),
+                v.quantidade
+              );
+              return disponivel > 0;
+            }
+            return false;
+          })
           .map(v => v.cor)
       )]
     : [];
@@ -219,13 +274,14 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect, est
                   <p className="text-sm">Tente ajustar sua busca</p>
                 </div>
               ) : (
-                filteredProdutos.map((produto) => (
+                filteredProdutos.map((produto) => {
+                  const quantidadeDisponivel = getQuantidadeTotalDisponivel(produto);
+                  return (
                   <Button
                     key={produto.codigoProduto}
                     variant="outline"
                     className="w-full justify-start h-auto p-4 hover:bg-accent/50 hover:border-primary/50 transition-all duration-200"
                     onClick={() => handleSelecionarProduto(produto)}
-                    disabled={produto.quantidadeTotal <= 0}
                   >
                     <div className="flex items-start gap-4 flex-1 text-left">
                       <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -256,10 +312,10 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect, est
                         </div>
                         <div className="flex items-center gap-2 mt-2">
                           <Badge 
-                            variant={produto.quantidadeTotal > 10 ? "default" : produto.quantidadeTotal > 5 ? "secondary" : "destructive"}
+                            variant={quantidadeDisponivel > 10 ? "default" : quantidadeDisponivel > 5 ? "secondary" : "destructive"}
                             className="text-xs"
                           >
-                            {produto.quantidadeTotal || 0} unidades
+                            {quantidadeDisponivel} disponíveis
                           </Badge>
                           <span className="text-xs text-muted-foreground">
                             {produto.variantes?.length || 0} variante(s)
@@ -283,7 +339,8 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect, est
                       </div>
                     </div>
                   </Button>
-                ))
+                  );
+                })
               )}
             </div>
           </>
@@ -304,16 +361,35 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect, est
               <RadioGroup value={corSelecionada} onValueChange={setCorSelecionada}>
                 <div className="grid grid-cols-2 gap-2">
                   {coresDisponiveis.map((cor: string) => {
-                    const qtdTotal = produtoSelecionado.variantes
-                      .filter(v => v.cor === cor)
-                      .reduce((sum, v) => sum + v.quantidade, 0);
+                    // Calcular quantidade disponível real para esta cor
+                    let qtdDisponivel = 0;
+                    const varianteDaCor = produtoSelecionado.variantes.find(v => v.cor === cor);
+                    if (varianteDaCor) {
+                      if (Array.isArray(varianteDaCor.tamanhos)) {
+                        varianteDaCor.tamanhos.forEach(t => {
+                          qtdDisponivel += getEstoqueDisponivel(
+                            produtoSelecionado.codigoProduto,
+                            cor,
+                            String(t.tamanho),
+                            t.quantidade
+                          );
+                        });
+                      } else if (varianteDaCor.tamanho) {
+                        qtdDisponivel = getEstoqueDisponivel(
+                          produtoSelecionado.codigoProduto,
+                          cor,
+                          String(varianteDaCor.tamanho),
+                          varianteDaCor.quantidade
+                        );
+                      }
+                    }
                     return (
                       <div key={cor} className="flex items-center space-x-2 border rounded-lg p-3 hover:bg-primary/5">
                         <RadioGroupItem value={cor} id={`cor-${cor}`} />
                         <Label htmlFor={`cor-${cor}`} className="flex-1 cursor-pointer">
                           <div className="flex justify-between items-center">
                             <span className="font-medium">{cor}</span>
-                            <span className="text-xs text-muted-foreground">{qtdTotal} un.</span>
+                            <span className="text-xs text-muted-foreground">{qtdDisponivel} un.</span>
                           </div>
                         </Label>
                       </div>
