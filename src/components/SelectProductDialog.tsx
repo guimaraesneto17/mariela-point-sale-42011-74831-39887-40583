@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { ColorBadge } from "@/components/ColorBadge";
 
 interface Variante {
   cor: string;
@@ -433,7 +434,7 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect, est
                         <RadioGroupItem value={cor} id={`cor-${cor}`} />
                         <Label htmlFor={`cor-${cor}`} className="flex-1 cursor-pointer">
                           <div className="flex justify-between items-center">
-                            <span className="font-medium">{cor}</span>
+                            <ColorBadge color={cor} />
                             <span className="text-xs text-muted-foreground">{qtdDisponivel} un.</span>
                           </div>
                         </Label>
