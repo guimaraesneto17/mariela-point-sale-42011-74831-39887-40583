@@ -25,8 +25,8 @@ export function ProtectedRoute({ children, requiredRoles, requiredModule }: Prot
     return <Navigate to="/auth" replace />;
   }
 
-  // Redirecionar vendedor da página principal para a página única de vendedor
-  if (location.pathname === '/' && user?.role === 'vendedor') {
+  // Redirecionar vendedor para a página única de vendedor (sem sidebar)
+  if (user?.role === 'vendedor' && location.pathname !== '/vendedor' && !location.pathname.startsWith('/auth')) {
     return <Navigate to="/vendedor" replace />;
   }
 
