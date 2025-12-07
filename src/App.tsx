@@ -9,6 +9,7 @@ import Layout from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import VendedorDashboard from "./pages/VendedorDashboard";
+import VendedorNovaVenda from "./pages/VendedorNovaVenda";
 import Produtos from "./pages/Produtos";
 import Vendas from "./pages/Vendas";
 import NovaVenda from "./pages/NovaVenda";
@@ -96,6 +97,8 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            {/* Rota exclusiva do vendedor - sem sidebar */}
+            <Route path="/vendedor" element={<ProtectedRoute requiredRoles={['vendedor']}><VendedorNovaVenda /></ProtectedRoute>} />
             <Route element={<Layout />}>
                <Route path="/" element={<ProtectedRoute requiredRoles={['admin', 'gerente']}><Dashboard /></ProtectedRoute>} />
                <Route path="/vendedor-dashboard" element={<ProtectedRoute><VendedorDashboard /></ProtectedRoute>} />
