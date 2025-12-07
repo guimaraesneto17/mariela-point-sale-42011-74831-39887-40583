@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Plus, Trash2, ShoppingCart, Edit2, User, UserCheck, Package, Users, LogOut, RefreshCw } from "lucide-react";
+import { X, Plus, Trash2, ShoppingCart, Edit2, User, UserCheck, Package, Users, LogOut, RefreshCw, TrendingUp, Target } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,8 @@ import { EstoqueConsultaDialog } from "@/components/vendedor/EstoqueConsultaDial
 import { MinhasVendasDialog } from "@/components/vendedor/MinhasVendasDialog";
 import { ClientesDialog } from "@/components/vendedor/ClientesDialog";
 import { clientesAPI, vendedoresAPI, estoqueAPI, vendasAPI } from "@/lib/api";
-import { formatInTimeZone } from "date-fns-tz";
+import { formatInTimeZone, toZonedTime } from "date-fns-tz";
+import { startOfMonth, endOfMonth, startOfDay, endOfDay, isWithinInterval } from "date-fns";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { NovaVendaSkeleton } from "@/components/NovaVendaSkeleton";
 import { useAuth } from "@/contexts/AuthContext";
@@ -80,6 +81,49 @@ const VendedorNovaVenda = () => {
 
   // Vendedor atual baseado no user
   const vendedorAtual = vendedores.find((v: any) => v.codigoVendedor === user?.codigoVendedor);
+
+  // Calcular estatísticas do vendedor
+  const calcularEstatisticas = () => {
+    const TIMEZONE_BRASIL = 'America/Sao_Paulo';
+    const agora = new Date();
+    const agoraBrasil = toZonedTime(agora, TIMEZONE_BRASIL);
+    
+    // Filtrar vendas do vendedor atual
+    const minhasVendas = vendas.filter((v: any) => 
+      v.vendedor?.codigoVendedor === user?.codigoVendedor
+    );
+    
+    // Vendas de hoje
+    const inicioHoje = startOfDay(agoraBrasil);
+    const fimHoje = endOfDay(agoraBrasil);
+    
+    const vendasHoje = minhasVendas.filter((v: any) => {
+      const dataVenda = toZonedTime(new Date(v.data), TIMEZONE_BRASIL);
+      return isWithinInterval(dataVenda, { start: inicioHoje, end: fimHoje });
+    });
+    
+    const totalHoje = vendasHoje.reduce((acc: number, v: any) => acc + (v.total || 0), 0);
+    const qtdHoje = vendasHoje.length;
+    
+    // Vendas do mês
+    const inicioMes = startOfMonth(agoraBrasil);
+    const fimMes = endOfMonth(agoraBrasil);
+    
+    const vendasMes = minhasVendas.filter((v: any) => {
+      const dataVenda = toZonedTime(new Date(v.data), TIMEZONE_BRASIL);
+      return isWithinInterval(dataVenda, { start: inicioMes, end: fimMes });
+    });
+    
+    const totalMes = vendasMes.reduce((acc: number, v: any) => acc + (v.total || 0), 0);
+    
+    // Meta mensal
+    const metaMensal = vendedorAtual?.metaMensal || 0;
+    const progressoMeta = metaMensal > 0 ? Math.min(100, (totalMes / metaMensal) * 100) : 0;
+    
+    return { totalHoje, qtdHoje, totalMes, metaMensal, progressoMeta };
+  };
+
+  const estatisticas = calcularEstatisticas();
 
   useEffect(() => {
     loadData();
@@ -613,6 +657,42 @@ const VendedorNovaVenda = () => {
           </div>
         </div>
 
+        {/* Estatísticas resumidas */}
+        <div className="grid grid-cols-2 gap-3 px-4 pb-3">
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingUp className="h-4 w-4 text-white/80" />
+              <span className="text-white/80 text-xs">Vendas Hoje</span>
+            </div>
+            <p className="text-white font-bold text-lg">
+              R$ {estatisticas.totalHoje.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </p>
+            <p className="text-white/70 text-xs">{estatisticas.qtdHoje} venda{estatisticas.qtdHoje !== 1 ? 's' : ''}</p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Target className="h-4 w-4 text-white/80" />
+              <span className="text-white/80 text-xs">Meta Mensal</span>
+            </div>
+            <p className="text-white font-bold text-lg">
+              {estatisticas.metaMensal > 0 ? `${estatisticas.progressoMeta.toFixed(0)}%` : 'Sem meta'}
+            </p>
+            {estatisticas.metaMensal > 0 && (
+              <>
+                <div className="w-full bg-white/20 rounded-full h-1.5 mt-1">
+                  <div 
+                    className="bg-green-400 h-1.5 rounded-full transition-all duration-500" 
+                    style={{ width: `${Math.min(100, estatisticas.progressoMeta)}%` }}
+                  />
+                </div>
+                <p className="text-white/70 text-xs mt-1">
+                  R$ {estatisticas.totalMes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} / R$ {estatisticas.metaMensal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+
         {/* Botões de ação rápida */}
         <div className="flex gap-2 px-4 pb-4">
           <Button
@@ -646,7 +726,7 @@ const VendedorNovaVenda = () => {
       </header>
 
       {/* Conteúdo principal */}
-      <main className="pt-32 pb-8 px-4">
+      <main className="pt-56 pb-8 px-4">
         {isLoadingData ? (
           <NovaVendaSkeleton />
         ) : (
