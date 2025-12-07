@@ -301,6 +301,11 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect, est
                     }
                   });
                   
+                  // Buscar primeira imagem disponível do produto
+                  const imagemDestaque = produto.variantes
+                    ?.find(v => v.imagens && v.imagens.length > 0)
+                    ?.imagens?.[0];
+                  
                   return (
                   <Button
                     key={produto.codigoProduto}
@@ -309,8 +314,23 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect, est
                     onClick={() => handleSelecionarProduto(produto)}
                   >
                     <div className="flex items-start gap-4 flex-1 text-left">
-                      <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Package className="h-6 w-6 text-primary" />
+                      <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden">
+                        {imagemDestaque ? (
+                          <img 
+                            src={imagemDestaque} 
+                            alt={produto.nomeProduto}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.parentElement?.classList.add('bg-primary/10');
+                              const icon = document.createElement('div');
+                              icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-primary"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>';
+                              e.currentTarget.parentElement?.appendChild(icon.firstChild as Node);
+                            }}
+                          />
+                        ) : (
+                          <Package className="h-6 w-6 text-primary" />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2 flex-wrap">
