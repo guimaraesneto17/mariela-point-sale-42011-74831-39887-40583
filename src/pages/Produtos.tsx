@@ -717,9 +717,20 @@ const Produtos = () => {
                   <span className="text-muted-foreground">Preço de Custo:</span>
                   <span className="font-medium">R$ {Number(produto.precoCusto ?? 0).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-sm items-center">
                   <span className="text-muted-foreground">Preço de Venda:</span>
-                  <span className="font-medium">R$ {Number(produto.precoVenda ?? produto.preco ?? 0).toFixed(2)}</span>
+                  {produto.emPromocao && produto.precoPromocional ? (
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-muted-foreground line-through text-xs">
+                        R$ {Number(produto.precoVenda ?? produto.preco ?? 0).toFixed(2)}
+                      </span>
+                      <span className="font-bold text-base text-red-600 dark:text-red-400">
+                        R$ {Number(produto.precoPromocional).toFixed(2)}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="font-medium">R$ {Number(produto.precoVenda ?? produto.preco ?? 0).toFixed(2)}</span>
+                  )}
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Lucro (%):</span>
