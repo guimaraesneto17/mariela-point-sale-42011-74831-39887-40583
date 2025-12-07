@@ -58,22 +58,45 @@ interface ColorBadgeProps {
   color: string;
   className?: string;
   showLabel?: boolean;
+  size?: "sm" | "md" | "lg";
 }
 
-export function ColorBadge({ color, className = "", showLabel = true }: ColorBadgeProps) {
+const sizeStyles = {
+  sm: {
+    dot: "w-2 h-2",
+    text: "text-[10px]",
+    gap: "gap-1",
+    padding: "px-1.5 py-0.5",
+  },
+  md: {
+    dot: "w-3 h-3",
+    text: "text-xs",
+    gap: "gap-1.5",
+    padding: "px-2 py-0.5",
+  },
+  lg: {
+    dot: "w-4 h-4",
+    text: "text-sm",
+    gap: "gap-2",
+    padding: "px-2.5 py-1",
+  },
+};
+
+export function ColorBadge({ color, className = "", showLabel = true, size = "md" }: ColorBadgeProps) {
   const colorValue = getColorValue(color);
   const isLight = isLightColor(colorValue);
+  const styles = sizeStyles[size];
 
   return (
     <Badge 
       variant="outline" 
-      className={`flex items-center gap-1.5 bg-background border-border/60 ${className}`}
+      className={`flex items-center ${styles.gap} ${styles.padding} bg-background border-border/60 ${className}`}
     >
       <span 
-        className={`w-3 h-3 rounded-full flex-shrink-0 ${isLight ? 'border border-border' : ''}`}
+        className={`${styles.dot} rounded-full flex-shrink-0 ${isLight ? 'border border-border' : ''}`}
         style={{ backgroundColor: colorValue }}
       />
-      {showLabel && <span className="text-xs font-medium">{color}</span>}
+      {showLabel && <span className={`${styles.text} font-medium`}>{color}</span>}
     </Badge>
   );
 }
