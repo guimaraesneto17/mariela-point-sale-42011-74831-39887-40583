@@ -138,14 +138,45 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Rate Limiting - Proteção contra ataques DDoS (configuração mais permissiva para evitar 429 em uso normal)
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 10000, // limite de 5000 requisições por IP (leituras frequentes do frontend)
+  max: 10000, // limite de 10000 requisições por IP (leituras frequentes do frontend)
   message: 'Muitas requisições deste IP, tente novamente após alguns minutos',
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// Aplicar rate limiting geral apenas uma vez para todos os endpoints da API
+// Rate Limiting restritivo para autenticação - Proteção contra brute force
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 10, // máximo 10 tentativas de login/registro por IP em 15 minutos
+  message: { 
+    error: 'Muitas tentativas de autenticação',
+    message: 'Limite de tentativas excedido. Aguarde 15 minutos antes de tentar novamente.',
+    retryAfter: '15 minutos'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // Não conta requisições bem-sucedidas
+});
+
+// Rate Limiting para refresh token - Um pouco mais permissivo
+const refreshLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 30, // máximo 30 refreshes por hora por IP
+  message: { 
+    error: 'Muitas requisições de refresh token',
+    message: 'Limite de refresh tokens excedido. Aguarde antes de tentar novamente.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Aplicar rate limiting geral para todos os endpoints da API
 app.use('/api/', apiLimiter);
+
+// Aplicar rate limiting restritivo para endpoints de autenticação
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/refresh', refreshLimiter);
 
 // Logging middleware
 app.use((req, res, next) => {
