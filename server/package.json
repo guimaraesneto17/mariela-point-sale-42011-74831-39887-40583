@@ -44,7 +44,6 @@
     "@types/compression": "^1.8.1",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
-    "@types/express-basic-auth": "^1.1.8",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.19.23",
     "@types/sharp": "^0.32.0",
