@@ -276,6 +276,31 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect, est
               ) : (
                 filteredProdutos.map((produto) => {
                   const quantidadeDisponivel = getQuantidadeTotalDisponivel(produto);
+                  
+                  // Contar variantes (cor+tamanho) com estoque disponível
+                  let variantesDisponiveis = 0;
+                  produto.variantes.forEach(variante => {
+                    if (Array.isArray(variante.tamanhos)) {
+                      variante.tamanhos.forEach(t => {
+                        const disponivel = getEstoqueDisponivel(
+                          produto.codigoProduto,
+                          variante.cor,
+                          String(t.tamanho),
+                          t.quantidade
+                        );
+                        if (disponivel > 0) variantesDisponiveis++;
+                      });
+                    } else if (variante.tamanho) {
+                      const disponivel = getEstoqueDisponivel(
+                        produto.codigoProduto,
+                        variante.cor,
+                        String(variante.tamanho),
+                        variante.quantidade
+                      );
+                      if (disponivel > 0) variantesDisponiveis++;
+                    }
+                  });
+                  
                   return (
                   <Button
                     key={produto.codigoProduto}
@@ -318,7 +343,7 @@ export function SelectProductDialog({ open, onOpenChange, estoque, onSelect, est
                             {quantidadeDisponivel} disponíveis
                           </Badge>
                           <span className="text-xs text-muted-foreground">
-                            {produto.variantes?.length || 0} variante(s)
+                            {variantesDisponiveis} variante(s)
                           </span>
                         </div>
                       </div>
