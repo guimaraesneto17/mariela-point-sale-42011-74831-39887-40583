@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { clientesAPI } from "@/lib/api";
-
+import { maskPhone } from "@/lib/masks";
 interface Cliente {
   codigo: string;
   nome: string;
@@ -120,11 +120,10 @@ export function SelectClientDialog({ open, onOpenChange, clientes, onSelect, onC
               <Label htmlFor="telefone">Telefone (Opcional)</Label>
               <Input
                 id="telefone"
-                type="tel"
                 placeholder="(00) 00000-0000"
                 value={newClientTelefone}
-                onChange={(e) => setNewClientTelefone(e.target.value)}
-                maxLength={20}
+                onChange={(e) => setNewClientTelefone(maskPhone(e.target.value))}
+                maxLength={15}
               />
             </div>
 
