@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Search, Plus, UserCheck, CheckCircle2, AlertCircle, Edit, Trash2, X, TrendingUp, DollarSign, RefreshCw } from "lucide-react";
 import { VendedoresSkeleton } from "@/components/VendedoresSkeleton";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,68 @@ import { RetryProgressIndicator } from "@/components/RetryProgressIndicator";
 
 type VendedorFormData = z.infer<typeof vendedorSchema>;
 
+// Funções de validação
+const validateNome = (nome: string): { valid: boolean; message: string } => {
+  if (!nome || nome.trim().length === 0) {
+    return { valid: false, message: "Nome é obrigatório" };
+  }
+  if (nome.trim().length < 2) {
+    return { valid: false, message: "Nome deve ter pelo menos 2 caracteres" };
+  }
+  return { valid: true, message: "Nome válido" };
+};
+
+const validateEmail = (email: string): { valid: boolean; message: string } => {
+  if (!email || email.trim().length === 0) {
+    return { valid: false, message: "Email é obrigatório" };
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return { valid: false, message: "Email inválido" };
+  }
+  return { valid: true, message: "Email válido" };
+};
+
+const validateSenha = (senha: string, isEditing: boolean): { valid: boolean; message: string } => {
+  if (!senha && isEditing) {
+    return { valid: true, message: "Deixe em branco para não alterar" };
+  }
+  if (!senha || senha.length === 0) {
+    return { valid: false, message: "Senha é obrigatória" };
+  }
+  if (senha.length < 6) {
+    return { valid: false, message: "Senha deve ter pelo menos 6 caracteres" };
+  }
+  return { valid: true, message: "Senha válida" };
+};
+
+const validateTelefone = (telefone: string): { valid: boolean; message: string } => {
+  if (!telefone) {
+    return { valid: true, message: "Campo opcional" };
+  }
+  const numeros = telefone.replace(/\D/g, '');
+  if (numeros.length < 10 || numeros.length > 11) {
+    return { valid: false, message: "Telefone deve ter 10 ou 11 dígitos" };
+  }
+  return { valid: true, message: "Telefone válido" };
+};
+
+// Componente de indicador de validação
+const ValidationIndicator = ({ isValid, message, showIndicator }: { isValid: boolean; message: string; showIndicator: boolean }) => {
+  if (!showIndicator) return null;
+  
+  return (
+    <div className={`flex items-center gap-1 text-xs mt-1 ${isValid ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+      {isValid ? (
+        <CheckCircle2 className="h-3 w-3" />
+      ) : (
+        <AlertCircle className="h-3 w-3" />
+      )}
+      <span>{message}</span>
+    </div>
+  );
+};
+
 const Vendedores = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -32,6 +94,7 @@ const Vendedores = () => {
   const [manualCode, setManualCode] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [vendedorToDelete, setVendedorToDelete] = useState<string | null>(null);
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
 
   const form = useForm<VendedorFormData>({
     resolver: zodResolver(vendedorSchema),
@@ -49,6 +112,23 @@ const Vendedores = () => {
       observacao: "",
     },
   });
+
+  // Watch form values for real-time validation
+  const watchedNome = useWatch({ control: form.control, name: "nome" });
+  const watchedEmail = useWatch({ control: form.control, name: "email" });
+  const watchedSenha = useWatch({ control: form.control, name: "senha" });
+  const watchedTelefone = useWatch({ control: form.control, name: "telefone" });
+
+  const nomeValidation = validateNome(watchedNome || "");
+  const emailValidation = validateEmail(watchedEmail || "");
+  const senhaValidation = validateSenha(watchedSenha || "", !!editingVendedor);
+  const telefoneValidation = validateTelefone(watchedTelefone || "");
+
+  const handleFieldTouch = (fieldName: string) => {
+    setTouchedFields(prev => ({ ...prev, [fieldName]: true }));
+  };
+
+  const isFormValid = nomeValidation.valid && emailValidation.valid && senhaValidation.valid && telefoneValidation.valid;
 
   // React Query hooks com optimistic updates
   const { data: vendedores = [], isLoading: isLoadingData, error, refetch } = useVendedores();
@@ -114,6 +194,7 @@ const Vendedores = () => {
 
   const handleEdit = (vendedor: any) => {
     setEditingVendedor(vendedor);
+    setTouchedFields({});
     form.reset({
       codigoVendedor: vendedor.codigoVendedor,
       nome: vendedor.nome,
@@ -157,6 +238,7 @@ const Vendedores = () => {
 
   const handleOpenDialog = () => {
     setEditingVendedor(null);
+    setTouchedFields({});
     form.reset({
       codigoVendedor: generateNextCode(),
       nome: "",
@@ -304,9 +386,21 @@ const Vendedores = () => {
                               <Input 
                                 {...field} 
                                 placeholder="Digite o nome completo"
-                                className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                                onBlur={() => handleFieldTouch('nome')}
+                                className={`transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary ${
+                                  touchedFields.nome 
+                                    ? nomeValidation.valid 
+                                      ? 'border-green-500 focus:border-green-500' 
+                                      : 'border-destructive focus:border-destructive'
+                                    : ''
+                                }`}
                               />
                             </FormControl>
+                            <ValidationIndicator 
+                              isValid={nomeValidation.valid} 
+                              message={nomeValidation.message} 
+                              showIndicator={touchedFields.nome || false}
+                            />
                             <FormMessage className="text-xs flex items-center gap-1">
                               {form.formState.errors.nome && (
                                 <AlertCircle className="h-3 w-3" />
@@ -327,9 +421,21 @@ const Vendedores = () => {
                                 {...field}
                                 type="email"
                                 placeholder="email@exemplo.com"
-                                className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                                onBlur={() => handleFieldTouch('email')}
+                                className={`transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary ${
+                                  touchedFields.email 
+                                    ? emailValidation.valid 
+                                      ? 'border-green-500 focus:border-green-500' 
+                                      : 'border-destructive focus:border-destructive'
+                                    : ''
+                                }`}
                               />
                             </FormControl>
+                            <ValidationIndicator 
+                              isValid={emailValidation.valid} 
+                              message={emailValidation.message} 
+                              showIndicator={touchedFields.email || false}
+                            />
                             <FormMessage className="text-xs flex items-center gap-1">
                               {form.formState.errors.email && (
                                 <AlertCircle className="h-3 w-3" />
@@ -354,9 +460,21 @@ const Vendedores = () => {
                                 {...field}
                                 type="password"
                                 placeholder="Mínimo 6 caracteres"
-                                className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                                onBlur={() => handleFieldTouch('senha')}
+                                className={`transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary ${
+                                  touchedFields.senha 
+                                    ? senhaValidation.valid 
+                                      ? 'border-green-500 focus:border-green-500' 
+                                      : 'border-destructive focus:border-destructive'
+                                    : ''
+                                }`}
                               />
                             </FormControl>
+                            <ValidationIndicator 
+                              isValid={senhaValidation.valid} 
+                              message={senhaValidation.message} 
+                              showIndicator={touchedFields.senha || false}
+                            />
                             <FormMessage className="text-xs flex items-center gap-1">
                               {form.formState.errors.senha && (
                                 <AlertCircle className="h-3 w-3" />
@@ -377,9 +495,21 @@ const Vendedores = () => {
                                 {...field}
                                 placeholder="(99) 99999-9999"
                                 onChange={(e) => field.onChange(maskPhone(e.target.value))}
-                                className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                                onBlur={() => handleFieldTouch('telefone')}
+                                className={`transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary ${
+                                  touchedFields.telefone && field.value
+                                    ? telefoneValidation.valid 
+                                      ? 'border-green-500 focus:border-green-500' 
+                                      : 'border-destructive focus:border-destructive'
+                                    : ''
+                                }`}
                               />
                             </FormControl>
+                            <ValidationIndicator 
+                              isValid={telefoneValidation.valid} 
+                              message={telefoneValidation.message} 
+                              showIndicator={(touchedFields.telefone && !!field.value) || false}
+                            />
                             <FormMessage className="text-xs flex items-center gap-1">
                               {form.formState.errors.telefone && (
                                 <AlertCircle className="h-3 w-3" />
