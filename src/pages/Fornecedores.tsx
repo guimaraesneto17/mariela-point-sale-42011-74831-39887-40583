@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Search, Plus, Building, CheckCircle2, AlertCircle, Edit, Trash2, X } from "lucide-react";
 import { FornecedoresSkeleton } from "@/components/FornecedoresSkeleton";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,65 @@ import { RetryProgressIndicator } from "@/components/RetryProgressIndicator";
 
 type FornecedorFormData = z.infer<typeof fornecedorSchema>;
 
+// Funções de validação
+const validateNome = (nome: string): { valid: boolean; message: string } => {
+  if (!nome || nome.trim().length === 0) {
+    return { valid: false, message: "Nome é obrigatório" };
+  }
+  if (nome.trim().length < 2) {
+    return { valid: false, message: "Nome deve ter pelo menos 2 caracteres" };
+  }
+  return { valid: true, message: "Nome válido" };
+};
+
+const validateTelefone = (telefone: string): { valid: boolean; message: string } => {
+  if (!telefone) {
+    return { valid: true, message: "Campo opcional" };
+  }
+  const numeros = telefone.replace(/\D/g, '');
+  if (numeros.length < 10 || numeros.length > 11) {
+    return { valid: false, message: "Telefone deve ter 10 ou 11 dígitos" };
+  }
+  return { valid: true, message: "Telefone válido" };
+};
+
+const validateCNPJ = (cnpj: string): { valid: boolean; message: string } => {
+  if (!cnpj) {
+    return { valid: true, message: "Campo opcional" };
+  }
+  const numeros = cnpj.replace(/\D/g, '');
+  if (numeros.length !== 14) {
+    return { valid: false, message: "CNPJ deve ter 14 dígitos" };
+  }
+  return { valid: true, message: "CNPJ válido" };
+};
+
+const validateCidadeEstado = (cidade: string, estado: string): { valid: boolean; message: string } => {
+  if (!cidade || cidade.trim().length === 0) {
+    return { valid: false, message: "Cidade é obrigatória" };
+  }
+  if (!estado || estado.trim().length === 0) {
+    return { valid: false, message: "Estado é obrigatório" };
+  }
+  return { valid: true, message: "Endereço válido" };
+};
+
+// Componente de indicador de validação
+const ValidationIndicator = ({ isValid, message, showIndicator }: { isValid: boolean; message: string; showIndicator: boolean }) => {
+  if (!showIndicator) return null;
+  
+  return (
+    <div className={`flex items-center gap-1 text-xs mt-1 ${isValid ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+      {isValid ? (
+        <CheckCircle2 className="h-3 w-3" />
+      ) : (
+        <AlertCircle className="h-3 w-3" />
+      )}
+      <span>{message}</span>
+    </div>
+  );
+};
+
 const Fornecedores = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -30,6 +89,7 @@ const Fornecedores = () => {
   const [manualCode, setManualCode] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [fornecedorToDelete, setFornecedorToDelete] = useState<string | null>(null);
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
 
   const form = useForm<FornecedorFormData>({
     resolver: zodResolver(fornecedorSchema),
@@ -50,6 +110,24 @@ const Fornecedores = () => {
       observacao: "",
     },
   });
+
+  // Watch form values for real-time validation
+  const watchedNome = useWatch({ control: form.control, name: "nome" });
+  const watchedTelefone = useWatch({ control: form.control, name: "telefone" });
+  const watchedCnpj = useWatch({ control: form.control, name: "cnpj" });
+  const watchedCidade = useWatch({ control: form.control, name: "endereco.cidade" });
+  const watchedEstado = useWatch({ control: form.control, name: "endereco.estado" });
+
+  const nomeValidation = validateNome(watchedNome || "");
+  const telefoneValidation = validateTelefone(watchedTelefone || "");
+  const cnpjValidation = validateCNPJ(watchedCnpj || "");
+  const enderecoValidation = validateCidadeEstado(watchedCidade || "", watchedEstado || "");
+
+  const handleFieldTouch = (fieldName: string) => {
+    setTouchedFields(prev => ({ ...prev, [fieldName]: true }));
+  };
+
+  const isFormValid = nomeValidation.valid && telefoneValidation.valid && cnpjValidation.valid && enderecoValidation.valid;
 
   // React Query hooks com optimistic updates
   const { data: fornecedores = [], isLoading: isLoadingData, error, refetch } = useFornecedores();
@@ -120,6 +198,7 @@ const Fornecedores = () => {
 
   const handleEdit = (fornecedor: any) => {
     setEditingFornecedor(fornecedor);
+    setTouchedFields({});
     form.reset({
       codigoFornecedor: fornecedor.codigoFornecedor,
       nome: fornecedor.nome,
@@ -166,6 +245,7 @@ const Fornecedores = () => {
 
   const handleOpenDialog = () => {
     setEditingFornecedor(null);
+    setTouchedFields({});
     form.reset({
       codigoFornecedor: generateNextCode(),
       nome: "",
@@ -286,9 +366,21 @@ const Fornecedores = () => {
                               <Input 
                                 {...field} 
                                 placeholder="Digite o nome da empresa"
-                                className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                                onBlur={() => handleFieldTouch('nome')}
+                                className={`transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary ${
+                                  touchedFields.nome 
+                                    ? nomeValidation.valid 
+                                      ? 'border-green-500 focus:border-green-500' 
+                                      : 'border-destructive focus:border-destructive'
+                                    : ''
+                                }`}
                               />
                             </FormControl>
+                            <ValidationIndicator 
+                              isValid={nomeValidation.valid} 
+                              message={nomeValidation.message} 
+                              showIndicator={touchedFields.nome || false}
+                            />
                             <FormMessage className="text-xs flex items-center gap-1">
                               {form.formState.errors.nome && (
                                 <AlertCircle className="h-3 w-3" />
@@ -309,9 +401,21 @@ const Fornecedores = () => {
                                 {...field}
                                 placeholder="99.999.999/9999-99"
                                 onChange={(e) => field.onChange(maskCNPJ(e.target.value))}
-                                className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                                onBlur={() => handleFieldTouch('cnpj')}
+                                className={`transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary ${
+                                  touchedFields.cnpj && field.value
+                                    ? cnpjValidation.valid 
+                                      ? 'border-green-500 focus:border-green-500' 
+                                      : 'border-destructive focus:border-destructive'
+                                    : ''
+                                }`}
                               />
                             </FormControl>
+                            <ValidationIndicator 
+                              isValid={cnpjValidation.valid} 
+                              message={cnpjValidation.message} 
+                              showIndicator={(touchedFields.cnpj && !!field.value) || false}
+                            />
                             <FormMessage className="text-xs flex items-center gap-1">
                               {form.formState.errors.cnpj && (
                                 <AlertCircle className="h-3 w-3" />
@@ -332,9 +436,21 @@ const Fornecedores = () => {
                                 {...field}
                                 placeholder="(99) 99999-9999"
                                 onChange={(e) => field.onChange(maskPhone(e.target.value))}
-                                className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                                onBlur={() => handleFieldTouch('telefone')}
+                                className={`transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary ${
+                                  touchedFields.telefone && field.value
+                                    ? telefoneValidation.valid 
+                                      ? 'border-green-500 focus:border-green-500' 
+                                      : 'border-destructive focus:border-destructive'
+                                    : ''
+                                }`}
                               />
                             </FormControl>
+                            <ValidationIndicator 
+                              isValid={telefoneValidation.valid} 
+                              message={telefoneValidation.message} 
+                              showIndicator={(touchedFields.telefone && !!field.value) || false}
+                            />
                             <FormMessage className="text-xs flex items-center gap-1">
                               {form.formState.errors.telefone && (
                                 <AlertCircle className="h-3 w-3" />
@@ -435,7 +551,14 @@ const Fornecedores = () => {
                                 <Input 
                                   {...field} 
                                   placeholder="Cidade"
-                                  className="transition-all focus:ring-2 focus:ring-primary/30"
+                                  onBlur={() => handleFieldTouch('cidade')}
+                                  className={`transition-all focus:ring-2 focus:ring-primary/30 ${
+                                    touchedFields.cidade 
+                                      ? enderecoValidation.valid || watchedCidade
+                                        ? 'border-green-500 focus:border-green-500' 
+                                        : 'border-destructive focus:border-destructive'
+                                      : ''
+                                  }`}
                                 />
                               </FormControl>
                               <FormMessage className="text-xs flex items-center gap-1">
@@ -459,7 +582,14 @@ const Fornecedores = () => {
                                   placeholder="SP"
                                   maxLength={2}
                                   onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                                  className="transition-all focus:ring-2 focus:ring-primary/30"
+                                  onBlur={() => handleFieldTouch('estado')}
+                                  className={`transition-all focus:ring-2 focus:ring-primary/30 ${
+                                    touchedFields.estado 
+                                      ? enderecoValidation.valid || watchedEstado
+                                        ? 'border-green-500 focus:border-green-500' 
+                                        : 'border-destructive focus:border-destructive'
+                                      : ''
+                                  }`}
                                 />
                               </FormControl>
                               <FormMessage className="text-xs flex items-center gap-1">
