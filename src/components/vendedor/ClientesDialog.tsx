@@ -107,19 +107,18 @@ export function ClientesDialog({
       if (isEditing && editingCliente) {
         await clientesAPI.update(editingCliente.codigoCliente, {
           nome: nome.trim(),
-          telefone: telefone || null,
-          dataNascimento: dataNascimentoISO,
-          observacao: observacao.trim() || null,
+          telefone: telefone || undefined,
+          dataNascimento: dataNascimentoISO || undefined,
+          observacao: observacao.trim() || undefined,
         });
         toast.success("Cliente atualizado com sucesso!");
       } else {
         const novoCliente = {
           codigoCliente: generateNextCode(),
           nome: nome.trim(),
-          telefone: telefone || null,
-          dataNascimento: dataNascimentoISO,
-          observacao: observacao.trim() || null,
-          ativo: true,
+          telefone: telefone || undefined,
+          dataNascimento: dataNascimentoISO || undefined,
+          observacao: observacao.trim() || undefined,
         };
         await clientesAPI.create(novoCliente);
         toast.success("Cliente cadastrado com sucesso!");
