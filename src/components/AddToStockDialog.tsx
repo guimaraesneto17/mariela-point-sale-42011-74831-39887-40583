@@ -7,9 +7,37 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { estoqueAPI } from "@/lib/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Upload, Link as LinkIcon, X, Trash2, Image as ImageIcon } from "lucide-react";
+import { Plus, Upload, Link as LinkIcon, X, Trash2, Image as ImageIcon, Check, AlertCircle } from "lucide-react";
 import { useImageCompression } from "@/hooks/useImageCompression";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
+
+// Validation helpers
+const validateCor = (cor: string): { valid: boolean; message: string } => {
+  if (!cor.trim()) return { valid: false, message: "Digite uma cor" };
+  if (cor.trim().length < 2) return { valid: false, message: "Cor deve ter pelo menos 2 caracteres" };
+  return { valid: true, message: "Cor válida" };
+};
+
+const validateVariantes = (variantes: Variante[]): { valid: boolean; message: string } => {
+  if (variantes.length === 0) return { valid: false, message: "Adicione pelo menos uma variante" };
+  return { valid: true, message: `${variantes.length} variante(s) adicionada(s)` };
+};
+
+const validateVarianteTamanhos = (variante: Variante): { valid: boolean; message: string } => {
+  if (variante.tamanhos.length === 0) return { valid: false, message: "Adicione pelo menos um tamanho" };
+  return { valid: true, message: `${variante.tamanhos.length} tamanho(s) com total de ${variante.tamanhos.reduce((sum, t) => sum + t.quantidade, 0)} un.` };
+};
+
+// Validation indicator component
+const ValidationIndicator = ({ isValid, message, show }: { isValid: boolean; message: string; show: boolean }) => {
+  if (!show) return null;
+  return (
+    <div className={`flex items-center gap-1 text-xs mt-1 ${isValid ? 'text-green-600' : 'text-destructive'}`}>
+      {isValid ? <Check className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+      <span>{message}</span>
+    </div>
+  );
+};
 
 interface Tamanho {
   tamanho: string;
@@ -54,6 +82,16 @@ export function AddToStockDialog({
     "PP", "P", "M", "G", "GG", "XG", "U"
   ]);
 
+  // Touched fields state
+  const [touchedFields, setTouchedFields] = useState<{ cor: boolean; variantes: boolean }>({
+    cor: false,
+    variantes: false
+  });
+
+  const handleFieldTouch = (field: keyof typeof touchedFields) => {
+    setTouchedFields(prev => ({ ...prev, [field]: true }));
+  };
+
   // Carregar opções do localStorage
   useEffect(() => {
     const savedCores = localStorage.getItem('mariela-cores-options');
@@ -71,6 +109,7 @@ export function AddToStockDialog({
       setNovoTamanho("");
       setVarianteSelecionada(null);
       setImagemURL("");
+      setTouchedFields({ cor: false, variantes: false });
     }
   }, [open]);
 
@@ -321,12 +360,25 @@ export function AddToStockDialog({
                     placeholder="Ex: Azul Marinho, Verde Oliva"
                     value={novaCor}
                     onChange={(e) => setNovaCor(e.target.value)}
+                    onBlur={() => handleFieldTouch('cor')}
                     onKeyPress={(e) => e.key === 'Enter' && adicionarCor()}
+                    className={`${
+                      touchedFields.cor && novaCor.trim()
+                        ? validateCor(novaCor).valid
+                          ? 'border-green-500 focus-visible:ring-green-500'
+                          : 'border-destructive focus-visible:ring-destructive'
+                        : ''
+                    }`}
                   />
                   <Button onClick={adicionarCor} className="shrink-0">
                     <Plus className="h-4 w-4 mr-1" /> Adicionar
                   </Button>
                 </div>
+                <ValidationIndicator 
+                  isValid={validateCor(novaCor).valid} 
+                  message={validateCor(novaCor).message} 
+                  show={touchedFields.cor && novaCor.trim().length > 0} 
+                />
               </div>
 
               {/* Cores disponíveis com opção de excluir */}
@@ -365,9 +417,12 @@ export function AddToStockDialog({
             </div>
 
             {/* Lista de Variantes Adicionadas */}
-            {variantes.length > 0 && (
+            {variantes.length > 0 ? (
               <div className="space-y-3">
-                <Label className="text-base font-semibold">Variantes Adicionadas ({variantes.length})</Label>
+                <div className="flex items-center gap-2">
+                  <Label className="text-base font-semibold">Variantes Adicionadas ({variantes.length})</Label>
+                  <Check className="h-4 w-4 text-green-600" />
+                </div>
                 
                 <div className="space-y-2 max-h-96 overflow-y-auto">
                   {variantes.map((variante, index) => (
@@ -419,17 +474,35 @@ export function AddToStockDialog({
                             </Badge>
                           ))
                         ) : (
-                          <span className="text-xs text-muted-foreground italic">Nenhum tamanho adicionado</span>
+                          <div className="flex items-center gap-1 text-xs text-destructive">
+                            <AlertCircle className="h-3 w-3" />
+                            <span className="italic">Nenhum tamanho adicionado</span>
+                          </div>
                         )}
                       </div>
 
-                      {/* Total da variante */}
-                      <div className="text-xs text-muted-foreground">
-                        Total: {variante.tamanhos.reduce((sum, t) => sum + t.quantidade, 0)} un.
+                      {/* Total da variante com validation */}
+                      <div className={`text-xs ${variante.tamanhos.length > 0 ? 'text-green-600' : 'text-muted-foreground'}`}>
+                        {variante.tamanhos.length > 0 ? (
+                          <div className="flex items-center gap-1">
+                            <Check className="h-3 w-3" />
+                            <span>Total: {variante.tamanhos.reduce((sum, t) => sum + t.quantidade, 0)} un.</span>
+                          </div>
+                        ) : (
+                          <span>Total: 0 un.</span>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Label className="text-base font-semibold text-muted-foreground">Variantes Adicionadas (0)</Label>
+                  <AlertCircle className="h-4 w-4 text-destructive" />
+                </div>
+                <p className="text-xs text-destructive">Adicione pelo menos uma cor para criar variantes</p>
               </div>
             )}
           </div>
