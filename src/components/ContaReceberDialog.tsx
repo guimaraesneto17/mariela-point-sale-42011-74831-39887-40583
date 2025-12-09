@@ -11,7 +11,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { CalendarIcon, Loader2, Settings } from "lucide-react";
+import { CalendarIcon, Loader2, Settings, Check, AlertCircle } from "lucide-react";
 import { format, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { contasReceberAPI, clientesAPI, categoriasFinanceirasAPI } from "@/lib/api";
@@ -279,11 +279,29 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
             <FormField
               control={form.control}
               name="descricao"
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <FormItem>
-                  <FormLabel>Descrição*</FormLabel>
+                  <div className="flex items-center gap-2">
+                    <FormLabel>Descrição*</FormLabel>
+                    {fieldState.isDirty && !fieldState.error && (
+                      <Check className="h-4 w-4 text-green-600" />
+                    )}
+                    {fieldState.error && (
+                      <AlertCircle className="h-4 w-4 text-destructive" />
+                    )}
+                  </div>
                   <FormControl>
-                    <Input {...field} placeholder="Descrição da conta" />
+                    <Input 
+                      {...field} 
+                      placeholder="Descrição da conta"
+                      className={`${
+                        fieldState.isDirty && !fieldState.error
+                          ? 'border-green-500 focus-visible:ring-green-500'
+                          : fieldState.error
+                          ? 'border-destructive focus-visible:ring-destructive'
+                          : ''
+                      }`}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -294,14 +312,29 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
               <FormField
                 control={form.control}
                 name="valor"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Valor Total*</FormLabel>
+                    <div className="flex items-center gap-2">
+                      <FormLabel>Valor Total*</FormLabel>
+                      {fieldState.isDirty && !fieldState.error && parseFloat(field.value) > 0 && (
+                        <Check className="h-4 w-4 text-green-600" />
+                      )}
+                      {fieldState.error && (
+                        <AlertCircle className="h-4 w-4 text-destructive" />
+                      )}
+                    </div>
                     <FormControl>
                       <CurrencyInput 
                         {...field} 
                         placeholder="R$ 0,00"
                         onValueChange={field.onChange}
+                        className={`${
+                          fieldState.isDirty && !fieldState.error && parseFloat(field.value) > 0
+                            ? 'border-green-500 focus-visible:ring-green-500'
+                            : fieldState.error
+                            ? 'border-destructive focus-visible:ring-destructive'
+                            : ''
+                        }`}
                       />
                     </FormControl>
                     <FormMessage />
@@ -312,10 +345,18 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
               <FormField
                 control={form.control}
                 name="categoria"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
                     <div className="flex items-center justify-between">
-                      <FormLabel>Categoria*</FormLabel>
+                      <div className="flex items-center gap-2">
+                        <FormLabel>Categoria*</FormLabel>
+                        {field.value && !fieldState.error && (
+                          <Check className="h-4 w-4 text-green-600" />
+                        )}
+                        {fieldState.error && (
+                          <AlertCircle className="h-4 w-4 text-destructive" />
+                        )}
+                      </div>
                       <Button
                         type="button"
                         variant="ghost"
@@ -327,7 +368,13 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
                     </div>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className={`${
+                          field.value && !fieldState.error
+                            ? 'border-green-500 focus:ring-green-500'
+                            : fieldState.error
+                            ? 'border-destructive focus:ring-destructive'
+                            : ''
+                        }`}>
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                       </FormControl>
