@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, CheckCircle2, AlertCircle, Package, Edit, Trash2, X, PackagePlus, Building, RefreshCw } from "lucide-react";
+import { Search, Plus, CheckCircle2, AlertCircle, Package, Edit, Trash2, X, PackagePlus, Building, RefreshCw, Check } from "lucide-react";
 import { ProdutosSkeleton } from "@/components/ProdutosSkeleton";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,6 +28,37 @@ import { RetryProgressIndicator } from "@/components/RetryProgressIndicator";
 
 type ProdutoFormData = z.infer<typeof produtoSchema>;
 
+// Funções de validação
+const validateNome = (nome: string): boolean => {
+  return nome.trim().length >= 3 && nome.trim().length <= 100;
+};
+
+const validatePrecoCusto = (preco: number | undefined): boolean => {
+  return preco !== undefined && preco > 0;
+};
+
+const validatePrecoVenda = (preco: number | undefined): boolean => {
+  return preco !== undefined && preco > 0;
+};
+
+const validateMargemLucro = (margem: number | undefined): boolean => {
+  return margem !== undefined && margem >= 0;
+};
+
+// Componente de indicador de validação
+const ValidationIndicator = ({ isValid, message }: { isValid: boolean; message?: string }) => (
+  <div className="flex items-center gap-1 mt-1">
+    {isValid ? (
+      <Check className="h-3 w-3 text-green-500" />
+    ) : (
+      <AlertCircle className="h-3 w-3 text-destructive" />
+    )}
+    {message && !isValid && (
+      <span className="text-xs text-destructive">{message}</span>
+    )}
+  </div>
+);
+
 const Produtos = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
@@ -40,6 +71,11 @@ const Produtos = () => {
   const [selectedProductForStock, setSelectedProductForStock] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
+
+  const handleFieldTouch = useCallback((fieldName: string) => {
+    setTouchedFields(prev => ({ ...prev, [fieldName]: true }));
+  }, []);
 
   const form = useForm<ProdutoFormData>({
     resolver: zodResolver(produtoSchema),
@@ -225,6 +261,7 @@ const Produtos = () => {
 
   const handleEdit = (product: any) => {
     setEditingProduct(product);
+    setTouchedFields({});
     
     form.reset({
       codigoProduto: product.codigoProduto,
@@ -268,6 +305,7 @@ const Produtos = () => {
 
   const handleOpenDialog = () => {
     setEditingProduct(null);
+    setTouchedFields({});
     form.reset({
       codigoProduto: generateNextCode(),
       nome: "",
@@ -381,9 +419,22 @@ const Produtos = () => {
                               <Input 
                                 {...field} 
                                 placeholder="Digite o nome do produto"
-                                className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                                onBlur={() => handleFieldTouch('nome')}
+                                className={`transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary ${
+                                  touchedFields.nome
+                                    ? validateNome(field.value || '')
+                                      ? 'border-green-500 focus:border-green-500'
+                                      : 'border-destructive focus:border-destructive'
+                                    : ''
+                                }`}
                               />
                             </FormControl>
+                            {touchedFields.nome && (
+                              <ValidationIndicator 
+                                isValid={validateNome(field.value || '')} 
+                                message="Nome deve ter entre 3 e 100 caracteres"
+                              />
+                            )}
                             <FormMessage className="text-xs flex items-center gap-1">
                               {form.formState.errors.nome && (
                                 <AlertCircle className="h-3 w-3" />
@@ -510,13 +561,28 @@ const Produtos = () => {
                             <FormControl>
                               <CurrencyInput 
                                 value={field.value}
-                                onValueChange={(value) => handlePrecoCustoChange(parseFloat(value) || 0)}
+                                onValueChange={(value) => {
+                                  handlePrecoCustoChange(parseFloat(value) || 0);
+                                  handleFieldTouch('precoCusto');
+                                }}
                                 placeholder="R$ 0,00"
                                 min={0}
                                 max={999999}
-                                className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                                className={`transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary ${
+                                  touchedFields.precoCusto
+                                    ? validatePrecoCusto(field.value)
+                                      ? 'border-green-500 focus:border-green-500'
+                                      : 'border-destructive focus:border-destructive'
+                                    : ''
+                                }`}
                               />
                             </FormControl>
+                            {touchedFields.precoCusto && (
+                              <ValidationIndicator 
+                                isValid={validatePrecoCusto(field.value)} 
+                                message="Preço de custo deve ser maior que 0"
+                              />
+                            )}
                             <FormMessage className="text-xs flex items-center gap-1">
                               {form.formState.errors.precoCusto && (
                                 <AlertCircle className="h-3 w-3" />
@@ -537,13 +603,28 @@ const Produtos = () => {
                             <FormControl>
                               <CurrencyInput 
                                 value={field.value}
-                                onValueChange={(value) => handlePrecoVendaChange(parseFloat(value) || 0)}
+                                onValueChange={(value) => {
+                                  handlePrecoVendaChange(parseFloat(value) || 0);
+                                  handleFieldTouch('precoVenda');
+                                }}
                                 placeholder="R$ 0,00"
                                 min={0}
                                 max={999999}
-                                className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                                className={`transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary ${
+                                  touchedFields.precoVenda
+                                    ? validatePrecoVenda(field.value)
+                                      ? 'border-green-500 focus:border-green-500'
+                                      : 'border-destructive focus:border-destructive'
+                                    : ''
+                                }`}
                               />
                             </FormControl>
+                            {touchedFields.precoVenda && (
+                              <ValidationIndicator 
+                                isValid={validatePrecoVenda(field.value)} 
+                                message="Preço de venda deve ser maior que 0"
+                              />
+                            )}
                             <FormMessage className="text-xs flex items-center gap-1">
                               {form.formState.errors.precoVenda && (
                                 <AlertCircle className="h-3 w-3" />
@@ -570,10 +651,26 @@ const Produtos = () => {
                                 min="0"
                                 placeholder="0.00"
                                 value={field.value ?? ''}
-                                onChange={(e) => handleMargemDeLucroChange(parseFloat(e.target.value) || 0)}
-                                className="transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                                onChange={(e) => {
+                                  handleMargemDeLucroChange(parseFloat(e.target.value) || 0);
+                                  handleFieldTouch('margemDeLucro');
+                                }}
+                                onBlur={() => handleFieldTouch('margemDeLucro')}
+                                className={`transition-all focus:ring-2 focus:ring-primary/30 focus:border-primary ${
+                                  touchedFields.margemDeLucro
+                                    ? validateMargemLucro(field.value)
+                                      ? 'border-green-500 focus:border-green-500'
+                                      : 'border-destructive focus:border-destructive'
+                                    : ''
+                                }`}
                               />
                             </FormControl>
+                            {touchedFields.margemDeLucro && (
+                              <ValidationIndicator 
+                                isValid={validateMargemLucro(field.value)} 
+                                message="Margem de lucro deve ser maior ou igual a 0"
+                              />
+                            )}
                             <FormMessage className="text-xs flex items-center gap-1">
                               {form.formState.errors.margemDeLucro && (
                                 <AlertCircle className="h-3 w-3" />
