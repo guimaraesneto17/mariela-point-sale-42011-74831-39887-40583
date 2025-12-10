@@ -19,24 +19,54 @@ export const useReportsData = () => {
     try {
       setLoading(true);
       
+      // Helper to fetch all pages from paginated endpoints
+      const fetchAllPages = async (fetchFn: (page: number, limit: number) => Promise<any>, limit: number = 100) => {
+        let allData: any[] = [];
+        let page = 1;
+        let hasMore = true;
+        
+        while (hasMore) {
+          const response = await fetchFn(page, limit);
+          const data = response?.data || response || [];
+          const pagination = response?.pagination;
+          
+          if (Array.isArray(data)) {
+            allData = [...allData, ...data];
+          }
+          
+          if (pagination) {
+            hasMore = pagination.page < pagination.pages;
+          } else {
+            hasMore = Array.isArray(data) && data.length === limit;
+          }
+          
+          page++;
+          
+          // Safety limit to prevent infinite loops
+          if (page > 20) break;
+        }
+        
+        return allData;
+      };
+
       const [
         vendasRes,
-        produtosRes,
-        estoqueRes,
+        produtosData,
+        estoqueData,
         clientesRes,
         vendedoresRes,
         caixasRes,
         contasPagarRes,
         contasReceberRes
       ] = await Promise.all([
-        vendasAPI.getAll().catch(() => ({ vendas: [] })),
-        produtosAPI.getAll().catch(() => ({ produtos: [] })),
-        estoqueAPI.getAll().catch(() => ({ itens: [] })),
-        clientesAPI.getAll().catch(() => ({ clientes: [] })),
-        vendedoresAPI.getAll().catch(() => ({ vendedores: [] })),
-        caixaAPI.getAll().catch(() => ({ caixas: [] })),
-        contasPagarAPI.getAll().catch(() => ({ contas: [] })),
-        contasReceberAPI.getAll().catch(() => ({ contas: [] }))
+        vendasAPI.getAll().catch(() => []),
+        fetchAllPages(produtosAPI.getAll).catch(() => []),
+        fetchAllPages(estoqueAPI.getAll).catch(() => []),
+        clientesAPI.getAll().catch(() => []),
+        vendedoresAPI.getAll().catch(() => []),
+        caixaAPI.getAll().catch(() => []),
+        contasPagarAPI.getAll().catch(() => []),
+        contasReceberAPI.getAll().catch(() => [])
       ]);
 
       // Normalize paginated responses - APIs return { data: [], pagination: {} } format
@@ -51,8 +81,8 @@ export const useReportsData = () => {
 
       setData({
         vendas: normalizeResponse(vendasRes, ['vendas']),
-        produtos: normalizeResponse(produtosRes, ['produtos', 'data']),
-        estoque: normalizeResponse(estoqueRes, ['estoque', 'itens', 'data']),
+        produtos: Array.isArray(produtosData) ? produtosData : normalizeResponse(produtosData, ['produtos', 'data']),
+        estoque: Array.isArray(estoqueData) ? estoqueData : normalizeResponse(estoqueData, ['estoque', 'itens', 'data']),
         clientes: normalizeResponse(clientesRes, ['clientes']),
         vendedores: normalizeResponse(vendedoresRes, ['vendedores']),
         caixas: normalizeResponse(caixasRes, ['caixas']),
