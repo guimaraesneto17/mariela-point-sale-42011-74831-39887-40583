@@ -11,7 +11,7 @@ import * as z from "zod";
 import { contasPagarAPI, contasReceberAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { CurrencyInput } from "@/components/ui/currency-input";
-import { ImagePlus, X, Loader2, AlertTriangle, Check, AlertCircle } from "lucide-react";
+import { ImagePlus, X, Loader2, AlertTriangle, Check, AlertCircle, ZoomIn, ZoomOut } from "lucide-react";
 import { useImageCompression } from "@/hooks/useImageCompression";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { differenceInDays } from "date-fns";
@@ -48,6 +48,7 @@ interface RegistrarPagamentoDialogProps {
 export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSuccess, numeroParcela }: RegistrarPagamentoDialogProps) {
   const [loading, setLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageZoomed, setImageZoomed] = useState(false);
   const { compressing, compressImage } = useImageCompression();
   
   // Verifica se é parcelamento/replica e se tem parcela específica
@@ -164,7 +165,12 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
 
   const removeImage = () => {
     setImagePreview(null);
+    setImageZoomed(false);
     form.setValue('comprovante', '');
+  };
+
+  const toggleZoom = () => {
+    setImageZoomed(!imageZoomed);
   };
 
   const onSubmit = async (values: FormData) => {
@@ -370,18 +376,43 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
                         />
                       </label>
                     ) : (
-                      <div className="relative">
-                        <img 
-                          src={imagePreview} 
-                          alt="Comprovante" 
-                          className="w-full h-48 object-contain rounded-lg border border-border"
-                        />
+                      <div className="relative group">
+                        <div 
+                          className={`relative overflow-hidden rounded-lg border border-border cursor-pointer transition-all duration-300 ${
+                            imageZoomed 
+                              ? 'fixed inset-4 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center' 
+                              : 'h-48'
+                          }`}
+                          onClick={toggleZoom}
+                        >
+                          <img 
+                            src={imagePreview} 
+                            alt="Comprovante" 
+                            className={`transition-all duration-300 ${
+                              imageZoomed 
+                                ? 'max-w-full max-h-full object-contain' 
+                                : 'w-full h-48 object-contain'
+                            }`}
+                          />
+                          <div className={`absolute ${imageZoomed ? 'top-4 left-4' : 'bottom-2 left-2'} bg-background/80 rounded-full p-1.5 opacity-70 group-hover:opacity-100 transition-opacity`}>
+                            {imageZoomed ? (
+                              <ZoomOut className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ZoomIn className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
+                          {imageZoomed && (
+                            <p className="absolute bottom-4 left-4 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded">
+                              Clique para fechar
+                            </p>
+                          )}
+                        </div>
                         <Button
                           type="button"
                           variant="destructive"
                           size="icon"
-                          className="absolute top-2 right-2"
-                          onClick={removeImage}
+                          className={`absolute ${imageZoomed ? 'top-4 right-4 z-50' : 'top-2 right-2'}`}
+                          onClick={(e) => { e.stopPropagation(); removeImage(); }}
                         >
                           <X className="h-4 w-4" />
                         </Button>

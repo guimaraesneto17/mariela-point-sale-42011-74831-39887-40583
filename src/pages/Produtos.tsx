@@ -338,11 +338,21 @@ const Produtos = () => {
           <p className="text-muted-foreground">
             Catálogo e gerenciamento de produtos
           </p>
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
             <Badge variant="secondary" className="text-sm">
               <Package className="h-3 w-3 mr-1" />
               {produtos.length} {produtos.length === 1 ? 'produto cadastrado' : 'produtos cadastrados'}
             </Badge>
+            {hasMore && (
+              <Badge variant="outline" className="text-sm text-muted-foreground">
+                Página {page} • Role para carregar mais
+              </Badge>
+            )}
+            {isLoadingMore && (
+              <Badge variant="outline" className="text-sm text-primary animate-pulse">
+                Carregando mais...
+              </Badge>
+            )}
           </div>
         </div>
         <PermissionGuard module="produtos" action="create">
