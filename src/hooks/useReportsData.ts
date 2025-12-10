@@ -39,15 +39,25 @@ export const useReportsData = () => {
         contasReceberAPI.getAll().catch(() => ({ contas: [] }))
       ]);
 
+      // Normalize paginated responses - APIs return { data: [], pagination: {} } format
+      const normalizeResponse = (res: any, fallbackKeys: string[] = []): any[] => {
+        if (Array.isArray(res)) return res;
+        if (res?.data && Array.isArray(res.data)) return res.data;
+        for (const key of fallbackKeys) {
+          if (res?.[key] && Array.isArray(res[key])) return res[key];
+        }
+        return [];
+      };
+
       setData({
-        vendas: Array.isArray(vendasRes) ? vendasRes : (vendasRes.vendas || []),
-        produtos: Array.isArray(produtosRes) ? produtosRes : (produtosRes.produtos || []),
-        estoque: Array.isArray(estoqueRes) ? estoqueRes : (estoqueRes.itens || estoqueRes.estoque || []),
-        clientes: Array.isArray(clientesRes) ? clientesRes : (clientesRes.clientes || []),
-        vendedores: Array.isArray(vendedoresRes) ? vendedoresRes : (vendedoresRes.vendedores || []),
-        caixas: Array.isArray(caixasRes) ? caixasRes : (caixasRes.caixas || []),
-        contasPagar: Array.isArray(contasPagarRes) ? contasPagarRes : (contasPagarRes.contas || []),
-        contasReceber: Array.isArray(contasReceberRes) ? contasReceberRes : (contasReceberRes.contas || [])
+        vendas: normalizeResponse(vendasRes, ['vendas']),
+        produtos: normalizeResponse(produtosRes, ['produtos', 'data']),
+        estoque: normalizeResponse(estoqueRes, ['estoque', 'itens', 'data']),
+        clientes: normalizeResponse(clientesRes, ['clientes']),
+        vendedores: normalizeResponse(vendedoresRes, ['vendedores']),
+        caixas: normalizeResponse(caixasRes, ['caixas']),
+        contasPagar: normalizeResponse(contasPagarRes, ['contas']),
+        contasReceber: normalizeResponse(contasReceberRes, ['contas'])
       });
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
