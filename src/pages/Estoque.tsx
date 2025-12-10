@@ -717,6 +717,16 @@ const Estoque = () => {
                 return total + (item.quantidadeTotal || 0);
               }, 0)} total em estoque
             </Badge>
+            {hasMore && (
+              <Badge variant="outline" className="text-sm text-muted-foreground">
+                Página {page} • Role para carregar mais
+              </Badge>
+            )}
+            {isLoadingMore && (
+              <Badge variant="outline" className="text-sm text-primary animate-pulse">
+                Carregando mais...
+              </Badge>
+            )}
             <Badge variant="outline" className="text-sm border-green-500/50 text-green-700 dark:text-green-400">
               <DollarSign className="h-3 w-3 mr-1" />
               Valor de Compra: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
