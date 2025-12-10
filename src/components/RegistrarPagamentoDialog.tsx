@@ -11,7 +11,7 @@ import * as z from "zod";
 import { contasPagarAPI, contasReceberAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { CurrencyInput } from "@/components/ui/currency-input";
-import { ImagePlus, X, Loader2, AlertTriangle } from "lucide-react";
+import { ImagePlus, X, Loader2, AlertTriangle, Check, AlertCircle } from "lucide-react";
 import { useImageCompression } from "@/hooks/useImageCompression";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { differenceInDays } from "date-fns";
@@ -278,35 +278,61 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
             <div className="text-sm text-muted-foreground">
               Saldo restante: <span className="font-semibold text-foreground">{saldoRestante.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
             </div>
-            <FormField name="valor" control={form.control} render={({ field }) => (
-              <FormItem>
-                <FormLabel>Valor*</FormLabel>
-                <FormControl>
-                  <CurrencyInput 
-                    {...field} 
-                    placeholder="R$ 0,00"
-                    onValueChange={field.onChange}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField name="formaPagamento" control={form.control} render={({ field }) => (
-              <FormItem>
-                <FormLabel>Forma de Pagamento</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
+            <FormField name="valor" control={form.control} render={({ field }) => {
+              const hasValue = field.value && field.value.length > 0;
+              const isValid = hasValue && (() => {
+                const cleaned = field.value.replace(/[^\d,.-]/g, '').replace(',', '.');
+                const num = parseFloat(cleaned);
+                return !isNaN(num) && num > 0.01;
+              })();
+              const showError = hasValue && !isValid;
+              
+              return (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-1">
+                    Valor*
+                    {hasValue && (
+                      isValid 
+                        ? <Check className="h-4 w-4 text-green-500" />
+                        : <AlertCircle className="h-4 w-4 text-destructive" />
+                    )}
+                  </FormLabel>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
+                    <CurrencyInput 
+                      {...field} 
+                      placeholder="R$ 0,00"
+                      onValueChange={field.onChange}
+                      className={hasValue ? (isValid ? "border-green-500 focus-visible:ring-green-500" : "border-destructive focus-visible:ring-destructive") : ""}
+                    />
                   </FormControl>
-                  <SelectContent>
-                    {formas.map(f => (<SelectItem key={f} value={f}>{f}</SelectItem>))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )} />
+                  {showError && <p className="text-sm font-medium text-destructive">Valor deve ser maior que R$ 0,01</p>}
+                  <FormMessage />
+                </FormItem>
+              );
+            }} />
+            <FormField name="formaPagamento" control={form.control} render={({ field }) => {
+              const isValid = !!field.value;
+              
+              return (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-1">
+                    Forma de Pagamento*
+                    {isValid && <Check className="h-4 w-4 text-green-500" />}
+                  </FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger className={isValid ? "border-green-500 focus:ring-green-500" : ""}>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {formas.map(f => (<SelectItem key={f} value={f}>{f}</SelectItem>))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              );
+            }} />
             <FormField name="observacoes" control={form.control} render={({ field }) => (
               <FormItem>
                 <FormLabel>Observações</FormLabel>
