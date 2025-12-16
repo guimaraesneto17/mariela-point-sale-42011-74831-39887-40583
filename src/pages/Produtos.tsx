@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { produtoSchema } from "@/lib/validationSchemas";
 import { z } from "zod";
 import { produtosAPI, fornecedoresAPI, estoqueAPI } from "@/lib/api";
+import { fetchAllPages } from "@/lib/pagination";
 import { AddToStockDialog } from "@/components/AddToStockDialog";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import { CurrencyInput } from "@/components/ui/currency-input";
@@ -115,24 +116,30 @@ const Produtos = () => {
         setProdutos([]);
         setPage(1);
         setHasMore(true);
+
+        // Carregar TODAS as páginas para não limitar em 50 itens
+        const { items } = await fetchAllPages<any>((page, limit) => produtosAPI.getAll(page, limit), {
+          limit: 50,
+        });
+
+        setProdutos(items);
+        setHasMore(false);
+        setPage(1);
       } else {
         setIsLoadingMore(true);
-      }
-      
-      const response = await produtosAPI.getAll(pageNum, 50);
-      const newProdutos = response.data || response;
-      const pagination = response.pagination;
-      
-      if (reset) {
-        setProdutos(newProdutos);
-      } else {
-        setProdutos(prev => [...prev, ...newProdutos]);
-      }
-      
-      if (pagination) {
-        setHasMore(pagination.page < pagination.pages);
-      } else {
-        setHasMore(newProdutos.length === 50);
+
+        // Mantém suporte ao scroll infinito, caso volte a ser necessário
+        const response = await produtosAPI.getAll(pageNum, 50);
+        const newProdutos = response.data || response;
+        const pagination = response.pagination;
+
+        setProdutos((prev) => [...prev, ...newProdutos]);
+
+        if (pagination) {
+          setHasMore(pagination.page < pagination.pages);
+        } else {
+          setHasMore(newProdutos.length === 50);
+        }
       }
     } catch (error) {
       toast.error("Erro ao carregar produtos", {
