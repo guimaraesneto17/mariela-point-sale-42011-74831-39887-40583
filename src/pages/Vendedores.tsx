@@ -21,6 +21,7 @@ import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { useVendedores, useCreateVendedor, useUpdateVendedor, useDeleteVendedor } from "@/hooks/useQueryCache";
 import { RetryProgressIndicator } from "@/components/RetryProgressIndicator";
+import { PaginationControls } from "@/components/PaginationControls";
 
 type VendedorFormData = z.infer<typeof vendedorSchema>;
 
@@ -293,12 +294,16 @@ const Vendedores = () => {
           <p className="text-muted-foreground">
             Gerenciamento de vendedores
           </p>
-          <div className="flex items-center gap-2 mt-2">
-            <Badge variant="secondary" className="text-sm">
-              <UserCheck className="h-3 w-3 mr-1" />
-              {vendedores.length} {vendedores.length === 1 ? 'vendedor cadastrado' : 'vendedores cadastrados'}
-            </Badge>
-          </div>
+          <PaginationControls
+            totalLocal={vendedores.length}
+            totalServer={vendedores.length}
+            loadMode="all"
+            onToggleMode={() => {}}
+            isLoading={isLoadingData}
+            entityName="vendedor cadastrado"
+            entityNamePlural="vendedores cadastrados"
+            icon={<UserCheck className="h-3 w-3 mr-1" />}
+          />
         </div>
         <div className="flex gap-2">
           <PermissionGuard module="vendedores" action="edit">

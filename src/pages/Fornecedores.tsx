@@ -19,6 +19,7 @@ import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { useFornecedores, useCreateFornecedor, useUpdateFornecedor, useDeleteFornecedor } from "@/hooks/useQueryCache";
 import { RetryProgressIndicator } from "@/components/RetryProgressIndicator";
+import { PaginationControls } from "@/components/PaginationControls";
 
 type FornecedorFormData = z.infer<typeof fornecedorSchema>;
 
@@ -286,12 +287,16 @@ const Fornecedores = () => {
           <p className="text-muted-foreground">
             Gerenciamento de fornecedores
           </p>
-          <div className="flex items-center gap-2 mt-2">
-            <Badge variant="secondary" className="text-sm">
-              <Building className="h-3 w-3 mr-1" />
-              {fornecedores.length} {fornecedores.length === 1 ? 'fornecedor cadastrado' : 'fornecedores cadastrados'}
-            </Badge>
-          </div>
+          <PaginationControls
+            totalLocal={fornecedores.length}
+            totalServer={fornecedores.length}
+            loadMode="all"
+            onToggleMode={() => {}}
+            isLoading={isLoadingData}
+            entityName="fornecedor cadastrado"
+            entityNamePlural="fornecedores cadastrados"
+            icon={<Building className="h-3 w-3 mr-1" />}
+          />
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>

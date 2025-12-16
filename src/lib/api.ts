@@ -133,7 +133,14 @@ async function fetchAPI(endpoint: string, options?: RequestInit, retryCount = 0)
 
 // ============= CLIENTES =============
 export const clientesAPI = {
-  getAll: () => fetchAPI('/clientes'),
+  getAll: (page?: number, limit?: number, search?: string) => {
+    const params = new URLSearchParams();
+    if (page) params.append('page', page.toString());
+    if (limit) params.append('limit', limit.toString());
+    if (search) params.append('search', search);
+    const queryString = params.toString();
+    return fetchAPI(`/clientes${queryString ? `?${queryString}` : ''}`);
+  },
   getByCodigo: (codigo: string) => fetchAPI(`/clientes/${codigo}`),
   create: (data: any) => fetchAPI('/clientes', {
     method: 'POST',
@@ -148,10 +155,12 @@ export const clientesAPI = {
 
 // ============= PRODUTOS =============
 export const produtosAPI = {
-  getAll: (page?: number, limit?: number) => {
+  getAll: (page?: number, limit?: number, search?: string, categoria?: string) => {
     const params = new URLSearchParams();
     if (page) params.append('page', page.toString());
     if (limit) params.append('limit', limit.toString());
+    if (search) params.append('search', search);
+    if (categoria && categoria !== 'todas') params.append('categoria', categoria);
     return fetchAPI(`/produtos?${params.toString()}`);
   },
   getByCodigo: (codigo: string) => fetchAPI(`/produtos/${codigo}`),
@@ -183,10 +192,11 @@ export const vendasAPI = {
 
 // ============= ESTOQUE =============
 export const estoqueAPI = {
-  getAll: (page?: number, limit?: number) => {
+  getAll: (page?: number, limit?: number, search?: string) => {
     const params = new URLSearchParams();
     if (page) params.append('page', page.toString());
     if (limit) params.append('limit', limit.toString());
+    if (search) params.append('search', search);
     return fetchAPI(`/estoque?${params.toString()}`);
   },
   getByCodigo: (codigo: string) => fetchAPI(`/estoque/codigo/${codigo}`),
@@ -230,7 +240,14 @@ export const estoqueAPI = {
 
 // ============= FORNECEDORES =============
 export const fornecedoresAPI = {
-  getAll: () => fetchAPI('/fornecedores'),
+  getAll: (page?: number, limit?: number, search?: string) => {
+    const params = new URLSearchParams();
+    if (page) params.append('page', page.toString());
+    if (limit) params.append('limit', limit.toString());
+    if (search) params.append('search', search);
+    const queryString = params.toString();
+    return fetchAPI(`/fornecedores${queryString ? `?${queryString}` : ''}`);
+  },
   getByCodigo: (codigo: string) => fetchAPI(`/fornecedores/${codigo}`),
   create: (data: any) => fetchAPI('/fornecedores', {
     method: 'POST',
@@ -245,7 +262,14 @@ export const fornecedoresAPI = {
 
 // ============= VENDEDORES =============
 export const vendedoresAPI = {
-  getAll: () => fetchAPI('/vendedores'),
+  getAll: (page?: number, limit?: number, search?: string) => {
+    const params = new URLSearchParams();
+    if (page) params.append('page', page.toString());
+    if (limit) params.append('limit', limit.toString());
+    if (search) params.append('search', search);
+    const queryString = params.toString();
+    return fetchAPI(`/vendedores${queryString ? `?${queryString}` : ''}`);
+  },
   getByCodigo: (codigo: string) => fetchAPI(`/vendedores/${codigo}`),
   create: (data: any) => fetchAPI('/vendedores', {
     method: 'POST',
