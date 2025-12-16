@@ -23,6 +23,7 @@ import { AddMultipleVariantsDialog } from "@/components/AddMultipleVariantsDialo
 import { HistoricoPrecosDialog } from "@/components/HistoricoPrecosDialog";
 import { EstoqueAlertasDialog } from "@/components/EstoqueAlertasDialog";
 import { ImageNavigator } from "@/components/ImageNavigator";
+import { PaginationControls } from "@/components/PaginationControls";
 
 import { estoqueAPI } from "@/lib/api";
 import { fetchAllPages } from "@/lib/pagination";
@@ -58,6 +59,8 @@ const Estoque = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadMode, setLoadMode] = useState<'paginated' | 'all'>('all');
+  const [totalServer, setTotalServer] = useState<number | undefined>(undefined);
   const [filterPromocao, setFilterPromocao] = useState<boolean | null>(null);
   const [filterNovidade, setFilterNovidade] = useState<boolean | null>(null);
   const [filterCor, setFilterCor] = useState<string>("todas");
@@ -97,6 +100,39 @@ const Estoque = () => {
     }
   }, [location.search]);
 
+  // Recarregar quando mudar o modo ou busca server-side
+  useEffect(() => {
+    if (loadMode === 'paginated' && debouncedSearchTerm) {
+      loadEstoque(1, true);
+    }
+  }, [debouncedSearchTerm, loadMode]);
+
+  const initializeColorSizeSelection = (items: any[]) => {
+    const initialColors: { [key: string]: string } = {};
+    const initialSizes: { [key: string]: string } = {};
+
+    items.forEach((item: any) => {
+      if (item.variantes && item.variantes.length > 0) {
+        initialColors[item.codigoProduto] = item.variantes[0].cor;
+        const tamanhosVariante0 = item.variantes[0].tamanhos;
+        let primeiroTamanho = '';
+        if (Array.isArray(tamanhosVariante0) && tamanhosVariante0.length > 0) {
+          if (typeof tamanhosVariante0[0] === 'object' && tamanhosVariante0[0].tamanho) {
+            primeiroTamanho = tamanhosVariante0[0].tamanho;
+          } else {
+            primeiroTamanho = tamanhosVariante0[0];
+          }
+        } else if (item.variantes[0].tamanho) {
+          primeiroTamanho = item.variantes[0].tamanho;
+        }
+        initialSizes[item.codigoProduto] = primeiroTamanho;
+      }
+    });
+
+    setSelectedColorByItem(initialColors);
+    setSelectedSizeByItem(initialSizes);
+  };
+
   const loadEstoque = async (pageNum: number = 1, reset: boolean = false) => {
     try {
       if (reset) {
@@ -105,65 +141,49 @@ const Estoque = () => {
         setPage(1);
         setHasMore(true);
 
-        // Carregar TODAS as páginas para não limitar em 50 itens
-        const { items } = await fetchAllPages<any>((page, limit) => estoqueAPI.getAll(page, limit), {
-          limit: 50,
-        });
+        if (loadMode === 'all') {
+          // Carregar TODAS as páginas para não limitar em 50 itens
+          const { items, pagination } = await fetchAllPages<any>((page, limit) => estoqueAPI.getAll(page, limit), {
+            limit: 50,
+          });
 
-        console.log('📦 Dados recebidos do estoque:', items);
-        if (items.length > 0) {
-          console.log('📝 Primeiro item:', items[0]);
-          console.log('📝 logMovimentacao do primeiro item:', items[0].logMovimentacao);
-        }
+          console.log('📦 Dados recebidos do estoque:', items);
+          setInventory(items);
+          setTotalServer(pagination?.total || items.length);
+          setHasMore(false);
+          setPage(1);
+          initializeColorSizeSelection(items);
+        } else {
+          // Modo paginado com busca server-side
+          const searchParam = debouncedSearchTerm || undefined;
+          const response = await estoqueAPI.getAll(1, 50, searchParam);
+          const data = response.data || response;
+          const pagination = response.pagination;
 
-        setInventory(items);
-        setHasMore(false);
-        setPage(1);
+          setInventory(Array.isArray(data) ? data : []);
+          setTotalServer(pagination?.total);
 
-        // Inicializar seleção de cor e tamanho para cada item (apenas no reset)
-        const initialColors: { [key: string]: string } = {};
-        const initialSizes: { [key: string]: string } = {};
-
-        items.forEach((item: any) => {
-          if (item.variantes && item.variantes.length > 0) {
-            initialColors[item.codigoProduto] = item.variantes[0].cor;
-            const tamanhosVariante0 = item.variantes[0].tamanhos;
-            let primeiroTamanho = '';
-            if (Array.isArray(tamanhosVariante0) && tamanhosVariante0.length > 0) {
-              // Nova estrutura: array de objetos {tamanho, quantidade}
-              if (typeof tamanhosVariante0[0] === 'object' && tamanhosVariante0[0].tamanho) {
-                primeiroTamanho = tamanhosVariante0[0].tamanho;
-              } else {
-                // Estrutura antiga: array de strings
-                primeiroTamanho = tamanhosVariante0[0];
-              }
-            } else if (item.variantes[0].tamanho) {
-              primeiroTamanho = item.variantes[0].tamanho;
-            }
-            initialSizes[item.codigoProduto] = primeiroTamanho;
+          if (pagination) {
+            setHasMore(pagination.page < pagination.pages);
+          } else {
+            setHasMore(Array.isArray(data) && data.length === 50);
           }
-        });
-
-        setSelectedColorByItem(initialColors);
-        setSelectedSizeByItem(initialSizes);
+          initializeColorSizeSelection(Array.isArray(data) ? data : []);
+        }
       } else {
         setIsLoadingMore(true);
 
-        // Mantém suporte ao scroll infinito, caso volte a ser necessário
-        const response = await estoqueAPI.getAll(pageNum, 50);
+        const searchParam = loadMode === 'paginated' && debouncedSearchTerm ? debouncedSearchTerm : undefined;
+        const response = await estoqueAPI.getAll(pageNum, 50, searchParam);
         const data = response.data || response;
         const pagination = response.pagination;
 
-        if (reset) {
-          setInventory(data);
-        } else {
-          setInventory((prev) => [...prev, ...data]);
-        }
+        setInventory((prev) => [...prev, ...(Array.isArray(data) ? data : [])]);
 
         if (pagination) {
           setHasMore(pagination.page < pagination.pages);
         } else {
-          setHasMore(data.length === 50);
+          setHasMore(Array.isArray(data) && data.length === 50);
         }
       }
     } catch (error) {
@@ -173,6 +193,15 @@ const Estoque = () => {
       setLoading(false);
       setIsLoadingMore(false);
     }
+  };
+
+  const handleToggleLoadMode = () => {
+    const newMode = loadMode === 'paginated' ? 'all' : 'paginated';
+    setLoadMode(newMode);
+    setInventory([]);
+    setPage(1);
+    setHasMore(true);
+    setTimeout(() => loadEstoque(1, true), 0);
   };
 
   const loadMore = () => {
@@ -716,17 +745,23 @@ const Estoque = () => {
             Controle de inventário e movimentações
           </p>
           <div className="flex items-center justify-center gap-2 mt-2 flex-wrap">
-            <Badge variant="secondary" className="text-sm">
-              <Package className="h-3 w-3 mr-1" />
-              {inventory.length} {inventory.length === 1 ? 'produto em estoque' : 'produtos em estoque'}
-            </Badge>
+            <PaginationControls
+              totalLocal={inventory.length}
+              totalServer={totalServer}
+              loadMode={loadMode}
+              onToggleMode={handleToggleLoadMode}
+              isLoading={loading}
+              entityName="produto em estoque"
+              entityNamePlural="produtos em estoque"
+              icon={<Package className="h-3 w-3 mr-1" />}
+            />
             <Badge variant="secondary" className="text-sm">
               <Package2 className="h-3 w-3 mr-1" />
               {inventory.reduce((total, item) => {
                 return total + (item.quantidadeTotal || 0);
               }, 0)} total em estoque
             </Badge>
-            {hasMore && (
+            {loadMode === 'paginated' && hasMore && (
               <Badge variant="outline" className="text-sm text-muted-foreground">
                 Página {page} • Role para carregar mais
               </Badge>

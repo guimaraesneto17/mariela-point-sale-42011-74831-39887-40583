@@ -26,6 +26,7 @@ import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useProdutos, useCreateProduto, useUpdateProduto, useDeleteProduto } from "@/hooks/useQueryCache";
 import { RetryProgressIndicator } from "@/components/RetryProgressIndicator";
+import { PaginationControls } from "@/components/PaginationControls";
 
 type ProdutoFormData = z.infer<typeof produtoSchema>;
 
@@ -99,6 +100,8 @@ const Produtos = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadMode, setLoadMode] = useState<'paginated' | 'all'>('all');
+  const [totalServer, setTotalServer] = useState<number | undefined>(undefined);
   
   // Debounce do termo de busca para reduzir requisições
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -109,6 +112,13 @@ const Produtos = () => {
     loadEstoque();
   }, []);
 
+  // Recarregar quando mudar o modo ou busca server-side
+  useEffect(() => {
+    if (loadMode === 'paginated' && debouncedSearchTerm) {
+      loadProdutos(1, true);
+    }
+  }, [debouncedSearchTerm, loadMode]);
+
   const loadProdutos = async (pageNum: number = 1, reset: boolean = false) => {
     try {
       if (reset) {
@@ -117,28 +127,46 @@ const Produtos = () => {
         setPage(1);
         setHasMore(true);
 
-        // Carregar TODAS as páginas para não limitar em 50 itens
-        const { items } = await fetchAllPages<any>((page, limit) => produtosAPI.getAll(page, limit), {
-          limit: 50,
-        });
+        if (loadMode === 'all') {
+          // Carregar TODAS as páginas para não limitar em 50 itens
+          const { items, pagination } = await fetchAllPages<any>((page, limit) => produtosAPI.getAll(page, limit), {
+            limit: 50,
+          });
 
-        setProdutos(items);
-        setHasMore(false);
-        setPage(1);
+          setProdutos(items);
+          setTotalServer(pagination?.total || items.length);
+          setHasMore(false);
+          setPage(1);
+        } else {
+          // Modo paginado com busca server-side
+          const searchParam = debouncedSearchTerm || undefined;
+          const response = await produtosAPI.getAll(1, 50, searchParam);
+          const newProdutos = response.data || response;
+          const pagination = response.pagination;
+
+          setProdutos(Array.isArray(newProdutos) ? newProdutos : []);
+          setTotalServer(pagination?.total);
+
+          if (pagination) {
+            setHasMore(pagination.page < pagination.pages);
+          } else {
+            setHasMore(Array.isArray(newProdutos) && newProdutos.length === 50);
+          }
+        }
       } else {
         setIsLoadingMore(true);
 
-        // Mantém suporte ao scroll infinito, caso volte a ser necessário
-        const response = await produtosAPI.getAll(pageNum, 50);
+        const searchParam = loadMode === 'paginated' && debouncedSearchTerm ? debouncedSearchTerm : undefined;
+        const response = await produtosAPI.getAll(pageNum, 50, searchParam);
         const newProdutos = response.data || response;
         const pagination = response.pagination;
 
-        setProdutos((prev) => [...prev, ...newProdutos]);
+        setProdutos((prev) => [...prev, ...(Array.isArray(newProdutos) ? newProdutos : [])]);
 
         if (pagination) {
           setHasMore(pagination.page < pagination.pages);
         } else {
-          setHasMore(newProdutos.length === 50);
+          setHasMore(Array.isArray(newProdutos) && newProdutos.length === 50);
         }
       }
     } catch (error) {
@@ -149,6 +177,15 @@ const Produtos = () => {
       setIsLoadingData(false);
       setIsLoadingMore(false);
     }
+  };
+
+  const handleToggleLoadMode = () => {
+    const newMode = loadMode === 'paginated' ? 'all' : 'paginated';
+    setLoadMode(newMode);
+    setProdutos([]);
+    setPage(1);
+    setHasMore(true);
+    setTimeout(() => loadProdutos(1, true), 0);
   };
 
   const loadMore = () => {
@@ -162,7 +199,8 @@ const Produtos = () => {
   const loadFornecedores = async () => {
     try {
       const data = await fornecedoresAPI.getAll();
-      setFornecedores(data);
+      const fornecedoresData = data?.data || data;
+      setFornecedores(Array.isArray(fornecedoresData) ? fornecedoresData : []);
     } catch (error) {
       console.error("Erro ao carregar fornecedores", error);
     }
@@ -179,17 +217,23 @@ const Produtos = () => {
     }
   };
 
-  const filteredProdutos = produtos.filter(produto => {
-    const matchesSearch = produto.nome.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-      produto.codigoProduto.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-      (produto.fornecedor?.nome && produto.fornecedor.nome.toLowerCase().includes(debouncedSearchTerm.toLowerCase())) ||
-      (produto.fornecedor?.codigoFornecedor && produto.fornecedor.codigoFornecedor.toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
-    
-    const categoria = typeof produto.categoria === 'string' ? produto.categoria : produto.categoria?.nome;
-    const matchesCategoria = categoriaFiltro === "todas" || categoria === categoriaFiltro;
-    
-    return matchesSearch && matchesCategoria;
-  });
+  // Filtro client-side apenas quando loadMode === 'all' ou sem busca server-side
+  const filteredProdutos = loadMode === 'paginated' && debouncedSearchTerm
+    ? produtos.filter(produto => {
+        const categoria = typeof produto.categoria === 'string' ? produto.categoria : produto.categoria?.nome;
+        return categoriaFiltro === "todas" || categoria === categoriaFiltro;
+      })
+    : produtos.filter(produto => {
+        const matchesSearch = produto.nome?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+          produto.codigoProduto?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+          (produto.fornecedor?.nome && produto.fornecedor.nome.toLowerCase().includes(debouncedSearchTerm.toLowerCase())) ||
+          (produto.fornecedor?.codigoFornecedor && produto.fornecedor.codigoFornecedor.toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
+        
+        const categoria = typeof produto.categoria === 'string' ? produto.categoria : produto.categoria?.nome;
+        const matchesCategoria = categoriaFiltro === "todas" || categoria === categoriaFiltro;
+        
+        return matchesSearch && matchesCategoria;
+      });
 
   const generateNextCode = () => {
     if (produtos.length === 0) return "P001";
@@ -345,22 +389,26 @@ const Produtos = () => {
           <p className="text-muted-foreground">
             Catálogo e gerenciamento de produtos
           </p>
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
-            <Badge variant="secondary" className="text-sm">
-              <Package className="h-3 w-3 mr-1" />
-              {produtos.length} {produtos.length === 1 ? 'produto cadastrado' : 'produtos cadastrados'}
+          <PaginationControls
+            totalLocal={produtos.length}
+            totalServer={totalServer}
+            loadMode={loadMode}
+            onToggleMode={handleToggleLoadMode}
+            isLoading={isLoadingData}
+            entityName="produto cadastrado"
+            entityNamePlural="produtos cadastrados"
+            icon={<Package className="h-3 w-3 mr-1" />}
+          />
+          {loadMode === 'paginated' && hasMore && (
+            <Badge variant="outline" className="text-sm text-muted-foreground mt-2">
+              Página {page} • Role para carregar mais
             </Badge>
-            {hasMore && (
-              <Badge variant="outline" className="text-sm text-muted-foreground">
-                Página {page} • Role para carregar mais
-              </Badge>
-            )}
-            {isLoadingMore && (
-              <Badge variant="outline" className="text-sm text-primary animate-pulse">
-                Carregando mais...
-              </Badge>
-            )}
-          </div>
+          )}
+          {isLoadingMore && (
+            <Badge variant="outline" className="text-sm text-primary animate-pulse mt-2">
+              Carregando mais...
+            </Badge>
+          )}
         </div>
         <PermissionGuard module="produtos" action="create">
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

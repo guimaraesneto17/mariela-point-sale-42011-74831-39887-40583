@@ -22,6 +22,7 @@ import { MensagemPersonalizadaDialog } from "@/components/MensagemPersonalizadaD
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { useClientes, useCreateCliente, useUpdateCliente, useDeleteCliente } from "@/hooks/useQueryCache";
 import { RetryProgressIndicator } from "@/components/RetryProgressIndicator";
+import { PaginationControls } from "@/components/PaginationControls";
 
 type ClienteFormData = z.infer<typeof clienteSchema>;
 
@@ -205,12 +206,16 @@ const Clientes = () => {
           <p className="text-muted-foreground">
             Gerenciamento de clientes
           </p>
-          <div className="flex items-center gap-2 mt-2">
-            <Badge variant="secondary" className="text-sm">
-              <User className="h-3 w-3 mr-1" />
-              {clientes.length} {clientes.length === 1 ? 'cliente cadastrado' : 'clientes cadastrados'}
-            </Badge>
-          </div>
+          <PaginationControls
+            totalLocal={clientes.length}
+            totalServer={clientes.length}
+            loadMode="all"
+            onToggleMode={() => {}}
+            isLoading={isLoadingData}
+            entityName="cliente cadastrado"
+            entityNamePlural="clientes cadastrados"
+            icon={<User className="h-3 w-3 mr-1" />}
+          />
         </div>
         <div className="flex gap-2">
           <Button 
