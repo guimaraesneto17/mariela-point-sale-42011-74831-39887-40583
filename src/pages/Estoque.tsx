@@ -25,6 +25,7 @@ import { EstoqueAlertasDialog } from "@/components/EstoqueAlertasDialog";
 import { ImageNavigator } from "@/components/ImageNavigator";
 
 import { estoqueAPI } from "@/lib/api";
+import { fetchAllPages } from "@/lib/pagination";
 import { formatDateTime } from "@/lib/utils";
 import { getDefaultImageByCategory } from "@/lib/defaultImages";
 import { GlobalLoading } from "@/components/GlobalLoading";
@@ -103,38 +104,27 @@ const Estoque = () => {
         setInventory([]);
         setPage(1);
         setHasMore(true);
-      } else {
-        setIsLoadingMore(true);
-      }
-      
-      const response = await estoqueAPI.getAll(pageNum, 50);
-      const data = response.data || response;
-      const pagination = response.pagination;
-      
-      console.log('📦 Dados recebidos do estoque:', data);
-      if (data.length > 0) {
-        console.log('📝 Primeiro item:', data[0]);
-        console.log('📝 logMovimentacao do primeiro item:', data[0].logMovimentacao);
-      }
-      
-      if (reset) {
-        setInventory(data);
-      } else {
-        setInventory(prev => [...prev, ...data]);
-      }
 
-      if (pagination) {
-        setHasMore(pagination.page < pagination.pages);
-      } else {
-        setHasMore(data.length === 50);
-      }
+        // Carregar TODAS as páginas para não limitar em 50 itens
+        const { items } = await fetchAllPages<any>((page, limit) => estoqueAPI.getAll(page, limit), {
+          limit: 50,
+        });
 
-      // Inicializar seleção de cor e tamanho para cada item (apenas no reset)
-      if (reset) {
+        console.log('📦 Dados recebidos do estoque:', items);
+        if (items.length > 0) {
+          console.log('📝 Primeiro item:', items[0]);
+          console.log('📝 logMovimentacao do primeiro item:', items[0].logMovimentacao);
+        }
+
+        setInventory(items);
+        setHasMore(false);
+        setPage(1);
+
+        // Inicializar seleção de cor e tamanho para cada item (apenas no reset)
         const initialColors: { [key: string]: string } = {};
         const initialSizes: { [key: string]: string } = {};
 
-        data.forEach((item: any) => {
+        items.forEach((item: any) => {
           if (item.variantes && item.variantes.length > 0) {
             initialColors[item.codigoProduto] = item.variantes[0].cor;
             const tamanhosVariante0 = item.variantes[0].tamanhos;
@@ -156,6 +146,25 @@ const Estoque = () => {
 
         setSelectedColorByItem(initialColors);
         setSelectedSizeByItem(initialSizes);
+      } else {
+        setIsLoadingMore(true);
+
+        // Mantém suporte ao scroll infinito, caso volte a ser necessário
+        const response = await estoqueAPI.getAll(pageNum, 50);
+        const data = response.data || response;
+        const pagination = response.pagination;
+
+        if (reset) {
+          setInventory(data);
+        } else {
+          setInventory((prev) => [...prev, ...data]);
+        }
+
+        if (pagination) {
+          setHasMore(pagination.page < pagination.pages);
+        } else {
+          setHasMore(data.length === 50);
+        }
       }
     } catch (error) {
       console.error('Erro ao carregar estoque:', error);
