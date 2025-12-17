@@ -16,12 +16,14 @@ import { vendedorSchema } from "@/lib/validationSchemas";
 import { maskPhone } from "@/lib/masks";
 import { z } from "zod";
 import { vendedoresAPI, recalculoAPI } from "@/lib/api";
+import { fetchAllPages } from "@/lib/pagination";
 import { formatDate } from "@/lib/utils";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import { PermissionGuard } from "@/components/PermissionGuard";
-import { useVendedores, useCreateVendedor, useUpdateVendedor, useDeleteVendedor } from "@/hooks/useQueryCache";
+import { useCreateVendedor, useUpdateVendedor, useDeleteVendedor } from "@/hooks/useQueryCache";
 import { RetryProgressIndicator } from "@/components/RetryProgressIndicator";
 import { PaginationControls } from "@/components/PaginationControls";
+import { useDebounce } from "@/hooks/useDebounce";
 
 type VendedorFormData = z.infer<typeof vendedorSchema>;
 
@@ -97,6 +99,17 @@ const Vendedores = () => {
   const [vendedorToDelete, setVendedorToDelete] = useState<string | null>(null);
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
 
+  // Estados de paginação
+  const [vendedores, setVendedores] = useState<any[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [loadMode, setLoadMode] = useState<'paginated' | 'all'>('all');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalServer, setTotalServer] = useState<number | undefined>(undefined);
+  const [error, setError] = useState<any>(null);
+
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
   const form = useForm<VendedorFormData>({
     resolver: zodResolver(vendedorSchema),
     defaultValues: {
@@ -131,17 +144,74 @@ const Vendedores = () => {
 
   const isFormValid = nomeValidation.valid && emailValidation.valid && senhaValidation.valid && telefoneValidation.valid;
 
-  // React Query hooks com optimistic updates
-  const { data: vendedores = [], isLoading: isLoadingData, error, refetch } = useVendedores();
   const createVendedorMutation = useCreateVendedor();
   const updateVendedorMutation = useUpdateVendedor();
   const deleteVendedorMutation = useDeleteVendedor();
 
-  const filteredVendedores = vendedores.filter(vendedor =>
-    vendedor.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    vendedor.codigoVendedor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    vendedor.telefone?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    loadVendedores(1, true);
+  }, []);
+
+  useEffect(() => {
+    if (loadMode === 'paginated') {
+      loadVendedores(1, true);
+    }
+  }, [debouncedSearchTerm, loadMode]);
+
+  const loadVendedores = async (pageNum: number = 1, reset: boolean = false) => {
+    try {
+      if (reset) {
+        setIsLoadingData(true);
+        setVendedores([]);
+        setPage(1);
+      }
+
+      if (loadMode === 'all') {
+        const { items, pagination } = await fetchAllPages<any>((p, limit) => vendedoresAPI.getAll(p, limit), { limit: 50 });
+        setVendedores(items);
+        setTotalServer(pagination?.total || items.length);
+        setTotalPages(1);
+        setPage(1);
+      } else {
+        const searchParam = debouncedSearchTerm || undefined;
+        const response = await vendedoresAPI.getAll(pageNum, 50, searchParam);
+        const data = response.data || response;
+        const pagination = response.pagination;
+
+        setVendedores(Array.isArray(data) ? data : []);
+        setTotalServer(pagination?.total);
+        setTotalPages(pagination?.pages || 1);
+        setPage(pageNum);
+      }
+    } catch (err: any) {
+      setError(err);
+      toast.error("Erro ao carregar vendedores");
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  const handleToggleLoadMode = () => {
+    const newMode = loadMode === 'paginated' ? 'all' : 'paginated';
+    setLoadMode(newMode);
+    setVendedores([]);
+    setPage(1);
+    setTimeout(() => loadVendedores(1, true), 0);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    loadVendedores(newPage, true);
+  };
+
+  const refetch = () => loadVendedores(page, true);
+
+  const filteredVendedores = loadMode === 'paginated' && debouncedSearchTerm
+    ? vendedores
+    : vendedores.filter(vendedor =>
+        vendedor.nome.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        vendedor.codigoVendedor.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        vendedor.telefone?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+      );
 
   const generateNextCode = () => {
     if (vendedores.length === 0) return "V001";
@@ -295,14 +365,18 @@ const Vendedores = () => {
             Gerenciamento de vendedores
           </p>
           <PaginationControls
-            totalLocal={vendedores.length}
-            totalServer={vendedores.length}
-            loadMode="all"
-            onToggleMode={() => {}}
+            totalLocal={filteredVendedores.length}
+            totalServer={totalServer}
+            loadMode={loadMode}
+            onToggleMode={handleToggleLoadMode}
             isLoading={isLoadingData}
             entityName="vendedor cadastrado"
             entityNamePlural="vendedores cadastrados"
             icon={<UserCheck className="h-3 w-3 mr-1" />}
+            currentPage={page}
+            totalPages={totalPages}
+            limit={50}
+            onPageChange={handlePageChange}
           />
         </div>
         <div className="flex gap-2">

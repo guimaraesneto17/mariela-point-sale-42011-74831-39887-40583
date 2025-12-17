@@ -15,14 +15,16 @@ import { clienteSchema } from "@/lib/validationSchemas";
 import { maskPhone } from "@/lib/masks";
 import { z } from "zod";
 import { clientesAPI, recalculoAPI } from "@/lib/api";
+import { fetchAllPages } from "@/lib/pagination";
 import { formatDate } from "@/lib/utils";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import { AniversariantesDialog } from "@/components/AniversariantesDialog";
 import { MensagemPersonalizadaDialog } from "@/components/MensagemPersonalizadaDialog";
 import { PermissionGuard } from "@/components/PermissionGuard";
-import { useClientes, useCreateCliente, useUpdateCliente, useDeleteCliente } from "@/hooks/useQueryCache";
+import { useCreateCliente, useUpdateCliente, useDeleteCliente } from "@/hooks/useQueryCache";
 import { RetryProgressIndicator } from "@/components/RetryProgressIndicator";
 import { PaginationControls } from "@/components/PaginationControls";
+import { useDebounce } from "@/hooks/useDebounce";
 
 type ClienteFormData = z.infer<typeof clienteSchema>;
 
@@ -38,6 +40,17 @@ const Clientes = () => {
   const [mensagemDialogOpen, setMensagemDialogOpen] = useState(false);
   const [clienteParaMensagem, setClienteParaMensagem] = useState<any>(null);
   
+  // Estados de paginação
+  const [clientes, setClientes] = useState<any[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [loadMode, setLoadMode] = useState<'paginated' | 'all'>('all');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalServer, setTotalServer] = useState<number | undefined>(undefined);
+  const [error, setError] = useState<any>(null);
+  
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  
   const form = useForm<ClienteFormData>({
     resolver: zodResolver(clienteSchema),
     defaultValues: {
@@ -52,16 +65,73 @@ const Clientes = () => {
     },
   });
 
-  // React Query hooks com optimistic updates
-  const { data: clientes = [], isLoading: isLoadingData, error, refetch } = useClientes();
   const createClienteMutation = useCreateCliente();
   const updateClienteMutation = useUpdateCliente();
   const deleteClienteMutation = useDeleteCliente();
 
-  const filteredClientes = clientes.filter(cliente =>
-    cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cliente.telefone?.includes(searchTerm)
-  );
+  useEffect(() => {
+    loadClientes(1, true);
+  }, []);
+
+  useEffect(() => {
+    if (loadMode === 'paginated') {
+      loadClientes(1, true);
+    }
+  }, [debouncedSearchTerm, loadMode]);
+
+  const loadClientes = async (pageNum: number = 1, reset: boolean = false) => {
+    try {
+      if (reset) {
+        setIsLoadingData(true);
+        setClientes([]);
+        setPage(1);
+      }
+
+      if (loadMode === 'all') {
+        const { items, pagination } = await fetchAllPages<any>((p, limit) => clientesAPI.getAll(p, limit), { limit: 50 });
+        setClientes(items);
+        setTotalServer(pagination?.total || items.length);
+        setTotalPages(1);
+        setPage(1);
+      } else {
+        const searchParam = debouncedSearchTerm || undefined;
+        const response = await clientesAPI.getAll(pageNum, 50, searchParam);
+        const data = response.data || response;
+        const pagination = response.pagination;
+
+        setClientes(Array.isArray(data) ? data : []);
+        setTotalServer(pagination?.total);
+        setTotalPages(pagination?.pages || 1);
+        setPage(pageNum);
+      }
+    } catch (err: any) {
+      setError(err);
+      toast.error("Erro ao carregar clientes");
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  const handleToggleLoadMode = () => {
+    const newMode = loadMode === 'paginated' ? 'all' : 'paginated';
+    setLoadMode(newMode);
+    setClientes([]);
+    setPage(1);
+    setTimeout(() => loadClientes(1, true), 0);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    loadClientes(newPage, true);
+  };
+
+  const refetch = () => loadClientes(page, true);
+
+  const filteredClientes = loadMode === 'paginated' && debouncedSearchTerm
+    ? clientes
+    : clientes.filter(cliente =>
+        cliente.nome.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        cliente.telefone?.includes(debouncedSearchTerm)
+      );
 
   // Gera código automático incremental
   const generateNextCode = () => {
@@ -207,14 +277,18 @@ const Clientes = () => {
             Gerenciamento de clientes
           </p>
           <PaginationControls
-            totalLocal={clientes.length}
-            totalServer={clientes.length}
-            loadMode="all"
-            onToggleMode={() => {}}
+            totalLocal={filteredClientes.length}
+            totalServer={totalServer}
+            loadMode={loadMode}
+            onToggleMode={handleToggleLoadMode}
             isLoading={isLoadingData}
             entityName="cliente cadastrado"
             entityNamePlural="clientes cadastrados"
             icon={<User className="h-3 w-3 mr-1" />}
+            currentPage={page}
+            totalPages={totalPages}
+            limit={50}
+            onPageChange={handlePageChange}
           />
         </div>
         <div className="flex gap-2">

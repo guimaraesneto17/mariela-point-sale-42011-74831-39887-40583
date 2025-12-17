@@ -15,11 +15,13 @@ import { fornecedorSchema } from "@/lib/validationSchemas";
 import { maskPhone, maskCNPJ, maskCEP, maskInstagram } from "@/lib/masks";
 import { z } from "zod";
 import { fornecedoresAPI } from "@/lib/api";
+import { fetchAllPages } from "@/lib/pagination";
 import { AlertDeleteDialog } from "@/components/ui/alert-delete-dialog";
 import { PermissionGuard } from "@/components/PermissionGuard";
-import { useFornecedores, useCreateFornecedor, useUpdateFornecedor, useDeleteFornecedor } from "@/hooks/useQueryCache";
+import { useCreateFornecedor, useUpdateFornecedor, useDeleteFornecedor } from "@/hooks/useQueryCache";
 import { RetryProgressIndicator } from "@/components/RetryProgressIndicator";
 import { PaginationControls } from "@/components/PaginationControls";
+import { useDebounce } from "@/hooks/useDebounce";
 
 type FornecedorFormData = z.infer<typeof fornecedorSchema>;
 
@@ -92,6 +94,17 @@ const Fornecedores = () => {
   const [fornecedorToDelete, setFornecedorToDelete] = useState<string | null>(null);
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
 
+  // Estados de paginação
+  const [fornecedores, setFornecedores] = useState<any[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [loadMode, setLoadMode] = useState<'paginated' | 'all'>('all');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalServer, setTotalServer] = useState<number | undefined>(undefined);
+  const [error, setError] = useState<any>(null);
+
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
   const form = useForm<FornecedorFormData>({
     resolver: zodResolver(fornecedorSchema),
     defaultValues: {
@@ -130,17 +143,74 @@ const Fornecedores = () => {
 
   const isFormValid = nomeValidation.valid && telefoneValidation.valid && cnpjValidation.valid && enderecoValidation.valid;
 
-  // React Query hooks com optimistic updates
-  const { data: fornecedores = [], isLoading: isLoadingData, error, refetch } = useFornecedores();
   const createFornecedorMutation = useCreateFornecedor();
   const updateFornecedorMutation = useUpdateFornecedor();
   const deleteFornecedorMutation = useDeleteFornecedor();
 
-  const filteredFornecedores = fornecedores.filter(fornecedor =>
-    fornecedor.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    fornecedor.telefone.includes(searchTerm) ||
-    fornecedor.codigoFornecedor.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    loadFornecedores(1, true);
+  }, []);
+
+  useEffect(() => {
+    if (loadMode === 'paginated') {
+      loadFornecedores(1, true);
+    }
+  }, [debouncedSearchTerm, loadMode]);
+
+  const loadFornecedores = async (pageNum: number = 1, reset: boolean = false) => {
+    try {
+      if (reset) {
+        setIsLoadingData(true);
+        setFornecedores([]);
+        setPage(1);
+      }
+
+      if (loadMode === 'all') {
+        const { items, pagination } = await fetchAllPages<any>((p, limit) => fornecedoresAPI.getAll(p, limit), { limit: 50 });
+        setFornecedores(items);
+        setTotalServer(pagination?.total || items.length);
+        setTotalPages(1);
+        setPage(1);
+      } else {
+        const searchParam = debouncedSearchTerm || undefined;
+        const response = await fornecedoresAPI.getAll(pageNum, 50, searchParam);
+        const data = response.data || response;
+        const pagination = response.pagination;
+
+        setFornecedores(Array.isArray(data) ? data : []);
+        setTotalServer(pagination?.total);
+        setTotalPages(pagination?.pages || 1);
+        setPage(pageNum);
+      }
+    } catch (err: any) {
+      setError(err);
+      toast.error("Erro ao carregar fornecedores");
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  const handleToggleLoadMode = () => {
+    const newMode = loadMode === 'paginated' ? 'all' : 'paginated';
+    setLoadMode(newMode);
+    setFornecedores([]);
+    setPage(1);
+    setTimeout(() => loadFornecedores(1, true), 0);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    loadFornecedores(newPage, true);
+  };
+
+  const refetch = () => loadFornecedores(page, true);
+
+  const filteredFornecedores = loadMode === 'paginated' && debouncedSearchTerm
+    ? fornecedores
+    : fornecedores.filter(fornecedor =>
+        fornecedor.nome.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        fornecedor.telefone?.includes(debouncedSearchTerm) ||
+        fornecedor.codigoFornecedor.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+      );
 
   const generateNextCode = () => {
     if (fornecedores.length === 0) return "F001";
@@ -288,14 +358,18 @@ const Fornecedores = () => {
             Gerenciamento de fornecedores
           </p>
           <PaginationControls
-            totalLocal={fornecedores.length}
-            totalServer={fornecedores.length}
-            loadMode="all"
-            onToggleMode={() => {}}
+            totalLocal={filteredFornecedores.length}
+            totalServer={totalServer}
+            loadMode={loadMode}
+            onToggleMode={handleToggleLoadMode}
             isLoading={isLoadingData}
             entityName="fornecedor cadastrado"
             entityNamePlural="fornecedores cadastrados"
             icon={<Building className="h-3 w-3 mr-1" />}
+            currentPage={page}
+            totalPages={totalPages}
+            limit={50}
+            onPageChange={handlePageChange}
           />
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
