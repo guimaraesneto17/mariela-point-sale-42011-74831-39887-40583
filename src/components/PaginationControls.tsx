@@ -147,8 +147,8 @@ export const PaginationControls = ({
             <ChevronsRight className="h-3 w-3" />
           </Button>
 
-          <Badge variant="outline" className="text-xs ml-2">
-            Página {currentPage} de {totalPages}
+          <Badge variant="secondary" className="text-xs ml-2 font-medium">
+            {currentPage}-{totalPages}
           </Badge>
         </div>
       )}
