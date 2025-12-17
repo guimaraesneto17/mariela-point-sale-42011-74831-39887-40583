@@ -98,6 +98,7 @@ const Produtos = () => {
   const [estoque, setEstoque] = useState<any[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadMode, setLoadMode] = useState<'paginated' | 'all'>('all');
@@ -135,6 +136,7 @@ const Produtos = () => {
 
           setProdutos(items);
           setTotalServer(pagination?.total || items.length);
+          setTotalPages(1);
           setHasMore(false);
           setPage(1);
         } else {
@@ -146,6 +148,8 @@ const Produtos = () => {
 
           setProdutos(Array.isArray(newProdutos) ? newProdutos : []);
           setTotalServer(pagination?.total);
+          setTotalPages(pagination?.pages || 1);
+          setPage(1);
 
           if (pagination) {
             setHasMore(pagination.page < pagination.pages);
@@ -184,8 +188,14 @@ const Produtos = () => {
     setLoadMode(newMode);
     setProdutos([]);
     setPage(1);
+    setTotalPages(1);
     setHasMore(true);
     setTimeout(() => loadProdutos(1, true), 0);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    loadProdutos(newPage, true);
   };
 
   const loadMore = () => {
@@ -398,17 +408,11 @@ const Produtos = () => {
             entityName="produto cadastrado"
             entityNamePlural="produtos cadastrados"
             icon={<Package className="h-3 w-3 mr-1" />}
+            currentPage={page}
+            totalPages={totalPages}
+            limit={50}
+            onPageChange={handlePageChange}
           />
-          {loadMode === 'paginated' && hasMore && (
-            <Badge variant="outline" className="text-sm text-muted-foreground mt-2">
-              Página {page} • Role para carregar mais
-            </Badge>
-          )}
-          {isLoadingMore && (
-            <Badge variant="outline" className="text-sm text-primary animate-pulse mt-2">
-              Carregando mais...
-            </Badge>
-          )}
         </div>
         <PermissionGuard module="produtos" action="create">
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

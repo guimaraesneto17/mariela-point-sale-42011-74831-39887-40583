@@ -70,6 +70,7 @@ const Estoque = () => {
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
   const [sortBy, setSortBy] = useState<string>("nome"); // nome, preco-asc, preco-desc, quantidade-asc, quantidade-desc, data-entrada
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [totalPages, setTotalPages] = useState(1);
   
   // Debounce do termo de busca para reduzir requisições
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -150,6 +151,7 @@ const Estoque = () => {
           console.log('📦 Dados recebidos do estoque:', items);
           setInventory(items);
           setTotalServer(pagination?.total || items.length);
+          setTotalPages(1);
           setHasMore(false);
           setPage(1);
           initializeColorSizeSelection(items);
@@ -162,6 +164,7 @@ const Estoque = () => {
 
           setInventory(Array.isArray(data) ? data : []);
           setTotalServer(pagination?.total);
+          setTotalPages(pagination?.pages || 1);
 
           if (pagination) {
             setHasMore(pagination.page < pagination.pages);
@@ -754,23 +757,14 @@ const Estoque = () => {
               entityName="produto em estoque"
               entityNamePlural="produtos em estoque"
               icon={<Package className="h-3 w-3 mr-1" />}
+              currentPage={page}
+              totalPages={totalPages}
+              limit={50}
+              onPageChange={(newPage) => {
+                setPage(newPage);
+                loadEstoque(newPage, true);
+              }}
             />
-            <Badge variant="secondary" className="text-sm">
-              <Package2 className="h-3 w-3 mr-1" />
-              {inventory.reduce((total, item) => {
-                return total + (item.quantidadeTotal || 0);
-              }, 0)} total em estoque
-            </Badge>
-            {loadMode === 'paginated' && hasMore && (
-              <Badge variant="outline" className="text-sm text-muted-foreground">
-                Página {page} • Role para carregar mais
-              </Badge>
-            )}
-            {isLoadingMore && (
-              <Badge variant="outline" className="text-sm text-primary animate-pulse">
-                Carregando mais...
-              </Badge>
-            )}
             <Badge variant="outline" className="text-sm border-green-500/50 text-green-700 dark:text-green-400">
               <DollarSign className="h-3 w-3 mr-1" />
               Valor de Compra: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
