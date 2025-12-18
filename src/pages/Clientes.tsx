@@ -48,6 +48,7 @@ const Clientes = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalServer, setTotalServer] = useState<number | undefined>(undefined);
   const [error, setError] = useState<any>(null);
+  const [limit, setLimit] = useState(50);
   
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   
@@ -88,14 +89,14 @@ const Clientes = () => {
       }
 
       if (loadMode === 'all') {
-        const { items, pagination } = await fetchAllPages<any>((p, limit) => clientesAPI.getAll(p, limit), { limit: 50 });
+        const { items, pagination } = await fetchAllPages<any>((p, lim) => clientesAPI.getAll(p, lim), { limit: limit });
         setClientes(items);
         setTotalServer(pagination?.total || items.length);
         setTotalPages(1);
         setPage(1);
       } else {
         const searchParam = debouncedSearchTerm || undefined;
-        const response = await clientesAPI.getAll(pageNum, 50, searchParam);
+        const response = await clientesAPI.getAll(pageNum, limit, searchParam);
         const data = response.data || response;
         const pagination = response.pagination;
 
@@ -122,6 +123,12 @@ const Clientes = () => {
 
   const handlePageChange = (newPage: number) => {
     loadClientes(newPage, true);
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setLimit(newLimit);
+    setPage(1);
+    setTimeout(() => loadClientes(1, true), 0);
   };
 
   const refetch = () => loadClientes(page, true);
@@ -287,8 +294,9 @@ const Clientes = () => {
             icon={<User className="h-3 w-3 mr-1" />}
             currentPage={page}
             totalPages={totalPages}
-            limit={50}
+            limit={limit}
             onPageChange={handlePageChange}
+            onLimitChange={handleLimitChange}
           />
         </div>
         <div className="flex gap-2">

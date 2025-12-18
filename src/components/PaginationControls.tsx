@@ -1,5 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Database, Layers, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 
 interface PaginationControlsProps {
@@ -11,11 +18,12 @@ interface PaginationControlsProps {
   entityName: string;
   entityNamePlural: string;
   icon?: React.ReactNode;
-  // Novas props para navegação de páginas
+  // Props para navegação de páginas
   currentPage?: number;
   totalPages?: number;
   limit?: number;
   onPageChange?: (page: number) => void;
+  onLimitChange?: (limit: number) => void;
 }
 
 export const PaginationControls = ({
@@ -31,6 +39,7 @@ export const PaginationControls = ({
   totalPages = 1,
   limit = 50,
   onPageChange,
+  onLimitChange,
 }: PaginationControlsProps) => {
   const showServerTotal = totalServer !== undefined && totalServer !== totalLocal;
   const showPageNavigation = loadMode === 'paginated' && totalPages > 1 && onPageChange;
@@ -79,6 +88,27 @@ export const PaginationControls = ({
           <Badge variant="outline" className="text-xs text-amber-600 dark:text-amber-400">
             {totalServer} itens carregados
           </Badge>
+        )}
+
+        {/* Seletor de itens por página */}
+        {loadMode === 'paginated' && onLimitChange && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground">Itens:</span>
+            <Select
+              value={limit.toString()}
+              onValueChange={(value) => onLimitChange(Number(value))}
+              disabled={isLoading}
+            >
+              <SelectTrigger className="h-7 w-[70px] text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         )}
       </div>
 

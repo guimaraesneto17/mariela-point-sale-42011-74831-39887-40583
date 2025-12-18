@@ -103,6 +103,7 @@ const Produtos = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadMode, setLoadMode] = useState<'paginated' | 'all'>('all');
   const [totalServer, setTotalServer] = useState<number | undefined>(undefined);
+  const [limit, setLimit] = useState(50);
   
   // Debounce do termo de busca para reduzir requisições
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -130,8 +131,8 @@ const Produtos = () => {
 
         if (loadMode === 'all') {
           // Carregar TODAS as páginas para não limitar em 50 itens
-          const { items, pagination } = await fetchAllPages<any>((page, limit) => produtosAPI.getAll(page, limit), {
-            limit: 50,
+          const { items, pagination } = await fetchAllPages<any>((page, lim) => produtosAPI.getAll(page, lim), {
+            limit: limit,
           });
 
           setProdutos(items);
@@ -142,7 +143,7 @@ const Produtos = () => {
         } else {
           // Modo paginado com busca server-side
           const searchParam = debouncedSearchTerm || undefined;
-          const response = await produtosAPI.getAll(1, 50, searchParam);
+          const response = await produtosAPI.getAll(1, limit, searchParam);
           const newProdutos = response.data || response;
           const pagination = response.pagination;
 
@@ -154,14 +155,14 @@ const Produtos = () => {
           if (pagination) {
             setHasMore(pagination.page < pagination.pages);
           } else {
-            setHasMore(Array.isArray(newProdutos) && newProdutos.length === 50);
+            setHasMore(Array.isArray(newProdutos) && newProdutos.length === limit);
           }
         }
       } else {
         setIsLoadingMore(true);
 
         const searchParam = loadMode === 'paginated' && debouncedSearchTerm ? debouncedSearchTerm : undefined;
-        const response = await produtosAPI.getAll(pageNum, 50, searchParam);
+        const response = await produtosAPI.getAll(pageNum, limit, searchParam);
         const newProdutos = response.data || response;
         const pagination = response.pagination;
 
@@ -170,7 +171,7 @@ const Produtos = () => {
         if (pagination) {
           setHasMore(pagination.page < pagination.pages);
         } else {
-          setHasMore(Array.isArray(newProdutos) && newProdutos.length === 50);
+          setHasMore(Array.isArray(newProdutos) && newProdutos.length === limit);
         }
       }
     } catch (error) {
@@ -196,6 +197,12 @@ const Produtos = () => {
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
     loadProdutos(newPage, true);
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setLimit(newLimit);
+    setPage(1);
+    setTimeout(() => loadProdutos(1, true), 0);
   };
 
   const loadMore = () => {
@@ -410,8 +417,9 @@ const Produtos = () => {
             icon={<Package className="h-3 w-3 mr-1" />}
             currentPage={page}
             totalPages={totalPages}
-            limit={50}
+            limit={limit}
             onPageChange={handlePageChange}
+            onLimitChange={handleLimitChange}
           />
         </div>
         <PermissionGuard module="produtos" action="create">
