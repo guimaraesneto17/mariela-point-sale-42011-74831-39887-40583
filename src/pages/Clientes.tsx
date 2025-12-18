@@ -25,6 +25,7 @@ import { useCreateCliente, useUpdateCliente, useDeleteCliente } from "@/hooks/us
 import { RetryProgressIndicator } from "@/components/RetryProgressIndicator";
 import { PaginationControls } from "@/components/PaginationControls";
 import { useDebounce } from "@/hooks/useDebounce";
+import { usePersistedLimit } from "@/hooks/usePersistedLimit";
 
 type ClienteFormData = z.infer<typeof clienteSchema>;
 
@@ -48,7 +49,7 @@ const Clientes = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalServer, setTotalServer] = useState<number | undefined>(undefined);
   const [error, setError] = useState<any>(null);
-  const [limit, setLimit] = useState(50);
+  const { limit, setLimit } = usePersistedLimit('clientes');
   
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   

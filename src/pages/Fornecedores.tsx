@@ -22,6 +22,7 @@ import { useCreateFornecedor, useUpdateFornecedor, useDeleteFornecedor } from "@
 import { RetryProgressIndicator } from "@/components/RetryProgressIndicator";
 import { PaginationControls } from "@/components/PaginationControls";
 import { useDebounce } from "@/hooks/useDebounce";
+import { usePersistedLimit } from "@/hooks/usePersistedLimit";
 
 type FornecedorFormData = z.infer<typeof fornecedorSchema>;
 
@@ -102,7 +103,7 @@ const Fornecedores = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalServer, setTotalServer] = useState<number | undefined>(undefined);
   const [error, setError] = useState<any>(null);
-  const [limit, setLimit] = useState(50);
+  const { limit, setLimit } = usePersistedLimit('fornecedores');
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
