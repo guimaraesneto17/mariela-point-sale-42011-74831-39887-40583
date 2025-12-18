@@ -102,6 +102,7 @@ const Fornecedores = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalServer, setTotalServer] = useState<number | undefined>(undefined);
   const [error, setError] = useState<any>(null);
+  const [limit, setLimit] = useState(50);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
@@ -166,14 +167,14 @@ const Fornecedores = () => {
       }
 
       if (loadMode === 'all') {
-        const { items, pagination } = await fetchAllPages<any>((p, limit) => fornecedoresAPI.getAll(p, limit), { limit: 50 });
+        const { items, pagination } = await fetchAllPages<any>((p, lim) => fornecedoresAPI.getAll(p, lim), { limit: limit });
         setFornecedores(items);
         setTotalServer(pagination?.total || items.length);
         setTotalPages(1);
         setPage(1);
       } else {
         const searchParam = debouncedSearchTerm || undefined;
-        const response = await fornecedoresAPI.getAll(pageNum, 50, searchParam);
+        const response = await fornecedoresAPI.getAll(pageNum, limit, searchParam);
         const data = response.data || response;
         const pagination = response.pagination;
 
@@ -200,6 +201,12 @@ const Fornecedores = () => {
 
   const handlePageChange = (newPage: number) => {
     loadFornecedores(newPage, true);
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setLimit(newLimit);
+    setPage(1);
+    setTimeout(() => loadFornecedores(1, true), 0);
   };
 
   const refetch = () => loadFornecedores(page, true);
@@ -368,8 +375,9 @@ const Fornecedores = () => {
             icon={<Building className="h-3 w-3 mr-1" />}
             currentPage={page}
             totalPages={totalPages}
-            limit={50}
+            limit={limit}
             onPageChange={handlePageChange}
+            onLimitChange={handleLimitChange}
           />
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

@@ -71,6 +71,7 @@ const Estoque = () => {
   const [sortBy, setSortBy] = useState<string>("nome"); // nome, preco-asc, preco-desc, quantidade-asc, quantidade-desc, data-entrada
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [totalPages, setTotalPages] = useState(1);
+  const [limit, setLimit] = useState(50);
   
   // Debounce do termo de busca para reduzir requisições
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -144,8 +145,8 @@ const Estoque = () => {
 
         if (loadMode === 'all') {
           // Carregar TODAS as páginas para não limitar em 50 itens
-          const { items, pagination } = await fetchAllPages<any>((page, limit) => estoqueAPI.getAll(page, limit), {
-            limit: 50,
+          const { items, pagination } = await fetchAllPages<any>((page, lim) => estoqueAPI.getAll(page, lim), {
+            limit: limit,
           });
 
           console.log('📦 Dados recebidos do estoque:', items);
@@ -158,7 +159,7 @@ const Estoque = () => {
         } else {
           // Modo paginado com busca server-side
           const searchParam = debouncedSearchTerm || undefined;
-          const response = await estoqueAPI.getAll(1, 50, searchParam);
+          const response = await estoqueAPI.getAll(1, limit, searchParam);
           const data = response.data || response;
           const pagination = response.pagination;
 
@@ -169,7 +170,7 @@ const Estoque = () => {
           if (pagination) {
             setHasMore(pagination.page < pagination.pages);
           } else {
-            setHasMore(Array.isArray(data) && data.length === 50);
+            setHasMore(Array.isArray(data) && data.length === limit);
           }
           initializeColorSizeSelection(Array.isArray(data) ? data : []);
         }
@@ -177,7 +178,7 @@ const Estoque = () => {
         setIsLoadingMore(true);
 
         const searchParam = loadMode === 'paginated' && debouncedSearchTerm ? debouncedSearchTerm : undefined;
-        const response = await estoqueAPI.getAll(pageNum, 50, searchParam);
+        const response = await estoqueAPI.getAll(pageNum, limit, searchParam);
         const data = response.data || response;
         const pagination = response.pagination;
 
@@ -186,7 +187,7 @@ const Estoque = () => {
         if (pagination) {
           setHasMore(pagination.page < pagination.pages);
         } else {
-          setHasMore(Array.isArray(data) && data.length === 50);
+          setHasMore(Array.isArray(data) && data.length === limit);
         }
       }
     } catch (error) {
@@ -204,6 +205,12 @@ const Estoque = () => {
     setInventory([]);
     setPage(1);
     setHasMore(true);
+    setTimeout(() => loadEstoque(1, true), 0);
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setLimit(newLimit);
+    setPage(1);
     setTimeout(() => loadEstoque(1, true), 0);
   };
 
@@ -759,11 +766,12 @@ const Estoque = () => {
               icon={<Package className="h-3 w-3 mr-1" />}
               currentPage={page}
               totalPages={totalPages}
-              limit={50}
+              limit={limit}
               onPageChange={(newPage) => {
                 setPage(newPage);
                 loadEstoque(newPage, true);
               }}
+              onLimitChange={handleLimitChange}
             />
             <Badge variant="outline" className="text-sm border-green-500/50 text-green-700 dark:text-green-400">
               <DollarSign className="h-3 w-3 mr-1" />
