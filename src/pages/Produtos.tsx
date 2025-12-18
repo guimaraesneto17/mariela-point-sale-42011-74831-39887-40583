@@ -24,6 +24,7 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { useDebounce } from "@/hooks/useDebounce";
+import { usePersistedLimit } from "@/hooks/usePersistedLimit";
 import { useProdutos, useCreateProduto, useUpdateProduto, useDeleteProduto } from "@/hooks/useQueryCache";
 import { RetryProgressIndicator } from "@/components/RetryProgressIndicator";
 import { PaginationControls } from "@/components/PaginationControls";
@@ -103,7 +104,7 @@ const Produtos = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadMode, setLoadMode] = useState<'paginated' | 'all'>('all');
   const [totalServer, setTotalServer] = useState<number | undefined>(undefined);
-  const [limit, setLimit] = useState(50);
+  const { limit, setLimit } = usePersistedLimit('produtos');
   
   // Debounce do termo de busca para reduzir requisições
   const debouncedSearchTerm = useDebounce(searchTerm, 500);

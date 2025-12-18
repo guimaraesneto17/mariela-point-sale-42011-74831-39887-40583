@@ -33,6 +33,7 @@ import { GlobalLoading } from "@/components/GlobalLoading";
 import { EstoqueAnalyticsCard } from "@/components/EstoqueAnalyticsCard";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { useDebounce } from "@/hooks/useDebounce";
+import { usePersistedLimit } from "@/hooks/usePersistedLimit";
 
 const Estoque = () => {
   const location = useLocation();
@@ -71,7 +72,7 @@ const Estoque = () => {
   const [sortBy, setSortBy] = useState<string>("nome"); // nome, preco-asc, preco-desc, quantidade-asc, quantidade-desc, data-entrada
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [totalPages, setTotalPages] = useState(1);
-  const [limit, setLimit] = useState(50);
+  const { limit, setLimit } = usePersistedLimit('estoque');
   
   // Debounce do termo de busca para reduzir requisições
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
