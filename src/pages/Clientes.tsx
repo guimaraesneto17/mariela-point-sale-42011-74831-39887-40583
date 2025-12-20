@@ -114,22 +114,80 @@ const Clientes = () => {
     }
   };
 
-  const handleToggleLoadMode = () => {
+  const handleToggleLoadMode = async () => {
     const newMode = loadMode === 'paginated' ? 'all' : 'paginated';
     setLoadMode(newMode);
     setClientes([]);
     setPage(1);
-    setTimeout(() => loadClientes(1, true), 0);
+    
+    setIsLoadingData(true);
+    try {
+      if (newMode === 'all') {
+        const { items, pagination } = await fetchAllPages<any>((p, lim) => clientesAPI.getAll(p, lim), { limit });
+        setClientes(items);
+        setTotalServer(pagination?.total || items.length);
+        setTotalPages(1);
+      } else {
+        const response = await clientesAPI.getAll(1, limit);
+        const data = response.data || response;
+        const pagination = response.pagination;
+        setClientes(Array.isArray(data) ? data : []);
+        setTotalServer(pagination?.total);
+        setTotalPages(pagination?.pages || 1);
+      }
+    } catch (error) {
+      toast.error("Erro ao carregar clientes");
+    } finally {
+      setIsLoadingData(false);
+    }
   };
 
-  const handlePageChange = (newPage: number) => {
-    loadClientes(newPage, true);
+  const handlePageChange = async (newPage: number) => {
+    if (loadMode !== 'paginated') return;
+    
+    setIsLoadingData(true);
+    try {
+      const searchParam = debouncedSearchTerm || undefined;
+      const response = await clientesAPI.getAll(newPage, limit, searchParam);
+      const data = response.data || response;
+      const pagination = response.pagination;
+      
+      setClientes(Array.isArray(data) ? data : []);
+      setTotalServer(pagination?.total);
+      setTotalPages(pagination?.pages || 1);
+      setPage(newPage);
+    } catch (error) {
+      toast.error("Erro ao carregar clientes");
+    } finally {
+      setIsLoadingData(false);
+    }
   };
 
-  const handleLimitChange = (newLimit: number) => {
+  const handleLimitChange = async (newLimit: number) => {
     setLimit(newLimit);
     setPage(1);
-    setTimeout(() => loadClientes(1, true), 0);
+    
+    setIsLoadingData(true);
+    try {
+      if (loadMode === 'all') {
+        const { items, pagination } = await fetchAllPages<any>((p, lim) => clientesAPI.getAll(p, lim), { limit: newLimit });
+        setClientes(items);
+        setTotalServer(pagination?.total || items.length);
+        setTotalPages(1);
+      } else {
+        const searchParam = debouncedSearchTerm || undefined;
+        const response = await clientesAPI.getAll(1, newLimit, searchParam);
+        const data = response.data || response;
+        const pagination = response.pagination;
+        setClientes(Array.isArray(data) ? data : []);
+        setTotalServer(pagination?.total);
+        setTotalPages(pagination?.pages || 1);
+      }
+    } catch (error) {
+      toast.error("Erro ao carregar clientes");
+    } finally {
+      setIsLoadingData(false);
+    }
   };
 
   const refetch = () => loadClientes(page, true);
