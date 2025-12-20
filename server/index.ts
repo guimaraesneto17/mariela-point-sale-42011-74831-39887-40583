@@ -24,6 +24,7 @@ import contasPagarRouter from './routes/contasPagar';
 import contasReceberRouter from './routes/contasReceber';
 import categoriasFinanceirasRouter from './routes/categoriasFinanceiras';
 import healthRouter from './routes/health';
+import healthcheckRouter from './routes/healthcheck';
 import authRouter from './routes/auth';
 import uploadRouter from './routes/upload';
 import permissionsRouter from './routes/permissions';
@@ -219,6 +220,7 @@ if (process.env.NODE_ENV === 'production') {
 // Rotas da API
 // Rotas públicas (sem autenticação)
 app.use('/api/health', healthRouter);
+app.use('/api/healthcheck', healthcheckRouter);
 app.use('/api/vitrine', vitrineVirtualRouter);
 app.use('/api/auth', authRouter);
 

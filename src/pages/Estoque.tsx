@@ -200,19 +200,91 @@ const Estoque = () => {
     }
   };
 
-  const handleToggleLoadMode = () => {
+  const handleToggleLoadMode = async () => {
     const newMode = loadMode === 'paginated' ? 'all' : 'paginated';
     setLoadMode(newMode);
     setInventory([]);
     setPage(1);
     setHasMore(true);
-    setTimeout(() => loadEstoque(1, true), 0);
+    
+    setLoading(true);
+    try {
+      if (newMode === 'all') {
+        const { items, pagination } = await fetchAllPages<any>((p, lim) => estoqueAPI.getAll(p, lim), { limit });
+        setInventory(items);
+        setTotalServer(pagination?.total || items.length);
+        setTotalPages(1);
+        setHasMore(false);
+        initializeColorSizeSelection(items);
+      } else {
+        const response = await estoqueAPI.getAll(1, limit);
+        const data = response.data || response;
+        const pagination = response.pagination;
+        setInventory(Array.isArray(data) ? data : []);
+        setTotalServer(pagination?.total);
+        setTotalPages(pagination?.pages || 1);
+        setHasMore(pagination ? pagination.page < pagination.pages : false);
+        initializeColorSizeSelection(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      toast.error("Erro ao carregar estoque");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleLimitChange = (newLimit: number) => {
+  const handlePageChange = async (newPage: number) => {
+    if (loadMode !== 'paginated') return;
+    
+    setLoading(true);
+    try {
+      const searchParam = debouncedSearchTerm || undefined;
+      const response = await estoqueAPI.getAll(newPage, limit, searchParam);
+      const data = response.data || response;
+      const pagination = response.pagination;
+      
+      setInventory(Array.isArray(data) ? data : []);
+      setTotalServer(pagination?.total);
+      setTotalPages(pagination?.pages || 1);
+      setPage(newPage);
+      setHasMore(pagination ? pagination.page < pagination.pages : false);
+      initializeColorSizeSelection(Array.isArray(data) ? data : []);
+    } catch (error) {
+      toast.error("Erro ao carregar estoque");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLimitChange = async (newLimit: number) => {
     setLimit(newLimit);
     setPage(1);
-    setTimeout(() => loadEstoque(1, true), 0);
+    
+    setLoading(true);
+    try {
+      if (loadMode === 'all') {
+        const { items, pagination } = await fetchAllPages<any>((p, lim) => estoqueAPI.getAll(p, lim), { limit: newLimit });
+        setInventory(items);
+        setTotalServer(pagination?.total || items.length);
+        setTotalPages(1);
+        setHasMore(false);
+        initializeColorSizeSelection(items);
+      } else {
+        const searchParam = debouncedSearchTerm || undefined;
+        const response = await estoqueAPI.getAll(1, newLimit, searchParam);
+        const data = response.data || response;
+        const pagination = response.pagination;
+        setInventory(Array.isArray(data) ? data : []);
+        setTotalServer(pagination?.total);
+        setTotalPages(pagination?.pages || 1);
+        setHasMore(pagination ? pagination.page < pagination.pages : false);
+        initializeColorSizeSelection(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      toast.error("Erro ao carregar estoque");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const loadMore = () => {

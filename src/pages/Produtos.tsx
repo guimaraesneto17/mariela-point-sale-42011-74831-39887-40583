@@ -185,25 +185,88 @@ const Produtos = () => {
     }
   };
 
-  const handleToggleLoadMode = () => {
+  const handleToggleLoadMode = async () => {
     const newMode = loadMode === 'paginated' ? 'all' : 'paginated';
     setLoadMode(newMode);
     setProdutos([]);
     setPage(1);
     setTotalPages(1);
     setHasMore(true);
-    setTimeout(() => loadProdutos(1, true), 0);
+    
+    // Carregar com novo modo diretamente
+    setIsLoadingData(true);
+    try {
+      if (newMode === 'all') {
+        const { items, pagination } = await fetchAllPages<any>((p, lim) => produtosAPI.getAll(p, lim), { limit });
+        setProdutos(items);
+        setTotalServer(pagination?.total || items.length);
+        setTotalPages(1);
+        setHasMore(false);
+      } else {
+        const response = await produtosAPI.getAll(1, limit);
+        const newProdutos = response.data || response;
+        const pagination = response.pagination;
+        setProdutos(Array.isArray(newProdutos) ? newProdutos : []);
+        setTotalServer(pagination?.total);
+        setTotalPages(pagination?.pages || 1);
+        setHasMore(pagination ? pagination.page < pagination.pages : false);
+      }
+    } catch (error) {
+      toast.error("Erro ao carregar produtos");
+    } finally {
+      setIsLoadingData(false);
+    }
   };
 
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage);
-    loadProdutos(newPage, true);
+  const handlePageChange = async (newPage: number) => {
+    if (loadMode !== 'paginated') return;
+    
+    setIsLoadingData(true);
+    try {
+      const searchParam = debouncedSearchTerm || undefined;
+      const response = await produtosAPI.getAll(newPage, limit, searchParam);
+      const newProdutos = response.data || response;
+      const pagination = response.pagination;
+      
+      setProdutos(Array.isArray(newProdutos) ? newProdutos : []);
+      setTotalServer(pagination?.total);
+      setTotalPages(pagination?.pages || 1);
+      setPage(newPage);
+      setHasMore(pagination ? pagination.page < pagination.pages : false);
+    } catch (error) {
+      toast.error("Erro ao carregar produtos");
+    } finally {
+      setIsLoadingData(false);
+    }
   };
 
-  const handleLimitChange = (newLimit: number) => {
+  const handleLimitChange = async (newLimit: number) => {
     setLimit(newLimit);
     setPage(1);
-    setTimeout(() => loadProdutos(1, true), 0);
+    
+    setIsLoadingData(true);
+    try {
+      if (loadMode === 'all') {
+        const { items, pagination } = await fetchAllPages<any>((p, lim) => produtosAPI.getAll(p, lim), { limit: newLimit });
+        setProdutos(items);
+        setTotalServer(pagination?.total || items.length);
+        setTotalPages(1);
+        setHasMore(false);
+      } else {
+        const searchParam = debouncedSearchTerm || undefined;
+        const response = await produtosAPI.getAll(1, newLimit, searchParam);
+        const newProdutos = response.data || response;
+        const pagination = response.pagination;
+        setProdutos(Array.isArray(newProdutos) ? newProdutos : []);
+        setTotalServer(pagination?.total);
+        setTotalPages(pagination?.pages || 1);
+        setHasMore(pagination ? pagination.page < pagination.pages : false);
+      }
+    } catch (error) {
+      toast.error("Erro ao carregar produtos");
+    } finally {
+      setIsLoadingData(false);
+    }
   };
 
   const loadMore = () => {
