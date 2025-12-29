@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-function StatCardSkeleton() {
+export function StatCardSkeleton() {
   return (
     <Card className="relative overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
@@ -16,7 +16,7 @@ function StatCardSkeleton() {
   );
 }
 
-function ChartCardSkeleton({ title = true }: { title?: boolean }) {
+export function ChartCardSkeleton({ title = true }: { title?: boolean }) {
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -29,7 +29,7 @@ function ChartCardSkeleton({ title = true }: { title?: boolean }) {
             <div key={i} className="flex-1 flex flex-col items-center gap-2">
               <Skeleton 
                 className="w-full rounded-t" 
-                style={{ height: `${Math.random() * 60 + 40}%` }} 
+                style={{ height: `${40 + (i * 8)}%` }} 
               />
               <Skeleton className="h-3 w-8" />
             </div>
@@ -40,7 +40,7 @@ function ChartCardSkeleton({ title = true }: { title?: boolean }) {
   );
 }
 
-function PieChartSkeleton() {
+export function PieChartSkeleton() {
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -69,7 +69,7 @@ function PieChartSkeleton() {
   );
 }
 
-function AlertCardSkeleton() {
+export function AlertCardSkeleton() {
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -91,51 +91,5 @@ function AlertCardSkeleton() {
         ))}
       </CardContent>
     </Card>
-  );
-}
-
-export function DashboardSkeleton() {
-  return (
-    <div className="space-y-6 p-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-2">
-          <Skeleton className="h-10 w-56" />
-          <Skeleton className="h-4 w-40" />
-        </div>
-        <div className="flex gap-2">
-          <Skeleton className="h-10 w-10 rounded-full" />
-          <Skeleton className="h-10 w-36" />
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <StatCardSkeleton key={i} />
-        ))}
-      </div>
-
-      {/* Secondary Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <StatCardSkeleton key={i} />
-        ))}
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ChartCardSkeleton />
-        <PieChartSkeleton />
-      </div>
-
-      {/* Bottom Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <ChartCardSkeleton />
-        </div>
-        <AlertCardSkeleton />
-      </div>
-    </div>
   );
 }
