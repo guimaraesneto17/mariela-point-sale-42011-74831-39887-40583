@@ -47,6 +47,7 @@ import { CategoriasDistribuicaoCard } from "@/components/CategoriasDistribuicaoC
 import { MargemLucroCategoriasCard } from "@/components/MargemLucroCategoriasCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
+import { ContentTransition } from "@/components/ContentTransition";
 import { useQueryClient } from "@tanstack/react-query";
 
 const Dashboard = () => {
@@ -693,12 +694,13 @@ const Dashboard = () => {
     return widgets[widget.id] || null;
   };
 
-  // Mostrar skeleton enquanto carrega os dados iniciais
-  if (loading && !stats.totalClientes) {
-    return <DashboardSkeleton />;
-  }
+  const isInitialLoading = loading && !stats.totalClientes;
 
   return (
+    <ContentTransition 
+      isLoading={isInitialLoading} 
+      skeleton={<DashboardSkeleton />}
+    >
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
@@ -1057,6 +1059,7 @@ const Dashboard = () => {
       </Card>
 
     </div>
+    </ContentTransition>
   );
 };
 

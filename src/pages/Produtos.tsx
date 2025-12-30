@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, CheckCircle2, AlertCircle, Package, Edit, Trash2, X, PackagePlus, Building, RefreshCw, Check } from "lucide-react";
 import { ProdutosSkeleton } from "@/components/ProdutosSkeleton";
+import { ContentTransition } from "@/components/ContentTransition";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
@@ -458,11 +459,11 @@ const Produtos = () => {
     onLoadMore: loadMore
   });
 
-  if (isLoadingData) {
-    return <ProdutosSkeleton />;
-  }
-
   return (
+    <ContentTransition 
+      isLoading={isLoadingData} 
+      skeleton={<ProdutosSkeleton />}
+    >
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
@@ -1075,6 +1076,7 @@ const Produtos = () => {
         description="Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita e removerá também todos os registros de estoque associados."
       />
     </div>
+    </ContentTransition>
   );
 };
 
