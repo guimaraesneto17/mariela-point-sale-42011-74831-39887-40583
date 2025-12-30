@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Search, Plus, UserCheck, CheckCircle2, AlertCircle, Edit, Trash2, X, TrendingUp, DollarSign, RefreshCw } from "lucide-react";
 import { VendedoresSkeleton } from "@/components/VendedoresSkeleton";
+import { ContentTransition } from "@/components/ContentTransition";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
@@ -410,11 +411,11 @@ const Vendedores = () => {
     }
   };
 
-  if (isLoadingData) {
-    return <VendedoresSkeleton />;
-  }
-
   return (
+    <ContentTransition 
+      isLoading={isLoadingData} 
+      skeleton={<VendedoresSkeleton />}
+    >
     <>
       <RetryProgressIndicator
         isRetrying={createVendedorMutation.isPending || updateVendedorMutation.isPending || deleteVendedorMutation.isPending}
@@ -956,6 +957,7 @@ const Vendedores = () => {
       />
       </div>
     </>
+    </ContentTransition>
   );
 };
 
