@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Search, Plus, User, CheckCircle2, AlertCircle, Edit, Trash2, X, ShoppingCart, DollarSign, Calendar, RefreshCw, Cake, MessageCircle } from "lucide-react";
 import { ClientesSkeleton } from "@/components/ClientesSkeleton";
+import { ContentTransition } from "@/components/ContentTransition";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
@@ -322,11 +323,11 @@ const Clientes = () => {
     }
   };
 
-  if (isLoadingData) {
-    return <ClientesSkeleton />;
-  }
-
   return (
+    <ContentTransition 
+      isLoading={isLoadingData} 
+      skeleton={<ClientesSkeleton />}
+    >
     <>
       <RetryProgressIndicator
         isRetrying={createClienteMutation.isPending || updateClienteMutation.isPending || deleteClienteMutation.isPending}
@@ -778,6 +779,7 @@ const Clientes = () => {
       />
       </div>
     </>
+    </ContentTransition>
   );
 };
 

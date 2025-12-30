@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { VendasSkeleton } from "@/components/VendasSkeleton";
+import { ContentTransition } from "@/components/ContentTransition";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useVendas } from "@/hooks/useQueryCache";
 import { caixaAPI } from "@/lib/api";
@@ -64,11 +65,11 @@ const Vendas = () => {
     return matchSearch && matchData;
   });
 
-  if (isLoading) {
-    return <VendasSkeleton />;
-  }
-
   return (
+    <ContentTransition 
+      isLoading={isLoading} 
+      skeleton={<VendasSkeleton />}
+    >
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div className="text-center flex-1">
@@ -327,6 +328,7 @@ const Vendas = () => {
         ))}
       </div>
     </div>
+    </ContentTransition>
   );
 };
 

@@ -20,3 +20,11 @@ export {
   CaixaMovimentosTableSkeleton,
   CaixaAcoesCardSkeleton
 } from './CaixaCardSkeletons';
+export {
+  RelatorioTabsSkeleton,
+  RelatorioFiltersSkeleton,
+  RelatorioChartSkeleton,
+  RelatorioPieChartSkeleton,
+  RelatorioTableSkeleton,
+  RelatorioSummaryCardSkeleton
+} from './RelatoriosCardSkeletons';

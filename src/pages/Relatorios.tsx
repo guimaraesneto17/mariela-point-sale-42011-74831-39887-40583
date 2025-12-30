@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { GlobalLoading } from "@/components/GlobalLoading";
+import { RelatoriosSkeleton } from "@/components/RelatoriosSkeleton";
+import { ContentTransition } from "@/components/ContentTransition";
 import { useReportsData } from "@/hooks/useReportsData";
 import { SalesReport } from "@/components/reports/SalesReport";
 import { ProductsReport } from "@/components/reports/ProductsReport";
@@ -21,11 +23,11 @@ const Relatorios = () => {
     toast.info("Funcionalidade de exportação em desenvolvimento");
   };
 
-  if (loading) {
-    return <GlobalLoading message="Carregando relatórios..." />;
-  }
-
   return (
+    <ContentTransition 
+      isLoading={loading} 
+      skeleton={<RelatoriosSkeleton />}
+    >
     <div className="container mx-auto p-4 md:p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
@@ -137,6 +139,7 @@ const Relatorios = () => {
         </TabsContent>
       </Tabs>
     </div>
+    </ContentTransition>
   );
 };
 

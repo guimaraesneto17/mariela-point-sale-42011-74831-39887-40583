@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Package, Search, Plus, Minus, Tag, Sparkles, Filter, List, History, Image as ImageIcon, ChevronDown, Star, X, ArrowUpDown, Package2, Grid3X3, Bell, DollarSign, RefreshCw } from "lucide-react";
 import { ColorBadge } from "@/components/ColorBadge";
 import { EstoqueSkeleton } from "@/components/EstoqueSkeleton";
+import { ContentTransition } from "@/components/ContentTransition";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -815,11 +816,11 @@ const Estoque = () => {
     loadEstoque(1, true);
   };
 
-  if (loading) {
-    return <EstoqueSkeleton />;
-  }
-
   return (
+    <ContentTransition 
+      isLoading={loading} 
+      skeleton={<EstoqueSkeleton />}
+    >
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div className="text-center flex-1">
@@ -2051,6 +2052,7 @@ const Estoque = () => {
         </div>
       )}
     </div>
+    </ContentTransition>
   );
 };
 
