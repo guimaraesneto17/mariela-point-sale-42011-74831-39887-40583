@@ -13,3 +13,10 @@ export {
   FinanceTabsSkeleton,
   FinanceFiltersSkeleton 
 } from './FinanceiroCardSkeletons';
+export {
+  CaixaResumoCardSkeleton,
+  CaixaInfoCardSkeleton,
+  CaixaMovimentoRowSkeleton,
+  CaixaMovimentosTableSkeleton,
+  CaixaAcoesCardSkeleton
+} from './CaixaCardSkeletons';

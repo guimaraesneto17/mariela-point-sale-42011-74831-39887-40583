@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FinanceiroSkeleton } from "@/components/FinanceiroSkeleton";
+import { ContentTransition } from "@/components/ContentTransition";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -75,10 +76,6 @@ const Financeiro = () => {
       setLoading(false);
     }
   };
-
-  if (loading) {
-    return <FinanceiroSkeleton />;
-  }
 
   const getStatusBadge = (status: string) => {
     const variants: any = {
@@ -168,6 +165,10 @@ const Financeiro = () => {
   });
 
   return (
+    <ContentTransition 
+      isLoading={loading} 
+      skeleton={<FinanceiroSkeleton />}
+    >
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
       <div>
@@ -788,6 +789,7 @@ const Financeiro = () => {
         readonly={true}
       />
     </div>
+    </ContentTransition>
   );
 };
 
