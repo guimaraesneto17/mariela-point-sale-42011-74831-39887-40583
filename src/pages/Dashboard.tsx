@@ -937,10 +937,11 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Top Produtos */}
             <motion.div 
-              className="p-5 rounded-xl bg-gradient-card border border-border"
+              className="p-5 rounded-xl bg-gradient-card border border-border cursor-pointer transition-all duration-300 hover:shadow-lg hover:border-primary/30 hover:-translate-y-1"
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.4, delay: 0, ease: [0.25, 0.46, 0.45, 0.94] }}
+              whileHover={{ scale: 1.02 }}
             >
               <div className="flex items-center gap-2 mb-4">
                 <Award className="h-5 w-5 text-primary" />
@@ -950,10 +951,11 @@ const Dashboard = () => {
                 {topProducts.slice(0, 3).map((product, index) => (
                   <motion.div 
                     key={index} 
-                    className="flex items-center justify-between"
+                    className="flex items-center justify-between p-2 rounded-lg transition-colors hover:bg-primary/5"
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: 0.1 + index * 0.1 }}
+                    whileHover={{ x: 4 }}
                   >
                     <div className="flex items-center gap-2">
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
@@ -973,10 +975,11 @@ const Dashboard = () => {
 
             {/* Top Clientes */}
             <motion.div 
-              className="p-5 rounded-xl bg-gradient-card border border-border"
+              className="p-5 rounded-xl bg-gradient-card border border-border cursor-pointer transition-all duration-300 hover:shadow-lg hover:border-blue-500/30 hover:-translate-y-1"
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.4, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
+              whileHover={{ scale: 1.02 }}
             >
               <div className="flex items-center gap-2 mb-4">
                 <Crown className="h-5 w-5 text-blue-600" />
@@ -986,10 +989,11 @@ const Dashboard = () => {
                 {topClientes.slice(0, 3).map((cliente, index) => (
                   <motion.div 
                     key={index} 
-                    className="flex items-center justify-between"
+                    className="flex items-center justify-between p-2 rounded-lg transition-colors hover:bg-blue-500/5"
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: 0.2 + index * 0.1 }}
+                    whileHover={{ x: 4 }}
                   >
                     <div className="flex items-center gap-2">
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
@@ -1009,10 +1013,11 @@ const Dashboard = () => {
 
             {/* Top Vendedores */}
             <motion.div 
-              className="p-5 rounded-xl bg-gradient-card border border-border"
+              className="p-5 rounded-xl bg-gradient-card border border-border cursor-pointer transition-all duration-300 hover:shadow-lg hover:border-green-500/30 hover:-translate-y-1"
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.4, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+              whileHover={{ scale: 1.02 }}
             >
               <div className="flex items-center gap-2 mb-4">
                 <UserCheck className="h-5 w-5 text-green-600" />
@@ -1022,10 +1027,11 @@ const Dashboard = () => {
                 {topVendedores.slice(0, 3).map((vendedor, index) => (
                   <motion.div 
                     key={index} 
-                    className="flex items-center justify-between"
+                    className="flex items-center justify-between p-2 rounded-lg transition-colors hover:bg-green-500/5"
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: 0.3 + index * 0.1 }}
+                    whileHover={{ x: 4 }}
                   >
                     <div className="flex items-center gap-2">
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${

@@ -11,6 +11,7 @@ import { getDefaultImageByCategory } from "@/lib/defaultImages";
 import ProductDetailDialog from "@/components/ProductDetailDialog";
 import { ContentTransition } from "@/components/ContentTransition";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ProductCardSkeleton } from "@/components/skeletons";
 
 const VitrineVirtual = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -68,17 +69,7 @@ const VitrineVirtual = () => {
         </div>
       </Card>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[...Array(6)].map((_, i) => (
-          <Card key={i} className="overflow-hidden">
-            <Skeleton className="h-48 w-full" />
-            <CardContent className="p-4 space-y-3">
-              <Skeleton className="h-6 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-              <Skeleton className="h-8 w-24" />
-              <Skeleton className="h-10 w-full" />
-            </CardContent>
-          </Card>
-        ))}
+        <ProductCardSkeleton variant="grid" count={6} showActions={true} />
       </div>
     </div>
   );
