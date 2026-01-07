@@ -3,6 +3,7 @@ import { Database, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { useCacheStatus } from '@/hooks/usePrefetch';
 import { QUERY_KEYS } from '@/hooks/useQueryCache';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 
 /**
@@ -35,11 +36,18 @@ export function CacheIndicator() {
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
-          <Database className="h-4 w-4" />
-        </Button>
-      </PopoverTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-white/70 hover:text-white hover:bg-white/15">
+              <Database className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="top">
+          <p>Status do Cache</p>
+        </TooltipContent>
+      </Tooltip>
       <PopoverContent className="w-80" align="end">
         <div className="space-y-3">
           <div className="flex items-center justify-between border-b pb-2">
