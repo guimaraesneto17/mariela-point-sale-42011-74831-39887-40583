@@ -1,5 +1,6 @@
 import express from 'express';
 import { uploadSingleImage, uploadMultipleImagesEndpoint } from '../controllers/uploadController';
+import { validateImageUpload, sanitizeBody } from '../middleware/validation';
 
 const router = express.Router();
 
@@ -34,7 +35,7 @@ const router = express.Router();
  *       500:
  *         description: Erro no servidor
  */
-router.post('/single', uploadSingleImage);
+router.post('/single', sanitizeBody, validateImageUpload, uploadSingleImage);
 
 /**
  * @swagger
@@ -62,6 +63,6 @@ router.post('/single', uploadSingleImage);
  *       500:
  *         description: Erro no servidor
  */
-router.post('/multiple', uploadMultipleImagesEndpoint);
+router.post('/multiple', sanitizeBody, validateImageUpload, uploadMultipleImagesEndpoint);
 
 export default router;

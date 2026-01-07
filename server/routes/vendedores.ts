@@ -1,5 +1,12 @@
 import express from 'express';
 import * as vendedorController from '../controllers/vendedorController';
+import { 
+  validatePaginationParams, 
+  validateCodeParam, 
+  validateEntity, 
+  sanitizeBody,
+  CODE_PATTERNS 
+} from '../middleware/validation';
 
 const router = express.Router();
 
@@ -15,7 +22,7 @@ const router = express.Router();
  *       500:
  *         description: Erro ao buscar vendedores
  */
-router.get('/', vendedorController.getAllVendedores);
+router.get('/', validatePaginationParams, vendedorController.getAllVendedores);
 
 /**
  * @swagger
@@ -39,7 +46,7 @@ router.get('/', vendedorController.getAllVendedores);
  *       500:
  *         description: Erro ao buscar fornecedor
  */
-router.get('/:codigo', vendedorController.getVendedorByCodigo);
+router.get('/:codigo', validateCodeParam(CODE_PATTERNS.vendedor, 'codigoVendedor'), vendedorController.getVendedorByCodigo);
 
 /**
  * @swagger
@@ -89,7 +96,7 @@ router.get('/:codigo', vendedorController.getVendedorByCodigo);
  *                         type: string
  *                         example: ""
  */
-router.post('/', vendedorController.createVendedor);
+router.post('/', sanitizeBody, validateEntity('vendedor'), vendedorController.createVendedor);
 
 /**
  * @swagger
@@ -143,7 +150,7 @@ router.post('/', vendedorController.createVendedor);
  *                         type: string
  *                         example: "123456"
  */
-router.put('/:codigo', vendedorController.updateVendedor);
+router.put('/:codigo', sanitizeBody, validateCodeParam(CODE_PATTERNS.vendedor, 'codigoVendedor'), vendedorController.updateVendedor);
 
 /**
  * @swagger
@@ -166,6 +173,6 @@ router.put('/:codigo', vendedorController.updateVendedor);
  *       500:
  *         description: Erro ao remover vendedor
  */
-router.delete('/:codigo', vendedorController.deleteVendedor);
+router.delete('/:codigo', validateCodeParam(CODE_PATTERNS.vendedor, 'codigoVendedor'), vendedorController.deleteVendedor);
 
 export default router;

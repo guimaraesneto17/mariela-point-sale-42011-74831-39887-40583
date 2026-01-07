@@ -1,5 +1,12 @@
 import express from 'express';
 import * as fornecedorController from '../controllers/fornecedorController';
+import { 
+  validatePaginationParams, 
+  validateCodeParam, 
+  validateEntity, 
+  sanitizeBody,
+  CODE_PATTERNS 
+} from '../middleware/validation';
 
 const router = express.Router();
 
@@ -15,7 +22,7 @@ const router = express.Router();
  *       500:
  *         description: Erro ao buscar fornecedores
  */
-router.get('/', fornecedorController.getAllFornecedores);
+router.get('/', validatePaginationParams, fornecedorController.getAllFornecedores);
 
 /**
  * @swagger
@@ -39,7 +46,7 @@ router.get('/', fornecedorController.getAllFornecedores);
  *       500:
  *         description: Erro ao buscar fornecedor
  */
-router.get('/:codigo', fornecedorController.getFornecedorByCodigo);
+router.get('/:codigo', validateCodeParam(CODE_PATTERNS.fornecedor, 'codigoFornecedor'), fornecedorController.getFornecedorByCodigo);
 
 /**
  * @swagger
@@ -84,7 +91,7 @@ router.get('/:codigo', fornecedorController.getFornecedorByCodigo);
  *                         type: string
  *                         example: ""
  */
-router.post('/', fornecedorController.createFornecedor);
+router.post('/', sanitizeBody, validateEntity('fornecedor'), fornecedorController.createFornecedor);
 
 /**
  * @swagger
@@ -138,7 +145,7 @@ router.post('/', fornecedorController.createFornecedor);
  *                         type: string
  *                         example: "123456"
  */
-router.put('/:codigo', fornecedorController.updateFornecedor);
+router.put('/:codigo', sanitizeBody, validateCodeParam(CODE_PATTERNS.fornecedor, 'codigoFornecedor'), fornecedorController.updateFornecedor);
 
 /**
  * @swagger
@@ -161,6 +168,6 @@ router.put('/:codigo', fornecedorController.updateFornecedor);
  *       500:
  *         description: Erro ao remover fornecedor
  */
-router.delete('/:codigo', fornecedorController.deleteFornecedor);
+router.delete('/:codigo', validateCodeParam(CODE_PATTERNS.fornecedor, 'codigoFornecedor'), fornecedorController.deleteFornecedor);
 
 export default router;
