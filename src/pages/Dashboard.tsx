@@ -936,14 +936,25 @@ const Dashboard = () => {
           {/* Top 3 Informações */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Top Produtos */}
-            <div className="p-5 rounded-xl bg-gradient-card border border-border">
+            <motion.div 
+              className="p-5 rounded-xl bg-gradient-card border border-border"
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.4, delay: 0, ease: [0.25, 0.46, 0.45, 0.94] }}
+            >
               <div className="flex items-center gap-2 mb-4">
                 <Award className="h-5 w-5 text-primary" />
                 <h3 className="text-base font-bold text-foreground">Top 3 Produtos</h3>
               </div>
               <div className="space-y-3">
                 {topProducts.slice(0, 3).map((product, index) => (
-                  <div key={index} className="flex items-center justify-between">
+                  <motion.div 
+                    key={index} 
+                    className="flex items-center justify-between"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.1 + index * 0.1 }}
+                  >
                     <div className="flex items-center gap-2">
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                         index === 0 ? 'bg-yellow-500/20 text-yellow-600' :
@@ -955,20 +966,31 @@ const Dashboard = () => {
                       <p className="text-sm font-medium text-foreground truncate">{product.nome}</p>
                     </div>
                     <p className="text-sm font-bold text-primary">R$ {product.valor.toFixed(2)}</p>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
             {/* Top Clientes */}
-            <div className="p-5 rounded-xl bg-gradient-card border border-border">
+            <motion.div 
+              className="p-5 rounded-xl bg-gradient-card border border-border"
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.4, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
+            >
               <div className="flex items-center gap-2 mb-4">
                 <Crown className="h-5 w-5 text-blue-600" />
                 <h3 className="text-base font-bold text-foreground">Top 3 Clientes</h3>
               </div>
               <div className="space-y-3">
                 {topClientes.slice(0, 3).map((cliente, index) => (
-                  <div key={index} className="flex items-center justify-between">
+                  <motion.div 
+                    key={index} 
+                    className="flex items-center justify-between"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.2 + index * 0.1 }}
+                  >
                     <div className="flex items-center gap-2">
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                         index === 0 ? 'bg-yellow-500/20 text-yellow-600' :
@@ -980,20 +1002,31 @@ const Dashboard = () => {
                       <p className="text-sm font-medium text-foreground truncate">{cliente.nome}</p>
                     </div>
                     <p className="text-sm font-bold text-blue-600">R$ {cliente.valorTotal.toFixed(2)}</p>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
             {/* Top Vendedores */}
-            <div className="p-5 rounded-xl bg-gradient-card border border-border">
+            <motion.div 
+              className="p-5 rounded-xl bg-gradient-card border border-border"
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.4, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+            >
               <div className="flex items-center gap-2 mb-4">
                 <UserCheck className="h-5 w-5 text-green-600" />
                 <h3 className="text-base font-bold text-foreground">Top 3 Vendedores</h3>
               </div>
               <div className="space-y-3">
                 {topVendedores.slice(0, 3).map((vendedor, index) => (
-                  <div key={index} className="flex items-center justify-between">
+                  <motion.div 
+                    key={index} 
+                    className="flex items-center justify-between"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.3 + index * 0.1 }}
+                  >
                     <div className="flex items-center gap-2">
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                         index === 0 ? 'bg-yellow-500/20 text-yellow-600' :
@@ -1005,10 +1038,10 @@ const Dashboard = () => {
                       <p className="text-sm font-medium text-foreground truncate">{vendedor.nome}</p>
                     </div>
                     <p className="text-sm font-bold text-green-600">R$ {vendedor.valorTotal.toFixed(2)}</p>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
-            </div>
+            </motion.div>
           </div>
 
           {/* Análise Avançada */}
