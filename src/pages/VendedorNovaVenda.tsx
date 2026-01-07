@@ -21,6 +21,7 @@ import { formatInTimeZone, toZonedTime } from "date-fns-tz";
 import { startOfMonth, endOfMonth, startOfDay, endOfDay, isWithinInterval } from "date-fns";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { NovaVendaSkeleton } from "@/components/NovaVendaSkeleton";
+import { ContentTransition } from "@/components/ContentTransition";
 import { useAuth } from "@/contexts/AuthContext";
 import { ColorBadge } from "@/components/ColorBadge";
 import logo from "@/logo.png";
@@ -672,9 +673,7 @@ const VendedorNovaVenda = () => {
 
       {/* Conteúdo principal */}
       <main className="pt-16 md:pt-20 pb-8 px-2 md:px-4">
-        {isLoadingData ? (
-          <NovaVendaSkeleton />
-        ) : (
+        <ContentTransition isLoading={isLoadingData} skeleton={<NovaVendaSkeleton />}>
           <div className="space-y-4 md:space-y-6 animate-fade-in max-w-7xl mx-auto">
             {/* Botões de ação rápida incorporados na página */}
             <div className="grid grid-cols-3 gap-2 md:gap-3">
@@ -1218,7 +1217,7 @@ const VendedorNovaVenda = () => {
               </div>
             </div>
           </div>
-        )}
+        </ContentTransition>
       </main>
 
       {/* Dialogs */}

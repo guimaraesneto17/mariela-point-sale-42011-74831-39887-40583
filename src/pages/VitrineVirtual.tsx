@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { vitrineVirtualAPI } from "@/lib/api";
 import { getDefaultImageByCategory } from "@/lib/defaultImages";
 import ProductDetailDialog from "@/components/ProductDetailDialog";
+import { ContentTransition } from "@/components/ContentTransition";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const VitrineVirtual = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -52,14 +54,44 @@ const VitrineVirtual = () => {
 
   const categorias = [...new Set(vitrine.map(item => item.category).filter(Boolean))];
 
-  return (
-    <div className="space-y-6 animate-fade-in">
+  const VitrineSkeleton = () => (
+    <div className="space-y-6">
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-foreground mb-2">Vitrine Virtual</h1>
-        <p className="text-muted-foreground">
-          Visualize produtos disponíveis, promoções e novidades
-        </p>
+        <Skeleton className="h-10 w-64 mx-auto mb-2" />
+        <Skeleton className="h-5 w-80 mx-auto" />
       </div>
+      <Card className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Skeleton className="h-10" />
+          <Skeleton className="h-10" />
+          <Skeleton className="h-10" />
+        </div>
+      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(6)].map((_, i) => (
+          <Card key={i} className="overflow-hidden">
+            <Skeleton className="h-48 w-full" />
+            <CardContent className="p-4 space-y-3">
+              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-8 w-24" />
+              <Skeleton className="h-10 w-full" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <ContentTransition isLoading={loading} skeleton={<VitrineSkeleton />}>
+      <div className="space-y-6 animate-fade-in">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-foreground mb-2">Vitrine Virtual</h1>
+          <p className="text-muted-foreground">
+            Visualize produtos disponíveis, promoções e novidades
+          </p>
+        </div>
 
       <Card className="p-6 shadow-card">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -244,7 +276,8 @@ const VitrineVirtual = () => {
         onOpenChange={setDetailDialogOpen}
         product={selectedProduct}
       />
-    </div>
+      </div>
+    </ContentTransition>
   );
 };
 
