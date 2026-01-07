@@ -24,6 +24,7 @@ import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { safeDate, formatCurrency } from "@/lib/utils";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
+import { ContentTransition } from "@/components/ContentTransition";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Table,
@@ -165,12 +166,9 @@ const VendedorDashboard = () => {
     }
   };
 
-  if (loading) {
-    return <DashboardSkeleton />;
-  }
-
   return (
-    <div className="space-y-6 p-4 md:p-6 animate-fade-in">
+    <ContentTransition isLoading={loading} skeleton={<DashboardSkeleton />}>
+      <div className="space-y-6 p-4 md:p-6 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -515,7 +513,8 @@ const VendedorDashboard = () => {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </ContentTransition>
   );
 };
 

@@ -19,6 +19,7 @@ import { formatInTimeZone } from "date-fns-tz";
 import { startOfDay, endOfDay } from "date-fns";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { NovaVendaSkeleton } from "@/components/NovaVendaSkeleton";
+import { ContentTransition } from "@/components/ContentTransition";
 import { ColorBadge } from "@/components/ColorBadge";
 
 interface ItemVenda {
@@ -527,10 +528,8 @@ const NovaVenda = () => {
   };
 
   return (
-    <>
-      {isLoadingData ? (
-        <NovaVendaSkeleton />
-      ) : (
+    <ContentTransition isLoading={isLoadingData} skeleton={<NovaVendaSkeleton />}>
+      <>
         <div className="space-y-6 animate-fade-in">
           <div className="text-center">
             <h1 className="text-4xl font-bold text-foreground mb-2">Nova Venda</h1>
@@ -1124,8 +1123,8 @@ const NovaVenda = () => {
         parcelas={parcelas}
       />
         </div>
-      )}
-    </>
+      </>
+    </ContentTransition>
   );
 };
 
