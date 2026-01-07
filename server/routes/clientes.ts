@@ -1,5 +1,12 @@
 import express from 'express';
 import * as clienteController from '../controllers/clienteController';
+import { 
+  validatePaginationParams, 
+  validateCodeParam, 
+  validateEntity, 
+  sanitizeBody,
+  CODE_PATTERNS 
+} from '../middleware/validation';
 
 const router = express.Router();
 
@@ -15,7 +22,7 @@ const router = express.Router();
  *       500:
  *         description: Erro ao buscar clientes
  */
-router.get('/', clienteController.getAllClientes);
+router.get('/', validatePaginationParams, clienteController.getAllClientes);
 
 /**
  * @swagger
@@ -39,7 +46,7 @@ router.get('/', clienteController.getAllClientes);
  *       500:
  *         description: Erro ao buscar cliente
  */
-router.get('/:codigo', clienteController.getClienteByCodigo);
+router.get('/:codigo', validateCodeParam(CODE_PATTERNS.cliente, 'codigoCliente'), clienteController.getClienteByCodigo);
 
 /**
  * @swagger
@@ -135,7 +142,7 @@ router.get('/:codigo', clienteController.getClienteByCodigo);
  *                         type: string
  *                         example: ""
  */
-router.post('/', clienteController.createCliente);
+router.post('/', sanitizeBody, validateEntity('cliente'), clienteController.createCliente);
 
 /**
  * @swagger
@@ -189,7 +196,7 @@ router.post('/', clienteController.createCliente);
  *                         type: string
  *                         example: "123456"
  */
-router.put('/:codigo', clienteController.updateCliente);
+router.put('/:codigo', sanitizeBody, validateCodeParam(CODE_PATTERNS.cliente, 'codigoCliente'), clienteController.updateCliente);
 
 /**
  * @swagger
@@ -212,6 +219,6 @@ router.put('/:codigo', clienteController.updateCliente);
  *       500:
  *         description: Erro ao remover cliente
  */
-router.delete('/:codigo', clienteController.deleteCliente);
+router.delete('/:codigo', validateCodeParam(CODE_PATTERNS.cliente, 'codigoCliente'), clienteController.deleteCliente);
 
 export default router;
