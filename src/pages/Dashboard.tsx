@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -836,10 +837,19 @@ const Dashboard = () => {
               strategy={rectSortingStrategy}
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {visibleWidgets.map((widget) => (
-                  <div key={widget.id}>
+                {visibleWidgets.map((widget, index) => (
+                  <motion.div 
+                    key={widget.id}
+                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ 
+                      duration: 0.4, 
+                      delay: index * 0.08,
+                      ease: [0.25, 0.46, 0.45, 0.94]
+                    }}
+                  >
                     {renderWidget(widget)}
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </SortableContext>
