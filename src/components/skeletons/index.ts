@@ -1,4 +1,5 @@
 export { ProdutosCardSkeleton } from './ProdutosCardSkeleton';
+export { ProductCardSkeleton } from './ProductCardSkeleton';
 export { ClientesCardSkeleton } from './ClientesCardSkeleton';
 export { FornecedoresCardSkeleton } from './FornecedoresCardSkeleton';
 export { VendedoresCardSkeleton } from './VendedoresCardSkeleton';
