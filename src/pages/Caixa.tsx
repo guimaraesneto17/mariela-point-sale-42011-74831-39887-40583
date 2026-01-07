@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { Wallet, Plus, Minus, DollarSign, TrendingUp, TrendingDown, RefreshCw, XCircle, History, Calendar as CalendarIcon, Trash2, Activity, FileText } from "lucide-react";
+import { ContentTransition } from "@/components/ContentTransition";
+import { CaixaSkeleton } from "@/components/CaixaSkeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -252,19 +254,9 @@ const Caixa = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2 text-primary" />
-          <p className="text-muted-foreground">Carregando...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
+    <ContentTransition isLoading={loading} skeleton={<CaixaSkeleton />}>
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -766,7 +758,8 @@ const Caixa = () => {
         onOpenChange={setMonitoramentoOpen}
         caixaAberto={caixaAberto}
       />
-    </div>
+      </div>
+    </ContentTransition>
   );
 };
 

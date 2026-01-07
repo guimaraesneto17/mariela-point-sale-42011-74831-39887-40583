@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Search, Plus, Building, CheckCircle2, AlertCircle, Edit, Trash2, X } from "lucide-react";
 import { FornecedoresSkeleton } from "@/components/FornecedoresSkeleton";
+import { ContentTransition } from "@/components/ContentTransition";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
@@ -403,12 +404,9 @@ const Fornecedores = () => {
     setIsDialogOpen(true);
   };
 
-  if (isLoadingData) {
-    return <FornecedoresSkeleton />;
-  }
-
   return (
-    <>
+    <ContentTransition isLoading={isLoadingData} skeleton={<FornecedoresSkeleton />}>
+      <>
       <RetryProgressIndicator
         isRetrying={createFornecedorMutation.isPending || updateFornecedorMutation.isPending || deleteFornecedorMutation.isPending}
         retryAttempt={1}
@@ -915,7 +913,8 @@ const Fornecedores = () => {
         description="Tem certeza que deseja excluir este fornecedor? Esta ação não pode ser desfeita."
       />
       </div>
-    </>
+      </>
+    </ContentTransition>
   );
 };
 

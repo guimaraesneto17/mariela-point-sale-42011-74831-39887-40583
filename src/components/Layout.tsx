@@ -22,6 +22,7 @@ import {
   FileCode
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermission } from "@/hooks/usePermission";
@@ -150,12 +151,6 @@ const Layout = () => {
     const filteredItems = isAdmin 
       ? allItems 
       : allItems.filter(item => !item.module || canView(item.module as any));
-    
-    // Adicionar usuários e API docs apenas para admin
-    if (isAdmin) {
-      filteredItems.push({ to: "/usuarios", icon: UserCog, label: "Usuários", prefetch: undefined, module: 'usuarios' });
-      filteredItems.push({ to: "/api-docs", icon: FileCode, label: "API Docs", prefetch: undefined, module: null });
-    }
     
     return filteredItems;
   }, [isVendedor, isAdmin, canView]);
@@ -371,7 +366,45 @@ const Layout = () => {
               <RoleIndicator />
             </div>
           )}
-          {!isMobile && (
+          {!isMobile && isAdmin && (
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-white/60 text-xs font-medium">© 2025 Mariela Moda</p>
+              <div className="flex items-center gap-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-white/70 hover:text-white hover:bg-white/15"
+                      onClick={() => navigate('/usuarios')}
+                    >
+                      <UserCog className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>Usuários</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-white/70 hover:text-white hover:bg-white/15"
+                      onClick={() => navigate('/api-docs')}
+                    >
+                      <FileCode className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>API Docs</p>
+                  </TooltipContent>
+                </Tooltip>
+                <CacheIndicator />
+              </div>
+            </div>
+          )}
+          {!isMobile && !isAdmin && (
             <div className="flex items-center justify-between mb-3">
               <p className="text-white/60 text-xs font-medium">© 2025 Mariela Moda</p>
               <CacheIndicator />
