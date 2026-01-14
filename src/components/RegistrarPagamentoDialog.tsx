@@ -1,21 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { contasPagarAPI, contasReceberAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { CurrencyInput } from "@/components/ui/currency-input";
-import { ImagePlus, X, Loader2, AlertTriangle, Check, AlertCircle, ZoomIn, ZoomOut } from "lucide-react";
+import { ImagePlus, X, Loader2, Check, AlertCircle, ZoomIn, ZoomOut, CalendarIcon, TrendingUp } from "lucide-react";
 import { useImageCompression } from "@/hooks/useImageCompression";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { differenceInDays } from "date-fns";
-import { formatCurrency } from "@/lib/utils";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { formatCurrency, cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 const formas = ["Pix","Cartão de Crédito","Cartão de Débito","Dinheiro","Boleto","Transferência","Outro"] as const;
 
@@ -27,11 +29,11 @@ const schema = z.object({
       const num = parseFloat(cleaned);
       return !isNaN(num) && num > 0.01;
     }, "Valor deve ser maior que R$ 0,01"),
+  dataPagamento: z.date({ required_error: "Selecione a data do pagamento" }),
   formaPagamento: z.enum(["Pix","Cartão de Crédito","Cartão de Débito","Dinheiro","Boleto","Transferência","Outro"], { required_error: "Selecione a forma de pagamento" }),
   observacoes: z.string().max(500).optional(),
   numeroParcela: z.number().optional(),
   comprovante: z.string().optional(),
-  jurosMulta: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -73,69 +75,52 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
     return Math.max(total - pago, 0);
   })();
   
-  // Calcula se está em atraso e os juros/multa
-  const calcularAtraso = () => {
-    if (!conta) return null;
-    
-    const dataVencimento = parcelaEspecifica 
-      ? new Date(parcelaEspecifica.dataVencimento)
-      : new Date(conta.dataVencimento);
-    
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-    dataVencimento.setHours(0, 0, 0, 0);
-    
-    const diasAtraso = differenceInDays(hoje, dataVencimento);
-    
-    if (diasAtraso <= 0) return null;
-    
-    // Cálculo: 2% de multa + 0.033% de juros por dia
-    const valorOriginal = parcelaEspecifica ? parcelaEspecifica.valor : conta.valor;
-    const multa = valorOriginal * 0.02;
-    const jurosDiarios = valorOriginal * 0.00033 * diasAtraso;
-    const totalAcrescimo = multa + jurosDiarios;
-    const percentualTotal = (totalAcrescimo / valorOriginal) * 100;
-    
-    return {
-      diasAtraso,
-      multa,
-      juros: jurosDiarios,
-      totalAcrescimo,
-      percentualTotal,
-      valorComAcrescimo: valorOriginal + totalAcrescimo
-    };
-  };
-  
-  const infoAtraso = calcularAtraso();
-  
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { 
       valor: saldoRestante > 0 ? saldoRestante.toFixed(2) : "0.01", 
+      dataPagamento: new Date(),
       formaPagamento: undefined, 
       observacoes: '', 
       numeroParcela, 
       comprovante: '',
-      jurosMulta: infoAtraso ? infoAtraso.totalAcrescimo.toFixed(2) : "0"
     }
   });
+
+  // Observa o valor para calcular acréscimo
+  const valorAtual = form.watch('valor');
+  
+  // Calcula o valor do acréscimo (diferença entre valor pago e saldo restante)
+  const infoAcrescimo = useMemo(() => {
+    if (!valorAtual || saldoRestante <= 0) return null;
+    
+    const valorLimpo = valorAtual.replace(/[^\d,.-]/g, '').replace(',', '.');
+    const valorNumerico = parseFloat(valorLimpo);
+    
+    if (isNaN(valorNumerico) || valorNumerico <= saldoRestante) return null;
+    
+    const valorAcrescimo = valorNumerico - saldoRestante;
+    const percentualAcrescimo = (valorAcrescimo / saldoRestante) * 100;
+    
+    return {
+      valorAcrescimo,
+      percentualAcrescimo
+    };
+  }, [valorAtual, saldoRestante]);
 
   // Atualiza o valor default quando a conta muda
   useEffect(() => {
     if (conta && open) {
-      const atraso = calcularAtraso();
-      const valorSugerido = atraso ? atraso.valorComAcrescimo : saldoRestante;
-      
       // Garantir que sempre temos um valor válido maior que zero
-      const valorFinal = valorSugerido > 0 ? valorSugerido.toFixed(2) : "0.01";
+      const valorFinal = saldoRestante > 0 ? saldoRestante.toFixed(2) : "0.01";
       
       form.reset({
         valor: valorFinal,
+        dataPagamento: new Date(),
         formaPagamento: undefined,
-        observacoes: atraso ? `Pagamento em atraso - ${atraso.diasAtraso} dia(s)` : '',
+        observacoes: '',
         numeroParcela,
         comprovante: '',
-        jurosMulta: atraso ? atraso.totalAcrescimo.toFixed(2) : "0"
       });
       setImagePreview(null);
     }
@@ -200,25 +185,30 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
       
       console.log('✅ [FRONTEND] Validações passaram. Enviando para API...');
       
+      // Calcular juros/multa como a diferença entre valor pago e saldo restante
+      const jurosMultaCalculado = valorNumerico > saldoRestante ? valorNumerico - saldoRestante : undefined;
+      
       if (tipo === 'pagar') {
         const payload = { 
           valorPago: valorNumerico,
+          dataPagamento: values.dataPagamento?.toISOString(),
           formaPagamento: values.formaPagamento,
           observacoes: values.observacoes,
           numeroParcela,
           comprovante: values.comprovante,
-          jurosMulta: values.jurosMulta ? parseFloat(values.jurosMulta) : undefined
+          jurosMulta: jurosMultaCalculado
         };
         console.log('📤 [FRONTEND] Payload de pagamento:', payload);
         await contasPagarAPI.pagar(conta.numeroDocumento, payload);
       } else {
         const payload = { 
           valorRecebido: valorNumerico,
+          dataRecebimento: values.dataPagamento?.toISOString(),
           formaPagamento: values.formaPagamento,
           observacoes: values.observacoes,
           numeroParcela,
           comprovante: values.comprovante,
-          jurosMulta: values.jurosMulta ? parseFloat(values.jurosMulta) : undefined
+          jurosMulta: jurosMultaCalculado
         };
         console.log('📤 [FRONTEND] Payload de recebimento:', payload);
         await contasReceberAPI.receber(conta.numeroDocumento, payload);
@@ -266,16 +256,15 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
               </div>
             )}
             
-            {infoAtraso && (
-              <Alert className="border-destructive/50 bg-destructive/10">
-                <AlertTriangle className="h-4 w-4 text-destructive" />
-                <AlertDescription className="text-sm text-destructive space-y-1">
-                  <p className="font-semibold">⚠️ Pagamento em Atraso - {infoAtraso.diasAtraso} dia(s)</p>
+            {infoAcrescimo && (
+              <Alert className="border-primary/50 bg-primary/10">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                <AlertDescription className="text-sm text-primary space-y-1">
+                  <p className="font-semibold">💰 Valor Adicional Incluído</p>
                   <div className="text-xs space-y-0.5">
-                    <p>• Valor original: {formatCurrency(parcelaEspecifica?.valor || conta?.valor || 0)}</p>
-                    <p>• Multa (2%): {formatCurrency(infoAtraso.multa)}</p>
-                    <p>• Juros ({infoAtraso.diasAtraso} dias): {formatCurrency(infoAtraso.juros)}</p>
-                    <p className="font-semibold">• Total com acréscimos (+{infoAtraso.percentualTotal.toFixed(2)}%): {formatCurrency(infoAtraso.valorComAcrescimo)}</p>
+                    <p>• Valor original: {formatCurrency(saldoRestante)}</p>
+                    <p>• Valor adicional: {formatCurrency(infoAcrescimo.valorAcrescimo)}</p>
+                    <p className="font-semibold">• Percentual adicional: +{infoAcrescimo.percentualAcrescimo.toFixed(2)}%</p>
                   </div>
                 </AlertDescription>
               </Alert>
@@ -284,6 +273,53 @@ export function RegistrarPagamentoDialog({ open, onOpenChange, tipo, conta, onSu
             <div className="text-sm text-muted-foreground">
               Saldo restante: <span className="font-semibold text-foreground">{saldoRestante.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
             </div>
+            
+            <FormField name="dataPagamento" control={form.control} render={({ field }) => {
+              const isValid = !!field.value;
+              
+              return (
+                <FormItem className="flex flex-col">
+                  <FormLabel className="flex items-center gap-1">
+                    Data do {tipo === 'pagar' ? 'Pagamento' : 'Recebimento'}*
+                    {isValid && <Check className="h-4 w-4 text-green-500" />}
+                  </FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground",
+                            isValid && "border-green-500"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                          ) : (
+                            <span>Selecione a data</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) => date > new Date()}
+                        initialFocus
+                        locale={ptBR}
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              );
+            }} />
+            
             <FormField name="valor" control={form.control} render={({ field }) => {
               const hasValue = field.value && field.value.length > 0;
               const isValid = hasValue && (() => {
