@@ -258,7 +258,7 @@ export const receberConta = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Conta a receber não encontrada' });
     }
 
-    const { valorRecebido, formaPagamento, observacoes, numeroParcela, comprovante, jurosMulta } = req.body;
+    const { valorRecebido, dataRecebimento, formaPagamento, observacoes, numeroParcela, comprovante, jurosMulta } = req.body;
 
     // Normalizar valor recebido (aceita número ou string como "10,00")
     const bruto = typeof valorRecebido === 'string'
@@ -276,9 +276,12 @@ export const receberConta = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Forma de pagamento é obrigatória' });
     }
 
+    // Usar a data informada pelo usuário ou a data atual como fallback
+    const dataDoRecebimento = dataRecebimento ? new Date(dataRecebimento) : new Date();
+
     const recebimentoData: any = {
       valor: valorNumerico,
-      data: new Date(),
+      data: dataDoRecebimento,
       formaPagamento,
       observacoes: observacoes || undefined,
       comprovante: comprovante || undefined,
