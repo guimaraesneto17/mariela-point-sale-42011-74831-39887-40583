@@ -41,10 +41,12 @@ export function EstoqueAlertasDialog({ open, onOpenChange }: EstoqueAlertasDialo
   const loadAlertasProdutos = async () => {
     try {
       setLoading(true);
-      const [estoque, vendas] = await Promise.all([
+      const [estoqueRes, vendasRes] = await Promise.all([
         estoqueAPI.getAll(),
         vendasAPI.getAll()
       ]);
+      const estoque = Array.isArray(estoqueRes) ? estoqueRes : (estoqueRes?.data || []);
+      const vendas = Array.isArray(vendasRes) ? vendasRes : (vendasRes?.data || []);
 
       const hoje = new Date();
       const limite90Dias = new Date();
