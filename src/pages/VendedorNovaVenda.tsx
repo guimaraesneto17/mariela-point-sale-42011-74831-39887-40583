@@ -138,12 +138,16 @@ const VendedorNovaVenda = () => {
   const loadData = async () => {
     try {
       setIsLoadingData(true);
-      const [clientesData, vendedoresData, estoqueData, vendasData] = await Promise.all([
+      const [clientesRes, vendedoresRes, estoqueRes, vendasRes] = await Promise.all([
         clientesAPI.getAll(),
         vendedoresAPI.getAll(),
         estoqueAPI.getAll(),
         vendasAPI.getAll(),
       ]);
+      const clientesData = Array.isArray(clientesRes) ? clientesRes : (clientesRes?.data || []);
+      const vendedoresData = Array.isArray(vendedoresRes) ? vendedoresRes : (vendedoresRes?.data || []);
+      const estoqueData = Array.isArray(estoqueRes) ? estoqueRes : (estoqueRes?.data || []);
+      const vendasData = Array.isArray(vendasRes) ? vendasRes : (vendasRes?.data || []);
       
       const clientesMapeados = clientesData.map((c: any) => ({
         ...c,

@@ -22,10 +22,12 @@ export const EstoqueAnalyticsCard = ({ className }: EstoqueAnalyticsCardProps) =
   const loadAnalytics = async () => {
     try {
       setLoading(true);
-      const [vendas, estoque] = await Promise.all([
+      const [vendasRes, estoqueRes] = await Promise.all([
         vendasAPI.getAll(),
         estoqueAPI.getAll(),
       ]);
+      const vendas = Array.isArray(vendasRes) ? vendasRes : (vendasRes?.data || []);
+      const estoque = Array.isArray(estoqueRes) ? estoqueRes : (estoqueRes?.data || []);
 
       // Calcular produtos mais vendidos
       const produtosVendidos = new Map<string, { nome: string; vendas: number; valor: number }>();

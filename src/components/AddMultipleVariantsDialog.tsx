@@ -81,7 +81,8 @@ export function AddMultipleVariantsDialog({
   const loadProdutos = async () => {
     try {
       setLoadingProdutos(true);
-      const data = await produtosAPI.getAll();
+      const response = await produtosAPI.getAll();
+      const data = Array.isArray(response) ? response : (response?.data || []);
       setProdutos(data);
     } catch (error) {
       console.error("Erro ao carregar produtos:", error);
