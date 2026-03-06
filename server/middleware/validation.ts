@@ -106,7 +106,7 @@ export const validatePaginationParams = (req: Request, res: Response, next: Next
  */
 export const validateCodeParam = (pattern: RegExp, fieldName: string) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const codigo = req.params.codigo;
+    const codigo = req.params.codigo as string;
     
     if (!codigo) {
       return sendValidationError(res, [{
