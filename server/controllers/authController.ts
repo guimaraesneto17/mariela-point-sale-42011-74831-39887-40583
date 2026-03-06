@@ -320,7 +320,7 @@ export const updateUserRole = async (req: Request, res: Response): Promise<void>
  */
 export const toggleUserStatus = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { userId } = req.params;
+    const userId = req.params.userId as string;
 
     const user = await User.findById(userId);
     if (!user) {

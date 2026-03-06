@@ -133,7 +133,7 @@ export async function clearAllCache(req: Request, res: Response) {
  */
 export async function clearNamespaceCache(req: Request, res: Response) {
   try {
-    const { namespace } = req.params;
+    const namespace = req.params.namespace as string;
 
     if (!namespace) {
       return res.status(400).json({

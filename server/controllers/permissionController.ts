@@ -19,7 +19,7 @@ export const getPermissions = async (req: Request, res: Response) => {
  */
 export const getPermissionsByRole = async (req: Request, res: Response) => {
   try {
-    const { role } = req.params;
+    const role = req.params.role as string;
     
     if (!['admin', 'gerente', 'vendedor'].includes(role)) {
       return res.status(400).json({ error: 'Role inválida' });
@@ -38,7 +38,7 @@ export const getPermissionsByRole = async (req: Request, res: Response) => {
  */
 export const getOwnRolePermissions = async (req: Request, res: Response) => {
   try {
-    const { role } = req.params;
+    const role = req.params.role as string;
     const userRole = (req as any).userRole;
 
     if (!['admin', 'gerente', 'vendedor'].includes(role)) {
@@ -166,7 +166,7 @@ export const deletePermission = async (req: Request, res: Response) => {
  */
 export const initializeDefaultPermissions = async (req: Request, res: Response) => {
   try {
-    const { role } = req.params;
+    const role = req.params.role as string;
 
     if (!['admin', 'gerente', 'vendedor'].includes(role)) {
       return res.status(400).json({ error: 'Role inválida' });
@@ -196,7 +196,7 @@ export const initializeDefaultPermissions = async (req: Request, res: Response) 
         { 
           role, 
           module, 
-          actions: defaultPermissions[role] 
+          actions: defaultPermissions[role as string] 
         },
         { upsert: true, new: true, runValidators: true }
       );
