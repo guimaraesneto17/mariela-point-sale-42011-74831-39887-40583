@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
+import { normalizeApiResponse } from '@/lib/utils';
 
 interface EntityManagerOptions<T> {
   entityName: string;
@@ -29,7 +30,7 @@ export function useEntityManager<T>(options: EntityManagerOptions<T>) {
     try {
       setLoading(true);
       const data = await api.getAll();
-      setEntities(data);
+      setEntities(normalizeApiResponse<T>(data));
     } catch (error: any) {
       toast.error(`Erro ao carregar ${entityName}`, {
         description: error.message || "Verifique sua conexão",

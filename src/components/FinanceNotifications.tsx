@@ -29,10 +29,12 @@ export const FinanceNotifications = () => {
 
   const verificarContasProximas = async () => {
     try {
-      const [contasPagar, contasReceber] = await Promise.all([
+      const [contasPagarRes, contasReceberRes] = await Promise.all([
         contasPagarAPI.getAll(),
         contasReceberAPI.getAll(),
       ]);
+      const contasPagar = Array.isArray(contasPagarRes) ? contasPagarRes : (contasPagarRes?.data || []);
+      const contasReceber = Array.isArray(contasReceberRes) ? contasReceberRes : (contasReceberRes?.data || []);
 
       const hoje = new Date();
       
