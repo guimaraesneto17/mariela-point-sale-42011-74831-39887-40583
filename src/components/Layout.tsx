@@ -30,8 +30,7 @@ import logo from "@/logo.png";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CacheIndicator } from "@/components/CacheIndicator";
 import { CaixaFechadoNotification } from "@/components/CaixaFechadoNotification";
-import { FinanceiroAlertasDialog } from "@/components/FinanceiroAlertasDialog";
-import { useContasPagar, useContasReceber, useCaixaAberto } from "@/hooks/useQueryCache";
+import { useCaixaAberto } from "@/hooks/useQueryCache";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { RoleIndicator } from "@/components/RoleIndicator";
 import { SidebarSkeleton } from "@/components/SidebarSkeleton";
@@ -43,11 +42,7 @@ const Layout = () => {
   const { canView } = usePermission();
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showFinanceiroAlertas, setShowFinanceiroAlertas] = useState(false);
   const [isSidebarLoading, setIsSidebarLoading] = useState(true);
-  
-  const { data: contasPagarData = [], isLoading: isLoadingContasPagar } = useContasPagar();
-  const { data: contasReceberData = [], isLoading: isLoadingContasReceber } = useContasReceber();
   const { data: caixaAberto, refetch: refetchCaixa } = useCaixaAberto();
 
   // Controlar o estado de loading do sidebar
@@ -58,41 +53,6 @@ const Layout = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Verificar contas urgentes ao abrir o sistema
-  useEffect(() => {
-    const verificarContasUrgentes = () => {
-      const hoje = new Date();
-      hoje.setHours(0, 0, 0, 0);
-
-      const contasPagarUrgentes = contasPagarData.filter((conta: any) => {
-        const statusLower = (conta.status || '').toLowerCase();
-        if (statusLower === 'pago' || statusLower === 'paga') return false;
-        
-        const dataVencimento = new Date(conta.dataVencimento);
-        dataVencimento.setHours(0, 0, 0, 0);
-        return dataVencimento <= hoje;
-      });
-
-      const contasReceberUrgentes = contasReceberData.filter((conta: any) => {
-        const statusLower = (conta.status || '').toLowerCase();
-        if (statusLower === 'recebido' || statusLower === 'recebida') return false;
-        
-        const dataVencimento = new Date(conta.dataVencimento);
-        dataVencimento.setHours(0, 0, 0, 0);
-        return dataVencimento <= hoje;
-      });
-
-      const totalUrgentes = contasPagarUrgentes.length + contasReceberUrgentes.length;
-
-      if (totalUrgentes > 0) {
-        setShowFinanceiroAlertas(true);
-      }
-    };
-
-    if (contasPagarData.length > 0 || contasReceberData.length > 0) {
-      verificarContasUrgentes();
-    }
-  }, [contasPagarData, contasReceberData]);
 
   const handleLogout = async () => {
     try {
@@ -138,10 +98,10 @@ const Layout = () => {
       { to: "/", icon: LayoutDashboard, label: "Dashboard", prefetch: "dashboard" as const, module: 'dashboard' },
       { to: "/relatorios", icon: FileText, label: "Relatórios", prefetch: undefined, module: 'relatorios' },
       { to: "/produtos", icon: Package, label: "Produtos", prefetch: "produtos" as const, module: 'produtos' },
+      { to: "/estoque", icon: Warehouse, label: "Estoque", prefetch: "estoque" as const, module: 'estoque' },
       { to: "/clientes", icon: Users, label: "Clientes", prefetch: "clientes" as const, module: 'clientes' },
       { to: "/fornecedores", icon: Truck, label: "Fornecedores", prefetch: "fornecedores" as const, module: 'fornecedores' },
       { to: "/vendedores", icon: UserCheck, label: "Vendedores", prefetch: "vendedores" as const, module: 'vendedores' },
-      { to: "/estoque", icon: Warehouse, label: "Estoque", prefetch: "estoque" as const, module: 'estoque' },
       { to: "/vendas", icon: ShoppingCart, label: "Vendas", prefetch: "vendas" as const, module: 'vendas' },
       { to: "/caixa", icon: Wallet, label: "Caixa", prefetch: undefined, module: 'caixa' },
       { to: "/financeiro", icon: TrendingUp, label: "Financeiro", prefetch: undefined, module: 'financeiro' },
@@ -439,10 +399,6 @@ const Layout = () => {
         </div>
       </main>
       <CaixaFechadoNotification />
-      <FinanceiroAlertasDialog 
-        open={showFinanceiroAlertas} 
-        onOpenChange={setShowFinanceiroAlertas} 
-      />
       <ConnectionStatus />
     </div>
   );
