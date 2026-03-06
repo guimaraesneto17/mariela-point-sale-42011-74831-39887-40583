@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,13 +7,6 @@ import { EstoqueAlertasDialog } from "./EstoqueAlertasDialog";
 import { useEstoque, useVendas } from "@/hooks/useQueryCache";
 
 export function DashboardAlertasCard() {
-  const [alertas, setAlertas] = useState({
-    total: 0,
-    criticos: 0,
-    alto: 0,
-    medio: 0,
-    valorTotal: 0
-  });
   const [showDialog, setShowDialog] = useState(false);
 
   const { data: estoqueData = [], isLoading: loadingEstoque } = useEstoque();
@@ -21,21 +14,15 @@ export function DashboardAlertasCard() {
 
   const loading = loadingEstoque || loadingVendas;
 
-  useEffect(() => {
-    // Só calcular alertas se os dados estiverem carregados
-    if (loadingEstoque || loadingVendas) return;
+  const alertas = useMemo(() => {
+    if (loadingEstoque || loadingVendas) {
+      return { total: 0, criticos: 0, alto: 0, medio: 0, valorTotal: 0 };
+    }
 
     const estoque = Array.isArray(estoqueData) ? estoqueData : [];
     const vendas = Array.isArray(vendasData) ? vendasData : [];
 
     const hoje = new Date();
-    const limite30Dias = new Date();
-    const limite60Dias = new Date();
-    const limite90Dias = new Date();
-
-    limite30Dias.setDate(hoje.getDate() - 30);
-    limite60Dias.setDate(hoje.getDate() - 60);
-    limite90Dias.setDate(hoje.getDate() - 90);
 
     let total = 0;
     let criticos = 0;
@@ -84,13 +71,7 @@ export function DashboardAlertasCard() {
       }
     });
 
-    setAlertas({
-      total,
-      criticos,
-      alto,
-      medio,
-      valorTotal
-    });
+    return { total, criticos, alto, medio, valorTotal };
   }, [estoqueData, vendasData, loadingEstoque, loadingVendas]);
 
   const formatCurrency = (value: number) => {
