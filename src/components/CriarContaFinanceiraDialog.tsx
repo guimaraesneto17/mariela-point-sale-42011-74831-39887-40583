@@ -100,8 +100,8 @@ export function CriarContaFinanceiraDialog({ open, onOpenChange, tipo, onSuccess
 
   const loadFornecedores = async () => {
     try {
-      const data = await fornecedoresAPI.getAll();
-      setFornecedores(data);
+      const response = await fornecedoresAPI.getAll();
+      setFornecedores(Array.isArray(response) ? response : (response?.data || []));
     } catch (error) {
       console.error('Erro ao carregar fornecedores:', error);
     }
@@ -109,8 +109,8 @@ export function CriarContaFinanceiraDialog({ open, onOpenChange, tipo, onSuccess
 
   const loadClientes = async () => {
     try {
-      const data = await clientesAPI.getAll();
-      setClientes(data);
+      const response = await clientesAPI.getAll();
+      setClientes(Array.isArray(response) ? response : (response?.data || []));
     } catch (error) {
       console.error('Erro ao carregar clientes:', error);
     }
@@ -118,8 +118,8 @@ export function CriarContaFinanceiraDialog({ open, onOpenChange, tipo, onSuccess
 
   const loadCategorias = async () => {
     try {
-      const data = await categoriasFinanceirasAPI.getAll(tipo);
-      setCategorias(data);
+      const response = await categoriasFinanceirasAPI.getAll(tipo);
+      setCategorias(Array.isArray(response) ? response : (response?.data || []));
     } catch (error) {
       console.error('Erro ao carregar categorias:', error);
     }

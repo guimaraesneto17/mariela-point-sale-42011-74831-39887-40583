@@ -94,8 +94,8 @@ export function CategoriasFinanceirasManager({ open, onOpenChange, tipo }: Categ
   const loadCategorias = async () => {
     try {
       setLoading(true);
-      const data = await categoriasFinanceirasAPI.getAll(tipo);
-      setCategorias(data);
+      const response = await categoriasFinanceirasAPI.getAll(tipo);
+      setCategorias(Array.isArray(response) ? response : (response?.data || []));
     } catch (error) {
       console.error('Erro ao carregar categorias:', error);
       toast.error('Erro ao carregar categorias');

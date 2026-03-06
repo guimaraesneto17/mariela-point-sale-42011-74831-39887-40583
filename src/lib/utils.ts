@@ -84,3 +84,13 @@ export function safeDate(dateValue: any): Date | null {
     return null;
   }
 }
+
+/**
+ * Normaliza resposta da API que pode vir como array direto ou objeto paginado { data: [], pagination: {} }
+ * Uso: const items = normalizeApiResponse(response);
+ */
+export function normalizeApiResponse<T = any>(response: any): T[] {
+  if (Array.isArray(response)) return response;
+  if (response?.data && Array.isArray(response.data)) return response.data;
+  return [];
+}

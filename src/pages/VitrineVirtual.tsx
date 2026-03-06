@@ -29,8 +29,8 @@ const VitrineVirtual = () => {
   const loadVitrine = async () => {
     try {
       setLoading(true);
-      const data = await vitrineVirtualAPI.getAll();
-      setVitrine(data);
+      const response = await vitrineVirtualAPI.getAll();
+      setVitrine(Array.isArray(response) ? response : (response?.data || []));
     } catch (error) {
       console.error('Erro ao carregar vitrine:', error);
       toast.error('Erro ao carregar vitrine virtual');

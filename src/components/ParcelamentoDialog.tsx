@@ -73,8 +73,8 @@ export function ParcelamentoDialog({ open, onOpenChange, onSuccess }: Parcelamen
   const loadCategorias = async () => {
     try {
       const tipo = form.getValues("tipo");
-      const data = await categoriasFinanceirasAPI.getAll(tipo);
-      setCategorias(data);
+      const response = await categoriasFinanceirasAPI.getAll(tipo);
+      setCategorias(Array.isArray(response) ? response : (response?.data || []));
     } catch (error) {
       console.error('Erro ao carregar categorias:', error);
     }

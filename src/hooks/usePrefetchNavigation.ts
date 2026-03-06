@@ -8,6 +8,7 @@ import {
   vendedoresAPI,
   fornecedoresAPI,
 } from '@/lib/api';
+import { normalizeApiResponse } from '@/lib/utils';
 
 /**
  * Hook para prefetching estratégico de dados baseado na navegação do usuário
@@ -16,149 +17,113 @@ import {
 export function usePrefetchNavigation() {
   const queryClient = useQueryClient();
 
-  /**
-   * Prefetch dados para a página Nova Venda
-   * Carrega clientes, vendedores e estoque necessários para criar uma venda
-   */
+  const norm = (fn: () => Promise<any>) => async () => normalizeApiResponse(await fn());
+
   const prefetchNovaVenda = () => {
     queryClient.prefetchQuery({
       queryKey: QUERY_KEYS.CLIENTES,
-      queryFn: () => clientesAPI.getAll(),
-      staleTime: 5 * 60 * 1000, // 5 minutos
-    });
-    
-    queryClient.prefetchQuery({
-      queryKey: QUERY_KEYS.VENDEDORES,
-      queryFn: () => vendedoresAPI.getAll(),
+      queryFn: norm(() => clientesAPI.getAll()),
       staleTime: 5 * 60 * 1000,
     });
-    
+    queryClient.prefetchQuery({
+      queryKey: QUERY_KEYS.VENDEDORES,
+      queryFn: norm(() => vendedoresAPI.getAll()),
+      staleTime: 5 * 60 * 1000,
+    });
     queryClient.prefetchQuery({
       queryKey: QUERY_KEYS.ESTOQUE,
-      queryFn: () => estoqueAPI.getAll(),
-      staleTime: 2 * 60 * 1000, // 2 minutos (estoque muda mais frequentemente)
+      queryFn: norm(() => estoqueAPI.getAll()),
+      staleTime: 2 * 60 * 1000,
     });
   };
 
-  /**
-   * Prefetch dados para a página Dashboard
-   * Carrega todos os dados necessários para exibir as estatísticas
-   */
   const prefetchDashboard = () => {
     queryClient.prefetchQuery({
       queryKey: QUERY_KEYS.VENDAS,
-      queryFn: () => vendasAPI.getAll(),
+      queryFn: norm(() => vendasAPI.getAll()),
       staleTime: 5 * 60 * 1000,
     });
-    
     queryClient.prefetchQuery({
       queryKey: QUERY_KEYS.CLIENTES,
-      queryFn: () => clientesAPI.getAll(),
+      queryFn: norm(() => clientesAPI.getAll()),
       staleTime: 5 * 60 * 1000,
     });
-    
     queryClient.prefetchQuery({
       queryKey: QUERY_KEYS.PRODUTOS,
-      queryFn: () => produtosAPI.getAll(),
+      queryFn: norm(() => produtosAPI.getAll()),
       staleTime: 5 * 60 * 1000,
     });
-    
     queryClient.prefetchQuery({
       queryKey: QUERY_KEYS.ESTOQUE,
-      queryFn: () => estoqueAPI.getAll(),
+      queryFn: norm(() => estoqueAPI.getAll()),
       staleTime: 2 * 60 * 1000,
     });
   };
 
-  /**
-   * Prefetch dados para a página de Produtos
-   * Carrega produtos e fornecedores
-   */
   const prefetchProdutos = () => {
     queryClient.prefetchQuery({
       queryKey: QUERY_KEYS.PRODUTOS,
-      queryFn: () => produtosAPI.getAll(),
+      queryFn: norm(() => produtosAPI.getAll()),
       staleTime: 5 * 60 * 1000,
     });
-    
     queryClient.prefetchQuery({
       queryKey: QUERY_KEYS.FORNECEDORES,
-      queryFn: () => fornecedoresAPI.getAll(),
-      staleTime: 10 * 60 * 1000, // 10 minutos (fornecedores mudam raramente)
-    });
-  };
-
-  /**
-   * Prefetch dados para a página de Estoque
-   * Carrega estoque e produtos relacionados
-   */
-  const prefetchEstoque = () => {
-    queryClient.prefetchQuery({
-      queryKey: QUERY_KEYS.ESTOQUE,
-      queryFn: () => estoqueAPI.getAll(),
-      staleTime: 2 * 60 * 1000,
-    });
-    
-    queryClient.prefetchQuery({
-      queryKey: QUERY_KEYS.PRODUTOS,
-      queryFn: () => produtosAPI.getAll(),
-      staleTime: 5 * 60 * 1000,
-    });
-  };
-
-  /**
-   * Prefetch dados para a página de Clientes
-   */
-  const prefetchClientes = () => {
-    queryClient.prefetchQuery({
-      queryKey: QUERY_KEYS.CLIENTES,
-      queryFn: () => clientesAPI.getAll(),
-      staleTime: 5 * 60 * 1000,
-    });
-  };
-
-  /**
-   * Prefetch dados para a página de Vendedores
-   */
-  const prefetchVendedores = () => {
-    queryClient.prefetchQuery({
-      queryKey: QUERY_KEYS.VENDEDORES,
-      queryFn: () => vendedoresAPI.getAll(),
-      staleTime: 5 * 60 * 1000,
-    });
-  };
-
-  /**
-   * Prefetch dados para a página de Fornecedores
-   */
-  const prefetchFornecedores = () => {
-    queryClient.prefetchQuery({
-      queryKey: QUERY_KEYS.FORNECEDORES,
-      queryFn: () => fornecedoresAPI.getAll(),
+      queryFn: norm(() => fornecedoresAPI.getAll()),
       staleTime: 10 * 60 * 1000,
     });
   };
 
-  /**
-   * Prefetch dados para a página de Vendas
-   * Carrega vendas, clientes e vendedores
-   */
+  const prefetchEstoque = () => {
+    queryClient.prefetchQuery({
+      queryKey: QUERY_KEYS.ESTOQUE,
+      queryFn: norm(() => estoqueAPI.getAll()),
+      staleTime: 2 * 60 * 1000,
+    });
+    queryClient.prefetchQuery({
+      queryKey: QUERY_KEYS.PRODUTOS,
+      queryFn: norm(() => produtosAPI.getAll()),
+      staleTime: 5 * 60 * 1000,
+    });
+  };
+
+  const prefetchClientes = () => {
+    queryClient.prefetchQuery({
+      queryKey: QUERY_KEYS.CLIENTES,
+      queryFn: norm(() => clientesAPI.getAll()),
+      staleTime: 5 * 60 * 1000,
+    });
+  };
+
+  const prefetchVendedores = () => {
+    queryClient.prefetchQuery({
+      queryKey: QUERY_KEYS.VENDEDORES,
+      queryFn: norm(() => vendedoresAPI.getAll()),
+      staleTime: 5 * 60 * 1000,
+    });
+  };
+
+  const prefetchFornecedores = () => {
+    queryClient.prefetchQuery({
+      queryKey: QUERY_KEYS.FORNECEDORES,
+      queryFn: norm(() => fornecedoresAPI.getAll()),
+      staleTime: 10 * 60 * 1000,
+    });
+  };
+
   const prefetchVendas = () => {
     queryClient.prefetchQuery({
       queryKey: QUERY_KEYS.VENDAS,
-      queryFn: () => vendasAPI.getAll(),
+      queryFn: norm(() => vendasAPI.getAll()),
       staleTime: 5 * 60 * 1000,
     });
-    
     queryClient.prefetchQuery({
       queryKey: QUERY_KEYS.CLIENTES,
-      queryFn: () => clientesAPI.getAll(),
+      queryFn: norm(() => clientesAPI.getAll()),
       staleTime: 5 * 60 * 1000,
     });
-    
     queryClient.prefetchQuery({
       queryKey: QUERY_KEYS.VENDEDORES,
-      queryFn: () => vendedoresAPI.getAll(),
+      queryFn: norm(() => vendedoresAPI.getAll()),
       staleTime: 5 * 60 * 1000,
     });
   };

@@ -161,8 +161,8 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
 
   const loadClientes = async () => {
     try {
-      const data = await clientesAPI.getAll();
-      setClientes(data);
+      const response = await clientesAPI.getAll();
+      setClientes(Array.isArray(response) ? response : (response?.data || []));
     } catch (error) {
       console.error('Erro ao carregar clientes:', error);
     }
@@ -170,8 +170,8 @@ export function ContaReceberDialog({ open, onOpenChange, conta, onSuccess }: Con
 
   const loadCategorias = async () => {
     try {
-      const data = await categoriasFinanceirasAPI.getAll('receber');
-      setCategorias(data);
+      const response = await categoriasFinanceirasAPI.getAll('receber');
+      setCategorias(Array.isArray(response) ? response : (response?.data || []));
     } catch (error) {
       console.error('Erro ao carregar categorias:', error);
     }
