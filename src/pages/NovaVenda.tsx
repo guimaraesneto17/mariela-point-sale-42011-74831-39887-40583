@@ -79,11 +79,15 @@ const NovaVenda = () => {
   const loadData = async () => {
     try {
       setIsLoadingData(true);
-      const [clientesData, vendedoresData, estoqueData] = await Promise.all([
+      const [clientesRes, vendedoresRes, estoqueRes] = await Promise.all([
         clientesAPI.getAll(),
         vendedoresAPI.getAll(),
         estoqueAPI.getAll(),
       ]);
+      
+      const clientesData = Array.isArray(clientesRes) ? clientesRes : (clientesRes?.data || []);
+      const vendedoresData = Array.isArray(vendedoresRes) ? vendedoresRes : (vendedoresRes?.data || []);
+      const estoqueData = estoqueRes;
       
       // Mapear clientes para ter o campo 'codigo'
       const clientesMapeados = clientesData.map((c: any) => ({
@@ -121,7 +125,8 @@ const NovaVenda = () => {
     
     try {
       // Buscar todas as vendas para verificar quantas foram feitas hoje
-      const vendas = await vendasAPI.getAll();
+      const vendasResponse = await vendasAPI.getAll();
+      const vendas = Array.isArray(vendasResponse) ? vendasResponse : (vendasResponse?.data || []);
       
       // Filtrar vendas que começam com o código do dia atual
       const vendasHoje = vendas.filter((venda: any) => {

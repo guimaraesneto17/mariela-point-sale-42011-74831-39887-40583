@@ -48,10 +48,12 @@ export function PromocoesEfetividadeDialog({ open, onOpenChange }: PromocoesEfet
   const loadEfetividade = async () => {
     try {
       setLoading(true);
-      const [produtos, vendas] = await Promise.all([
+      const [produtosRes, vendasRes] = await Promise.all([
         produtosAPI.getAll(),
         vendasAPI.getAll()
       ]);
+      const produtos = Array.isArray(produtosRes) ? produtosRes : (produtosRes?.data || []);
+      const vendas = Array.isArray(vendasRes) ? vendasRes : (vendasRes?.data || []);
 
       // Filtrar produtos em promoção
       const produtosPromovidos = produtos.filter((p: any) => p.emPromocao === true);
