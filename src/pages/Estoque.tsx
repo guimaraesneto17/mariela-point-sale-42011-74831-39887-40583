@@ -1414,11 +1414,12 @@ const Estoque = () => {
                       size="sm"
                       variant="default"
                       onClick={() => {
-                        setSelectedItem(item);
-                        setSelectedVariant(varianteSelecionada);
-                        setShowEntryDialog(true);
+                        if (varianteSelecionada) {
+                          openEntryDialog(item, { ...varianteSelecionada, tamanho: selectedTamanho });
+                        }
                       }}
                       className="h-8 text-xs gap-1"
+                      disabled={!varianteSelecionada}
                     >
                       <Plus className="h-3 w-3" />
                       Entrada
@@ -1427,12 +1428,13 @@ const Estoque = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => {
-                        setSelectedItem(item);
-                        setSelectedVariant(varianteSelecionada);
-                        setShowExitDialog(true);
+                        if (varianteSelecionada) {
+                          const qtdDisponivel = getQuantidadeByTamanho(item, selectedCor, selectedTamanho);
+                          openExitDialog(item, { ...varianteSelecionada, tamanho: selectedTamanho, quantidadeDisponivel: qtdDisponivel });
+                        }
                       }}
                       className="h-8 text-xs gap-1"
-                      disabled={quantidadeTotal === 0}
+                      disabled={!varianteSelecionada || quantidadeCorTamanho === 0}
                     >
                       <Minus className="h-3 w-3" />
                       Saída
