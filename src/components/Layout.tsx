@@ -19,8 +19,9 @@ import {
   Menu,
   X,
   UserCog,
-  FileCode
+  FileCode,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
@@ -322,14 +323,16 @@ const Layout = () => {
           className="p-4 border-t border-white/10 backdrop-blur-sm space-y-3"
         >
           {isMobile && (
-            <div className="mb-3 flex justify-center">
+            <div className="mb-3 flex items-center justify-between">
               <RoleIndicator />
+              <ThemeToggle />
             </div>
           )}
           {!isMobile && isAdmin && (
             <div className="flex items-center justify-between mb-3">
               <p className="text-white/60 text-xs font-medium">© 2025 Mariela Moda</p>
               <div className="flex items-center gap-1">
+                <ThemeToggle />
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -367,7 +370,10 @@ const Layout = () => {
           {!isMobile && !isAdmin && (
             <div className="flex items-center justify-between mb-3">
               <p className="text-white/60 text-xs font-medium">© 2025 Mariela Moda</p>
-              <CacheIndicator />
+              <div className="flex items-center gap-1">
+                <ThemeToggle />
+                <CacheIndicator />
+              </div>
             </div>
           )}
           <motion.div
