@@ -323,8 +323,9 @@ const Layout = () => {
           className="p-4 border-t border-white/10 backdrop-blur-sm space-y-3"
         >
           {isMobile && (
-            <div className="mb-3 flex justify-center">
+            <div className="mb-3 flex items-center justify-between">
               <RoleIndicator />
+              <ThemeToggle />
             </div>
           )}
           {!isMobile && isAdmin && (
