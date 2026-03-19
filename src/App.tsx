@@ -92,6 +92,7 @@ const App = () => (
       },
     }}
   >
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
     <TooltipProvider>
       <Toaster />
       <Sonner />
