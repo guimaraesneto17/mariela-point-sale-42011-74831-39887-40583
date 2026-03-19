@@ -78,7 +78,7 @@ const VitrineVirtual = () => {
     <ContentTransition isLoading={loading} skeleton={<VitrineSkeleton />}>
       <div className="space-y-6 animate-fade-in">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Vitrine Virtual</h1>
+          <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-1 md:mb-2">Vitrine Virtual</h1>
           <p className="text-muted-foreground">
             Visualize produtos disponíveis, promoções e novidades
           </p>

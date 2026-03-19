@@ -172,8 +172,8 @@ const Financeiro = () => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
       <div>
-        <h1 className="text-4xl font-bold text-foreground mb-2">Financeiro</h1>
-        <p className="text-muted-foreground">Controle de contas a pagar e receber</p>
+        <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-1 md:mb-2">Financeiro</h1>
+        <p className="text-muted-foreground text-sm md:text-base">Controle de contas a pagar e receber</p>
       </div>
     </div>
 
@@ -256,11 +256,11 @@ const Financeiro = () => {
 
       {/* Botões de Ação */}
       <div className="flex flex-wrap gap-2">
-        <Button onClick={() => { setSelectedContaPagar(null); setContaPagarDialogOpen(true); }} className="gap-2" variant="default">
+        <Button onClick={() => { setSelectedContaPagar(null); setContaPagarDialogOpen(true); }} className="gap-2 text-xs md:text-sm" size="sm" variant="default">
           <Plus className="h-4 w-4" />
           Nova Conta a Pagar
         </Button>
-        <Button onClick={() => { setSelectedContaReceber(null); setContaReceberDialogOpen(true); }} className="gap-2" variant="secondary">
+        <Button onClick={() => { setSelectedContaReceber(null); setContaReceberDialogOpen(true); }} className="gap-2 text-xs md:text-sm" size="sm" variant="secondary">
           <Plus className="h-4 w-4" />
           Nova Conta a Receber
         </Button>
@@ -268,18 +268,19 @@ const Financeiro = () => {
 
       {/* Tabs de Contas */}
       <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="dashboard">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Dashboard
+        <TabsList className="grid w-full grid-cols-3 h-auto">
+          <TabsTrigger value="dashboard" className="text-xs md:text-sm gap-1 md:gap-2 px-1 md:px-3">
+            <BarChart3 className="h-3 w-3 md:h-4 md:w-4" />
+            <span className="hidden sm:inline">Dashboard</span>
+            <span className="sm:hidden">Dash</span>
           </TabsTrigger>
-          <TabsTrigger value="pagar">
-            <TrendingDown className="h-4 w-4 mr-2" />
-            Contas a Pagar
+          <TabsTrigger value="pagar" className="text-xs md:text-sm gap-1 md:gap-2 px-1 md:px-3">
+            <TrendingDown className="h-3 w-3 md:h-4 md:w-4" />
+            <span className="hidden sm:inline">Contas a</span> Pagar
           </TabsTrigger>
-          <TabsTrigger value="receber">
-            <TrendingUp className="h-4 w-4 mr-2" />
-            Contas a Receber
+          <TabsTrigger value="receber" className="text-xs md:text-sm gap-1 md:gap-2 px-1 md:px-3">
+            <TrendingUp className="h-3 w-3 md:h-4 md:w-4" />
+            <span className="hidden sm:inline">Contas a</span> Receber
           </TabsTrigger>
         </TabsList>
 

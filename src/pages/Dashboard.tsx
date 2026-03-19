@@ -703,9 +703,9 @@ const Dashboard = () => {
       skeleton={<DashboardSkeleton />}
     >
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold text-foreground mb-2">
+          <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-1 md:mb-2">
             Dashboard
           </h1>
           <p className="text-muted-foreground">
@@ -724,15 +724,15 @@ const Dashboard = () => {
       </div>
 
       {/* Filtros de Data */}
-      <Card className="p-4 shadow-card">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-4 flex-wrap">
+      <Card className="p-3 md:p-4 shadow-card">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:flex-wrap">
             <div className="flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5 text-muted-foreground" />
-              <span className="text-sm font-medium">Período de análise:</span>
+              <CalendarIcon className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+              <span className="text-xs md:text-sm font-medium">Período de análise:</span>
             </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="justify-start text-left font-normal">
@@ -795,32 +795,32 @@ const Dashboard = () => {
       </Card>
 
       {/* Card Único Resumido */}
-      <Card className="p-8 shadow-card animate-fade-in hover-lift transition-smooth bg-gradient-to-br from-card via-card to-primary/5">
+      <Card className="p-4 md:p-8 shadow-card animate-fade-in hover-lift transition-smooth bg-gradient-to-br from-card via-card to-primary/5">
         <div className="space-y-8">
           {/* Header do Card */}
-          <div className="flex items-center justify-between pb-4 border-b border-border flex-wrap gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-border gap-3 md:gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
-                <BarChart3 className="h-6 w-6 text-primary-foreground" />
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+                <BarChart3 className="h-5 w-5 md:h-6 md:w-6 text-primary-foreground" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-foreground">Resumo do Negócio</h2>
-                <p className="text-sm text-muted-foreground">Principais métricas em tempo real</p>
+                <h2 className="text-lg md:text-2xl font-bold text-foreground">Resumo do Negócio</h2>
+                <p className="text-xs md:text-sm text-muted-foreground">Principais métricas em tempo real</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3 flex-wrap">
               <DashboardWidgetConfig
                 widgets={widgetConfig}
                 onSave={handleWidgetConfigSave}
               />
               {caixaAberto ? (
-                <Badge className="bg-green-500 hover:bg-green-600 shadow-sm text-base px-4 py-2">
-                  <Wallet className="h-4 w-4 mr-2" />
+              <Badge className="bg-green-500 hover:bg-green-600 shadow-sm text-xs md:text-base px-2 py-1 md:px-4 md:py-2">
+                  <Wallet className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                   Caixa {caixaAberto.codigoCaixa} - Aberto
                 </Badge>
               ) : (
-                <Badge className="bg-orange-500 hover:bg-orange-600 shadow-sm text-base px-4 py-2">
-                  <AlertCircle className="h-4 w-4 mr-2" />
+                <Badge className="bg-orange-500 hover:bg-orange-600 shadow-sm text-xs md:text-base px-2 py-1 md:px-4 md:py-2">
+                  <AlertCircle className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                   Sem Caixa Aberto
                 </Badge>
               )}

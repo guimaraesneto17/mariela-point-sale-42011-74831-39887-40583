@@ -465,10 +465,10 @@ const Produtos = () => {
       skeleton={<ProdutosSkeleton />}
     >
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 md:gap-0 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-foreground mb-2">Produtos</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-1 md:mb-2">Produtos</h1>
+          <p className="text-muted-foreground text-sm md:text-base">
             Catálogo e gerenciamento de produtos
           </p>
           <PaginationControls

@@ -425,10 +425,10 @@ const Vendedores = () => {
         onRetry={() => refetch()}
       />
       <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 md:gap-0 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-foreground mb-2">Vendedores</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-1 md:mb-2">Vendedores</h1>
+          <p className="text-muted-foreground text-sm md:text-base">
             Gerenciamento de vendedores
           </p>
           <PaginationControls
@@ -447,16 +447,17 @@ const Vendedores = () => {
             onLimitChange={handleLimitChange}
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <PermissionGuard module="vendedores" action="edit">
             <Button 
               variant="outline" 
+              size="sm"
               className="gap-2" 
               onClick={handleRecalcularTotais}
               disabled={isLoadingData}
             >
               <RefreshCw className={`h-4 w-4 ${isLoadingData ? 'animate-spin' : ''}`} />
-              Recalcular Totais
+              <span className="hidden sm:inline">Recalcular</span> Totais
             </Button>
           </PermissionGuard>
           <PermissionGuard module="vendedores" action="create">

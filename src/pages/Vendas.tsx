@@ -70,17 +70,17 @@ const Vendas = () => {
       isLoading={isLoading} 
       skeleton={<VendasSkeleton />}
     >
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div className="text-center flex-1">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Vendas</h1>
-          <p className="text-muted-foreground">
+    <div className="space-y-4 md:space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="text-center sm:text-left flex-1">
+          <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-1 md:mb-2">Vendas</h1>
+          <p className="text-muted-foreground text-sm md:text-base">
             Histórico e gerenciamento de vendas
           </p>
-          <div className="flex items-center justify-center gap-2 mt-2">
-            <Badge variant="secondary" className="text-sm">
+          <div className="flex items-center justify-center sm:justify-start gap-2 mt-2">
+            <Badge variant="secondary" className="text-xs md:text-sm">
               <Tag className="h-3 w-3 mr-1" />
-              {vendas.length} {vendas.length === 1 ? 'venda realizada' : 'vendas realizadas'}
+              {vendas.length} {vendas.length === 1 ? 'venda' : 'vendas'}
             </Badge>
           </div>
         </div>
@@ -88,10 +88,11 @@ const Vendas = () => {
           onClick={handleSincronizarVendas}
           disabled={sincronizando}
           variant="outline"
+          size="sm"
           className="gap-2"
         >
           <RefreshCw className={`h-4 w-4 ${sincronizando ? 'animate-spin' : ''}`} />
-          {sincronizando ? 'Sincronizando...' : 'Sincronizar Vendas'}
+          {sincronizando ? 'Sincronizando...' : 'Sincronizar'}
         </Button>
       </div>
 
@@ -119,16 +120,16 @@ const Vendas = () => {
 
       <div className="space-y-4">
         {filteredVendas.map((venda) => (
-          <Card key={venda.codigo || venda.codigoVenda || venda._id} className="p-4 md:p-6 bg-gradient-card">
-              <div className="flex items-start justify-between mb-4">
+          <Card key={venda.codigo || venda.codigoVenda || venda._id} className="p-3 md:p-6 bg-gradient-card">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-3 md:mb-4">
               <div>
-                <h3 className="text-xl font-bold">{venda.codigo || venda.codigoVenda || venda._id}</h3>
-                <p className="text-muted-foreground text-sm">{formatDate(venda.data)}</p>
+                <h3 className="text-base md:text-xl font-bold">{venda.codigo || venda.codigoVenda || venda._id}</h3>
+                <p className="text-muted-foreground text-xs md:text-sm">{formatDate(venda.data)}</p>
               </div>
-              <div className="flex gap-2">
-                <Badge className="bg-primary">{venda.formaPagamento || '—'}</Badge>
+              <div className="flex gap-1 md:gap-2 flex-wrap">
+                <Badge className="bg-primary text-xs">{venda.formaPagamento || '—'}</Badge>
                 {venda.formaPagamento === "Cartão de Crédito" && Number(venda.parcelas || 1) > 1 && (
-                  <Badge variant="outline">{venda.parcelas}x de {formatCurrency((venda.total || 0) / (venda.parcelas || 1))}</Badge>
+                  <Badge variant="outline" className="text-xs">{venda.parcelas}x de {formatCurrency((venda.total || 0) / (venda.parcelas || 1))}</Badge>
                 )}
               </div>
             </div>
@@ -178,8 +179,8 @@ const Vendas = () => {
                   >
                     {/* Linha superior: Nome e badges */}
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 flex-1">
-                        <span className="font-medium">{item.nome || item.nomeProduto}</span>
+                      <div className="flex items-center gap-2 flex-1 flex-wrap">
+                        <span className="font-medium text-sm">{item.nome || item.nomeProduto}</span>
                         <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">x{item.quantidade || 1}</span>
                         {/* Exibir cor e tamanho */}
                         {(item.cor || item.tamanho) && (

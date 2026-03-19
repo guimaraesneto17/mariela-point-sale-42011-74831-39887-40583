@@ -258,32 +258,32 @@ const Caixa = () => {
     <ContentTransition isLoading={loading} skeleton={<CaixaSkeleton />}>
       <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Wallet className="h-8 w-8 text-primary" />
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+            <Wallet className="h-6 w-6 md:h-8 md:w-8 text-primary" />
             Controle de Caixa
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground text-sm mt-1">
             Gerencie a abertura, movimentações e fechamento do caixa
           </p>
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {caixaAberto && (
-            <Button onClick={() => setMonitoramentoOpen(true)} variant="default" size="lg">
-              <Activity className="h-5 w-5 mr-2" />
-              Monitoramento
+            <Button onClick={() => setMonitoramentoOpen(true)} variant="default" size="sm">
+              <Activity className="h-4 w-4 mr-1 md:mr-2" />
+              <span className="text-xs md:text-sm">Monitoramento</span>
             </Button>
           )}
-          <Button onClick={handleAbrirHistorico} variant="outline" size="lg">
-            <History className="h-5 w-5 mr-2" />
-            Histórico de Caixas
+          <Button onClick={handleAbrirHistorico} variant="outline" size="sm">
+            <History className="h-4 w-4 mr-1 md:mr-2" />
+            <span className="text-xs md:text-sm">Histórico</span>
           </Button>
           {!caixaAberto && (
-            <Button onClick={() => setAbrirCaixaDialog(true)} size="lg">
-              <Plus className="h-5 w-5 mr-2" />
-              Abrir Caixa
+            <Button onClick={() => setAbrirCaixaDialog(true)} size="sm">
+              <Plus className="h-4 w-4 mr-1 md:mr-2" />
+              <span className="text-xs md:text-sm">Abrir Caixa</span>
             </Button>
           )}
         </div>
