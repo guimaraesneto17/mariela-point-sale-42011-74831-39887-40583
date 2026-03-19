@@ -724,15 +724,15 @@ const Dashboard = () => {
       </div>
 
       {/* Filtros de Data */}
-      <Card className="p-4 shadow-card">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-4 flex-wrap">
+      <Card className="p-3 md:p-4 shadow-card">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:flex-wrap">
             <div className="flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5 text-muted-foreground" />
-              <span className="text-sm font-medium">Período de análise:</span>
+              <CalendarIcon className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+              <span className="text-xs md:text-sm font-medium">Período de análise:</span>
             </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="justify-start text-left font-normal">
