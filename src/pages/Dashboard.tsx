@@ -795,7 +795,7 @@ const Dashboard = () => {
       </Card>
 
       {/* Card Único Resumido */}
-      <Card className="p-8 shadow-card animate-fade-in hover-lift transition-smooth bg-gradient-to-br from-card via-card to-primary/5">
+      <Card className="p-4 md:p-8 shadow-card animate-fade-in hover-lift transition-smooth bg-gradient-to-br from-card via-card to-primary/5">
         <div className="space-y-8">
           {/* Header do Card */}
           <div className="flex items-center justify-between pb-4 border-b border-border flex-wrap gap-4">
