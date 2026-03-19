@@ -1036,9 +1036,9 @@ const Estoque = () => {
           </div>
 
           {/* Controles de Visualização */}
-          <div className="flex items-center justify-between pt-4 border-t">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t">
             <div className="flex items-center gap-2">
-              <Label className="text-sm font-medium text-muted-foreground">Visualização:</Label>
+              <Label className="text-xs md:text-sm font-medium text-muted-foreground">Visualização:</Label>
               <div className="flex gap-1 border rounded-md p-1">
                 <Button
                   variant={viewMode === "grid" ? "default" : "ghost"}
@@ -1058,15 +1058,15 @@ const Estoque = () => {
                 </Button>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="text-sm text-muted-foreground">
-                {sortedInventory.length} {sortedInventory.length === 1 ? 'produto' : 'produtos'} encontrado{sortedInventory.length === 1 ? '' : 's'}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="text-xs md:text-sm text-muted-foreground">
+                {sortedInventory.length} {sortedInventory.length === 1 ? 'produto' : 'produtos'}
               </div>
               <Badge variant="outline" className="text-xs">
                 <Package2 className="h-3 w-3 mr-1" />
                 {sortedInventory.reduce((total, item) => {
                   return total + (item.quantidadeTotal || 0);
-                }, 0)} total em estoque
+                }, 0)} total
               </Badge>
             </div>
           </div>
