@@ -814,13 +814,13 @@ const Dashboard = () => {
                 onSave={handleWidgetConfigSave}
               />
               {caixaAberto ? (
-                <Badge className="bg-green-500 hover:bg-green-600 shadow-sm text-base px-4 py-2">
-                  <Wallet className="h-4 w-4 mr-2" />
+              <Badge className="bg-green-500 hover:bg-green-600 shadow-sm text-xs md:text-base px-2 py-1 md:px-4 md:py-2">
+                  <Wallet className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                   Caixa {caixaAberto.codigoCaixa} - Aberto
                 </Badge>
               ) : (
-                <Badge className="bg-orange-500 hover:bg-orange-600 shadow-sm text-base px-4 py-2">
-                  <AlertCircle className="h-4 w-4 mr-2" />
+                <Badge className="bg-orange-500 hover:bg-orange-600 shadow-sm text-xs md:text-base px-2 py-1 md:px-4 md:py-2">
+                  <AlertCircle className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                   Sem Caixa Aberto
                 </Badge>
               )}
