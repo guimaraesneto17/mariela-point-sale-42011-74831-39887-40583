@@ -103,7 +103,7 @@ export const ProgressiveImage = ({
       />
 
       {/* Indicador de qualidade (opcional, para debug) */}
-      {process.env.NODE_ENV === 'development' && (
+      {import.meta.env.DEV && (
         <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 text-white text-xs rounded">
           {loadingState === 'thumbnail' && '📱 Thumbnail'}
           {loadingState === 'medium' && '💻 Medium'}
