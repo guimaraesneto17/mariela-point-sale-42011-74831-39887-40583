@@ -372,12 +372,13 @@ const Clientes = () => {
           <PermissionGuard module="clientes" action="edit">
             <Button 
               variant="outline" 
+              size="sm"
               className="gap-2" 
               onClick={handleRecalcularTotais}
               disabled={isLoadingData}
             >
               <RefreshCw className={`h-4 w-4 ${isLoadingData ? 'animate-spin' : ''}`} />
-              Recalcular Totais
+              <span className="hidden sm:inline">Recalcular</span> Totais
             </Button>
           </PermissionGuard>
           <PermissionGuard module="clientes" action="create">

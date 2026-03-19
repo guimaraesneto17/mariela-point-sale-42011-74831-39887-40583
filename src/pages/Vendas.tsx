@@ -179,8 +179,8 @@ const Vendas = () => {
                   >
                     {/* Linha superior: Nome e badges */}
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 flex-1">
-                        <span className="font-medium">{item.nome || item.nomeProduto}</span>
+                      <div className="flex items-center gap-2 flex-1 flex-wrap">
+                        <span className="font-medium text-sm">{item.nome || item.nomeProduto}</span>
                         <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">x{item.quantidade || 1}</span>
                         {/* Exibir cor e tamanho */}
                         {(item.cor || item.tamanho) && (

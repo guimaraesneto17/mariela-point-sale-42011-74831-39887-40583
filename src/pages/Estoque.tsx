@@ -822,10 +822,10 @@ const Estoque = () => {
       skeleton={<EstoqueSkeleton />}
     >
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div className="text-center flex-1">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Estoque</h1>
-          <p className="text-muted-foreground">
+      <div className="flex flex-col gap-4">
+        <div className="text-center">
+          <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-1 md:mb-2">Estoque</h1>
+          <p className="text-muted-foreground text-sm md:text-base">
             Controle de inventário e movimentações
           </p>
           <div className="flex items-center justify-center gap-2 mt-2 flex-wrap">
@@ -847,9 +847,9 @@ const Estoque = () => {
               }}
               onLimitChange={handleLimitChange}
             />
-            <Badge variant="outline" className="text-sm border-green-500/50 text-green-700 dark:text-green-400">
+            <Badge variant="outline" className="text-xs border-green-500/50 text-green-700 dark:text-green-400">
               <DollarSign className="h-3 w-3 mr-1" />
-              Valor de Compra: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+              Compra: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
                 inventory.reduce((total, item) => {
                   const precoCusto = item.precoCusto || 0;
                   const quantidadeTotal = item.quantidadeTotal || 0;
@@ -857,9 +857,9 @@ const Estoque = () => {
                 }, 0)
               )}
             </Badge>
-            <Badge variant="outline" className="text-sm border-blue-500/50 text-blue-700 dark:text-blue-400">
+            <Badge variant="outline" className="text-xs border-blue-500/50 text-blue-700 dark:text-blue-400">
               <DollarSign className="h-3 w-3 mr-1" />
-              Valor de Venda: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+              Venda: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
                 inventory.reduce((total, item) => {
                   const precoVenda = item.precoPromocional || item.precoVenda || 0;
                   const quantidadeTotal = item.quantidadeTotal || 0;
@@ -869,26 +869,26 @@ const Estoque = () => {
             </Badge>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 justify-center">
           <Button
-            size="lg"
+            size="sm"
             variant="outline"
             onClick={() => setShowAlertasDialog(true)}
             className="gap-2 border-amber-500/50 hover:bg-amber-50 dark:hover:bg-amber-950/20"
           >
-            <Bell className="h-5 w-5 text-amber-600 animate-pulse" />
-            Alertas de Estoque
+            <Bell className="h-4 w-4 text-amber-600 animate-pulse" />
+            <span className="text-xs md:text-sm">Alertas de Estoque</span>
           </Button>
           <Button
-            size="lg"
+            size="sm"
             onClick={() => {
               setSelectedItem(null);
               setShowMultipleVariantsDialog(true);
             }}
             className="gap-2"
           >
-            <Package2 className="h-5 w-5" />
-            Adicionar Várias Unidades ao Produto
+            <Package2 className="h-4 w-4" />
+            <span className="text-xs md:text-sm">Adicionar Várias Unidades</span>
           </Button>
         </div>
       </div>
