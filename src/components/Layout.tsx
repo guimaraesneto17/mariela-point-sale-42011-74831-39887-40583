@@ -375,8 +375,6 @@ const Layout = () => {
               </div>
             </div>
           )}
-            </div>
-          )}
           <motion.div
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
