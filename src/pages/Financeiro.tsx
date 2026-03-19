@@ -172,8 +172,8 @@ const Financeiro = () => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
       <div>
-        <h1 className="text-4xl font-bold text-foreground mb-2">Financeiro</h1>
-        <p className="text-muted-foreground">Controle de contas a pagar e receber</p>
+        <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-1 md:mb-2">Financeiro</h1>
+        <p className="text-muted-foreground text-sm md:text-base">Controle de contas a pagar e receber</p>
       </div>
     </div>
 
