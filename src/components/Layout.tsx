@@ -331,6 +331,7 @@ const Layout = () => {
             <div className="flex items-center justify-between mb-3">
               <p className="text-white/60 text-xs font-medium">© 2025 Mariela Moda</p>
               <div className="flex items-center gap-1">
+                <ThemeToggle />
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
