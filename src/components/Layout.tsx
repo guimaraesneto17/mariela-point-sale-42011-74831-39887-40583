@@ -19,8 +19,9 @@ import {
   Menu,
   X,
   UserCog,
-  FileCode
+  FileCode,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
