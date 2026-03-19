@@ -798,17 +798,17 @@ const Dashboard = () => {
       <Card className="p-4 md:p-8 shadow-card animate-fade-in hover-lift transition-smooth bg-gradient-to-br from-card via-card to-primary/5">
         <div className="space-y-8">
           {/* Header do Card */}
-          <div className="flex items-center justify-between pb-4 border-b border-border flex-wrap gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-border gap-3 md:gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
-                <BarChart3 className="h-6 w-6 text-primary-foreground" />
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+                <BarChart3 className="h-5 w-5 md:h-6 md:w-6 text-primary-foreground" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-foreground">Resumo do Negócio</h2>
-                <p className="text-sm text-muted-foreground">Principais métricas em tempo real</p>
+                <h2 className="text-lg md:text-2xl font-bold text-foreground">Resumo do Negócio</h2>
+                <p className="text-xs md:text-sm text-muted-foreground">Principais métricas em tempo real</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3 flex-wrap">
               <DashboardWidgetConfig
                 widgets={widgetConfig}
                 onSave={handleWidgetConfigSave}
