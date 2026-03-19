@@ -369,7 +369,12 @@ const Layout = () => {
           {!isMobile && !isAdmin && (
             <div className="flex items-center justify-between mb-3">
               <p className="text-white/60 text-xs font-medium">© 2025 Mariela Moda</p>
-              <CacheIndicator />
+              <div className="flex items-center gap-1">
+                <ThemeToggle />
+                <CacheIndicator />
+              </div>
+            </div>
+          )}
             </div>
           )}
           <motion.div
