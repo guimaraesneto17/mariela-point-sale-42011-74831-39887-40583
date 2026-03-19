@@ -256,11 +256,11 @@ const Financeiro = () => {
 
       {/* Botões de Ação */}
       <div className="flex flex-wrap gap-2">
-        <Button onClick={() => { setSelectedContaPagar(null); setContaPagarDialogOpen(true); }} className="gap-2" variant="default">
+        <Button onClick={() => { setSelectedContaPagar(null); setContaPagarDialogOpen(true); }} className="gap-2 text-xs md:text-sm" size="sm" variant="default">
           <Plus className="h-4 w-4" />
           Nova Conta a Pagar
         </Button>
-        <Button onClick={() => { setSelectedContaReceber(null); setContaReceberDialogOpen(true); }} className="gap-2" variant="secondary">
+        <Button onClick={() => { setSelectedContaReceber(null); setContaReceberDialogOpen(true); }} className="gap-2 text-xs md:text-sm" size="sm" variant="secondary">
           <Plus className="h-4 w-4" />
           Nova Conta a Receber
         </Button>
