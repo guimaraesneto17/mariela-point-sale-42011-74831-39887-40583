@@ -120,16 +120,16 @@ const Vendas = () => {
 
       <div className="space-y-4">
         {filteredVendas.map((venda) => (
-          <Card key={venda.codigo || venda.codigoVenda || venda._id} className="p-4 md:p-6 bg-gradient-card">
-              <div className="flex items-start justify-between mb-4">
+          <Card key={venda.codigo || venda.codigoVenda || venda._id} className="p-3 md:p-6 bg-gradient-card">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-3 md:mb-4">
               <div>
-                <h3 className="text-xl font-bold">{venda.codigo || venda.codigoVenda || venda._id}</h3>
-                <p className="text-muted-foreground text-sm">{formatDate(venda.data)}</p>
+                <h3 className="text-base md:text-xl font-bold">{venda.codigo || venda.codigoVenda || venda._id}</h3>
+                <p className="text-muted-foreground text-xs md:text-sm">{formatDate(venda.data)}</p>
               </div>
-              <div className="flex gap-2">
-                <Badge className="bg-primary">{venda.formaPagamento || '—'}</Badge>
+              <div className="flex gap-1 md:gap-2 flex-wrap">
+                <Badge className="bg-primary text-xs">{venda.formaPagamento || '—'}</Badge>
                 {venda.formaPagamento === "Cartão de Crédito" && Number(venda.parcelas || 1) > 1 && (
-                  <Badge variant="outline">{venda.parcelas}x de {formatCurrency((venda.total || 0) / (venda.parcelas || 1))}</Badge>
+                  <Badge variant="outline" className="text-xs">{venda.parcelas}x de {formatCurrency((venda.total || 0) / (venda.parcelas || 1))}</Badge>
                 )}
               </div>
             </div>
