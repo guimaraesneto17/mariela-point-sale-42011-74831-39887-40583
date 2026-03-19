@@ -362,11 +362,12 @@ const Clientes = () => {
         <div className="flex flex-wrap gap-2">
           <Button 
             variant="outline" 
+            size="sm"
             className="gap-2 bg-gradient-to-br from-background to-primary/5 border-primary/20 hover:border-primary/40" 
             onClick={() => setAniversariantesDialogOpen(true)}
           >
             <Cake className="h-4 w-4" />
-            Mensagens de Aniversário
+            <span className="hidden sm:inline">Mensagens de</span> Aniversário
           </Button>
           <PermissionGuard module="clientes" action="edit">
             <Button 
