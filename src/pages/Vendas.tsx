@@ -70,17 +70,17 @@ const Vendas = () => {
       isLoading={isLoading} 
       skeleton={<VendasSkeleton />}
     >
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div className="text-center flex-1">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Vendas</h1>
-          <p className="text-muted-foreground">
+    <div className="space-y-4 md:space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="text-center sm:text-left flex-1">
+          <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-1 md:mb-2">Vendas</h1>
+          <p className="text-muted-foreground text-sm md:text-base">
             Histórico e gerenciamento de vendas
           </p>
-          <div className="flex items-center justify-center gap-2 mt-2">
-            <Badge variant="secondary" className="text-sm">
+          <div className="flex items-center justify-center sm:justify-start gap-2 mt-2">
+            <Badge variant="secondary" className="text-xs md:text-sm">
               <Tag className="h-3 w-3 mr-1" />
-              {vendas.length} {vendas.length === 1 ? 'venda realizada' : 'vendas realizadas'}
+              {vendas.length} {vendas.length === 1 ? 'venda' : 'vendas'}
             </Badge>
           </div>
         </div>
@@ -88,10 +88,11 @@ const Vendas = () => {
           onClick={handleSincronizarVendas}
           disabled={sincronizando}
           variant="outline"
+          size="sm"
           className="gap-2"
         >
           <RefreshCw className={`h-4 w-4 ${sincronizando ? 'animate-spin' : ''}`} />
-          {sincronizando ? 'Sincronizando...' : 'Sincronizar Vendas'}
+          {sincronizando ? 'Sincronizando...' : 'Sincronizar'}
         </Button>
       </div>
 
