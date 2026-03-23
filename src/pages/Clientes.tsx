@@ -241,6 +241,7 @@ const Clientes = () => {
       setEditingCliente(null);
       form.reset();
       setManualCode(false);
+      await loadClientes(1, true);
     } catch (error: any) {
       toast.error("❌ Erro ao salvar cliente", {
         description: error.message || "Verifique sua conexão e tente novamente",
@@ -280,6 +281,7 @@ const Clientes = () => {
     try {
       await deleteClienteMutation.mutateAsync(cliente.codigoCliente);
       toast.success("Cliente excluído com sucesso!");
+      await loadClientes(1, true);
     } catch (error: any) {
       toast.error("Erro ao excluir cliente", {
         description: error.message || "Tente novamente",

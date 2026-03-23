@@ -54,8 +54,36 @@ axiosInstance.interceptors.response.use(
         localStorage.removeItem('mariela_user');
         
         if (!window.location.pathname.includes('/auth')) {
-          window.location.href = '/auth';
+          // Importação dinâmica para evitar dependência circular
+          import('sonner').then(({ toast }) => {
+            toast.error('Sessão expirada', {
+              description: 'Faça login novamente para continuar.',
+              duration: 5000,
+            });
+          });
+          setTimeout(() => {
+            window.location.href = '/auth';
+          }, 1500);
         }
+      }
+    }
+
+    // Token inválido sem refresh token disponível
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      localStorage.removeItem('mariela_access_token');
+      localStorage.removeItem('mariela_refresh_token');
+      localStorage.removeItem('mariela_user');
+      
+      if (!window.location.pathname.includes('/auth')) {
+        import('sonner').then(({ toast }) => {
+          toast.error('Sessão expirada', {
+            description: 'Faça login novamente para continuar.',
+            duration: 5000,
+          });
+        });
+        setTimeout(() => {
+          window.location.href = '/auth';
+        }, 1500);
       }
     }
 
@@ -66,7 +94,15 @@ axiosInstance.interceptors.response.use(
       localStorage.removeItem('mariela_user');
       
       if (!window.location.pathname.includes('/auth')) {
-        window.location.href = '/auth';
+        import('sonner').then(({ toast }) => {
+          toast.error('Acesso negado', {
+            description: 'Você não tem permissão. Faça login novamente.',
+            duration: 5000,
+          });
+        });
+        setTimeout(() => {
+          window.location.href = '/auth';
+        }, 1500);
       }
     }
 

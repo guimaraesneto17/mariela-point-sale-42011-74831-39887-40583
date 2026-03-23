@@ -325,6 +325,8 @@ const Fornecedores = () => {
       setEditingFornecedor(null);
       form.reset();
       setManualCode(false);
+      // Recarregar lista após cadastro/edição
+      await loadFornecedores(1, true);
     } catch (error: any) {
       toast.error("❌ Erro ao salvar fornecedor", {
         description: error.message || "Verifique sua conexão e tente novamente",
@@ -371,6 +373,7 @@ const Fornecedores = () => {
     try {
       await deleteFornecedorMutation.mutateAsync(fornecedor.codigoFornecedor);
       toast.success("Fornecedor excluído com sucesso!");
+      await loadFornecedores(1, true);
     } catch (error: any) {
       toast.error("Erro ao excluir fornecedor", {
         description: error.message || "Tente novamente",
