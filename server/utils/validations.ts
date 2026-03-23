@@ -245,8 +245,7 @@ const Validations = {
       });
     }
 
-    if (!data.dataCadastro || !regex.dataISO.test(data.dataCadastro))
-      erros.push('dataCadastro é obrigatória e deve estar em formato ISO.');
+    // dataCadastro é gerada automaticamente pelo Mongoose (timestamps)
 
     if (data.dataAtualizacao && !regex.dataISO.test(data.dataAtualizacao))
       erros.push('dataAtualizacao deve estar em formato ISO.');
