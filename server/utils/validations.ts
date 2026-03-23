@@ -79,8 +79,7 @@ const Validations = {
     if (!cleaned.nome || cleaned.nome.length < 3 || cleaned.nome.length > 100)
       erros.push('nome deve ter entre 3 e 100 caracteres.');
 
-    if (!cleaned.dataCadastro || !regex.dataISO.test(cleaned.dataCadastro))
-      erros.push('dataCadastro é obrigatória e deve estar em formato ISO.');
+    // dataCadastro é gerada automaticamente pelo Mongoose (timestamps)
 
     // Campos opcionais
     if (cleaned.telefone && !regex.telefone.test(cleaned.telefone))
@@ -160,8 +159,7 @@ const Validations = {
         erros.push(`${campo} é obrigatório e deve ser >= 0.`);
     });
 
-    if (!data.dataCadastro || !regex.dataISO.test(data.dataCadastro))
-      erros.push('dataCadastro é obrigatória e deve estar em formato ISO.');
+    // dataCadastro é gerada automaticamente pelo Mongoose (timestamps)
 
     if (data.descricao && (data.descricao.length < 10 || data.descricao.length > 500))
       erros.push('descricao deve ter entre 10 e 500 caracteres.');
@@ -247,8 +245,7 @@ const Validations = {
       });
     }
 
-    if (!data.dataCadastro || !regex.dataISO.test(data.dataCadastro))
-      erros.push('dataCadastro é obrigatória e deve estar em formato ISO.');
+    // dataCadastro é gerada automaticamente pelo Mongoose (timestamps)
 
     if (data.dataAtualizacao && !regex.dataISO.test(data.dataAtualizacao))
       erros.push('dataAtualizacao deve estar em formato ISO.');
@@ -289,8 +286,7 @@ const Validations = {
     if (!cleaned.nome || cleaned.nome.length < 3 || cleaned.nome.length > 120)
       erros.push('nome é obrigatório e deve ter entre 3 e 120 caracteres.');
 
-    if (!cleaned.dataCadastro || !regex.dataISO.test(cleaned.dataCadastro))
-      erros.push('dataCadastro é obrigatória e deve estar em formato ISO.');
+    // dataCadastro é gerada automaticamente pelo Mongoose (timestamps)
 
     if (cleaned.telefone && !regex.telefone.test(cleaned.telefone))
       erros.push('telefone deve estar no formato (XX) XXXXX-XXXX.');
