@@ -286,8 +286,7 @@ const Validations = {
     if (!cleaned.nome || cleaned.nome.length < 3 || cleaned.nome.length > 120)
       erros.push('nome é obrigatório e deve ter entre 3 e 120 caracteres.');
 
-    if (!cleaned.dataCadastro || !regex.dataISO.test(cleaned.dataCadastro))
-      erros.push('dataCadastro é obrigatória e deve estar em formato ISO.');
+    // dataCadastro é gerada automaticamente pelo Mongoose (timestamps)
 
     if (cleaned.telefone && !regex.telefone.test(cleaned.telefone))
       erros.push('telefone deve estar no formato (XX) XXXXX-XXXX.');
