@@ -281,6 +281,7 @@ const Clientes = () => {
     try {
       await deleteClienteMutation.mutateAsync(cliente.codigoCliente);
       toast.success("Cliente excluído com sucesso!");
+      await loadClientes(1, true);
     } catch (error: any) {
       toast.error("Erro ao excluir cliente", {
         description: error.message || "Tente novamente",

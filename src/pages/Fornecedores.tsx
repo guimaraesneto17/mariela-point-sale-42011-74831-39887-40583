@@ -373,6 +373,7 @@ const Fornecedores = () => {
     try {
       await deleteFornecedorMutation.mutateAsync(fornecedor.codigoFornecedor);
       toast.success("Fornecedor excluído com sucesso!");
+      await loadFornecedores(1, true);
     } catch (error: any) {
       toast.error("Erro ao excluir fornecedor", {
         description: error.message || "Tente novamente",

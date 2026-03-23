@@ -365,6 +365,7 @@ const Vendedores = () => {
     try {
       await deleteVendedorMutation.mutateAsync(vendedor.codigoVendedor);
       toast.success("Vendedor excluído com sucesso!");
+      await loadVendedores(1, true);
     } catch (error: any) {
       toast.error("Erro ao excluir vendedor", {
         description: error.message || "Tente novamente",
