@@ -94,7 +94,15 @@ axiosInstance.interceptors.response.use(
       localStorage.removeItem('mariela_user');
       
       if (!window.location.pathname.includes('/auth')) {
-        window.location.href = '/auth';
+        import('sonner').then(({ toast }) => {
+          toast.error('Acesso negado', {
+            description: 'Você não tem permissão. Faça login novamente.',
+            duration: 5000,
+          });
+        });
+        setTimeout(() => {
+          window.location.href = '/auth';
+        }, 1500);
       }
     }
 
