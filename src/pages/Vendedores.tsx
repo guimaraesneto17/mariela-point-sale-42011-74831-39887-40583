@@ -321,6 +321,7 @@ const Vendedores = () => {
       setEditingVendedor(null);
       form.reset();
       setManualCode(false);
+      await loadVendedores(1, true);
     } catch (error: any) {
       toast.error("❌ Erro ao salvar vendedor", {
         description: error.message || "Verifique sua conexão e tente novamente",
