@@ -241,6 +241,7 @@ const Clientes = () => {
       setEditingCliente(null);
       form.reset();
       setManualCode(false);
+      await loadClientes(1, true);
     } catch (error: any) {
       toast.error("❌ Erro ao salvar cliente", {
         description: error.message || "Verifique sua conexão e tente novamente",
