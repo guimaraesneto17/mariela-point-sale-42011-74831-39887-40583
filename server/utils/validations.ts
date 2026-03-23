@@ -159,8 +159,7 @@ const Validations = {
         erros.push(`${campo} é obrigatório e deve ser >= 0.`);
     });
 
-    if (!data.dataCadastro || !regex.dataISO.test(data.dataCadastro))
-      erros.push('dataCadastro é obrigatória e deve estar em formato ISO.');
+    // dataCadastro é gerada automaticamente pelo Mongoose (timestamps)
 
     if (data.descricao && (data.descricao.length < 10 || data.descricao.length > 500))
       erros.push('descricao deve ter entre 10 e 500 caracteres.');
