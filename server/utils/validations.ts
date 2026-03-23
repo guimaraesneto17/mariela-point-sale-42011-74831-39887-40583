@@ -125,8 +125,7 @@ const Validations = {
         erros.push('endereco.cep deve estar no formato 00000-000.');
     }
 
-    if (!cleaned.dataCadastro || !regex.dataISO.test(cleaned.dataCadastro))
-      erros.push('dataCadastro é obrigatória e deve estar em formato ISO.');
+    // dataCadastro é gerada automaticamente pelo Mongoose (timestamps)
 
     if (cleaned.telefone && !regex.telefone.test(cleaned.telefone))
       erros.push('telefone deve estar no formato (XX) XXXXX-XXXX.');
