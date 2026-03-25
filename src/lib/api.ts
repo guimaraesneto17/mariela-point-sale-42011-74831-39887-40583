@@ -483,3 +483,10 @@ export const categoriasFinanceirasAPI = {
     body: JSON.stringify({ categorias }),
   }),
 };
+
+// ============= LIMPEZA DE ESTOQUE =============
+export const stockCleanupAPI = {
+  execute: (dryRun: boolean = false) => fetchAPI(`/stock-cleanup/execute?dryRun=${dryRun}`, {
+    method: 'POST',
+  }),
+};
