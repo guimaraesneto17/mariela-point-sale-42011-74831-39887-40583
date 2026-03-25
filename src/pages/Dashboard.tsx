@@ -285,29 +285,30 @@ const Dashboard = () => {
 
       const faturamentoDiario = vendasHoje.reduce((acc: number, v: any) => acc + (v.total || 0), 0);
       const totalClientes = clientes.length;
-      // Quantidade de produtos cadastrados em estoque (mesma lógica do badge de estoque)
-      const produtosEstoque = estoqueItems.length;
+      // Quantidade de produtos cadastrados em estoque com quantidade > 0
+      const produtosEstoque = estoqueItems.length; // estoqueItems já é filtrado pelo backend (quantidadeTotal > 0)
       
       // Calcular produtos em promoção
       const produtosPromocao = estoqueItems.filter((item: any) => item.emPromocao === true).length;
       
-      // Calcular Total Geral (todas as variantes)
+      // Calcular Total Geral: soma de TODAS as quantidades de variantes
       const totalGeralProdutos = estoqueItems.reduce((acc: number, item: any) => {
         if (item.variantes && Array.isArray(item.variantes)) {
           return acc + item.variantes.reduce((sum: number, v: any) => sum + (v.quantidade || 0), 0);
         }
-        return acc + (item.quantidadeTotal || 0);
+        return acc + (item.quantidadeTotal || item.quantidade || 0);
       }, 0);
       
-      // Calcular valor total do estoque (considerando preço promocional quando disponível)
+      // Calcular valor total do estoque usando quantidadeTotal e preços do produto
       let valorEstoqueCusto = 0;
       let valorEstoqueVenda = 0;
       
       estoqueItems.forEach((item: any) => {
+        // quantidadeTotal já é calculado pelo backend como soma de todas as variantes
         const quantidade = item.quantidadeTotal || 0;
         const precoCusto = item.precoCusto || 0;
-        // Usar preço promocional se disponível e menor que o preço de venda
-        const precoVenda = (item.precoPromocional && item.precoPromocional < item.precoVenda) 
+        // Usar preço promocional se ativo e menor que o preço de venda
+        const precoVenda = (item.emPromocao && item.precoPromocional && item.precoPromocional < (item.precoVenda || 0)) 
           ? item.precoPromocional 
           : item.precoVenda || 0;
         

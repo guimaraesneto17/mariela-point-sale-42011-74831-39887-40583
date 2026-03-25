@@ -48,61 +48,24 @@ axiosInstance.interceptors.response.use(
           return axiosInstance(originalRequest);
         }
       } catch (refreshError) {
-        // Falhou ao renovar, fazer logout
-        localStorage.removeItem('mariela_access_token');
-        localStorage.removeItem('mariela_refresh_token');
-        localStorage.removeItem('mariela_user');
-        
+        // Falhou ao renovar, disparar evento de sessão expirada
         if (!window.location.pathname.includes('/auth')) {
-          // Importação dinâmica para evitar dependência circular
-          import('sonner').then(({ toast }) => {
-            toast.error('Sessão expirada', {
-              description: 'Faça login novamente para continuar.',
-              duration: 5000,
-            });
-          });
-          setTimeout(() => {
-            window.location.href = '/auth';
-          }, 1500);
+          window.dispatchEvent(new Event('session-expired'));
         }
       }
     }
 
     // Token inválido sem refresh token disponível
     if (error.response?.status === 401 && !originalRequest._retry) {
-      localStorage.removeItem('mariela_access_token');
-      localStorage.removeItem('mariela_refresh_token');
-      localStorage.removeItem('mariela_user');
-      
       if (!window.location.pathname.includes('/auth')) {
-        import('sonner').then(({ toast }) => {
-          toast.error('Sessão expirada', {
-            description: 'Faça login novamente para continuar.',
-            duration: 5000,
-          });
-        });
-        setTimeout(() => {
-          window.location.href = '/auth';
-        }, 1500);
+        window.dispatchEvent(new Event('session-expired'));
       }
     }
 
-    // Se receber 403 ou outros erros de autenticação
+    // Se receber 403 - acesso negado
     if (error.response?.status === 403) {
-      localStorage.removeItem('mariela_access_token');
-      localStorage.removeItem('mariela_refresh_token');
-      localStorage.removeItem('mariela_user');
-      
       if (!window.location.pathname.includes('/auth')) {
-        import('sonner').then(({ toast }) => {
-          toast.error('Acesso negado', {
-            description: 'Você não tem permissão. Faça login novamente.',
-            duration: 5000,
-          });
-        });
-        setTimeout(() => {
-          window.location.href = '/auth';
-        }, 1500);
+        window.dispatchEvent(new Event('session-expired'));
       }
     }
 
@@ -481,5 +444,12 @@ export const categoriasFinanceirasAPI = {
   reorder: (categorias: { id: string; ordem: number }[]) => fetchAPI('/categorias-financeiras/reorder', {
     method: 'POST',
     body: JSON.stringify({ categorias }),
+  }),
+};
+
+// ============= LIMPEZA DE ESTOQUE =============
+export const stockCleanupAPI = {
+  execute: (dryRun: boolean = false) => fetchAPI(`/stock-cleanup/execute?dryRun=${dryRun}`, {
+    method: 'POST',
   }),
 };

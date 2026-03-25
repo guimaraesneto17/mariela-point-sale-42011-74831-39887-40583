@@ -27,6 +27,7 @@ import Usuarios from "./pages/Usuarios";
 import ApiDocumentation from "./pages/ApiDocumentation";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import { SessionExpiredDialog } from "./components/SessionExpiredDialog";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -97,6 +98,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <SessionExpiredDialog />
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />

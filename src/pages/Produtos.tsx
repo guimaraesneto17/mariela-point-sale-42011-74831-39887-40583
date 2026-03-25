@@ -1029,7 +1029,7 @@ const Produtos = () => {
                         onClick={() => navigate(`/estoque?produto=${produto.codigoProduto}`)}
                       >
                         <Package className="h-4 w-4" />
-                        <span className="truncate">Ver no Estoque</span>
+                        <span className="truncate">Ver no Estoque ({quantidadeTotal})</span>
                       </Button>
                     );
                   }

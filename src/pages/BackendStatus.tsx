@@ -11,6 +11,7 @@ import { StorageAnalyticsDashboard } from "@/components/StorageAnalyticsDashboar
 import { ImageSEOAnalyzer } from "@/components/ImageSEOAnalyzer";
 import WatermarkSettings from "@/components/WatermarkSettings";
 import CleanupScheduler from "@/components/CleanupScheduler";
+import { StockCleanupScheduler } from "@/components/StockCleanupScheduler";
 import EnvironmentVariablesAlert from "@/components/EnvironmentVariablesAlert";
 import { CachePerformanceMetrics } from "@/components/CachePerformanceMetrics";
 import { PerformanceDashboard } from "@/components/PerformanceDashboard";
@@ -619,8 +620,11 @@ export default function BackendStatus() {
       {/* Configurações de Watermark */}
       <WatermarkSettings />
 
-      {/* Agendamento de Limpeza Automática */}
+      {/* Agendamento de Limpeza Automática de Imagens */}
       <CleanupScheduler />
+
+      {/* Limpeza de Estoque e Produtos */}
+      <StockCleanupScheduler />
 
       {/* Gerenciamento de Storage */}
       <StorageCleanup />
