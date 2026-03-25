@@ -74,26 +74,26 @@ export function useDashboardData(dataInicio?: Date, dataFim?: Date) {
     const faturamentoDiario = vendasHoje.reduce((acc: number, v: any) => acc + (v.total || 0), 0);
     const totalClientes = clientesData.length;
 
-    // Quantidade de produtos que possuem estoque (SKU com quantidadeTotal > 0)
-    const produtosEstoque = estoqueData.filter((item: any) => (item.quantidadeTotal || 0) > 0).length;
+    // Quantidade de produtos que possuem estoque (com quantidadeTotal > 0 — já filtrado pelo backend)
+    const produtosEstoque = estoqueData.length;
     
-    // Calcular Total Geral (todas as variantes)
+    // Calcular Total Geral: soma de TODAS as quantidades de variantes
     const totalGeralProdutos = estoqueData.reduce((acc: number, item: any) => {
       if (item.variantes && Array.isArray(item.variantes)) {
         return acc + item.variantes.reduce((sum: number, v: any) => sum + (v.quantidade || 0), 0);
       }
-      return acc + (item.quantidadeTotal || 0);
+      return acc + (item.quantidadeTotal || item.quantidade || 0);
     }, 0);
     
-    // Calcular valor total do estoque (considerando preço promocional quando disponível)
+    // Calcular valor total do estoque usando quantidadeTotal e preços do produto
     let valorEstoqueCusto = 0;
     let valorEstoqueVenda = 0;
     
     estoqueData.forEach((item: any) => {
       const quantidade = item.quantidadeTotal || 0;
       const precoCusto = item.precoCusto || 0;
-      // Usar preço promocional se disponível e menor que o preço de venda
-      const precoVenda = (item.precoPromocional && item.precoPromocional < item.precoVenda) 
+      // Usar preço promocional se ativo e menor que o preço de venda
+      const precoVenda = (item.emPromocao && item.precoPromocional && item.precoPromocional < (item.precoVenda || 0)) 
         ? item.precoPromocional 
         : item.precoVenda || 0;
       
