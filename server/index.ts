@@ -29,6 +29,7 @@ import authRouter from './routes/auth';
 import uploadRouter from './routes/upload';
 import permissionsRouter from './routes/permissions';
 import cleanupRouter from './routes/cleanup';
+import stockCleanupRouter from './routes/stockCleanup';
 import searchRouter from './routes/search';
 import cacheRouter from './routes/cache';
 
@@ -239,6 +240,7 @@ app.use('/api/contas-receber', authenticateToken, contasReceberRouter);
 app.use('/api/categorias-financeiras', authenticateToken, categoriasFinanceirasRouter);
 app.use('/api/permissions', authenticateToken, permissionsRouter);
 app.use('/api/cleanup', authenticateToken, cleanupRouter);
+app.use('/api/stock-cleanup', authenticateToken, stockCleanupRouter);
 app.use('/api/search', authenticateToken, searchRouter);
 app.use('/api/cache', authenticateToken, cacheRouter);
 
