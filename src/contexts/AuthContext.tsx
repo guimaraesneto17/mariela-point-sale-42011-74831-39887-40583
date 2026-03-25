@@ -133,8 +133,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       toast.success('Login realizado com sucesso!');
       
-      // Redirecionar baseado na role
-      if (userData.role === 'vendedor') {
+      // Redirecionar: se tiver rota salva, usar ela; senão baseado na role
+      const redirectPath = localStorage.getItem('mariela_redirect_after_login');
+      if (redirectPath) {
+        localStorage.removeItem('mariela_redirect_after_login');
+        navigate(redirectPath);
+      } else if (userData.role === 'vendedor') {
         navigate('/vendedor-dashboard');
       } else {
         navigate('/');
