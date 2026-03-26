@@ -49,6 +49,28 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
+import {
+  Clock,
+  Calendar,
+  Trash2,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Play,
+  Settings,
+  History,
+  Database,
+  HardDrive,
+  RefreshCw,
+  ImageIcon,
+  BarChart3,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  AlertTriangle,
+  LogIn
+} from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
