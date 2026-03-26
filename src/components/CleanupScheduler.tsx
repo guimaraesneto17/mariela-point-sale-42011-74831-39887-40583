@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import { 
   Clock, 
   Calendar, 
@@ -18,6 +19,13 @@ import {
   History,
   Database,
   HardDrive
+  HardDrive,
+  RefreshCw,
+  ImageIcon,
+  BarChart3,
+  Sparkles,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -26,6 +34,7 @@ import { ptBR } from 'date-fns/locale';
 import axiosInstance from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { AlertTriangle, LogIn } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface CleanupConfig {
   id: string;
@@ -69,6 +78,8 @@ const CleanupScheduler = () => {
   const [selectedSchedule, setSelectedSchedule] = useState('0 0 1 * *');
   const [customSchedule, setCustomSchedule] = useState('');
   const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [progressStage, setProgressStage] = useState('');
 
   useEffect(() => {
     loadConfig();
