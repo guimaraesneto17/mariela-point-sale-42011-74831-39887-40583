@@ -76,15 +76,33 @@ const CleanupScheduler = () => {
       const { data, error } = await supabase
         .from('cleanup_cron_config')
         .select('*')
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
-      setConfig(data);
-      setSelectedSchedule(data.schedule);
+      if (data) {
+        setConfig(data);
+        setSelectedSchedule(data.schedule);
+      } else {
+        // Criar configuração padrão se não existir
+        const defaultConfig = {
+          enabled: false,
+          schedule: '0 0 1 * *',
+          auto_delete: false,
+          notifications_enabled: false,
+        };
+        const { data: newData, error: insertError } = await supabase
+          .from('cleanup_cron_config')
+          .insert(defaultConfig)
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        setConfig(newData);
+        setSelectedSchedule(newData.schedule);
+      }
     } catch (error: any) {
       console.error('Erro ao carregar configuração:', error);
-      toast.error('Erro ao carregar configuração');
     } finally {
       setLoading(false);
     }
@@ -128,19 +146,46 @@ const CleanupScheduler = () => {
   const executeCleanup = async () => {
     setExecuting(true);
     try {
-      const { data, error } = await supabase.functions.invoke('cleanup-orphan-images', {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://mariela-pdv-backend.onrender.com/api';
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/cleanup/orphan-images`, {
+        method: 'POST',
         headers: {
-          'x-triggered-by': 'manual'
-        }
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
       });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Erro ${response.status}`);
+      }
 
-      toast.success(`Limpeza executada! ${data.imagesDeleted} imagens deletadas`);
+      const data = await response.json();
+      const deleted = data.deletedImagesCount || data.deletedImages?.length || 0;
+      toast.success(`Limpeza executada! ${deleted} imagens deletadas`);
+
+      // Salvar no histórico do Supabase
+      try {
+        await supabase.from('image_cleanup_history').insert({
+          status: 'success',
+          total_images_checked: data.totalStorageImages || 0,
+          orphan_images_found: data.orphanImagesCount || 0,
+          images_deleted: deleted,
+          images_failed: data.failedDeletionsCount || 0,
+          deleted_images: data.deletedImages || [],
+          failed_images: data.failedDeletions || [],
+          storage_freed_bytes: 0,
+          triggered_by: 'manual',
+        });
+      } catch (histErr) {
+        console.warn('Erro ao salvar histórico:', histErr);
+      }
+
       loadHistory();
     } catch (error: any) {
       console.error('Erro ao executar limpeza:', error);
-      toast.error('Erro ao executar limpeza');
+      toast.error('Erro ao executar limpeza', { description: error.message });
     } finally {
       setExecuting(false);
     }
