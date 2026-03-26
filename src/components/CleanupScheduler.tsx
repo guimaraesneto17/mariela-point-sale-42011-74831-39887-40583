@@ -24,6 +24,8 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import axiosInstance from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { AlertTriangle, LogIn } from 'lucide-react';
 
 interface CleanupConfig {
   id: string;
@@ -59,6 +61,7 @@ const SCHEDULE_PRESETS = [
 ];
 
 const CleanupScheduler = () => {
+  const { isAuthenticated } = useAuth();
   const [config, setConfig] = useState<CleanupConfig | null>(null);
   const [history, setHistory] = useState<CleanupHistory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -218,9 +221,9 @@ const CleanupScheduler = () => {
                 Configure a execução automática da limpeza de imagens órfãs
               </CardDescription>
             </div>
-            <Button 
-              onClick={executeCleanup} 
-              disabled={executing}
+            <Button
+              onClick={executeCleanup}
+              disabled={executing || !isAuthenticated}
               variant="outline"
               size="sm"
             >
@@ -230,6 +233,26 @@ const CleanupScheduler = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Aviso de autenticação */}
+          {!isAuthenticated && (
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive">
+              <AlertTriangle className="h-5 w-5 shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium">Autenticação necessária</p>
+                <p className="text-xs opacity-80">Faça login para executar a limpeza de imagens ou alterar configurações.</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-destructive/50 text-destructive hover:bg-destructive/10"
+                onClick={() => window.location.href = '/auth'}
+              >
+                <LogIn className="h-4 w-4 mr-1" />
+                Login
+              </Button>
+            </div>
+          )}
+
           {/* Status Ativo/Inativo */}
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
