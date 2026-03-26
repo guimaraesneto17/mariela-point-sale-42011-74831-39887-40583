@@ -23,6 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import axiosInstance from '@/lib/api';
 
 interface CleanupConfig {
   id: string;
@@ -146,22 +147,7 @@ const CleanupScheduler = () => {
   const executeCleanup = async () => {
     setExecuting(true);
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://mariela-pdv-backend.onrender.com/api';
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/cleanup/orphan-images`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Erro ${response.status}`);
-      }
-
-      const data = await response.json();
+      const { data } = await axiosInstance.post('/cleanup/orphan-images');
       const deleted = data.deletedImagesCount || data.deletedImages?.length || 0;
       toast.success(`Limpeza executada! ${deleted} imagens deletadas`);
 
@@ -185,7 +171,8 @@ const CleanupScheduler = () => {
       loadHistory();
     } catch (error: any) {
       console.error('Erro ao executar limpeza:', error);
-      toast.error('Erro ao executar limpeza', { description: error.message });
+      const errorMessage = error?.response?.data?.message || error?.response?.data?.error || error?.message || 'Falha na execução da limpeza';
+      toast.error('Erro ao executar limpeza', { description: errorMessage });
     } finally {
       setExecuting(false);
     }
