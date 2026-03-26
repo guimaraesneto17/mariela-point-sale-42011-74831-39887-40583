@@ -464,7 +464,7 @@ const CleanupScheduler = () => {
               animate={{ opacity: 1 }}
               className="text-center py-12 text-muted-foreground"
             >
-              <Database className="h-14 w-14 mx-auto mb-4 opacity-30" />
+              <DatabaseIcon className="h-14 w-14 mx-auto mb-4 opacity-30" />
               <p>Nenhuma execução registrada ainda</p>
               <p className="text-xs mt-1">Execute a limpeza para ver o histórico aqui</p>
             </motion.div>
