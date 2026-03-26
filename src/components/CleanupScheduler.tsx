@@ -17,7 +17,7 @@ import {
   Play,
   Settings,
   History,
-  Database,
+  Database as DatabaseIcon,
   HardDrive,
   RefreshCw,
   ImageIcon,
