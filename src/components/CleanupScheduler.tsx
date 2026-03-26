@@ -20,6 +20,9 @@ import {
   Database,
   HardDrive
   HardDrive,
+  } from 'lucide-react';
+// Additional icons
+import {
   RefreshCw,
   ImageIcon,
   BarChart3,
@@ -27,7 +30,6 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
