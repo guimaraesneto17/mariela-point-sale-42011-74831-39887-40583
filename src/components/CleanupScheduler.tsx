@@ -26,7 +26,9 @@ import {
   ChevronDown,
   ChevronUp,
   AlertTriangle,
-  LogIn
+  LogIn,
+  Eye,
+  TrendingDown
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -35,6 +37,8 @@ import { ptBR } from 'date-fns/locale';
 import axiosInstance from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 interface CleanupConfig {
   id: string;
@@ -62,6 +66,13 @@ interface CleanupHistory {
   triggered_by: string;
 }
 
+interface PreviewResult {
+  totalStorageImages: number;
+  totalReferencedImages: number;
+  orphanImagesCount: number;
+  orphanImages?: { url: string; pathname: string; size: number }[];
+}
+
 const SCHEDULE_PRESETS = [
   { label: 'Diariamente (meia-noite)', value: '0 0 * * *' },
   { label: 'Semanalmente (domingo)', value: '0 0 * * 0' },
@@ -69,17 +80,26 @@ const SCHEDULE_PRESETS = [
   { label: 'Personalizado', value: 'custom' }
 ];
 
+const chartConfig = {
+  orphan: { label: 'Imagens Órfãs', color: 'hsl(var(--destructive))' },
+  deleted: { label: 'Deletadas', color: 'hsl(142 76% 36%)' },
+  checked: { label: 'Verificadas', color: 'hsl(var(--primary))' },
+};
+
 const CleanupScheduler = () => {
   const { isAuthenticated } = useAuth();
   const [config, setConfig] = useState<CleanupConfig | null>(null);
   const [history, setHistory] = useState<CleanupHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [executing, setExecuting] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState('0 0 1 * *');
   const [customSchedule, setCustomSchedule] = useState('');
   const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [progressStage, setProgressStage] = useState('');
+  const [previewResult, setPreviewResult] = useState<PreviewResult | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     loadConfig();
@@ -154,6 +174,40 @@ const CleanupScheduler = () => {
     }
   };
 
+  const handlePreview = async () => {
+    setPreviewing(true);
+    setProgress(0);
+    setProgressStage('Verificando imagens no storage...');
+    const progressInterval = setInterval(() => {
+      setProgress(prev => Math.min(prev + 8, 90));
+    }, 200);
+    try {
+      const { data } = await axiosInstance.post('/cleanup/orphan-images?dryRun=true');
+      clearInterval(progressInterval);
+      setProgress(100);
+      setProgressStage('Concluído!');
+      setPreviewResult({
+        totalStorageImages: data.totalStorageImages || 0,
+        totalReferencedImages: data.totalReferencedImages || 0,
+        orphanImagesCount: data.orphanImagesCount || 0,
+        orphanImages: data.orphanImages || [],
+      });
+      setShowPreview(true);
+    } catch (error: any) {
+      clearInterval(progressInterval);
+      setProgress(0);
+      setProgressStage('');
+      const errorMessage = error?.response?.data?.message || error?.message || 'Tente novamente';
+      toast.error('Erro ao pré-visualizar', { description: errorMessage });
+    } finally {
+      setTimeout(() => {
+        setPreviewing(false);
+        setProgress(0);
+        setProgressStage('');
+      }, 600);
+    }
+  };
+
   const executeCleanup = async () => {
     setExecuting(true);
     setProgress(0);
@@ -185,6 +239,8 @@ const CleanupScheduler = () => {
         console.warn('Erro ao salvar histórico:', histErr);
       }
 
+      setPreviewResult(null);
+      setShowPreview(false);
       loadHistory();
     } catch (error: any) {
       clearInterval(progressInterval);
@@ -223,6 +279,14 @@ const CleanupScheduler = () => {
     }
   };
 
+  // Prepare chart data from history (reversed to chronological order)
+  const chartData = [...history].reverse().map((record) => ({
+    date: format(new Date(record.execution_date), 'dd/MM', { locale: ptBR }),
+    orphan: record.orphan_images_found,
+    deleted: record.images_deleted,
+    checked: record.total_images_checked,
+  }));
+
   if (loading) {
     return (
       <Card className="overflow-hidden border-border/60">
@@ -233,6 +297,8 @@ const CleanupScheduler = () => {
       </Card>
     );
   }
+
+  const isWorking = executing || previewing;
 
   return (
     <div className="space-y-6">
@@ -266,7 +332,7 @@ const CleanupScheduler = () => {
         <CardContent className="space-y-6">
           {/* Progress bar */}
           <AnimatePresence>
-            {executing && (
+            {isWorking && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
@@ -408,19 +474,94 @@ const CleanupScheduler = () => {
               <Play className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-semibold">Execução Manual</span>
             </div>
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} className="inline-block">
-              <Button
-                onClick={executeCleanup}
-                disabled={executing || !isAuthenticated}
-                variant="outline"
-                size="sm"
-                className="gap-2 transition-all"
-              >
-                {executing ? <RefreshCw className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
-                {executing ? 'Executando...' : 'Executar Agora'}
-              </Button>
-            </motion.div>
+            <div className="flex gap-2 flex-wrap">
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+                <Button
+                  onClick={handlePreview}
+                  disabled={isWorking || !isAuthenticated}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 transition-all"
+                >
+                  {previewing ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                  Pré-visualizar
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+                <Button
+                  onClick={executeCleanup}
+                  disabled={isWorking || !isAuthenticated}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 transition-all"
+                >
+                  {executing ? <RefreshCw className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+                  {executing ? 'Executando...' : 'Executar Agora'}
+                </Button>
+              </motion.div>
+            </div>
           </div>
+
+          {/* Preview Results */}
+          <AnimatePresence>
+            {showPreview && previewResult && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-3 rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-4"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                    <span className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">Pré-visualização</span>
+                  </div>
+                  <Badge variant="outline" className="text-xs border-yellow-500/40 text-yellow-700 dark:text-yellow-300">
+                    Simulação
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="rounded-md bg-background/80 p-3 text-center">
+                    <BarChart3 className="h-3.5 w-3.5 mx-auto text-muted-foreground mb-1" />
+                    <div className="text-2xl font-bold">{previewResult.totalStorageImages}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">No Storage</div>
+                  </div>
+                  <div className="rounded-md bg-background/80 p-3 text-center">
+                    <CheckCircle2 className="h-3.5 w-3.5 mx-auto text-green-600 dark:text-green-400 mb-1" />
+                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">{previewResult.totalReferencedImages}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Referenciadas</div>
+                  </div>
+                  <div className="rounded-md bg-destructive/10 p-3 text-center">
+                    <AlertCircle className="h-3.5 w-3.5 mx-auto text-destructive mb-1" />
+                    <div className="text-2xl font-bold text-destructive">{previewResult.orphanImagesCount}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Órfãs (a remover)</div>
+                  </div>
+                </div>
+
+                {previewResult.orphanImages && previewResult.orphanImages.length > 0 && (
+                  <div className="mt-2 space-y-1 max-h-40 overflow-y-auto rounded-md bg-background/60 p-3">
+                    {previewResult.orphanImages.map((item, idx) => (
+                      <motion.div
+                        key={idx}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.03 }}
+                        className="flex items-center justify-between gap-2 text-xs py-1 border-b border-border/30 last:border-0"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <ImageIcon className="h-3 w-3 text-destructive/70 shrink-0" />
+                          <span className="font-mono truncate">{item.pathname}</span>
+                        </div>
+                        <span className="text-muted-foreground shrink-0">{formatBytes(item.size)}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Info section */}
           <div className="rounded-lg border border-border/50 p-4 bg-muted/20 space-y-2">
@@ -445,6 +586,61 @@ const CleanupScheduler = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Trend Chart */}
+      <AnimatePresence>
+        {chartData.length >= 2 && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            <Card className="overflow-hidden border-border/60 shadow-sm hover:shadow-md transition-shadow duration-300">
+              <CardHeader className="bg-gradient-to-r from-orange-500/5 via-orange-500/3 to-transparent pb-4">
+                <CardTitle className="flex items-center gap-2.5 text-lg">
+                  <TrendingDown className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                  Tendência de Imagens Órfãs
+                </CardTitle>
+                <CardDescription>
+                  Evolução de imagens órfãs encontradas e deletadas ao longo das execuções
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                  <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="fillOrphan" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--color-orphan)" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="var(--color-orphan)" stopOpacity={0.02} />
+                      </linearGradient>
+                      <linearGradient id="fillDeleted" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--color-deleted)" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="var(--color-deleted)" stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
+                    <XAxis dataKey="date" tick={{ fontSize: 11 }} className="text-muted-foreground" />
+                    <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Area
+                      type="monotone"
+                      dataKey="orphan"
+                      stroke="var(--color-orphan)"
+                      fill="url(#fillOrphan)"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="deleted"
+                      stroke="var(--color-deleted)"
+                      fill="url(#fillDeleted)"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* History */}
       <Card className="overflow-hidden border-border/60 shadow-sm hover:shadow-md transition-shadow duration-300">
